@@ -6,10 +6,6 @@
 *.key
 *.crt
 
-# IMPORTANT: Never commit the main config with credentials
-# Use opencode.json.secure instead
-opencode.json
-
 # Backup files
 *.backup
 *.bak
