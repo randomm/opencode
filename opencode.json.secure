@@ -1,0 +1,282 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "/Users/janni/.config/opencode/instructions/commit-all-changes.md",
+    "/Users/janni/.config/opencode/instructions/test-driven-development.md"
+  ],
+  "agent": {
+    "python-best-practices-architect": {
+      "description": "Expert Python architect enforcing TDD, 80%+ test coverage, and pre-commit quality gates",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/python-best-practices.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true
+      }
+    },
+    "git-autonomous-agent": {
+      "description": "Git and GitHub workflow expert for version control and PR management",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/git-autonomous.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true
+      }
+    },
+    "rails-architect": {
+      "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/rails-architect.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "react-frontend-specialist": {
+      "description": "React/TypeScript expert for modern component architecture and testing",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/react-frontend.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "postgres-database-expert": {
+      "description": "PostgreSQL expert for schema design, query optimization, and migrations",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/postgres-database.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true,
+        "mcp_fuzu_metabase_query": true,
+        "mcp_fuzu_production_query": true,
+        "mcp_fuzu_staging_query": true,
+        "mcp_barona_production_query": true
+      }
+    },
+    "aws-rds-postgresql-expert": {
+      "description": "AWS RDS Aurora PostgreSQL expert DBA for cloud-native database architecture, performance tuning, and operations",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/aws-rds-postgresql.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true,
+        "mcp_fuzu_metabase_query": true,
+        "mcp_fuzu_production_query": true,
+        "mcp_fuzu_staging_query": true,
+        "mcp_barona_production_query": true
+      }
+    },
+    "api-design-architect": {
+      "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/api-design.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "devops-infrastructure": {
+      "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/devops-infrastructure.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "code-review-quality": {
+      "description": "Code review expert for security, performance, and quality analysis",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/code-review.txt}",
+      "tools": {
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "github-pr-reviewer": {
+      "description": "GitHub PR review agent for comprehensive code analysis and automated feedback",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/github-pr-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "javascript-typescript-architect": {
+      "description": "JavaScript/TypeScript expert for full-stack development with modern tooling and testing",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/javascript-typescript.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    }
+  },
+  "mcp": {
+    "perplexity-ask": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
+      "enabled": true
+    },
+    "fuzu-metabase": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "enabled": true
+    },
+    "fuzu-production": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "enabled": true
+    },
+    "fuzu-staging": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "enabled": true
+    },
+    "barona-production": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "enabled": true
+    },
+    "memory": {
+      "type": "local",
+      "command": ["/Users/janni/.local/bin/uv", "--directory", "/Users/janni/git/mcp-memory-service", "run", "memory"],
+      "enabled": true,
+      "environment": {
+        "MCP_MEMORY_CHROMA_PATH": "/Users/janni/.claude_chroma_db",
+        "MCP_MEMORY_BACKUPS_PATH": "/Users/janni/.claude_chroma_backups"
+      }
+    }
+  }
+}

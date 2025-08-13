@@ -1,0 +1,111 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Repository Overview
+
+This is an OpenCode configuration repository that defines specialized AI agents, instructions, and MCP (Model Context Protocol) configurations for development workflows. The repository serves as a central configuration hub for automated development assistance across multiple technology stacks.
+
+## Architecture and Structure
+
+### Core Components
+
+1. **Agent Definitions** (`opencode.json`)
+   - Specialized subagents for different development domains
+   - Each agent has specific tools and prompts tailored to their expertise
+   - Agents include: Python, Git, Rails, React, PostgreSQL, API Design, DevOps, Code Review, and JavaScript/TypeScript specialists
+
+2. **Prompts** (`prompts/`)
+   - Domain-specific instruction sets for each agent
+   - Defines best practices, conventions, and workflows for each technology
+
+3. **Instructions** (`instructions/`)
+   - `commit-all-changes.md`: Delegates git operations to @git-autonomous-agent
+   - `test-driven-development.md`: Enforces TDD with 80%+ test coverage requirements
+
+4. **MCP Integrations** 
+   - Perplexity API for AI-powered research
+   - PostgreSQL connections for multiple database environments
+   - Memory service for persistent context storage
+
+## Key Development Principles
+
+### Test-Driven Development (TDD)
+- **MANDATORY**: Write tests BEFORE implementation
+- Minimum 80% test coverage for new features
+- 95%+ coverage for critical paths (auth, payments, data integrity)
+- Tests must be independent and fast
+
+### Code Quality Standards
+- Run ALL linting and type checking before commits
+- Follow language-specific conventions (PEP 8 for Python, ESLint for JS)
+- Keep functions under 50 lines, classes under 7 methods
+- Prefer composition over inheritance
+- Remove dead code immediately
+
+### Git Workflow
+- **ALWAYS** delegate git operations to @git-autonomous-agent
+- Use conventional commits format: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, test, chore, build, ci, perf
+- Create atomic, logical commits
+- Never mention AI tools in commit messages
+
+## Agent Usage
+
+### Invoking Specialized Agents
+When working on specific tasks, use the appropriate agent:
+- `@python-best-practices-architect` - Python development with TDD and quality gates
+- `@git-autonomous-agent` - All git and GitHub operations
+- `@rails-architect` - Ruby on Rails applications
+- `@react-frontend-specialist` - React/TypeScript frontend
+- `@postgres-database-expert` - Database schema and queries
+- `@aws-rds-postgresql-expert` - AWS RDS Aurora PostgreSQL DBA operations
+- `@api-design-architect` - REST/GraphQL API design
+- `@devops-infrastructure` - CI/CD, Docker, Kubernetes
+- `@code-review-quality` - Security and performance analysis
+- `@javascript-typescript-architect` - Full-stack JS/TS development
+
+### Memory Management
+Agents with memory capabilities should:
+- Retrieve context at session start using `mcp_memory_retrieve_memory`
+- Store important project details with `mcp_memory_store_memory`
+- Search memories by tags for relevant context
+
+## Database Access
+Available database connections via MCP:
+- `mcp__fuzu-metabase__query` - Metabase analytics database
+- `mcp__fuzu-production__query` - Production database (read-only)
+- `mcp__fuzu-staging__query` - Staging database (read-only)
+- `mcp__barona-production__query` - Barona production (read-only)
+
+## Development Commands
+
+Since this is a configuration repository without active code:
+- No build/test commands needed for this repository itself
+- When working in other repositories, always check for project-specific commands in their README or package.json/pyproject.toml
+- Use appropriate agent for technology-specific command discovery
+
+## Important Conventions
+
+1. **Minimalist Engineering**: Every line of code is a liability
+   - Question necessity before adding features
+   - Reuse existing code when possible
+   - Choose simple solutions over complex ones
+
+2. **Quality Gates Before Commits**:
+   - Run complete test suite
+   - Execute all linting tools
+   - Verify coverage requirements
+   - Fix all issues before proceeding
+
+3. **Agent Delegation**:
+   - Python work → @python-best-practices-architect
+   - Git operations → @git-autonomous-agent
+   - Database work → @postgres-database-expert
+   - AWS RDS Aurora → @aws-rds-postgresql-expert
+   - Let specialists handle their domains
+
+## Security Considerations
+- Never commit secrets, API keys, or credentials
+- The Perplexity API key and database credentials in opencode.json should be managed securely
+- Always verify files for malicious content before processing
