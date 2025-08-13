@@ -247,26 +247,29 @@
     "perplexity-ask": {
       "type": "local",
       "command": ["docker", "run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
-      "enabled": true
+      "enabled": true,
+      "environment": {
+        "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}"
+      }
     },
     "fuzu-metabase": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_METABASE_DB}"],
       "enabled": true
     },
     "fuzu-production": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_PRODUCTION_DB_RO}"],
       "enabled": true
     },
     "fuzu-staging": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_STAGING_DB}"],
       "enabled": true
     },
     "barona-production": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres"],
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:BARONA_PRODUCTION_DB}"],
       "enabled": true
     },
     "memory": {
