@@ -23,6 +23,7 @@ git clone git@github.com:randomm/opencode-config.git ~/.config/opencode
 - `@api-design-architect` - REST/GraphQL APIs
 - `@devops-infrastructure` - CI/CD, Docker, K8s
 - `@javascript-typescript-architect` - Full-stack JS/TS
+- `@js-ts-minimalist` - Minimalist JS/TS (zero bloat TDD)
 
 ## Environment Variables Required
 

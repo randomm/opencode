@@ -241,6 +241,26 @@
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
+    },
+    "js-ts-minimalist": {
+      "description": "Minimalist JavaScript/TypeScript architect - builds the ABSOLUTE MINIMUM following TDD without bloat",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/javascript-typescript-minimalist.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_memory_search_by_tag": true
+      }
     }
   },
   "mcp": {
