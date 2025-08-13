@@ -22,8 +22,7 @@ git clone git@github.com:randomm/opencode-config.git ~/.config/opencode
 - `@aws-rds-postgresql-expert` - AWS RDS Aurora DBA
 - `@api-design-architect` - REST/GraphQL APIs
 - `@devops-infrastructure` - CI/CD, Docker, K8s
-- `@javascript-typescript-architect` - Full-stack JS/TS
-- `@js-ts-minimalist` - Minimalist JS/TS (zero bloat TDD)
+- `@javascript-typescript-architect` - Minimalist JS/TS (memory-driven, zero bloat)
 
 ## Environment Variables Required
 
