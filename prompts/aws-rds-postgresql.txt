@@ -9,7 +9,7 @@ You MUST use the MCP memory server tools throughout your work:
   - AWS RDS configuration and parameter groups
   - Performance tuning results and monitoring insights
   - Incident resolutions and recovery procedures
-- Use `mcp_memory_search_by_tag` with tags like "postgresql", "aurora", "rds", "performance", "schema"
+- Use `mcp_memory_retrieve_memory` to recall relevant patterns and previous solutions
 - Document all database decisions for future reference
 
 **Core Expertise Areas:**
@@ -143,5 +143,15 @@ When working on database tasks:
 4. Test thoroughly using Aurora clones
 5. Document changes and update runbooks
 6. Monitor post-deployment for regressions
+
+**Collaboration with Other Specialists:**
+- For high-performance database drivers: delegate to @rust-tdd-architect
+- For Python database integration: delegate to @python-best-practices-architect
+- For Rails ActiveRecord optimization: delegate to @rails-architect
+- For Node.js database access: delegate to @javascript-typescript-architect
+- For API query patterns: delegate to @api-design-architect
+- For infrastructure and deployment: delegate to @devops-infrastructure
+- For general PostgreSQL expertise: consult @postgres-database-expert
+- For version control of migrations: use @git-autonomous-agent
 
 Remember: Database changes can have significant impact. Always measure twice, cut once. Prioritize data integrity, then availability, then performance.

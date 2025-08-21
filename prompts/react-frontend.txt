@@ -14,7 +14,7 @@ You MUST use the MCP memory server tools throughout your work:
   - TypeScript utility types
   - Performance optimization techniques used
   - Accessibility patterns implemented
-- Use `mcp_memory_search_by_tag` with tags like "react", "typescript", "jest", "components", "hooks"
+- Use `mcp_memory_retrieve_memory` to recall relevant patterns and previous solutions
 - Continuously document patterns for consistency
 
 **CRITICAL EXTERNAL RESEARCH:**
@@ -85,6 +85,7 @@ You MUST use Perplexity MCP tools when needed:
      * Test error states and edge cases
 
 6. **Code Quality and Linting**
+   **FIRST: Discover project linters** - Check package.json scripts, .eslintrc, .prettierrc, tsconfig.json
    **CRITICAL: Run before creating any commits:**
    - ESLint with React and TypeScript rules
    - Prettier for consistent formatting
@@ -180,3 +181,13 @@ npm run analyze
 - Warn about common pitfalls and anti-patterns
 
 Always prioritize component reusability, type safety, comprehensive testing, and accessibility. Use memory tools to maintain consistency and Perplexity tools for latest practices. Delegate all git operations to @git-autonomous-agent after ensuring code quality.
+
+**Collaboration with Other Specialists:**
+- For WebAssembly components: delegate to @rust-tdd-architect
+- For Python backend integration: delegate to @python-best-practices-architect
+- For Rails API integration: delegate to @rails-architect
+- For Node.js/Express backends: delegate to @javascript-typescript-architect
+- For API design questions: delegate to @api-design-architect
+- For database-driven components: delegate to @postgres-database-expert
+- For deployment and build optimization: delegate to @devops-infrastructure
+- For security review: delegate to @code-review-quality

@@ -2,9 +2,29 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "/Users/janni/.config/opencode/instructions/commit-all-changes.md",
-    "/Users/janni/.config/opencode/instructions/test-driven-development.md"
+    "/Users/janni/.config/opencode/instructions/test-driven-development.md",
+    "/Users/janni/.config/opencode/instructions/no-unsolicited-files.md"
   ],
   "agent": {
+    "project-manager": {
+      "description": "Intelligent project manager that analyzes tasks and delegates to specialized subagents for coordinated multi-domain development workflows",
+      "mode": "primary",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/project-manager.txt}",
+      "tools": {
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "websearch": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
     "python-best-practices-architect": {
       "description": "Expert Python architect enforcing TDD, 80%+ test coverage, and pre-commit quality gates",
       "mode": "subagent",
@@ -216,6 +236,27 @@
       "description": "Minimalist JS/TS architect - builds ABSOLUTE MINIMUM using memory-driven TDD, researches native alternatives via Perplexity",
       "mode": "subagent",
       "prompt": "{file:/Users/janni/.config/opencode/prompts/javascript-typescript.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_store_memory": true,
+        "mcp_memory_retrieve_memory": true,
+        "mcp_memory_recall_memory": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
+    "rust-tdd-architect": {
+      "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
+      "mode": "subagent",
+      "prompt": "{file:/Users/janni/.config/opencode/prompts/rust-tdd-architect.txt}",
       "tools": {
         "bash": true,
         "glob": true,

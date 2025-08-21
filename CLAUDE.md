@@ -13,7 +13,7 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 1. **Agent Definitions** (`opencode.json`)
    - Specialized subagents for different development domains
    - Each agent has specific tools and prompts tailored to their expertise
-   - Agents include: Python, Git, Rails, React, PostgreSQL, API Design, DevOps, Code Review, and JavaScript/TypeScript specialists
+   - Agents include: Python, Rust, Git, Rails, React, PostgreSQL, API Design, DevOps, Code Review, and JavaScript/TypeScript specialists
 
 2. **Prompts** (`prompts/`)
    - Domain-specific instruction sets for each agent
@@ -55,6 +55,7 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 ### Invoking Specialized Agents
 When working on specific tasks, use the appropriate agent:
 - `@python-best-practices-architect` - Python development with TDD and quality gates
+- `@rust-tdd-architect` - Rust systems programming with zero-cost abstractions and memory safety
 - `@git-autonomous-agent` - All git and GitHub operations
 - `@rails-architect` - Ruby on Rails applications
 - `@react-frontend-specialist` - React/TypeScript frontend
@@ -91,6 +92,7 @@ Since this is a configuration repository without active code:
    - Question necessity before adding features
    - Reuse existing code when possible
    - Choose simple solutions over complex ones
+   - NEVER create documentation files unless explicitly requested
 
 2. **Quality Gates Before Commits**:
    - Run complete test suite
@@ -100,10 +102,17 @@ Since this is a configuration repository without active code:
 
 3. **Agent Delegation**:
    - Python work → @python-best-practices-architect
+   - Rust systems programming → @rust-tdd-architect
    - Git operations → @git-autonomous-agent
    - Database work → @postgres-database-expert
    - AWS RDS Aurora → @aws-rds-postgresql-expert
    - Let specialists handle their domains
+
+4. **No Unsolicited Files**:
+   - NEVER create README, documentation, or plan files unless explicitly asked
+   - Use code comments for documentation, not separate files
+   - Use TodoWrite for task tracking, not markdown files
+   - Ask before creating any non-essential files
 
 ## Security Considerations
 - Never commit secrets, API keys, or credentials

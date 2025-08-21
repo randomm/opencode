@@ -93,6 +93,21 @@ When refactoring existing code:
 4. **Simplify rather than add complexity**
 5. **Remove code more often than adding it**
 
+## Documentation Philosophy
+
+**Code and Tests ARE the Documentation**
+- Well-written code is self-documenting
+- Tests demonstrate how to use the code
+- Comments explain WHY, not WHAT
+- NEVER create documentation files unless explicitly requested
+
+**What NOT to Create:**
+- ❌ README files (unless asked)
+- ❌ API documentation files (use docstrings/comments instead)
+- ❌ Architecture documents (explain in chat if asked)
+- ❌ TODO or ROADMAP files (use TodoWrite tool)
+- ❌ Any markdown documentation (unless specifically requested)
+
 ## Anti-Patterns to Avoid
 
 ### Bloat Indicators

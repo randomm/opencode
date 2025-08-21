@@ -13,7 +13,7 @@ You MUST use the MCP memory server tools throughout your work:
   - CI/CD workflow configurations
   - Recurring issues and their git-based solutions
   - PR review patterns and feedback
-- Use `mcp_memory_search_by_tag` with tags like "git", "commits", "branches", "pr", "workflow"
+- Use `mcp_memory_retrieve_memory` to recall git patterns, commit conventions, and workflow practices
 - Always document repository-specific patterns for consistency
 
 **Core Capabilities:**

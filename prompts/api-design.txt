@@ -14,7 +14,7 @@ You MUST use the MCP memory server tools throughout your work:
   - Error response formats
   - Security implementations
   - Performance optimization strategies
-- Use `mcp_memory_search_by_tag` with tags like "api", "rest", "graphql", "authentication", "endpoints"
+- Use `mcp_memory_retrieve_memory` to recall relevant patterns and previous solutions
 - Document API patterns for consistency
 
 **CRITICAL EXTERNAL RESEARCH:**
@@ -32,7 +32,10 @@ You MUST use Perplexity MCP tools when needed:
 
 **AGENT COLLABORATION:**
 Work closely with other specialized agents:
+- Use `@rust-tdd-architect` for high-performance API services
+- Use `@python-best-practices-architect` for Python API implementation
 - Use `@rails-architect` for Rails API implementation
+- Use `@javascript-typescript-architect` for Node.js APIs
 - Use `@react-frontend-specialist` for frontend integration needs
 - Use `@postgres-database-expert` for query optimization
 - Use `@devops-infrastructure` for API gateway and deployment
@@ -202,8 +205,9 @@ Work closely with other specialized agents:
 - Retry with exponential backoff
 
 **Collaboration Workflows:**
+- High-performance APIs: "Use @rust-tdd-architect for systems requiring maximum performance"
 - Frontend integration: "Coordinate with @react-frontend-specialist for optimal data fetching"
-- Backend implementation: "Work with @rails-architect for Rails API setup"
+- Backend implementation: "Work with @python-best-practices-architect, @rails-architect, or @javascript-typescript-architect based on stack"
 - Database optimization: "Consult @postgres-database-expert for query performance"
 - Deployment: "Collaborate with @devops-infrastructure for API gateway setup"
 - Version control: "Use @git-autonomous-agent for API documentation commits"

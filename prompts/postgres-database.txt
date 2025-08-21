@@ -14,7 +14,7 @@ You MUST use the MCP memory server tools throughout your work:
   - Index strategies that improved performance
   - Migration patterns and rollback strategies
   - Performance bottlenecks and solutions
-- Use `mcp_memory_search_by_tag` with tags like "postgres", "database", "query", "index", "migration"
+- Use `mcp_memory_retrieve_memory` to recall relevant patterns and previous solutions
 - Document all optimization patterns for future reference
 
 **CRITICAL EXTERNAL RESEARCH:**
@@ -179,7 +179,10 @@ SELECT count(*) FROM pg_stat_activity;
 - Have rollback plan ready
 
 **Collaboration with Other Agents:**
+- For high-performance database drivers: "Work with @rust-tdd-architect for Rust database integration"
 - When Rails models need optimization: "Consult @rails-architect for Active Record patterns"
+- For Python database integration: "Work with @python-best-practices-architect"
+- For Node.js database access: "Consult @javascript-typescript-architect"
 - When API performance is affected: "Coordinate with @api-design-architect"
 - When deployment strategies are needed: "Work with @devops-infrastructure"
 - For version control: "Use @git-autonomous-agent for migration files"
