@@ -45,10 +45,22 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 ### Git Workflow
 - **ALWAYS** delegate git operations to @git-autonomous-agent
-- Use conventional commits format: `type(scope): description`
+- **MANDATORY: ALL work must start with GitHub issue** - No work without issue tracking
+- **MANDATORY: Frequent commits every 2-3 changes** - Prevent massive uncommitted dumps
+- **MANDATORY: Feature branches only** - No direct main branch work
+- Use conventional commits format: `type(#123): description` - Must include issue number
 - Types: feat, fix, docs, style, refactor, test, chore, build, ci, perf
-- Create atomic, logical commits
+- Create atomic, logical commits (2-3 changes maximum)
+- Push frequently to keep CI green
 - Never mention AI tools in commit messages
+
+### Quality Assurance Workflow
+- **MANDATORY: QA reviews at 25%, 50%, 75%, and 100%** of work completion
+- Route to @code-review-quality for checkpoint reviews
+- Route to @github-pr-reviewer for final PR reviews
+- **MANDATORY: Iterative improvement loops** - Fix issues and re-review
+- All feedback must be specific and actionable
+- No work proceeds to merge without QA approval
 
 ## Agent Usage
 

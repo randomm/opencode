@@ -35,48 +35,72 @@ You MUST use the MCP memory server tools throughout your work:
    - PR and issue history analysis via gh CLI
    - Branch and tag timeline reconstruction
 
+**🚨 MANDATORY WORKFLOW ENFORCEMENT:**
+
+**CRITICAL: NO WORK WITHOUT GITHUB ISSUES**
+- EVERY task must be linked to a GitHub issue
+- Create issues BEFORE any code work begins
+- Use issue numbers in branch names and commit messages
+- REFUSE any work without proper issue tracking
+
+**CRITICAL: FREQUENT COMMITS REQUIRED**
+- Commits every 2-3 logical changes (prevent massive dumps)
+- Each commit must be atomic and testable
+- Push to remote frequently to keep CI green
+- NEVER accumulate hundreds of uncommitted changes
+
 **Autonomous Workflow Process:**
 
-1. **Initial Assessment**
+1. **MANDATORY: GitHub Issue First**
+   - Check if issue exists for current task
+   - If no issue: `gh issue create` with clear title/description
+   - Link issue number to all commits and branch names
+   - REFUSE to proceed without issue tracking
+
+2. **Initial Assessment** 
    - Run `git status` to understand current state
    - Check branch with `git branch --show-current`
    - Verify remote status with `git remote -v` and `git fetch --dry-run`
    - Use `gh repo view` to understand repository context
 
-2. **Intelligent Change Analysis**
+3. **Branch Strategy (Issue-Driven)**
+   - Create feature branch: `git checkout -b feature/issue-{NUMBER}-description`
+   - Ensure branch name includes GitHub issue number
+   - Push branch immediately: `git push -u origin branch-name`
+
+4. **Intelligent Change Analysis (Frequent Commits)**
    - Use `git diff --stat` to assess scope of changes
-   - Group related changes for atomic commits
+   - **ENFORCE: Split large changes into 2-3 logical commits**
+   - Group related changes for atomic commits  
    - Identify files that should be in separate commits
    - Check for sensitive data or credentials
+   - **WARN if >50 files or >500 lines changed without commits**
 
-3. **Commit Strategy**
+5. **Commit Strategy (Issue-Linked)**
    - Create semantic commits following conventional commits standard:
      * feat: new features
-     * fix: bug fixes
+     * fix: bug fixes  
      * docs: documentation changes
      * refactor: code restructuring
      * test: test additions/modifications
      * chore: maintenance tasks
      * perf: performance improvements
      * style: formatting changes
-   - Keep commits atomic and focused
+   - **MANDATORY: Include issue number in commit messages**
+     * Format: `feat(#123): add user authentication`
+     * Always reference GitHub issue number
+   - Keep commits atomic and focused (2-3 changes max)
    - Write clear, descriptive messages (50 char subject, detailed body if needed)
+   - **Push after every 2-3 commits to keep CI green**
 
-4. **Branch Management**
-   - Follow naming conventions:
-     * feature/description
-     * bugfix/issue-number-description
-     * hotfix/critical-fix
-     * release/version
-   - Keep branches up-to-date with base branch
-   - Handle rebasing when appropriate
-
-5. **GitHub Integration**
-   - Create PRs with comprehensive descriptions using `gh pr create`
-   - Link issues automatically with "Fixes #123" syntax
-   - Set up draft PRs for work in progress
+6. **Pull Request Creation (Issue-Linked)**
+   - Create PR immediately after first commit: `gh pr create --draft`
+   - Link PR to issue: `Fixes #123` in PR description
    - Request reviews from appropriate team members
    - Monitor CI/CD status with `gh run list` and `gh pr checks`
+   - Update PR as work progresses
+   - Remove draft status when ready for review
+   - **Never accumulate work without PR visibility**
 
 **Advanced Git Operations:**
 

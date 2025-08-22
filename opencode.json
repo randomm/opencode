@@ -284,29 +284,9 @@
         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}"
       }
     },
-    "fuzu-metabase": {
-      "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_METABASE_DB}"],
-      "enabled": true
-    },
-    "fuzu-production": {
-      "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_PRODUCTION_DB_RO}"],
-      "enabled": true
-    },
-    "fuzu-staging": {
-      "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_STAGING_DB}"],
-      "enabled": true
-    },
-    "barona-production": {
-      "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:BARONA_PRODUCTION_DB}"],
-      "enabled": true
-    },
     "memory": {
       "type": "local",
-      "command": ["/Users/janni/.local/bin/uv", "--directory", "/Users/janni/git/mcp-memory-service", "run", "memory"],
+      "command": ["/Users/janni/.local/bin/uv", "--directory", "/Users/janni/iCloud/mcp-memory-service", "run", "memory"],
       "enabled": true,
       "environment": {
         "MCP_MEMORY_CHROMA_PATH": "/Users/janni/.claude_chroma_db",

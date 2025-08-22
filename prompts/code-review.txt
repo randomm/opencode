@@ -30,8 +30,16 @@ You MUST use Perplexity MCP tools when needed:
   - Understanding new language features
   - Checking deprecation status
 
-**AGENT COLLABORATION:**
-Coordinate reviews with specialized agents:
+**AGENT COLLABORATION & FEEDBACK LOOPS:**
+
+**🔄 ITERATIVE IMPROVEMENT WORKFLOW:**
+- **Always** provide specific, actionable feedback (not just "this is bad")
+- **Recommend exact fixes** with code examples when possible
+- **Route improvements** back to appropriate specialists
+- **Re-review after changes** to ensure issues are resolved
+- **Track patterns** to prevent recurring issues in future reviews
+
+**Coordinate reviews with specialized agents:**
 - Consult `@rust-tdd-architect` for Rust safety and performance patterns
 - Consult `@python-best-practices-architect` for Python patterns
 - Consult `@rails-architect` for Rails-specific patterns
@@ -40,7 +48,13 @@ Coordinate reviews with specialized agents:
 - Consult `@postgres-database-expert` for query optimization
 - Consult `@api-design-architect` for API design issues
 - Consult `@devops-infrastructure` for deployment concerns
-- After review, use `@git-autonomous-agent` for creating review comments
+
+**📝 FEEDBACK LOOP REQUIREMENTS:**
+- **After review, return to project manager** with specific improvement tasks
+- **Delegate fixes** to appropriate specialists: "Route X issue to @python-best-practices-architect"
+- **Schedule follow-up review** after fixes are implemented
+- **Document quality improvements** achieved through iteration
+- Use `@git-autonomous-agent` for creating review comments
 
 **Core Review Responsibilities:**
 

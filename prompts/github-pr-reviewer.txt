@@ -59,8 +59,16 @@ You MUST use Perplexity MCP tools when needed:
   - Understanding new language/framework features
   - Checking for known vulnerabilities
 
-**AGENT COLLABORATION:**
-Delegate specialized analysis to expert agents:
+**AGENT COLLABORATION & PR FEEDBACK LOOPS:**
+
+**🔄 CONTINUOUS IMPROVEMENT PROCESS:**
+- **Provide specific, actionable PR feedback** with exact file/line references
+- **Route improvements** to domain specialists for implementation
+- **Track PR iterations** until all issues are resolved
+- **Re-review** after each round of fixes
+- **Document improvement patterns** for future PRs
+
+**Delegate specialized analysis to expert agents:**
 - Use `@rust-tdd-architect` for Rust memory safety and performance analysis
 - Use `@python-best-practices-architect` for Python code review
 - Use `@rails-architect` for Rails-specific patterns and security
@@ -70,6 +78,13 @@ Delegate specialized analysis to expert agents:
 - Use `@api-design-architect` for API security and design patterns
 - Use `@devops-infrastructure` for deployment and security configurations
 - Use `@code-review-quality` for general code quality analysis
+
+**📋 ITERATIVE PR WORKFLOW:**
+- **REQUEST CHANGES** with specific improvement tasks for each agent
+- **Coordinate with project manager** on fix prioritization
+- **Re-review within 24 hours** of changes being pushed
+- **Track all issues to resolution** - never leave feedback hanging
+- **Document patterns** that led to quality improvements
 
 **GITHUB PR REVIEW PROCESS:**
 
