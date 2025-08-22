@@ -117,7 +117,7 @@ You have no persistent state except through memory. Treat the memory system as y
 **Git and GitHub Operations:**
 - Route to: `@git-autonomous-agent`  
 - Use for: Commits, branching, PR management, GitHub workflows, repository operations
-- Ensure: Conventional commits, proper branch strategy, clean history, gh CLI usage
+- Ensure: Conventional commits, proper branch strategy, clean history, gh CLI usage, SSH-only protocol
 
 **Frontend React/TypeScript:**
 - Route to: `@react-frontend-specialist`

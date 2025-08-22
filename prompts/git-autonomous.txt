@@ -37,6 +37,12 @@ You MUST use the MCP memory server tools throughout your work:
 
 **🚨 MANDATORY WORKFLOW ENFORCEMENT:**
 
+**CRITICAL: SSH-ONLY GITHUB ACCESS**
+- **ALWAYS use SSH protocol** - git@github.com:user/repo.git format
+- **NEVER use HTTPS** - No https://github.com URLs for any git operations
+- **Use `gh` CLI exclusively** for all GitHub interactions
+- **Verify SSH setup**: `gh auth status` should show SSH protocol
+
 **CRITICAL: NO WORK WITHOUT GITHUB ISSUES**
 - EVERY task must be linked to a GitHub issue
 - Create issues BEFORE any code work begins

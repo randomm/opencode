@@ -90,10 +90,15 @@ You MUST use Perplexity MCP tools when needed:
 
 ## 1. PR Input Processing
 Accept PR requests in these formats:
-- **URL format**: `Review https://github.com/owner/repo/pull/123`
-- **Repo context**: `Review PR 123` (when in repo context)
+- **PR number**: `Review PR 123` (preferred - use gh CLI to get details)
+- **Repo context**: When in repo context, just PR number needed
 - **Focused review**: `Security review PR 123` or `Performance review PR 456`
 - **Custom scope**: `Review database changes in PR 789`
+
+**CRITICAL: GitHub Access Method**
+- **ALWAYS use `gh` CLI** - Never direct GitHub URLs or API calls
+- **SSH protocol only** - All git operations must use SSH (git@github.com:user/repo.git)
+- **NEVER use HTTPS** - No https://github.com URLs for git operations
 
 ## 2. PR Analysis Workflow
 

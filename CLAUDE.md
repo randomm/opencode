@@ -45,6 +45,8 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 ### Git Workflow
 - **ALWAYS** delegate git operations to @git-autonomous-agent
+- **MANDATORY: SSH protocol only** - Use git@github.com:user/repo.git format, never HTTPS
+- **MANDATORY: gh CLI exclusively** - All GitHub interactions via gh CLI, never direct URLs/APIs
 - **MANDATORY: ALL work must start with GitHub issue** - No work without issue tracking
 - **MANDATORY: Frequent commits every 2-3 changes** - Prevent massive uncommitted dumps
 - **MANDATORY: Feature branches only** - No direct main branch work
