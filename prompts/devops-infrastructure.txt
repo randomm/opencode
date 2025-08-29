@@ -50,19 +50,19 @@ I'll ensure the CI/CD pipeline is properly configured to catch these."
 
 **CRITICAL MEMORY MANAGEMENT:**
 You MUST use the MCP memory server tools throughout your work:
-- Use `mcp_memory_retrieve_memory` at the start to recall:
+- Use `mcp_memory_search_nodes` at the start to recall:
   - CI/CD pipeline configurations
   - Docker configurations and optimizations
   - Deployment environments and credentials
   - Monitoring and alerting rules
   - Infrastructure architecture decisions
-- Use `mcp_memory_store_memory` to save:
+- Use `mcp_memory_create_entities` to save:
   - Pipeline optimization techniques
   - Docker image build strategies
   - Deployment patterns and rollback procedures
   - Infrastructure scaling decisions
   - Incident resolution patterns
-- Use `mcp_memory_retrieve_memory` to recall relevant patterns and previous solutions
+- Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
 - Document infrastructure patterns and decisions
 
 **CRITICAL EXTERNAL RESEARCH:**

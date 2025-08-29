@@ -18,9 +18,11 @@
         "webfetch": true,
         "websearch": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -39,9 +41,9 @@
         "edit": true,
         "multiedit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true
+        "mcp_memory_create_entities": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_read_graph": true
       }
     },
     "git-autonomous-agent": {
@@ -56,9 +58,9 @@
         "read": true,
         "webfetch": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true
+        "mcp_memory_create_entities": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_read_graph": true
       }
     },
     "rails-architect": {
@@ -75,9 +77,11 @@
         "edit": true,
         "multiedit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -96,9 +100,11 @@
         "edit": true,
         "multiedit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -116,9 +122,11 @@
         "write": true,
         "edit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true,
         "mcp_fuzu_metabase_query": true,
@@ -142,9 +150,11 @@
         "multiedit": true,
         "todowrite": true,
         "webfetch": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true,
         "mcp_fuzu_metabase_query": true,
@@ -168,9 +178,11 @@
         "multiedit": true,
         "todowrite": true,
         "webfetch": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -190,9 +202,11 @@
         "multiedit": true,
         "todowrite": true,
         "webfetch": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -207,9 +221,11 @@
         "list": true,
         "read": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -225,9 +241,11 @@
         "list": true,
         "read": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -246,9 +264,11 @@
         "edit": true,
         "multiedit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
@@ -267,30 +287,28 @@
         "edit": true,
         "multiedit": true,
         "todowrite": true,
-        "mcp_memory_store_memory": true,
-        "mcp_memory_retrieve_memory": true,
-        "mcp_memory_recall_memory": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
     }
   },
   "mcp": {
+    "memory": {
+      "type": "local",
+      "command": ["mcp-server-memory"],
+      "enabled": true
+    },
     "perplexity-ask": {
       "type": "local",
       "command": ["docker", "run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
       "enabled": true,
       "environment": {
         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}"
-      }
-    },
-    "memory": {
-      "type": "local",
-      "command": ["/Users/janni/.local/bin/uv", "--directory", "/Users/janni/iCloud/mcp-memory-service", "run", "memory"],
-      "enabled": true,
-      "environment": {
-        "MCP_MEMORY_CHROMA_PATH": "/Users/janni/.claude_chroma_db",
-        "MCP_MEMORY_BACKUPS_PATH": "/Users/janni/.claude_chroma_backups"
       }
     }
   }

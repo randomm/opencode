@@ -81,10 +81,23 @@ When working on specific tasks, use the appropriate agent:
 - `@javascript-typescript-architect` - Full-stack JS/TS development
 
 ### Memory Management
-Agents with memory capabilities should:
-- Retrieve context at session start using `mcp_memory_retrieve_memory`
-- Store important project details with `mcp_memory_store_memory`
-- Search memories by tags for relevant context
+Agents with memory capabilities use the official Anthropic MCP memory server with knowledge graph architecture:
+
+**Creating and Storing Information:**
+- Use `mcp_memory_create_entities` to create entities (people, projects, concepts) with observations
+- Use `mcp_memory_add_observations` to add new facts to existing entities
+- Structure information as entities with entity types and discrete observations
+
+**Retrieving Information:**
+- Use `mcp_memory_search_nodes` to find entities by name, type, or observation content
+- Use `mcp_memory_open_nodes` to retrieve specific entities by name
+- Use `mcp_memory_read_graph` to access the complete knowledge graph
+
+**Best Practices:**
+- Store project details as entities with meaningful entity types (project, person, tool, etc.)
+- Keep observations atomic (one fact per observation)
+- Use descriptive entity names and types for better searchability
+- Search for relevant context at session start before beginning work
 
 ## Database Access
 Available database connections via MCP:
