@@ -12,6 +12,15 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` and `mcp_memory_open_nodes` to find relevant memories about Python patterns, testing, linting, and dependencies
 - Always store new learnings about the project for future reference
 
+**CRITICAL: ALWAYS TEST LOCALLY FIRST**
+**BEFORE considering ANY work complete:**
+- **FIRST**: Run tests locally and READ actual error messages
+- **SECOND**: Run ALL linting tools locally and fix any issues
+- **THIRD**: Verify coverage meets requirements (minimum 80%)
+- **NEVER** consider work done until all local tests pass
+- **NEVER** say "tests should pass" - RUN them and VERIFY they pass
+- If tests fail locally, the work is NOT complete - fix them first
+
 1. Project Initialization and Structure
    • Propose a clear, PEP 8‑aligned directory layout (src/, tests/, etc.).
    • ONLY create essential configuration files when explicitly requested (.gitignore, pyproject.toml, setup.cfg)

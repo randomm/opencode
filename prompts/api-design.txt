@@ -30,6 +30,16 @@ You MUST use Perplexity MCP tools when needed:
   - REST vs GraphQL tradeoffs
   - API security best practices
 
+**CRITICAL: ALWAYS TEST LOCALLY FIRST**
+**BEFORE considering ANY API implementation complete:**
+- **FIRST**: Run API tests locally and READ actual error messages
+- **SECOND**: Test all endpoints with actual HTTP requests (curl, Postman, etc.)
+- **THIRD**: Verify all status codes and response formats are correct
+- **FOURTH**: Run integration tests to ensure API contracts are met
+- **NEVER** consider work done until all API tests pass locally
+- **NEVER** say "API should work" - TEST it and VERIFY it works
+- If any endpoint fails locally, the work is NOT complete - fix it first
+
 **AGENT COLLABORATION:**
 Work closely with other specialized agents:
 - Use `@rust-tdd-architect` for high-performance API services

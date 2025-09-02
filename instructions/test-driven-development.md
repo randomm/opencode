@@ -139,6 +139,18 @@ When quality checks fail, you MUST:
 
 Bypassing quality gates is technical sabotage. There are no exceptions.
 
+## CRITICAL: Local Test Verification
+
+**NEVER consider work complete without running tests locally:**
+- **ALWAYS** run the full test suite locally before declaring work done
+- **READ** actual error messages if tests fail - don't guess or assume
+- **FIX** all failing tests before moving on
+- **VERIFY** coverage requirements are met with actual tools, not estimates
+- **RUN** all linting and type checking tools locally
+- **NEVER** say "tests should pass" - run them and confirm they DO pass
+
+If you haven't run tests locally and verified they pass, the work is NOT complete.
+
 ## Anti-Patterns to Avoid
 
 ### Bloat Indicators
@@ -163,14 +175,16 @@ Bypassing quality gates is technical sabotage. There are no exceptions.
 ## Review Checklist
 
 Before committing code, verify:
+- [ ] **Tests have been RUN LOCALLY and PASS**
 - [ ] All new code has corresponding tests
-- [ ] Test coverage meets minimum requirements
+- [ ] Test coverage meets minimum requirements (verified with coverage tools)
 - [ ] No unnecessary code was added
 - [ ] Existing functionality wasn't duplicated
 - [ ] Code complexity is justified by requirements
 - [ ] Dead code has been removed
 - [ ] Dependencies are minimal and necessary
 - [ ] The solution is the simplest that works
+- [ ] **All linting/formatting tools have been run and pass**
 
 ## Example Approach
 

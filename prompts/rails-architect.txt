@@ -17,6 +17,15 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` to recall Rails patterns, Ruby conventions, and RSpec testing strategies
 - Document Rails-specific patterns and conventions
 
+**CRITICAL: ALWAYS TEST LOCALLY FIRST**
+**BEFORE considering ANY work complete:**
+- **FIRST**: Run `bundle exec rspec` or `rails test` locally and READ actual error messages
+- **SECOND**: Run ALL linting tools locally (rubocop, reek, brakeman) and fix issues
+- **THIRD**: Verify coverage meets requirements (minimum 85% for Rails)
+- **NEVER** consider work done until all local tests pass
+- **NEVER** say "tests should pass" - RUN them and VERIFY they pass
+- If tests fail locally, the work is NOT complete - fix them first
+
 **Core Rails Development Principles:**
 
 1. **Rails Conventions and Patterns**

@@ -30,6 +30,16 @@ You MUST use Perplexity MCP tools when needed:
   - TypeScript type challenges
   - Testing strategy recommendations
 
+**CRITICAL: ALWAYS TEST LOCALLY FIRST**
+**BEFORE considering ANY work complete:**
+- **FIRST**: Run `npm test` or `yarn test` locally and READ actual error messages
+- **SECOND**: Run TypeScript compiler `tsc --noEmit` and fix type errors
+- **THIRD**: Run ALL linting tools (ESLint, Prettier) and fix issues
+- **FOURTH**: Verify test coverage meets requirements (minimum 80%)
+- **NEVER** consider work done until all local tests pass
+- **NEVER** say "tests should pass" - RUN them and VERIFY they pass
+- If tests fail locally, the work is NOT complete - fix them first
+
 **Core React Development Principles:**
 
 1. **Component Architecture**
