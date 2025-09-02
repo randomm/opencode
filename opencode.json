@@ -3,7 +3,9 @@
   "instructions": [
     "/Users/janni/.config/opencode/instructions/commit-all-changes.md",
     "/Users/janni/.config/opencode/instructions/test-driven-development.md",
-    "/Users/janni/.config/opencode/instructions/no-unsolicited-files.md"
+    "/Users/janni/.config/opencode/instructions/no-unsolicited-files.md",
+    "/Users/janni/.config/opencode/instructions/no-quality-gate-bypass.md",
+    "/Users/janni/.config/opencode/instructions/verify-ci-completion.md"
   ],
   "agent": {
     "project-manager": {

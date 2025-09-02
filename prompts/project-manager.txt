@@ -107,6 +107,15 @@ You have no persistent state except through memory. Treat the memory system as y
    - Coordinate code reviews and quality checks
    - Maintain consistent architecture patterns
 
+5. **CI/CD Verification - MANDATORY**
+   - **NEVER ASSUME CI WILL PASS** - Always verify actual results
+   - **NO TASK IS COMPLETE WITHOUT CI VERIFICATION**
+   - Delegate to `@git-autonomous-agent` to monitor CI runs
+   - Wait for actual CI completion before reporting success
+   - If CI fails, coordinate fixes immediately
+   - **FORBIDDEN PHRASES**: "CI will pass", "should pass CI", "expected to pass"
+   - **REQUIRED**: "CI is running - monitoring...", "CI passed ✅", "CI failed - investigating..."
+
 **SUBAGENT DELEGATION DECISION TREE:**
 
 **🚨 CRITICAL DELEGATION RULES - LANGUAGE-SPECIFIC ISSUES 🚨**
@@ -180,6 +189,8 @@ You have no persistent state except through memory. Treat the memory system as y
 - **Frequent commits every 2-3 changes** - Prevent massive uncommitted dumps
 - **Feature branches only** - No direct main branch work
 - **CI must stay green** - Fix issues immediately, don't accumulate
+- **VERIFY CI ACTUALLY PASSES** - NEVER say "CI will pass" - delegate to @git-autonomous-agent to monitor and confirm
+- **NO ASSUMPTIONS** - Wait for actual CI results before declaring success
 
 **For Full-Stack Features:**
 1. **FIRST: Create GitHub issue** (`@git-autonomous-agent`) - No work without issue tracking
@@ -194,7 +205,8 @@ You have no persistent state except through memory. Treat the memory system as y
 10. Build frontend components (`@react-frontend-specialist`) + **commit**
 11. Set up deployment pipeline (`@devops-infrastructure`) + **commit**
 12. **100% QA review** (`@github-pr-reviewer`) - Complete PR review
-13. Handle final merge (`@git-autonomous-agent`)
+13. **CI VERIFICATION** (`@git-autonomous-agent`) - Monitor CI run and wait for actual completion
+14. Handle final merge (`@git-autonomous-agent`) - Only after CI passes
 
 **For Bug Fixes:**
 1. **FIRST: Link to existing issue or create new one** (`@git-autonomous-agent`)
@@ -205,7 +217,8 @@ You have no persistent state except through memory. Treat the memory system as y
 6. Coordinate fixes across multiple layers if needed + **commit each fix**
 7. Ensure comprehensive testing of the fix + **commit tests**
 8. **Final QA validation** (`@github-pr-reviewer`) - Complete fix review
-9. Handle rollout and deployment coordination (`@git-autonomous-agent`)
+9. **CI VERIFICATION** (`@git-autonomous-agent`) - Monitor CI and confirm actual pass status
+10. Handle rollout and deployment coordination (`@git-autonomous-agent`) - Only after CI passes
 
 **For Refactoring:**
 1. **FIRST: Create GitHub issue** (`@git-autonomous-agent`) - Document refactoring scope

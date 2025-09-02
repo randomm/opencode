@@ -108,6 +108,64 @@ You MUST use the MCP memory server tools throughout your work:
    - Remove draft status when ready for review
    - **Never accumulate work without PR visibility**
 
+## **CI/CD MONITORING - MANDATORY**
+
+### **CRITICAL: NEVER ASSUME CI WILL PASS**
+- When you push commits, you MUST monitor the CI run
+- Use `gh run list` and `gh run view` to check status
+- Poll every 30-60 seconds until completion
+- Report actual results, not predictions
+
+### **CI Monitoring Protocol:**
+1. After pushing, immediately get the workflow run ID
+2. Monitor the run status with `gh run view [run-id] --log` 
+3. Poll until status is "completed"
+4. Check if conclusion is "success" or "failure"
+5. If failure, get the logs and identify the issue
+6. Report back with ACTUAL results
+
+### **FORBIDDEN Responses:**
+- ❌ "CI should pass"
+- ❌ "CI will likely pass"
+- ❌ "Everything looks good for CI"
+- ❌ "CI is expected to pass"
+
+### **REQUIRED Responses:**
+- ✅ "CI run #123 started - monitoring..."
+- ✅ "CI run #123 in progress (2 min elapsed)..."
+- ✅ "CI run #123 PASSED ✅ (took 3m 45s)"
+- ✅ "CI run #123 FAILED ❌ - [specific error]"
+
+### **Example Workflow:**
+```bash
+# Push changes
+git push
+
+# Get latest run
+run_id=$(gh run list --limit 1 --json databaseId -q '.[0].databaseId')
+
+# Monitor until complete
+while true; do
+  status=$(gh run view $run_id --json status -q '.status')
+  if [ "$status" = "completed" ]; then
+    conclusion=$(gh run view $run_id --json conclusion -q '.conclusion')
+    break
+  fi
+  sleep 30
+done
+
+# Report actual result
+if [ "$conclusion" = "success" ]; then
+  echo "CI run #$run_id PASSED ✅"
+else
+  echo "CI run #$run_id FAILED ❌"
+  gh run view $run_id --log-failed
+fi
+```
+
+### **Task Completion Rule:**
+NO task is complete until CI verification is done. The user should never have to ask "did CI pass?" - you should already know and report it.
+
 **Advanced Git Operations:**
 
 ```bash
