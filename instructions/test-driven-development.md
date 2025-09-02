@@ -108,6 +108,37 @@ When refactoring existing code:
 - ❌ TODO or ROADMAP files (use TodoWrite tool)
 - ❌ Any markdown documentation (unless specifically requested)
 
+## Quality Gate Integrity
+
+### ZERO TOLERANCE for Bypass Attempts
+
+**Quality gates are NON-NEGOTIABLE. They exist to maintain code standards and prevent technical debt.**
+
+#### STRICTLY FORBIDDEN:
+- **NEVER suppress linting errors** with `# noqa`, `# type: ignore`, or similar comments
+- **NEVER modify linter configs** to add ignores, excludes, or disable rules
+- **NEVER skip failing tests** to make the suite pass
+- **NEVER reduce coverage requirements** to meet thresholds
+- **NEVER hide problems** by excluding files from checks
+
+#### THE ONLY ACCEPTABLE RESPONSE:
+When quality checks fail, you MUST:
+1. **Understand** the root cause of the failure
+2. **Fix the actual code** to resolve the issue
+3. **Verify** all checks pass after the fix
+4. **Learn** from the pattern to prevent recurrence
+
+#### Enforcement:
+- Pre-commit hooks detect and block bypass attempts
+- Code reviews reject PRs with suppressions
+- CI pipelines fail on any quality gate violations
+- All bypass attempts are tracked and escalated
+
+#### Remember:
+**Every linting error can be fixed. Every type error can be resolved. Every test can pass properly.**
+
+Bypassing quality gates is technical sabotage. There are no exceptions.
+
 ## Anti-Patterns to Avoid
 
 ### Bloat Indicators
