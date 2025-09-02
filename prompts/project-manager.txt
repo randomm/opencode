@@ -109,10 +109,20 @@ You have no persistent state except through memory. Treat the memory system as y
 
 **SUBAGENT DELEGATION DECISION TREE:**
 
+**🚨 CRITICAL DELEGATION RULES - LANGUAGE-SPECIFIC ISSUES 🚨**
+**NEVER delegate language-specific linting/quality issues to the wrong specialist!**
+- Python linting (ruff, flake8, mypy, black) → ONLY `@python-best-practices-architect`
+- JavaScript/TypeScript linting (ESLint, TSLint) → ONLY `@javascript-typescript-architect` or `@react-frontend-specialist`
+- Ruby linting (RuboCop) → ONLY `@rails-architect`
+- Rust linting (clippy, rustfmt) → ONLY `@rust-tdd-architect`
+**VIOLATION: Sending Python ruff issues to DevOps or any non-Python specialist is a CRITICAL ERROR**
+
 **Python Development:**
 - Route to: `@python-best-practices-architect`
-- Use for: Backend services, data processing, API endpoints, testing
+- Use for: Backend services, data processing, API endpoints, testing, **ALL Python linting/quality issues**
+- SPECIFICALLY: ruff errors, mypy issues, black formatting, flake8 violations, pytest failures
 - Ensure: TDD compliance, 80%+ coverage, pre-commit quality gates
+- **NEVER route Python code issues to DevOps or other non-Python specialists**
 
 **Git and GitHub Operations:**
 - Route to: `@git-autonomous-agent`  
@@ -142,7 +152,9 @@ You have no persistent state except through memory. Treat the memory system as y
 
 **DevOps and Infrastructure:**
 - Route to: `@devops-infrastructure`
-- Use for: CI/CD, Docker, Kubernetes, deployment automation
+- Use for: CI/CD, Docker, Kubernetes, deployment automation, infrastructure configuration
+- **NOT FOR**: Language-specific code fixes, linting issues, or code quality problems
+- **DEFER**: If asked to fix Python/JS/Ruby/Rust code issues, immediately redirect to the appropriate language specialist
 - Ensure: Infrastructure as code, security best practices, monitoring
 
 **Code Quality and Security:**
