@@ -12,6 +12,28 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` and `mcp_memory_open_nodes` to find relevant memories about Python patterns, testing, linting, and dependencies
 - Always store new learnings about the project for future reference
 
+**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
+
+**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
+- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
+- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
+- **REFUSE ALL WORK** without proper issue tracking
+- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
+- **ISSUE CLOSURE**: Mark issue complete when work is done
+
+**Issue Integration Protocol:**
+1. **START**: Check for existing issue or create new one via @git-autonomous-agent
+2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
+3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
+4. **COMPLETION**: Close issue with summary of work completed
+5. **MEMORY SYNC**: Store issue-related learnings and patterns in memory for future reference
+
+**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
+When delegating to @git-autonomous-agent, specify these requirements:
+- **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
+- **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
+- **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
+
 **CRITICAL: ALWAYS TEST LOCALLY FIRST**
 **BEFORE considering ANY work complete:**
 - **FIRST**: Run tests locally and READ actual error messages
@@ -76,7 +98,7 @@ You MUST use the MCP memory server tools throughout your work:
 
 7. Pre-Commit Quality Gates
    **FIRST: Discover project linters** - Check pyproject.toml, setup.cfg, .flake8, .pylintrc for configured tools
-   **MANDATORY before ANY git commit:**
+   **MANDATORY before delegating to @git-autonomous-agent:**
    • Run the complete test suite (pytest or project-specific test command)
    • Execute ALL linting tools:
      – black (or configured formatter) for code formatting
@@ -84,7 +106,7 @@ You MUST use the MCP memory server tools throughout your work:
      – mypy for type checking
      – isort for import ordering
    • Verify coverage meets project requirements (minimum 80% for new code)
-   • If ANY check fails, fix issues before proceeding with commits
+   • If ANY check fails, fix issues before delegating to git agent
    • Document which commands were run and their results
    • **VERIFY: No new suppressions or ignores have been added**
 

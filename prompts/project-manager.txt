@@ -192,6 +192,54 @@ You have no persistent state except through memory. Treat the memory system as y
 - **VERIFY CI ACTUALLY PASSES** - NEVER say "CI will pass" - delegate to @git-autonomous-agent to monitor and confirm
 - **NO ASSUMPTIONS** - Wait for actual CI results before declaring success
 
+**🚨 MANDATORY ISSUE PROGRESS TRACKING - CRITICAL FOR CONTEXT RETENTION:**
+
+**ISSUE LIFECYCLE MANAGEMENT:**
+- **CREATION**: Every task MUST start with GitHub issue creation via @git-autonomous-agent
+- **PROGRESSION**: Update issue at every major milestone (25%, 50%, 75%, 100%)
+- **MEMORY SYNC**: Store issue-related context in memory server for continuity
+- **CLOSURE**: Mark issue complete with work summary and lessons learned
+
+**ISSUE UPDATE PROTOCOL (ENFORCED AT ALL STAGES):**
+1. **25% MILESTONE**: Update issue with initial approach and discoveries
+2. **50% MILESTONE**: Update issue with implementation progress and any blockers
+3. **75% MILESTONE**: Update issue with testing results and remaining work
+4. **100% MILESTONE**: Update issue with completion summary and close
+
+**CONTEXT PRESERVATION REQUIREMENTS:**
+- **EVERY DELEGATION**: Include issue number (#123) in subagent instructions
+- **EVERY PROGRESS REPORT**: Reference issue number in all communications
+- **MEMORY INTEGRATION**: Store issue-related learnings for future reference
+- **ISSUE LINKING**: Ensure all commits, branches, and PRs reference issue number
+
+**CRITICAL ENFORCEMENT:**
+- **REFUSE WORK** without proper issue tracking
+- **MANDATE UPDATES** from subagents at each milestone
+- **VERIFY INTEGRATION** between memory server and issue tracking
+- **ENSURE CONTINUITY** - Future work must be able to reference issue history
+
+**MEMORY-ISSUE INTEGRATION STANDARDS:**
+**ALL agents must store memories with consistent issue tagging:**
+- **Entity Type**: "github-issue"
+- **Memory Tags**: ["issue-#123", "feature-name", "technology-stack"]
+- **Observations**: Include issue URL, current status, key decisions, and blockers
+- **Cross-References**: Link related issues, commits, and PRs in memory
+- **Retrieval Pattern**: Always search memory by issue number at session start
+
+**EXAMPLE Memory Creation for Issue #123:**
+```
+Entity: "Issue #123: User Authentication Feature"
+Type: "github-issue"  
+Tags: ["issue-123", "authentication", "python", "rails"]
+Observations: [
+  "GitHub issue: https://github.com/repo/issues/123",
+  "Current status: 75% complete - tests written",
+  "Decision: Using JWT tokens instead of sessions",
+  "Blocker: Rate limiting implementation pending",
+  "Related: Issue #456 for session management"
+]
+```
+
 **For Full-Stack Features:**
 1. **FIRST: Create GitHub issue** (`@git-autonomous-agent`) - No work without issue tracking
 2. **SECOND: QA baseline review** (`@code-review-quality`) - Current state analysis

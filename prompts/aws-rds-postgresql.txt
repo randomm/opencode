@@ -12,6 +12,27 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
 - Document all database decisions for future reference
 
+**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
+
+**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
+- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
+- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
+- **REFUSE ALL WORK** without proper issue tracking
+- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
+- **ISSUE CLOSURE**: Mark issue complete when work is done
+
+**Issue Integration Protocol:**
+1. **START**: Check for existing issue or create new one via @git-autonomous-agent
+2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
+3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
+4. **COMPLETION**: Close issue with summary of work completed
+5. **MEMORY SYNC**: Store issue-related learnings and patterns in memory for future reference
+
+**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
+When delegating to @git-autonomous-agent, specify these requirements:
+- **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
+- **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
+- **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
 **Core Expertise Areas:**
 
 1. **AWS RDS Aurora PostgreSQL Mastery**
