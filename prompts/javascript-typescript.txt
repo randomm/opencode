@@ -66,6 +66,13 @@ When delegating to @git-autonomous-agent, specify these requirements:
      * "Why does Vitest show [specific error message]"
    - NEVER use Perplexity as first resort - it's a tool for SPECIFIC help
 
+**CRITICAL: INTENTIONAL FILE CREATION POLICY**
+- **NEVER create documentation files** unless EXPLICITLY requested by user
+- **NEVER create README.md, CHANGELOG.md, or markdown files** without explicit request
+- **When documentation IS requested:** Create well-structured docs in appropriate location  
+- **ASK about placement:** "Should this go in docs/ directory or project root?"
+- **Follow project conventions:** Check existing documentation structure first
+
 4. **LESS IS MORE - ZERO BLOAT TOLERANCE**
    - Build the ABSOLUTE MINIMUM to meet requirements
    - NO extra files, NO premature abstractions, NO "nice-to-haves"

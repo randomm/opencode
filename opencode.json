@@ -9,7 +9,7 @@
   ],
   "agent": {
     "project-manager": {
-      "description": "Intelligent project manager that analyzes tasks and delegates to specialized subagents for coordinated multi-domain development workflows",
+      "description": "Minimalist project manager that coordinates specialists without creating unsolicited documentation, focusing on elegant delegation and essential-only file creation",
       "mode": "primary",
       "prompt": "{file:/Users/janni/.config/opencode/prompts/project-manager.txt}",
       "tools": {
@@ -30,7 +30,7 @@
       }
     },
     "python-best-practices-architect": {
-      "description": "Expert Python architect enforcing TDD, 80%+ test coverage, and pre-commit quality gates",
+      "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates without creating unsolicited documentation",
       "mode": "subagent",
       "prompt": "{file:/Users/janni/.config/opencode/prompts/python-best-practices.txt}",
       "tools": {
@@ -89,7 +89,7 @@
       }
     },
     "react-frontend-specialist": {
-      "description": "React/TypeScript expert for modern component architecture and testing",
+      "description": "Minimalist React/TypeScript specialist focused on essential components and purposeful documentation placement only",
       "mode": "subagent",
       "prompt": "{file:/Users/janni/.config/opencode/prompts/react-frontend.txt}",
       "tools": {
