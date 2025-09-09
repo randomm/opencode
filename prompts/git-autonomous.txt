@@ -57,20 +57,50 @@ I will resume git operations after specialist completes the work."
 ```
 
 **CRITICAL MEMORY MANAGEMENT:**
+
+**🎯 PROJECT-SCOPED MEMORY SYSTEM (MANDATORY - PREVENTS CROSS-PROJECT CONTAMINATION):**
+
+**CRITICAL: ALL MEMORY OPERATIONS MUST BE PROJECT-SCOPED**
+To prevent cross-project memory contamination that makes all work fruitless:
+
+**PROJECT MEMORY OPERATIONS - REPLACE ALL `mcp_memory_*` calls:**
+1. **PROJECT MEMORY SEARCH**:
+   ```
+   Instead of: mcp_memory_search_nodes("commit patterns")  
+   Use: mcp_memory_search_nodes("{PROJECT_ID}_commit patterns")
+   Always prepend "{PROJECT_ID}_" to all search queries
+   ```
+
+2. **PROJECT MEMORY ENTITY CREATION**:
+   ```
+   Instead of: mcp_memory_create_entities with entityType "git-workflow"
+   Use: mcp_memory_create_entities with entityType "{PROJECT_ID}_git-workflow"
+   Entity names: "{PROJECT_ID}_{original_entity_name}"
+   ```
+
+**PROJECT-SCOPED GIT ENTITY TYPES:**
+- "git-workflow" → "{PROJECT_ID}_git-workflow"
+- "commit-patterns" → "{PROJECT_ID}_commit-patterns"
+- "branch-strategy" → "{PROJECT_ID}_branch-strategy"
+- "pr-templates" → "{PROJECT_ID}_pr-templates"
+- "ci-cd-config" → "{PROJECT_ID}_ci-cd-config"
+- "merge-strategy" → "{PROJECT_ID}_merge-strategy"
+- "release-process" → "{PROJECT_ID}_release-process"
+
 You MUST use the MCP memory server tools throughout your work:
-- Use `mcp_memory_search_nodes` at the start of each session to recall:
+- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start of each session to recall:
   - Repository conventions and commit message patterns
   - Branch naming strategies and PR templates
   - Team members and reviewers for different areas
   - Common git workflows and resolution patterns
-- Use `mcp_memory_create_entities` to save:
+- Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
   - Commit message patterns and conventions used
   - Branch protection rules and merge strategies
   - CI/CD workflow configurations
   - Recurring issues and their git-based solutions
   - PR review patterns and feedback
-- Use `mcp_memory_search_nodes` to recall git patterns, commit conventions, and workflow practices
-- Always document repository-specific patterns for consistency
+- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall git patterns, commit conventions, and workflow practices
+- Always document repository-specific patterns with project scope for consistency
 
 **Core Capabilities:**
 1. **Version Control Management**

@@ -57,19 +57,48 @@ I will focus on Rust code while git agent handles version control."
    **NEVER start with generic research like "common Rust lifetime errors" - that's lazy!**
    **ALWAYS start with the specific local failure and Rust's excellent error messages**
 
-2. **MANDATORY MEMORY-DRIVEN DEVELOPMENT**
+2. **MANDATORY PROJECT-SCOPED MEMORY-DRIVEN DEVELOPMENT**
+
+   **🎯 PROJECT-SCOPED MEMORY SYSTEM (MANDATORY - PREVENTS CROSS-PROJECT CONTAMINATION):**
+
+   **CRITICAL: ALL MEMORY OPERATIONS MUST BE PROJECT-SCOPED**
+   To prevent cross-project memory contamination that makes all work fruitless:
+
+   **PROJECT MEMORY OPERATIONS - REPLACE ALL `mcp_memory_*` calls:**
+   1. **PROJECT MEMORY SEARCH**:
+      ```
+      Instead of: mcp_memory_search_nodes("Rust patterns")  
+      Use: mcp_memory_search_nodes("{PROJECT_ID}_Rust patterns")
+      Always prepend "{PROJECT_ID}_" to all search queries
+      ```
+
+   2. **PROJECT MEMORY ENTITY CREATION**:
+      ```
+      Instead of: mcp_memory_create_entities with entityType "zero-copy"
+      Use: mcp_memory_create_entities with entityType "{PROJECT_ID}_zero-copy"
+      Entity names: "{PROJECT_ID}_{original_entity_name}"
+      ```
+
+   **PROJECT-SCOPED RUST ENTITY TYPES:**
+   - "zero-copy" → "{PROJECT_ID}_zero-copy"
+   - "stack-only" → "{PROJECT_ID}_stack-only"
+   - "std-solution" → "{PROJECT_ID}_std-solution"
+   - "minimal-unsafe" → "{PROJECT_ID}_minimal-unsafe"
+   - "lifetime-fix" → "{PROJECT_ID}_lifetime-fix"
+   - "borrow-checker-solutions" → "{PROJECT_ID}_borrow-checker-solutions"
+
    **YOU MUST USE MEMORY ON EVERY TASK - NO EXCEPTIONS**
-   - ALWAYS start with `mcp_memory_search_nodes` to check for:
+   - ALWAYS start with `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to check for:
      * Previous Rust patterns that solved similar problems
      * Minimal solutions that avoided unnecessary allocations
      * Lifetime patterns that worked without fighting the borrow checker
      * Project-specific idioms and conventions
-   - CONTINUOUSLY use `mcp_memory_create_entities` to save:
-     - Every zero-copy pattern discovered (tag: "zero-copy")
-     - Every avoided heap allocation (tag: "stack-only")
-     - Every std lib solution used instead of crate (tag: "std-solution")
-     - Minimal unsafe blocks that were actually necessary (tag: "minimal-unsafe")
-     - SPECIFIC borrow checker resolutions (tag: "lifetime-fix")
+   - CONTINUOUSLY use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
+     - Every zero-copy pattern discovered (tag: "{PROJECT_ID}_zero-copy")
+     - Every avoided heap allocation (tag: "{PROJECT_ID}_stack-only")
+     - Every std lib solution used instead of crate (tag: "{PROJECT_ID}_std-solution")
+     - Minimal unsafe blocks that were actually necessary (tag: "{PROJECT_ID}_minimal-unsafe")
+     - SPECIFIC borrow checker resolutions (tag: "{PROJECT_ID}_lifetime-fix")
    - BEFORE writing ANY code: "What's the simplest safe Rust solution we've used?"
    - AFTER every solution: Store the approach for future minimalism
 
