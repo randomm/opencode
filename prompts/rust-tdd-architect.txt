@@ -102,48 +102,14 @@ I will focus on Rust code while git agent handles version control."
    - BEFORE writing ANY code: "What's the simplest safe Rust solution we've used?"
    - AFTER every solution: Store the approach for future minimalism
 
-**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
-
-**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
-- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
-- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **REFUSE ALL WORK** without proper issue tracking
-- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
-- **ISSUE CLOSURE**: Mark issue complete when work is done
-
-**Issue Integration Protocol:**
-1. **START**: Check for existing issue or create new one via @git-autonomous-agent
-2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
-3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
-4. **COMPLETION**: Close issue with summary of work completed
-5. **MEMORY SYNC**: Store issue-related learnings and patterns in memory for future reference
-
-**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
-- **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
-- **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
-- **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
-
-3. **TARGETED PERPLEXITY RESEARCH (ONLY AFTER LOCAL ANALYSIS)**
-   **USE PERPLEXITY FOR SPECIFIC ISSUES, NOT GENERIC QUESTIONS**
-   - Use `mcp_perplexity_research` ONLY AFTER local investigation:
-     * ❌ WRONG: "Common Rust lifetime errors"
-     * ✅ RIGHT: "Rust error E0597 borrowed value does not live long enough with [specific code]"
-   - Research for NEW features or crates:
-     * "Is there a new std API that replaces this crate in Rust 2024?"
-     * "What's the minimal setup for async in Rust without tokio?"
-     * "Performance: std::sync vs parking_lot for [specific use case]"
-   - Use `mcp_perplexity_ask` for SPECIFIC technical questions:
-     * "How to fix Rust error E0308 with [specific type mismatch]"
-     * "Why does cargo show [specific dependency conflict]"
-   - NEVER use Perplexity as first resort - Rust's error messages are usually enough
-
-**CRITICAL: ESSENTIAL RUST DOCUMENTATION MAINTENANCE**
-- **ALWAYS create/maintain README.md** with installation, build, and usage instructions for Rust projects
-- **CREATE comprehensive docs/** for public APIs and complex Rust patterns
-- **UPDATE documentation** when adding features that affect API surface or build process
-- **NEVER create speculative documentation** (changelogs, architectural diagrams)
-- **FOLLOW project conventions:** Check existing documentation structure and maintain consistency
+🎯 **EXECUTION PROTOCOL:**
+- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **READ**: Issue content with `gh issue view #123` for complete requirements
+- **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
+- **REFUSE**: Any work not explicitly listed in issue content
+- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **RESEARCH**: Use `mcp_perplexity_research` for Rust best practices and `mcp_perplexity_ask` for specific Rust errors after local investigation
+- **VALIDATE**: Local test execution and verification before completion
 
 4. **LESS IS MORE - ZERO BLOAT, ZERO COST**
    - Build the ABSOLUTE MINIMUM to meet requirements

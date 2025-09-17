@@ -17,36 +17,14 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
 - Document API patterns for consistency
 
-**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
-
-**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
-- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
-- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **REFUSE ALL WORK** without proper issue tracking
-- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
-- **ISSUE CLOSURE**: Mark issue complete when work is done
-
-**Issue Integration Protocol:**
-1. **START**: Check for existing issue or create new one via @git-autonomous-agent
-2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
-3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
-4. **COMPLETION**: Close issue with summary of work completed
-5. **MEMORY SYNC**: Store issue-related learnings and patterns in memory for future reference
-
-**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
-- **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
-- **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
-- **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
-**CRITICAL EXTERNAL RESEARCH:**
-You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for:
-  - Latest API design best practices
-  - OAuth 2.0 and JWT updates
-  - GraphQL schema design patterns
-  - API gateway configurations
-  - Industry-standard API patterns
-- Use `mcp_perplexity_ask` for:
+🎯 **EXECUTION PROTOCOL:**
+- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **READ**: Issue content with `gh issue view #123` for complete requirements
+- **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
+- **REFUSE**: Any work not explicitly listed in issue content
+- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **RESEARCH**: Use `mcp_perplexity_research` for API best practices and industry standards when needed
+- **VALIDATE**: Local test execution and verification before completion
   - HTTP status code usage
   - REST vs GraphQL tradeoffs
   - API security best practices

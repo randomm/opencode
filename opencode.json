@@ -2,16 +2,13 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "instructions/commit-all-changes.md",
-    "instructions/test-driven-development.md",
     "instructions/no-unsolicited-files.md",
-    "instructions/essential-documentation.md",
     "instructions/github-workflow-mandatory.md",
-    "instructions/no-quality-gate-bypass.md",
-    "instructions/verify-ci-completion.md"
+    "instructions/quality-gates-reference.md"
   ],
   "agent": {
     "project-manager": {
-      "description": "Minimalist project manager that coordinates specialists, ensures essential documentation (README.md, docs/) exists, and prevents speculative documentation bloat",
+      "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
       "tools": {
@@ -26,9 +23,7 @@
         "mcp_memory_add_observations": true,
         "mcp_memory_search_nodes": true,
         "mcp_memory_open_nodes": true,
-        "mcp_memory_read_graph": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
+        "mcp_memory_read_graph": true
       }
     },
     "python-best-practices-architect": {
@@ -46,8 +41,12 @@
         "multiedit": true,
         "todowrite": true,
         "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
         "mcp_memory_search_nodes": true,
-        "mcp_memory_read_graph": true
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
       }
     },
     "git-autonomous-agent": {
@@ -63,8 +62,12 @@
         "webfetch": true,
         "todowrite": true,
         "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
         "mcp_memory_search_nodes": true,
-        "mcp_memory_read_graph": true
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
       }
     },
     "rails-architect": {

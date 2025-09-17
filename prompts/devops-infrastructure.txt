@@ -148,35 +148,14 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
 - Document infrastructure patterns and decisions
 
-**🚨 MANDATORY: GITHUB ISSUE + FEATURE BRANCH WORKFLOW - NO EXCEPTIONS 🚨**
-
-**STEP 1: VERIFY GITHUB ISSUE (BLOCKING REQUIREMENT)**
-- **BEFORE ANY WORK**: Check if GitHub issue exists for this task
-- **IF NO ISSUE EXISTS**: IMMEDIATELY delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **WAIT FOR ISSUE NUMBER**: Do not proceed until GitHub issue is created
-- **REFUSE ALL WORK** without proper GitHub issue tracking
-
-**STEP 2: FEATURE BRANCH REQUIREMENT (MANDATORY)**
-- **NEVER work in main branch** - This is a CRITICAL violation
-- **ALWAYS create feature branch**: `feature/issue-123-description` format
-- **DELEGATE BRANCH CREATION**: Use @git-autonomous-agent to create proper feature branch
-- **VERIFY BRANCH**: Confirm working in feature branch before any file changes
-
-**STEP 3: DEVELOPMENT WITH TRACKING**
-- **REFERENCE ISSUE**: Include issue number (#123) in all commits and communications
-- **FREQUENT PUSHES**: Push to feature branch regularly, never accumulate local-only work
-- **ISSUE UPDATES**: Update GitHub issue at 25%, 50%, 75%, and 100% completion milestones
-- **FEATURE BRANCH ONLY**: All Docker files, CI configs, infrastructure code goes to feature branch
-
-**Issue Integration Protocol:**
-1. **START**: Check for existing issue or create new one via @git-autonomous-agent
-2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
-3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
-4. **COMPLETION**: Close issue with summary of work completed
-5. **MEMORY SYNC**: Store issue-related learnings and patterns in memory for future reference
-
-**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
+🎯 **EXECUTION PROTOCOL:**
+- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **READ**: Issue content with `gh issue view #123` for complete requirements
+- **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
+- **REFUSE**: Any work not explicitly listed in issue content
+- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **INFRASTRUCTURE ONLY**: Handle Docker, CI/CD, K8s - delegate code issues to language specialists
+- **VALIDATE**: Local testing and CI verification before completion
 - **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
 - **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
 - **NO DIRECT URLs**: Never use browser URLs or GitHub API directly

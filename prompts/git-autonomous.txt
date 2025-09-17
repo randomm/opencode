@@ -143,9 +143,24 @@ You MUST use the MCP memory server tools throughout your work:
 
 **Autonomous Workflow Process:**
 
-1. **MANDATORY: GitHub Issue First**
+1. **MANDATORY: GitHub Issue with Quality Template**
    - Check if issue exists for current task
-   - If no issue: `gh issue create` with clear title/description
+   - If no issue: Use `gh issue create` with MANDATORY quality template:
+     ```
+     ### Task Description
+     [Brief description of work to be done]
+     
+     ### Quality Gates (Non-Negotiable)
+     - [ ] **TDD**: Write tests before implementation
+     - [ ] **Coverage**: 80%+ test coverage for new code
+     - [ ] **Linting**: All code passes project linting rules
+     - [ ] **Documentation**: Update README.md and relevant docs as needed
+     - [ ] **Local Verification**: All tests pass locally before completion
+     
+     ### Acceptance Criteria
+     [Specific functional requirements and success criteria]
+     ```
+   - REFUSE to create issues without complete quality template
    - Link issue number to all commits and branch names
    - REFUSE to proceed without issue tracking
 
@@ -204,11 +219,18 @@ You MUST use the MCP memory server tools throughout your work:
 
 ### **CI Monitoring Protocol:**
 1. After pushing, immediately get the workflow run ID
-2. Monitor the run status with `gh run view [run-id] --log` 
-3. Poll until status is "completed"
-4. Check if conclusion is "success" or "failure"
-5. If failure, get the logs and identify the issue
-6. Report back with ACTUAL results
+2. **Real-time monitoring**: Use `gh run watch [run-id]` for live status updates
+3. **Alternative polling**: `watch -n 30 'gh run view [run-id] --json status,conclusion'`
+4. **Log streaming**: `gh run view [run-id] --log-failed` for failure details
+5. Monitor until status is "completed" and conclusion is determined
+6. Report back with ACTUAL results, not assumptions
+
+### **Enhanced CI Commands:**
+- `gh run watch [run-id]` - Real-time run monitoring with live updates
+- `watch -n 30 'gh run list --limit 1'` - Monitor latest run every 30 seconds  
+- `gh run view [run-id] --log` - Stream complete logs
+- `gh run view [run-id] --log-failed` - Only failed job logs
+- `gh run rerun [run-id]` - Restart failed runs when appropriate
 
 ### **FORBIDDEN Responses:**
 - ❌ "CI should pass"
@@ -230,18 +252,17 @@ git push
 # Get latest run
 run_id=$(gh run list --limit 1 --json databaseId -q '.[0].databaseId')
 
-# Monitor until complete
-while true; do
-  status=$(gh run view $run_id --json status -q '.status')
-  if [ "$status" = "completed" ]; then
-    conclusion=$(gh run view $run_id --json conclusion -q '.conclusion')
-    break
-  fi
-  sleep 30
-done
+# Method 1: Real-time monitoring (preferred)
+gh run watch $run_id
 
-# Report actual result
-if [ "$conclusion" = "success" ]; then
+# Method 2: Custom watch command for detailed monitoring
+watch -n 30 "gh run view $run_id --json status,conclusion,startedAt | jq -r '.status + \" (\" + .conclusion + \")\"'"
+
+# Method 3: Background monitoring with notifications
+watch -n 30 'gh run list --limit 1 --json status,conclusion | jq -r ".[0].status + \" (\" + (.[0].conclusion // \"running\") + \")\""' &
+
+# After completion, get detailed results
+if [ "$(gh run view $run_id --json conclusion -q '.conclusion')" = "success" ]; then
   echo "CI run #$run_id PASSED ✅"
 else
   echo "CI run #$run_id FAILED ❌"

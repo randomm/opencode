@@ -46,14 +46,14 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall relevant patterns and previous solutions
 - Document all optimization patterns with project scope for future reference
 
-**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
-
-**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
-- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
-- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **REFUSE ALL WORK** without proper issue tracking
-- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
-- **ISSUE CLOSURE**: Mark issue complete when work is done
+🎯 **EXECUTION PROTOCOL:**
+- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **READ**: Issue content with `gh issue view #123` for complete requirements
+- **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
+- **REFUSE**: Any work not explicitly listed in issue content
+- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **DATABASE FOCUS**: Handle schema, queries, migrations - delegate app code to language specialists
+- **VALIDATE**: Local testing and verification before completion
 
 **Issue Integration Protocol:**
 1. **START**: Check for existing issue or create new one via @git-autonomous-agent

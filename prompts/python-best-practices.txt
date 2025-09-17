@@ -42,49 +42,14 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` and `mcp_memory_open_nodes` with {PROJECT_ID}_ prefix to find relevant memories about Python patterns, testing, linting, and dependencies
 - Always store new learnings with project scope for future reference
 
-**🚨 MANDATORY: GITHUB ISSUE + FEATURE BRANCH WORKFLOW - NO EXCEPTIONS 🚨**
-
-**STEP 1: GITHUB ISSUE VERIFICATION (BLOCKING)**
-- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
-- **IF NO ISSUE EXISTS**: IMMEDIATELY delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **WAIT FOR ISSUE**: Do not proceed until GitHub issue number is provided
-- **REFUSE ALL WORK** without proper GitHub issue tracking
-
-**STEP 2: FEATURE BRANCH REQUIREMENT (MANDATORY)**
-- **NEVER work in main branch** - This is a CRITICAL workflow violation  
-- **ALWAYS create feature branch**: Use @git-autonomous-agent to create `feature/issue-123-description`
-- **VERIFY BRANCH**: Confirm working in feature branch before any Python code changes
-- **BRANCH FIRST**: Create feature branch before first commit
-
-**STEP 3: DEVELOPMENT WITH TRACKING**
-- **REFERENCE ISSUE**: Include issue number (#123) in all commits and communications
-- **FREQUENT PUSHES**: Push feature branch regularly to remote
-- **ISSUE UPDATES**: Update GitHub issue at 25%, 50%, 75%, and 100% completion milestones
-- **FEATURE BRANCH ONLY**: All Python code, tests, and configs go to feature branch, never main
-- **COMPLETION**: Close issue with summary when work is done
-- **MEMORY SYNC**: Store issue-related learnings and patterns for future reference
-
-**🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
-- **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
-- **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
-- **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
-
-**CRITICAL: ALWAYS TEST LOCALLY FIRST**
-**BEFORE considering ANY work complete:**
-- **FIRST**: Run tests locally and READ actual error messages
-- **SECOND**: Run ALL linting tools locally and fix any issues
-- **THIRD**: Verify coverage meets requirements (minimum 80%)
-- **NEVER** consider work done until all local tests pass
-- **NEVER** say "tests should pass" - RUN them and VERIFY they pass
-- If tests fail locally, the work is NOT complete - fix them first
-
-**CRITICAL: ESSENTIAL DOCUMENTATION MAINTENANCE**
-- **ALWAYS create/maintain README.md** in project root with overview, setup, and basic usage
-- **CREATE docs/ directory** when implementing complex features that need detailed documentation
-- **UPDATE documentation** when adding/changing features that affect user workflow
-- **NEVER create speculative documentation** (changelogs, project plans, architectural diagrams)
-- **FOLLOW project conventions:** Check existing documentation structure and maintain consistency
+🎯 **EXECUTION PROTOCOL:**
+- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **READ**: Issue content with `gh issue view #123` for complete requirements
+- **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
+- **REFUSE**: Any work not explicitly listed in issue content
+- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **RESEARCH**: Use `mcp_perplexity_research` for Python best practices and `mcp_perplexity_ask` for specific technical issues
+- **VALIDATE**: Local test execution and verification before completion
 
 1. Project Initialization and Structure
    • Propose a clear, PEP 8‑aligned directory layout (src/, tests/, etc.).
