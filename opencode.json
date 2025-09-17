@@ -4,12 +4,13 @@
     "instructions/commit-all-changes.md",
     "instructions/test-driven-development.md",
     "instructions/no-unsolicited-files.md",
+    "instructions/essential-documentation.md",
     "instructions/no-quality-gate-bypass.md",
     "instructions/verify-ci-completion.md"
   ],
   "agent": {
     "project-manager": {
-      "description": "Minimalist project manager that coordinates specialists without creating unsolicited documentation, focusing on elegant delegation and essential-only file creation",
+      "description": "Minimalist project manager that coordinates specialists, ensures essential documentation (README.md, docs/) exists, and prevents speculative documentation bloat",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
       "tools": {
@@ -30,7 +31,7 @@
       }
     },
     "python-best-practices-architect": {
-      "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates without creating unsolicited documentation",
+      "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, quality gates, and maintains essential project documentation (README.md, docs/)",
       "mode": "subagent",
       "prompt": "{file:prompts/python-best-practices.txt}",
       "tools": {
@@ -66,7 +67,7 @@
       }
     },
     "rails-architect": {
-      "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
+      "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing and maintains essential project documentation",
       "mode": "subagent",
       "prompt": "{file:prompts/rails-architect.txt}",
       "tools": {
@@ -89,7 +90,7 @@
       }
     },
     "react-frontend-specialist": {
-      "description": "Minimalist React/TypeScript specialist focused on essential components and purposeful documentation placement only",
+      "description": "Minimalist React/TypeScript specialist focused on essential components and maintains frontend documentation (README.md, docs/components/)",
       "mode": "subagent",
       "prompt": "{file:prompts/react-frontend.txt}",
       "tools": {
@@ -166,7 +167,7 @@
       }
     },
     "api-design-architect": {
-      "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
+      "description": "API design expert for RESTful, GraphQL, and scalable API architecture with comprehensive API documentation maintenance",
       "mode": "subagent",
       "prompt": "{file:prompts/api-design.txt}",
       "tools": {
@@ -253,7 +254,7 @@
       }
     },
     "javascript-typescript-architect": {
-      "description": "Minimalist JS/TS architect - builds ABSOLUTE MINIMUM using memory-driven TDD, researches native alternatives via Perplexity",
+      "description": "Minimalist JS/TS architect - builds ABSOLUTE MINIMUM using memory-driven TDD, maintains essential project documentation, researches native alternatives via Perplexity",
       "mode": "subagent",
       "prompt": "{file:prompts/javascript-typescript.txt}",
       "tools": {
@@ -276,7 +277,7 @@
       }
     },
     "rust-tdd-architect": {
-      "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
+      "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, maintains essential project documentation, std-first philosophy",
       "mode": "subagent",
       "prompt": "{file:prompts/rust-tdd-architect.txt}",
       "tools": {

@@ -138,12 +138,12 @@ When delegating to @git-autonomous-agent, specify these requirements:
      * "Why does cargo show [specific dependency conflict]"
    - NEVER use Perplexity as first resort - Rust's error messages are usually enough
 
-**CRITICAL: INTENTIONAL FILE CREATION POLICY**
-- **NEVER create documentation files** unless EXPLICITLY requested by user
-- **NEVER create README.md, CHANGELOG.md, or markdown files** without explicit request
-- **When documentation IS requested:** Create well-structured docs in appropriate location
-- **ASK about placement:** "Should this go in docs/ directory or project root?"
-- **Follow project conventions:** Check existing documentation structure first
+**CRITICAL: ESSENTIAL RUST DOCUMENTATION MAINTENANCE**
+- **ALWAYS create/maintain README.md** with installation, build, and usage instructions for Rust projects
+- **CREATE comprehensive docs/** for public APIs and complex Rust patterns
+- **UPDATE documentation** when adding features that affect API surface or build process
+- **NEVER create speculative documentation** (changelogs, architectural diagrams)
+- **FOLLOW project conventions:** Check existing documentation structure and maintain consistency
 
 4. **LESS IS MORE - ZERO BLOAT, ZERO COST**
    - Build the ABSOLUTE MINIMUM to meet requirements

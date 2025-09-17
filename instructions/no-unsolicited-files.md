@@ -1,74 +1,91 @@
-# No Unsolicited Files Policy
+# Essential vs Speculative Documentation Policy
 
-**CRITICAL RULE: NEVER create documentation, plans, or "nice-to-have" files unless EXPLICITLY requested by the user.**
+**CRITICAL RULE: NEVER create speculative documentation or "nice-to-have" files. ALWAYS maintain essential project documentation.**
 
-**ULTRA-CRITICAL MINIMALIST ENGINEERING PRINCIPLE: Every file is a liability. Every line of code is technical debt. Every documentation file requires maintenance. Question the necessity of EVERYTHING.**
+**ULTRA-CRITICAL MINIMALIST ENGINEERING PRINCIPLE: Every file is a liability, but essential documentation prevents developer confusion and enables project success. Question everything except what users NEED to understand and use the project.**
 
 ## What This Means
 
-### NEVER Create Without Explicit Request:
-- ❌ README.md files
-- ❌ CHANGELOG.md files  
-- ❌ TODO.md or ROADMAP.md files
+### ALWAYS Create/Maintain (Essential Documentation):
+- ✅ **README.md** in project root (project overview, setup, basic usage)
+- ✅ **docs/** directory with organized guides when features exist
+- ✅ **API documentation** in docs/ when APIs are implemented
+- ✅ **Setup/installation guides** when complex setup is required
+- ✅ **Usage examples** for key features in README.md or docs/
+
+### NEVER Create Without Explicit Request (Speculative Documentation):
+- ❌ CHANGELOG.md files (use git history)
+- ❌ TODO.md or ROADMAP.md files (use TodoWrite tool)
 - ❌ PROJECT_PLAN.md or similar planning documents
-- ❌ CONTRIBUTING.md or CODE_OF_CONDUCT.md
-- ❌ Architecture diagrams or documentation
-- ❌ API documentation files
-- ❌ Any markdown files the user didn't specifically ask for
+- ❌ CONTRIBUTING.md or CODE_OF_CONDUCT.md (unless established project)
+- ❌ Architecture diagrams or documentation (unless requested)
+- ❌ Random markdown files in arbitrary locations
 - ❌ "Helpful" boilerplate or template files
 
-### What Counts as "Explicit Request":
-✅ "Create a README file"
-✅ "Write documentation for this API"
-✅ "Generate a project plan"
-✅ "I need a TODO list file"
+### When Essential Documentation is Automatically Created:
+✅ **Implementing new features** → Update README.md and relevant docs/
+✅ **Creating APIs** → Add/update API documentation in docs/
+✅ **Complex setup requirements** → Ensure setup guide exists
+✅ **Project has missing README.md** → Create comprehensive overview
+✅ **Adding significant functionality** → Document in appropriate location
 
-### What DOESN'T Count:
+### What Still Requires Explicit Request:
 ❌ "Document this function" → Use code comments, not files
-❌ "Plan the implementation" → Use TodoWrite tool, not files
+❌ "Plan the implementation" → Use TodoWrite tool, not files  
 ❌ "Track this for later" → Use memory tools, not files
-❌ "Explain the architecture" → Explain in chat, not files
-❌ Starting a new project → Don't auto-create README
-❌ Making improvements → Don't add documentation files
+❌ "Explain the architecture" → Explain in chat unless complex project needs docs/
+❌ Speculative documentation → Only create what users need NOW
 
-## Why This Matters
+## Why This Balanced Approach Matters
 
-1. **Minimalism**: Every file is a maintenance burden
-2. **User Control**: Users decide what files they need
-3. **Focus**: Concentrate on requested work, not extras
-4. **Cleanliness**: Avoid cluttering repositories
-5. **Respect**: Don't assume what the user wants
+1. **Essential vs Bloat**: Essential documentation enables success, speculative documentation creates maintenance burden
+2. **Developer Onboarding**: Every project needs README.md and proper docs/ for new developers
+3. **Focus**: Concentrate on user-needed documentation, not "helpful" extras
+4. **Standards**: Follow documentation conventions (README.md in root, organized docs/)
+5. **Maintainability**: Update documentation when features change, but don't create unnecessary files
 
 ## What to Do Instead
 
-### When You Want to Document:
-- **Use code comments** for explaining complex logic
-- **Use memory tools** to store project information
-- **Use TodoWrite** for task tracking
-- **Explain in chat** when asked about architecture
-- **Wait for user request** before creating any documentation file
+### For Essential Documentation:
+- **Create/update README.md** for project overview, setup, and basic usage
+- **Maintain docs/ directory** with organized guides for complex features
+- **Add API documentation** when implementing APIs
+- **Update existing docs** when features change
+- **Follow project conventions** for documentation structure
+
+### For Non-Essential Information:
+- **Use code comments** for explaining complex logic  
+- **Use memory tools** to store project patterns and context
+- **Use TodoWrite** for task tracking and planning
+- **Explain in chat** for one-off questions
+- **Wait for user request** before creating speculative documentation
 
 ### When Starting New Projects:
-- Only create the **essential code files**
-- Only add **required configuration** (.gitignore, package.json, etc.)
-- **ASK** before adding any documentation: "Would you like me to create a README?"
-- Let the user decide what documentation they need
+- Create the **essential code files**  
+- Add **required configuration** (.gitignore, package.json, etc.)
+- **Always create README.md** with project overview, setup instructions, and basic usage
+- **Create docs/ directory** if the project has complex features that need detailed documentation
+- **Never create speculative files** (changelogs, project plans, etc.)
 
-### When Improving Code:
-- Focus on the code quality itself
-- Add comments IN the code files
-- Store patterns in memory
-- Don't create separate documentation
+### When Implementing Features:
+- **Update README.md** if the feature affects setup or basic usage
+- **Add/update docs/** for complex features that need detailed explanation
+- **Add code comments** for complex logic within implementation
+- **Don't create separate planning files** - use TodoWrite and memory tools
 
 ## Examples
 
 **User**: "Create a new Python project for data analysis"
-- ❌ **WRONG**: Automatically create README.md, requirements.txt, setup.py, docs/
-- ✅ **RIGHT**: Create only the Python files needed, ask about documentation
+- ❌ **WRONG**: Create random planning files, changelogs, or speculative docs
+- ✅ **RIGHT**: Create Python files, requirements.txt, README.md with overview/setup/usage
 
 **User**: "Fix the login bug and document the solution"  
 - ❌ **WRONG**: Create a BUGFIX_DOCUMENTATION.md file
-- ✅ **RIGHT**: Fix the bug, add comments in code, explain in chat
+- ✅ **RIGHT**: Fix the bug, add comments in code, update relevant docs/ if needed
+
+**User**: "Implement user authentication API"
+- ❌ **WRONG**: Create PROJECT_PLAN.md or ARCHITECTURE.md files
+- ✅ **RIGHT**: Implement API, update README.md usage section, add API docs in docs/api.md
 
 **User**: "Plan how to implement this feature"
 - ❌ **WRONG**: Create IMPLEMENTATION_PLAN.md
@@ -76,9 +93,9 @@
 
 ## Remember
 
-The user is in control. They will ask for what they need. Your job is to do exactly what's requested - no more, no less. Being "helpful" by creating extra files is actually unhelpful. 
+Essential documentation (README.md, docs/) enables project success and developer onboarding. Speculative documentation creates maintenance burden. Create what users NEED to understand and use the project, but never create random "helpful" files.
 
-**When in doubt, DON'T create the file. Ask first.**
+**Essential documentation = automatic. Speculative documentation = ask first.**
 
 ## Documentation Placement Rules (When Documentation IS Explicitly Requested)
 

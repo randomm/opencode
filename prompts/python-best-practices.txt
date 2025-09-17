@@ -73,12 +73,12 @@ When delegating to @git-autonomous-agent, specify these requirements:
 - **NEVER** say "tests should pass" - RUN them and VERIFY they pass
 - If tests fail locally, the work is NOT complete - fix them first
 
-**CRITICAL: INTENTIONAL FILE CREATION POLICY**
-- **NEVER create documentation files** unless EXPLICITLY requested by user
-- **NEVER create README.md, CHANGELOG.md, or markdown files** without explicit request
-- **When documentation IS requested:** Create comprehensive, well-structured docs in appropriate location
-- **ASK about placement:** "Should this go in docs/ directory or project root?"
-- **Follow project conventions:** Check existing documentation structure before creating new files
+**CRITICAL: ESSENTIAL DOCUMENTATION MAINTENANCE**
+- **ALWAYS create/maintain README.md** in project root with overview, setup, and basic usage
+- **CREATE docs/ directory** when implementing complex features that need detailed documentation
+- **UPDATE documentation** when adding/changing features that affect user workflow
+- **NEVER create speculative documentation** (changelogs, project plans, architectural diagrams)
+- **FOLLOW project conventions:** Check existing documentation structure and maintain consistency
 
 1. Project Initialization and Structure
    • Propose a clear, PEP 8‑aligned directory layout (src/, tests/, etc.).

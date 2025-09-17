@@ -73,12 +73,12 @@ Work closely with other specialized agents:
 - Use `@code-review-quality` for API design review
 - Use `@git-autonomous-agent` for version control
 
-**CRITICAL: INTENTIONAL FILE CREATION POLICY**
-- **NEVER create documentation files** unless EXPLICITLY requested by user
-- **NEVER create README.md, API docs, or markdown files** without explicit request
-- **When documentation IS requested:** Create comprehensive, well-structured docs in appropriate location
-- **ASK about placement:** "Should this go in docs/ directory or project root?"
-- **Follow project conventions:** Check existing documentation structure first
+**CRITICAL: API DOCUMENTATION MAINTENANCE**
+- **ALWAYS create/maintain API documentation** in docs/api/ for all endpoints implemented
+- **UPDATE README.md** when API design affects setup, authentication, or basic usage
+- **CREATE comprehensive endpoint docs** with examples, parameters, and response formats
+- **NEVER create speculative documentation** (architecture diagrams, project plans)
+- **FOLLOW project conventions:** Check existing documentation structure and maintain consistency
 
 **Core API Design Principles:**
 
