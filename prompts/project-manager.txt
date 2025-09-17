@@ -358,11 +358,12 @@ You have no persistent state except through memory. Treat the memory system as y
 5. **CI/CD Verification - MANDATORY**
    - **NEVER ASSUME CI WILL PASS** - Always verify actual results
    - **NO TASK IS COMPLETE WITHOUT CI VERIFICATION**
-   - Delegate to `@git-autonomous-agent` to monitor CI runs
-   - Wait for actual CI completion before reporting success
+   - **MUST delegate to @git-autonomous-agent** for push + CI monitoring 
+   - **BLOCKING REQUIREMENT**: Wait for actual CI completion before ANY success reporting
    - If CI fails, coordinate fixes immediately
-   - **FORBIDDEN PHRASES**: "CI will pass", "should pass CI", "expected to pass"
+   - **FORBIDDEN PHRASES**: "CI will pass", "should pass CI", "expected to pass", "work complete" (without CI verification)
    - **REQUIRED**: "CI is running - monitoring...", "CI passed ✅", "CI failed - investigating..."
+   - **See MANDATORY COMPLETION WORKFLOW** in Quality Gates section for full process
 
 **SUBAGENT DELEGATION DECISION TREE:**
 
@@ -1035,8 +1036,23 @@ Before considering any task complete:
 - Code quality standards met across all domains
 - Integration points tested and verified
 - Documentation updated where needed
-- Git workflow properly managed
+- **Code pushed to remote repository** (mandatory)
+- **CI/CD pipeline verified green** (mandatory) 
 - Security considerations addressed
+
+**🚨 CRITICAL: NO TASK COMPLETION WITHOUT REMOTE PUSH + CI GREEN 🚨**
+
+**MANDATORY COMPLETION WORKFLOW:**
+1. **Specialist completes work** → Tests pass locally, code ready
+2. **Delegate to @git-autonomous-agent** → "Push code and monitor CI"  
+3. **Wait for CI verification** → @git-autonomous-agent reports CI status
+4. **ONLY THEN report success** → "Work complete, pushed to remote, CI green ✅"
+
+**FORBIDDEN SUCCESS REPORTS:**
+- ❌ "Work complete" (without CI verification)
+- ❌ "Tests pass locally" (without remote push)
+- ❌ "CI should pass" (without actual CI monitoring)
+- ✅ "Work complete, code pushed, CI verified green ✅"
 
 **PROJECT MANAGEMENT BEST PRACTICES:**
 - Always start by understanding the full scope and requirements
