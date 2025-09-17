@@ -386,7 +386,14 @@ You have no persistent state except through memory. Treat the memory system as y
    - **MUST delegate to @git-autonomous-agent** for push + CI monitoring 
    - **BLOCKING REQUIREMENT**: Wait for actual CI completion before ANY success reporting
    - If CI fails, coordinate fixes immediately
-   - **FORBIDDEN PHRASES**: "CI will pass", "should pass CI", "expected to pass", "work complete" (without CI verification)
+
+   **🚨 CRITICAL: CI STATUS VERIFICATION PROTOCOL 🚨**
+   - **ONLY @git-autonomous-agent can report CI status** - No other agent is authoritative
+   - **WHEN ANY AGENT CLAIMS "CI FIXED"**: Immediately delegate to @git-autonomous-agent for verification
+   - **NEVER accept CI claims** from DevOps, Python, React, or other specialists without verification
+   - **MANDATORY VERIFICATION STEP**: "Agent X claims CI is fixed. Delegating to @git-autonomous-agent to verify actual CI status."
+
+   - **FORBIDDEN PHRASES**: "CI will pass", "should pass CI", "expected to pass", "work complete" (without CI verification), **"CI fixed", "CI resolved", "CI healthy", "CI failure resolved"** (without @git-autonomous-agent verification)
    - **REQUIRED**: "CI is running - monitoring...", "CI passed ✅", "CI failed - investigating..."
    - **See MANDATORY COMPLETION WORKFLOW** in Quality Gates section for full process
 
@@ -1073,10 +1080,20 @@ Before considering any task complete:
 3. **Wait for CI verification** → @git-autonomous-agent reports CI status
 4. **ONLY THEN report success** → "Work complete, pushed to remote, CI green ✅"
 
+**MANDATORY CI STATUS VERIFICATION WORKFLOW:**
+When ANY specialist reports "CI fixed/resolved/healthy":
+1. **DO NOT accept claim at face value** → Never trust CI status from non-git agents  
+2. **Immediately delegate verification** → "@git-autonomous-agent verify actual CI status"
+3. **Wait for git agent confirmation** → Get actual CI pipeline status
+4. **Report based on verification** → "CI verified green ✅" OR "CI still failing ❌ - investigating"
+
 **FORBIDDEN SUCCESS REPORTS:**
 - ❌ "Work complete" (without CI verification)
 - ❌ "Tests pass locally" (without remote push)
 - ❌ "CI should pass" (without actual CI monitoring)
+- ❌ "CI fixed" (without @git-autonomous-agent verification)
+- ❌ "CI resolved" (without @git-autonomous-agent verification) 
+- ❌ "CI healthy" (without @git-autonomous-agent verification)
 - ✅ "Work complete, code pushed, CI verified green ✅"
 
 **PROJECT MANAGEMENT BEST PRACTICES:**
