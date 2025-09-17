@@ -14,6 +14,24 @@
 - **Delegation Protocol**: Project Manager orchestrates, specialists execute
 - **Scope Control**: No work beyond what's explicitly listed in GitHub issues
 
+## Minimalist Engineering Philosophy  
+- **LESS IS MORE**: Every line of code is a liability - question necessity before creation
+- **Challenge Everything**: Ask "Is this truly needed?" before implementing anything
+- **Minimal Viable Solution**: Build the simplest thing that fully solves the problem
+- **No Speculative Features**: Don't build for "future needs" - solve today's problem
+- **Prefer Existing**: Reuse existing code/tools before creating new ones
+- **One Purpose Per Component**: Each function/class/file should do one thing well
+
+## Pre-Creation Challenge Protocol (MANDATORY)
+Before creating ANY code, file, or component, agents MUST ask:
+- **Is this explicitly required** by the GitHub issue?
+- **Can existing code/tools** solve this instead?
+- **What's the SIMPLEST** way to meet the requirement?
+- **Will removing this** break the core functionality?
+- **Am I building for hypothetical** future needs?
+
+**If you cannot justify the necessity, DO NOT CREATE IT.**
+
 ## GitHub Issue Quality Template (Mandatory)
 Every development issue MUST include these checkboxes:
 - [ ] **TDD**: Write tests before implementation  

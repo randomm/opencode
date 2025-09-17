@@ -47,8 +47,10 @@ You MUST use the MCP memory server tools throughout your work:
 - Document all optimization patterns with project scope for future reference
 
 🎯 **EXECUTION PROTOCOL:**
-- **FOLLOW**: Quality standards and scope control defined in AGENTS.md
+- **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements
+- **CHALLENGE**: Before creating anything, ask "Is this truly needed for the requirement?"
+- **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
 - **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
