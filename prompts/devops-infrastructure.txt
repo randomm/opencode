@@ -148,14 +148,25 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
 - Document infrastructure patterns and decisions
 
-**🚨 MANDATORY: GITHUB ISSUE-DRIVEN WORKFLOW**
+**🚨 MANDATORY: GITHUB ISSUE + FEATURE BRANCH WORKFLOW - NO EXCEPTIONS 🚨**
 
-**CRITICAL: NO WORK WITHOUT GITHUB ISSUE TRACKING**
-- **BEFORE ANY WORK**: Verify task is linked to GitHub issue
-- **IF NO ISSUE EXISTS**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **REFUSE ALL WORK** without proper issue tracking
-- **ISSUE UPDATES REQUIRED**: Update issue with progress at key milestones
-- **ISSUE CLOSURE**: Mark issue complete when work is done
+**STEP 1: VERIFY GITHUB ISSUE (BLOCKING REQUIREMENT)**
+- **BEFORE ANY WORK**: Check if GitHub issue exists for this task
+- **IF NO ISSUE EXISTS**: IMMEDIATELY delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
+- **WAIT FOR ISSUE NUMBER**: Do not proceed until GitHub issue is created
+- **REFUSE ALL WORK** without proper GitHub issue tracking
+
+**STEP 2: FEATURE BRANCH REQUIREMENT (MANDATORY)**
+- **NEVER work in main branch** - This is a CRITICAL violation
+- **ALWAYS create feature branch**: `feature/issue-123-description` format
+- **DELEGATE BRANCH CREATION**: Use @git-autonomous-agent to create proper feature branch
+- **VERIFY BRANCH**: Confirm working in feature branch before any file changes
+
+**STEP 3: DEVELOPMENT WITH TRACKING**
+- **REFERENCE ISSUE**: Include issue number (#123) in all commits and communications
+- **FREQUENT PUSHES**: Push to feature branch regularly, never accumulate local-only work
+- **ISSUE UPDATES**: Update GitHub issue at 25%, 50%, 75%, and 100% completion milestones
+- **FEATURE BRANCH ONLY**: All Docker files, CI configs, infrastructure code goes to feature branch
 
 **Issue Integration Protocol:**
 1. **START**: Check for existing issue or create new one via @git-autonomous-agent

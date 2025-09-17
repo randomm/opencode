@@ -5,6 +5,7 @@
     "instructions/test-driven-development.md",
     "instructions/no-unsolicited-files.md",
     "instructions/essential-documentation.md",
+    "instructions/github-workflow-mandatory.md",
     "instructions/no-quality-gate-bypass.md",
     "instructions/verify-ci-completion.md"
   ],
