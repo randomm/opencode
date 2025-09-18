@@ -55,11 +55,10 @@ Every development issue MUST include these checkboxes:
 - **Run single test**: `pytest -k "test_name"` or `npm test -- -t "test_name"`
 
 ## CI Monitoring Commands
-- **Real-time CI monitoring**: `gh run watch [run-id]` (preferred for live updates)
-- **Polling monitoring**: `watch -n 30 'gh run list --limit 1'` (check latest run every 30s)
-- **Background monitoring**: `watch -n 30 'command' &` (run monitoring in background)
-- **CI status check**: `gh run view [run-id] --json status,conclusion`
+- **MANDATORY: Real-time CI monitoring**: `gh run watch [run-id]` (ALWAYS use this - no manual polling)
+- **Get run ID**: `gh run list --limit 1 --json databaseId -q '.[0].databaseId'`
 - **Failed log streaming**: `gh run view [run-id] --log-failed`
+- **DEPRECATED: Manual polling**: `watch -n 30 'gh run list --limit 1'` (only if gh run watch fails)
 
 ## Code Style Guidelines
 - **Imports**: Sort alphabetically, group standard library/third-party/project imports

@@ -239,18 +239,19 @@ Before ANY git operation (commit, push, merge, etc.):
 ## **CI/CD MONITORING - MANDATORY**
 
 ### **CRITICAL: NEVER ASSUME CI WILL PASS**
-- When you push commits, you MUST monitor the CI run
-- Use `gh run list` and `gh run view` to check status
-- Poll every 30-60 seconds until completion
+- When you push commits, you MUST monitor the CI run in real-time
+- **ALWAYS use `gh run watch` for live monitoring - NO manual polling**
 - Report actual results, not predictions
 
-### **CI Monitoring Protocol:**
-1. After pushing, immediately get the workflow run ID
-2. **Real-time monitoring**: Use `gh run watch [run-id]` for live status updates
-3. **Alternative polling**: `watch -n 30 'gh run view [run-id] --json status,conclusion'`
-4. **Log streaming**: `gh run view [run-id] --log-failed` for failure details
+### **CI Monitoring Protocol (MANDATORY `gh run watch`):**
+1. After pushing, immediately get the workflow run ID: `gh run list --limit 1 --json databaseId -q '.[0].databaseId'`
+2. **PRIMARY METHOD: Real-time watch**: `gh run watch [run-id]` - **USE THIS, NOT POLLING**
+3. **Log streaming for failures**: `gh run view [run-id] --log-failed` for failure details  
+4. **ONLY if gh run watch unavailable**: Fall back to `watch -n 30 'gh run view [run-id] --json status,conclusion'`
 5. Monitor until status is "completed" and conclusion is determined
 6. Report back with ACTUAL results, not assumptions
+
+**🚨 CRITICAL: PREFER `gh run watch` OVER MANUAL POLLING**
 
 ### **Enhanced CI Commands:**
 - `gh run watch [run-id]` - Real-time run monitoring with live updates
@@ -271,30 +272,31 @@ Before ANY git operation (commit, push, merge, etc.):
 - ✅ "CI run #123 PASSED ✅ (took 3m 45s)"
 - ✅ "CI run #123 FAILED ❌ - [specific error]"
 
-### **Example Workflow:**
+### **Example Workflow (ALWAYS use gh run watch):**
 ```bash
 # Push changes
 git push
 
-# Get latest run
+# Get latest run ID
 run_id=$(gh run list --limit 1 --json databaseId -q '.[0].databaseId')
 
-# Method 1: Real-time monitoring (preferred)
+# MANDATORY: Use gh run watch for real-time monitoring
+echo "Starting CI monitoring for run #$run_id..."
 gh run watch $run_id
 
-# Method 2: Custom watch command for detailed monitoring
-watch -n 30 "gh run view $run_id --json status,conclusion,startedAt | jq -r '.status + \" (\" + .conclusion + \")\"'"
-
-# Method 3: Background monitoring with notifications
-watch -n 30 'gh run list --limit 1 --json status,conclusion | jq -r ".[0].status + \" (\" + (.[0].conclusion // \"running\") + \")\""' &
-
-# After completion, get detailed results
+# After gh run watch completes, check final status
 if [ "$(gh run view $run_id --json conclusion -q '.conclusion')" = "success" ]; then
-  echo "CI run #$run_id PASSED ✅"
+  echo "✅ CI run #$run_id PASSED"
 else
-  echo "CI run #$run_id FAILED ❌"
+  echo "❌ CI run #$run_id FAILED - checking logs..."
   gh run view $run_id --log-failed
 fi
+```
+
+### **DEPRECATED MANUAL POLLING (Don't use unless gh run watch fails):**
+```bash
+# ONLY use if gh run watch is unavailable
+watch -n 30 "gh run view $run_id --json status,conclusion --jq '.status + \" (\" + .conclusion + \")\"'"
 ```
 
 ### **Task Completion Rule:**
