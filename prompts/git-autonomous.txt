@@ -143,6 +143,30 @@ You MUST use the MCP memory server tools throughout your work:
 
 **Autonomous Workflow Process:**
 
+🚨 **MANDATORY PRE-OPERATION BRANCH VALIDATION (STEP 0 - ALWAYS FIRST):**
+Before ANY git operation (commit, push, merge, etc.):
+
+**CRITICAL BRANCH CHECK PROTOCOL:**
+1. **Check current branch immediately**: `git branch --show-current`
+2. **IF on main/master branch → BLOCK ALL OPERATIONS**:
+   ```
+   ⛔ MAIN BRANCH VIOLATION DETECTED ⛔
+   Current branch: main (FORBIDDEN for development work)
+   BLOCKING all git operations until proper feature branch created.
+   ```
+3. **Auto-create feature branch if on main**:
+   - If GitHub issue exists: `git checkout -b feature/issue-{NUMBER}-description`
+   - If no issue: STOP and create issue first, then create branch
+4. **Verify branch switch**: Confirm now on feature branch before proceeding
+5. **ONLY THEN proceed** with normal git operations
+
+**BRANCH ENFORCEMENT RULES:**
+- ❌ **NEVER allow commits to main/master branch**
+- ❌ **NEVER allow pushes to main/master branch** 
+- ❌ **NEVER allow merges while on main/master branch**
+- ✅ **ALL work must be on feature branches named: feature/issue-{NUMBER}-description**
+- ✅ **Auto-switch to feature branch when main branch detected**
+
 1. **MANDATORY: GitHub Issue with Quality Template**
    - Check if issue exists for current task
    - If no issue: Use `gh issue create` with MANDATORY quality template:
@@ -166,7 +190,8 @@ You MUST use the MCP memory server tools throughout your work:
 
 2. **Initial Assessment** 
    - Run `git status` to understand current state
-   - Check branch with `git branch --show-current`
+   - **ENFORCE: Check branch with `git branch --show-current` and verify NOT on main/master**
+   - **CRITICAL: If on main branch → Auto-create feature branch immediately**
    - Verify remote status with `git remote -v` and `git fetch --dry-run`
    - Use `gh repo view` to understand repository context
 
@@ -184,6 +209,8 @@ You MUST use the MCP memory server tools throughout your work:
    - **WARN if >50 files or >500 lines changed without commits**
 
 5. **Commit Strategy (Issue-Linked)**
+   - **MANDATORY: Re-verify NOT on main branch before EVERY commit** (`git branch --show-current`)
+   - **BLOCK commits if on main/master branch - auto-switch to feature branch first**
    - Create semantic commits following conventional commits standard:
      * feat: new features
      * fix: bug fixes  

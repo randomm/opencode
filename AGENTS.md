@@ -88,7 +88,8 @@ Every development issue MUST include these checkboxes:
 ## Quality Enforcement Flow
 1. Project Manager receives user request
 2. Project Manager delegates to @git-autonomous-agent for issue creation with quality template
-3. Project Manager delegates to appropriate specialist with issue number
-4. Specialist reads issue, completes ALL checkboxes exactly
-5. Specialist refuses any work not listed in issue
-6. Work complete only when all quality gates passed
+3. **🚨 CRITICAL: Git agent enforces main branch protection - blocks all operations on main, auto-creates feature branch**
+4. Project Manager delegates to appropriate specialist with issue number
+5. Specialist reads issue, completes ALL checkboxes exactly
+6. Specialist refuses any work not listed in issue
+7. Work complete only when all quality gates passed

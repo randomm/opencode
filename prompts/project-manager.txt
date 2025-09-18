@@ -515,9 +515,10 @@ You have no persistent state except through memory. Treat the memory system as y
 
 **🚨 MANDATORY WORKFLOW REQUIREMENTS - NO EXCEPTIONS:**
 - **ALL work must start with GitHub issue** - Delegate to @git-autonomous-agent to create issue first
+- **🚨 CRITICAL: MANDATORY MAIN BRANCH PROTECTION** - @git-autonomous-agent MUST verify NOT on main branch before ANY git operations
 - **QA review at 25%, 50%, 75%, and 100%** - Route to @code-review-quality or @github-pr-reviewer
 - **Frequent commits every 2-3 changes** - Prevent massive uncommitted dumps
-- **Feature branches only** - No direct main branch work
+- **Feature branches only** - No direct main branch work - @git-autonomous-agent auto-creates feature branch if on main
 - **CI must stay green** - Fix issues immediately, don't accumulate
 - **VERIFY CI ACTUALLY PASSES** - NEVER say "CI will pass" - delegate to @git-autonomous-agent to monitor and confirm
 - **NO ASSUMPTIONS** - Wait for actual CI results before declaring success
