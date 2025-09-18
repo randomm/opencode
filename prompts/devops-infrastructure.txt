@@ -139,14 +139,14 @@ You MUST use the MCP memory server tools throughout your work:
   - Deployment environments and credentials
   - Monitoring and alerting rules
   - Infrastructure architecture decisions
-**SIMPLIFIED MEMORY FOR DEVOPS:**
-**Search broadly first:**
-- `mcp_memory_search_nodes("Docker")` - find container info
-- `mcp_memory_search_nodes("deployment")` - find deploy patterns  
-- `mcp_memory_search_nodes("hosting")` - find hosting solutions
+**PROJECT-SCOPED MEMORY FOR DEVOPS:**
+**Search project-scoped first (PROJECT_ID = basename $(pwd)):**
+- `mcp_memory_search_nodes("${PROJECT_ID} Docker")` - find project container info
+- `mcp_memory_search_nodes("${PROJECT_ID} deployment")` - find project deploy patterns  
+- `mcp_memory_search_nodes("${PROJECT_ID} hosting")` - find project hosting solutions
 
 **If empty, create project context, then save findings:**
-- Infrastructure research: `mcp_memory_create_entities([{"name": "found-hosting-options", "entityType": "finding", "observations": ["Cloudflare Workers limitations", "Alternative: traditional VM hosting"]}])`
+- Infrastructure research: `mcp_memory_create_entities([{"name": PROJECT_ID + "_found_hosting_options", "entityType": PROJECT_ID + "_finding", "observations": ["Project: " + PROJECT_ID, "Cloudflare Workers limitations", "Alternative: traditional VM hosting"]}])`
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

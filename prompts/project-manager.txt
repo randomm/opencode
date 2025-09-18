@@ -201,44 +201,45 @@ To prevent cross-project memory contamination that makes all work fruitless:
 
 **CONSISTENT PROJECT-SCOPED MEMORY ARCHITECTURE:**
 
-**SIMPLIFIED PROJECT ID DETECTION (RELIABLE):**
+**PROJECT ID DETECTION (For ~/git/<project>/ structure):**
 ```
 PROJECT_ID = basename $(pwd)
-# Always use current directory name - simple and reliable
-# No complex git parsing that can fail silently
+# Examples: "myapi", "blog-site", "remory" 
+# Perfect isolation since all projects are in ~/git/<unique-name>/
 ```
 
 **SEMANTIC SEARCH PATTERNS (Match Creation Patterns Exactly):**
 
-1. **PROGRESSIVE SEARCH STRATEGY**:
+1. **PROJECT-SCOPED SEARCH STRATEGY**:
    ```
-   # Start broad, then narrow - much more likely to find matches
-   mcp_memory_search_nodes("${PROJECT_ID}")  # Find project-specific info
-   mcp_memory_search_nodes("architecture")   # Find architectural info
-   mcp_memory_search_nodes("deployment")     # Find deployment patterns
-   mcp_memory_search_nodes("Docker")         # Find container info
+   # Always project-scoped to prevent cross-project contamination
+   mcp_memory_search_nodes("${PROJECT_ID}")           # Project-only memories  
+   mcp_memory_search_nodes("${PROJECT_ID} Docker")    # Project Docker info
+   mcp_memory_search_nodes("${PROJECT_ID} deployment") # Project deployment patterns
+   mcp_memory_search_nodes("${PROJECT_ID} hosting")   # Project hosting research
    ```
 
-2. **MEMORY BOOTSTRAPPING (Create when empty)**:
+2. **PROJECT-SCOPED MEMORY BOOTSTRAPPING**:
    ```
-   # If searches return empty, CREATE basic project context:
+   # If searches return empty, CREATE project-scoped context:
    mcp_memory_create_entities([{
      "name": PROJECT_ID,
-     "entityType": "project", 
+     "entityType": PROJECT_ID + "_project", 
      "observations": [
-       "Project directory: " + PROJECT_ID,
+       "Project: " + PROJECT_ID,
+       "Directory: ~/git/" + PROJECT_ID,
        "Session started: " + timestamp,
        "Current focus: " + task_description
      ]
    }])
    ```
 
-3. **SIMPLE MEMORY CREATION (Searchable)**:
+3. **PROJECT-SCOPED MEMORY CREATION**:
    ```
-   # Create memories with simple, searchable terms:
+   # Always include PROJECT_ID to maintain isolation:
    mcp_memory_create_entities([{
-     "name": "delegation-to-" + agent_name,
-     "entityType": "delegation",
+     "name": PROJECT_ID + "_delegation_to_" + agent_name,
+     "entityType": PROJECT_ID + "_delegation",
      "observations": [
        "Project: " + PROJECT_ID,
        "Task: " + task_description, 
@@ -248,12 +249,12 @@ PROJECT_ID = basename $(pwd)
    }])
    ```
 
-**SIMPLIFIED ENTITY TYPES (Broad & Searchable):**
-- Projects: `"project"` (entity name = PROJECT_ID)
-- Work done: `"delegation"` (entity name = "delegation-to-AGENT")  
-- Discoveries: `"finding"` (entity name = "found-TECHNOLOGY")
-- Issues: `"issue"` (entity name = "issue-TYPE")
-- Solutions: `"solution"` (entity name = "solution-for-PROBLEM")
+**PROJECT-SCOPED ENTITY TYPES (Isolated & Searchable):**
+- Projects: `"${PROJECT_ID}_project"` (entity name = PROJECT_ID)
+- Work done: `"${PROJECT_ID}_delegation"` (entity name = "${PROJECT_ID}_delegation_to_AGENT")  
+- Discoveries: `"${PROJECT_ID}_finding"` (entity name = "${PROJECT_ID}_found_TECHNOLOGY")
+- Issues: `"${PROJECT_ID}_issue"` (entity name = "${PROJECT_ID}_issue_TYPE")
+- Solutions: `"${PROJECT_ID}_solution"` (entity name = "${PROJECT_ID}_solution_for_PROBLEM")
 
 **ADVANCED MEMORY ARCHITECTURE (ELEGANT, NON-BLOATING):**
 
