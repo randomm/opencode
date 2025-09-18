@@ -201,45 +201,59 @@ To prevent cross-project memory contamination that makes all work fruitless:
 
 **CONSISTENT PROJECT-SCOPED MEMORY ARCHITECTURE:**
 
-**AUTO-DETECT PROJECT ID (CRITICAL - USE SAME LOGIC FOR SEARCH & CREATION):**
+**SIMPLIFIED PROJECT ID DETECTION (RELIABLE):**
 ```
-PROJECT_ID = basename $(git remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//' | tr '[:upper:]' '[:lower:]' | tr '/' '_')
-If no git: PROJECT_ID = basename $(pwd) | tr '[:upper:]' '[:lower:]' | tr '/' '_'
+PROJECT_ID = basename $(pwd)
+# Always use current directory name - simple and reliable
+# No complex git parsing that can fail silently
 ```
 
 **SEMANTIC SEARCH PATTERNS (Match Creation Patterns Exactly):**
 
-1. **PROJECT CONTEXT SEARCH**:
+1. **PROGRESSIVE SEARCH STRATEGY**:
    ```
-   mcp_memory_search_nodes("${PROJECT_ID} architecture context decisions")
-   mcp_memory_search_nodes("${PROJECT_ID} delegation patterns routing")  
-   mcp_memory_search_nodes("${PROJECT_ID} current work active tasks")
-   ```
-
-2. **PROJECT ENTITY CREATION (Must Match Search Patterns)**:
-   ```
-   mcp_memory_create_entities with:
-   - entityType: "${PROJECT_ID}_delegation_log"
-   - name: "${PROJECT_ID} delegation [task_type] to [agent]"
-   - observations: ["Task: [description]", "Routed to: @[agent]", "Reasoning: [why]", "Timestamp: [now]"]
+   # Start broad, then narrow - much more likely to find matches
+   mcp_memory_search_nodes("${PROJECT_ID}")  # Find project-specific info
+   mcp_memory_search_nodes("architecture")   # Find architectural info
+   mcp_memory_search_nodes("deployment")     # Find deployment patterns
+   mcp_memory_search_nodes("Docker")         # Find container info
    ```
 
-3. **PROJECT CONTEXT STORAGE (Consistent with Search)**:
+2. **MEMORY BOOTSTRAPPING (Create when empty)**:
    ```
-   mcp_memory_create_entities with:
-   - entityType: "${PROJECT_ID}_architecture" 
-   - name: "${PROJECT_ID} architecture context decisions"
-   - observations: ["Technology stack: [details]", "Key patterns: [patterns]"]
+   # If searches return empty, CREATE basic project context:
+   mcp_memory_create_entities([{
+     "name": PROJECT_ID,
+     "entityType": "project", 
+     "observations": [
+       "Project directory: " + PROJECT_ID,
+       "Session started: " + timestamp,
+       "Current focus: " + task_description
+     ]
+   }])
    ```
 
-**CONSISTENT ENTITY TYPES (Search ↔ Creation Mapping):**
-- Delegation tracking: `${PROJECT_ID}_delegation_log` 
-- Project context: `${PROJECT_ID}_architecture`
-- Current work: `${PROJECT_ID}_current_work` 
-- Agent performance: `${PROJECT_ID}_agent_performance`
-- Coordination patterns: `${PROJECT_ID}_coordination_patterns`
-- Dependencies: `${PROJECT_ID}_dependencies`
-- Context handoffs: `${PROJECT_ID}_context_handoffs`
+3. **SIMPLE MEMORY CREATION (Searchable)**:
+   ```
+   # Create memories with simple, searchable terms:
+   mcp_memory_create_entities([{
+     "name": "delegation-to-" + agent_name,
+     "entityType": "delegation",
+     "observations": [
+       "Project: " + PROJECT_ID,
+       "Task: " + task_description, 
+       "Agent: " + agent_name,
+       "Outcome: " + result
+     ]
+   }])
+   ```
+
+**SIMPLIFIED ENTITY TYPES (Broad & Searchable):**
+- Projects: `"project"` (entity name = PROJECT_ID)
+- Work done: `"delegation"` (entity name = "delegation-to-AGENT")  
+- Discoveries: `"finding"` (entity name = "found-TECHNOLOGY")
+- Issues: `"issue"` (entity name = "issue-TYPE")
+- Solutions: `"solution"` (entity name = "solution-for-PROBLEM")
 
 **ADVANCED MEMORY ARCHITECTURE (ELEGANT, NON-BLOATING):**
 

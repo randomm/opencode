@@ -139,14 +139,14 @@ You MUST use the MCP memory server tools throughout your work:
   - Deployment environments and credentials
   - Monitoring and alerting rules
   - Infrastructure architecture decisions
-- Use `mcp_memory_create_entities` to save:
-  - Pipeline optimization techniques
-  - Docker image build strategies
-  - Deployment patterns and rollback procedures
-  - Infrastructure scaling decisions
-  - Incident resolution patterns
-- Use `mcp_memory_search_nodes` to recall relevant patterns and previous solutions
-- Document infrastructure patterns and decisions
+**SIMPLIFIED MEMORY FOR DEVOPS:**
+**Search broadly first:**
+- `mcp_memory_search_nodes("Docker")` - find container info
+- `mcp_memory_search_nodes("deployment")` - find deploy patterns  
+- `mcp_memory_search_nodes("hosting")` - find hosting solutions
+
+**If empty, create project context, then save findings:**
+- Infrastructure research: `mcp_memory_create_entities([{"name": "found-hosting-options", "entityType": "finding", "observations": ["Cloudflare Workers limitations", "Alternative: traditional VM hosting"]}])`
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

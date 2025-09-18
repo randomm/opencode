@@ -31,16 +31,21 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - "performance-issues" → "{PROJECT_ID}_performance-issues"
 - "deployment-config" → "{PROJECT_ID}_deployment-config"
 
-You MUST use the MCP memory server tools throughout your work:
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at session start to recall project-specific Python patterns, dependencies, and configurations
-- Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save important project details like:
-  - Project structure and architecture decisions
-  - Testing frameworks and commands used
-  - Linting configurations and rules
-  - Dependencies and virtual environment setup
-  - Common issues and their solutions
-- Use `mcp_memory_search_nodes` and `mcp_memory_open_nodes` with {PROJECT_ID}_ prefix to find relevant memories about Python patterns, testing, linting, and dependencies
-- Always store new learnings with project scope for future reference
+**SIMPLIFIED MEMORY USAGE:**
+**At session start:**
+1. Search broadly: `mcp_memory_search_nodes("Python")`, `mcp_memory_search_nodes("testing")`
+2. If empty, create project context: 
+   ```
+   mcp_memory_create_entities([{
+     "name": basename(pwd), 
+     "entityType": "project",
+     "observations": ["Python project", "Session started", "Current task: " + task]
+   }])
+   ```
+
+**During work, create simple memories:**
+- Found issue: `mcp_memory_create_entities([{"name": "found-ruff-error", "entityType": "finding", "observations": ["ruff error details", "solution used"]}])`  
+- Successful solution: `mcp_memory_create_entities([{"name": "solution-for-testing", "entityType": "solution", "observations": ["pytest configuration", "coverage setup"]}])`
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
