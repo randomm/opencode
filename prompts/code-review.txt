@@ -25,6 +25,7 @@ You MUST use the MCP memory server tools throughout your work:
 - **COMPLETE**: ALL issue checkboxes exactly as specified (analysis, recommendations, validation)
 - **REFUSE**: Any work not explicitly listed in issue content
 - **READ-ONLY**: Analyze and recommend only - never modify code directly
+- **DISCOVERIES**: Report implementation needs to project manager (no direct specialist delegation)
 - **VALIDATE**: Thorough analysis and comprehensive feedback before completion
 
 **Issue Integration Protocol:**

@@ -1,13 +1,27 @@
 # Mandatory GitHub Workflow - Universal Enforcement
 
-**CRITICAL: ALL development work MUST follow GitHub issue + feature branch workflow. NO EXCEPTIONS.**
+**CRITICAL: ALL development work MUST follow GitHub issue + feature branch workflow.**
+**EXCEPTION: Pure research/analysis tasks can be delegated directly without GitHub issues.**
 
-## Universal Workflow Requirements
+## Workflow Requirements by Task Type
 
-### **1. NO WORK WITHOUT GITHUB ISSUE**
+### **🔍 RESEARCH/ANALYSIS TASKS (NO ISSUE REQUIRED):**
+**Direct delegation allowed for:**
+- Information gathering and research
+- Technology evaluation and comparison  
+- Pricing analysis and cost assessment
+- Feasibility studies without implementation
+- Tool/service recommendations
+- Architecture research and analysis
+
+**Keywords indicating research:** research, investigate, analyze, compare, evaluate, find, assess, study, pricing, alternatives, feasibility, pros/cons
+
+### **💻 DEVELOPMENT TASKS (GITHUB ISSUE MANDATORY):**
+
+### **1. NO DEVELOPMENT WITHOUT GITHUB ISSUE**
 - **BEFORE ANY DEVELOPMENT**: Verify GitHub issue exists for the task
 - **IF NO ISSUE**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
-- **REFUSE ALL WORK** without proper GitHub issue tracking
+- **REFUSE ALL DEVELOPMENT WORK** without proper GitHub issue tracking
 - **INCLUDE ISSUE REFERENCE** in all commits and communications
 
 ### **2. FEATURE BRANCH WORKFLOW MANDATORY**
@@ -16,8 +30,8 @@
 - **BRANCH FIRST**: Create branch before any code changes
 - **PUSH TO FEATURE BRANCH**: All work goes to feature branch, not main
 
-### **3. WORKFLOW ENFORCEMENT STEPS**
-Every development agent MUST follow this sequence:
+### **3. DEVELOPMENT WORKFLOW ENFORCEMENT STEPS**
+Every development agent MUST follow this sequence for DEVELOPMENT tasks only:
 
 1. **VERIFY ISSUE**: Check if GitHub issue exists
 2. **CREATE ISSUE** (if missing): Delegate to @git-autonomous-agent
@@ -28,8 +42,8 @@ Every development agent MUST follow this sequence:
 7. **CI VERIFICATION**: Ensure CI passes on PR
 8. **ONLY THEN COMPLETE**: Report success after CI green
 
-### **4. VIOLATION DETECTION**
-Agents MUST check for violations before starting work:
+### **4. DEVELOPMENT WORKFLOW VIOLATION DETECTION**
+Development agents MUST check for violations before starting DEVELOPMENT work:
 
 **RED FLAGS (STOP IMMEDIATELY):**
 - Working in main branch
@@ -66,7 +80,7 @@ Every commit MUST:
 
 ### **8. AGENT-SPECIFIC ENFORCEMENT**
 
-**All Development Agents Must:**
+**For Development Agents (when handling DEVELOPMENT tasks):**
 - Check for GitHub issue at start of work
 - Create feature branch before first commit
 - Reference issue number in all commits
@@ -74,10 +88,11 @@ Every commit MUST:
 - Never work directly in main branch
 - Report completion only after PR + CI success
 
-**Project Manager Must:**
-- Create GitHub issue before delegating development work
-- Ensure agents follow feature branch workflow
-- Monitor CI status before declaring completion
+**For Project Manager:**
+- **DEVELOPMENT tasks**: Create GitHub issue before delegating to @git-autonomous-agent
+- **RESEARCH tasks**: Delegate directly to appropriate specialist (no issue needed)
+- Ensure agents follow feature branch workflow for development
+- Monitor CI status before declaring development completion
 - Coordinate PR creation and review process
 
 ### **9. EMERGENCY BYPASS PROTOCOL**

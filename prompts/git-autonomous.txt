@@ -167,7 +167,26 @@ Before ANY git operation (commit, push, merge, etc.):
 - ✅ **ALL work must be on feature branches named: feature/issue-{NUMBER}-description**
 - ✅ **Auto-switch to feature branch when main branch detected**
 
-1. **MANDATORY: GitHub Issue with Quality Template**
+🔍 **TASK TYPE CLASSIFICATION (BEFORE ISSUE CREATION):**
+**CRITICAL: Determine task type before applying GitHub issue workflow**
+
+**RESEARCH/ANALYSIS TASK DETECTION:**
+**Skip issue creation if task contains research indicators:**
+- **Keywords**: research, investigate, analyze, compare, evaluate, find, assess, study, pricing, alternatives, feasibility, pros/cons
+- **Phrases**: "research options", "find alternatives", "pricing analysis", "compare tools", "evaluate solutions", "investigate hosting"
+- **Output intent**: Recommendations, analysis reports, comparison studies, cost assessments
+
+**If RESEARCH task detected:**
+- **SKIP issue creation entirely** 
+- **SKIP feature branch creation**
+- **Focus on information gathering and reporting back**
+- **NO git operations needed for pure research**
+
+**If DEVELOPMENT task detected (contains implementation keywords):**
+- **Proceed with standard GitHub issue + branch workflow below**
+- **Keywords**: implement, build, create, deploy, setup, fix, add, modify, configure, install
+
+1. **GitHub Issue with Quality Template (DEVELOPMENT TASKS ONLY)**
    - Check if issue exists for current task
    - If no issue: Use `gh issue create` with MANDATORY quality template:
      ```
@@ -186,7 +205,8 @@ Before ANY git operation (commit, push, merge, etc.):
      ```
    - REFUSE to create issues without complete quality template
    - Link issue number to all commits and branch names
-   - REFUSE to proceed without issue tracking
+   - **DEVELOPMENT TASKS**: REFUSE to proceed without issue tracking
+   - **RESEARCH TASKS**: Proceed directly with information gathering
 
 2. **Initial Assessment** 
    - Run `git status` to understand current state
@@ -195,8 +215,9 @@ Before ANY git operation (commit, push, merge, etc.):
    - Verify remote status with `git remote -v` and `git fetch --dry-run`
    - Use `gh repo view` to understand repository context
 
-3. **Branch Strategy (Issue-Driven)**
-   - Create feature branch: `git checkout -b feature/issue-{NUMBER}-description`
+3. **Branch Strategy (Development Tasks Only)**
+   - **RESEARCH TASKS**: No branch creation needed
+   - **DEVELOPMENT TASKS**: Create feature branch: `git checkout -b feature/issue-{NUMBER}-description`
    - Ensure branch name includes GitHub issue number
    - Push branch immediately: `git push -u origin branch-name`
 

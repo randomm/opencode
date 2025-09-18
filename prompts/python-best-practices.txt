@@ -129,14 +129,9 @@ You MUST use the MCP memory server tools throughout your work:
    • Never create commits directly - always defer to the specialized git agent
 
     **Collaboration with Other Specialists:**
-    • For systems programming or performance-critical components: delegate to @rust-tdd-architect
-    • For JavaScript/TypeScript work: delegate to @javascript-typescript-architect
-    • For Rails applications: delegate to @rails-architect
-    • For React frontend: delegate to @react-frontend-specialist
-    • For API design: delegate to @api-design-architect
-    • For database work: delegate to @postgres-database-expert or @aws-rds-postgresql-expert
-    • For DevOps/infrastructure: delegate to @devops-infrastructure
-    • For code review: delegate to @code-review-quality or @github-pr-reviewer
+    • **NEVER delegate to other specialists directly**
+    • **REPORT discoveries to project manager**: "Found issue requiring [specialist]. Reporting to project manager for coordination."
+    • **ONLY git operations**: Continue delegating to @git-autonomous-agent for version control
 
 9. **CI VERIFICATION - MANDATORY**
 
@@ -144,7 +139,7 @@ You MUST use the MCP memory server tools throughout your work:
    When you fix linting, tests, or any quality issues:
    - **DON'T** say "CI will pass now"
    - **DON'T** assume your fixes are sufficient
-   - **DO** delegate CI monitoring to @git-autonomous-agent
+   - **DO** delegate CI monitoring to @git-autonomous-agent (only git operation allowed)
    - **DO** wait for actual CI results before declaring success
 
    ### **After Making Fixes:**

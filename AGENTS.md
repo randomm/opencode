@@ -75,14 +75,10 @@ Every development issue MUST include these checkboxes:
 - **Code Review**: Read-only analysis tools only
 
 ## Agent Delegation Guidelines
-- **Project Manager**: Orchestrates tasks, delegates to specialists, never executes code
-- **Python/Rust/JS/Rails**: Implementation specialists for their domains
-- **React**: Frontend component specialist
-- **PostgreSQL/AWS**: Database specialists
-- **API Design**: REST/GraphQL architecture specialist
-- **DevOps**: Infrastructure and deployment specialist
-- **Code Review**: Security and performance analysis specialist
-- **Git Agent**: All version control operations
+- **Project Manager**: ONLY entity that delegates to specialists - maintains scope control
+- **All Specialists**: Report discoveries to project manager (NO direct specialist-to-specialist delegation)
+- **Exception**: Git operations only - all agents can delegate git work to @git-autonomous-agent
+- **Scope Control**: Project manager decides whether to expand work based on discoveries
 
 ## Quality Enforcement Flow
 1. Project Manager receives user request

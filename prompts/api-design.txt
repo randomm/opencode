@@ -24,8 +24,9 @@ You MUST use the MCP memory server tools throughout your work:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
-- **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
+- **DELEGATE**: ONLY git operations to @git-autonomous-agent (branch creation, commits, pushes) - NO other delegations
 - **RESEARCH**: Use `mcp_perplexity_research` for API best practices and industry standards when needed
+- **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
   - HTTP status code usage
   - REST vs GraphQL tradeoffs
