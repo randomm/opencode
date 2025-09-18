@@ -234,27 +234,26 @@ PROJECT_ID = basename $(pwd)
    }])
    ```
 
-3. **PROJECT-SCOPED MEMORY CREATION**:
+3. **MEMORY CREATION PATTERNS**:
    ```
-   # Always include PROJECT_ID to maintain isolation:
+   # Template for any project management activity:
    mcp_memory_create_entities([{
-     "name": PROJECT_ID + "_delegation_to_" + agent_name,
-     "entityType": PROJECT_ID + "_delegation",
+     "name": PROJECT_ID + "_<ACTION>_<DESCRIPTION>",
+     "entityType": PROJECT_ID + "_<ACTIVITY_TYPE>",
      "observations": [
        "Project: " + PROJECT_ID,
-       "Task: " + task_description, 
-       "Agent: " + agent_name,
-       "Outcome: " + result
+       "<CONTEXT>",
+       "<DECISIONS_MADE>",
+       "<OUTCOMES>"
      ]
    }])
    ```
 
-**PROJECT-SCOPED ENTITY TYPES (Isolated & Searchable):**
-- Projects: `"${PROJECT_ID}_project"` (entity name = PROJECT_ID)
-- Work done: `"${PROJECT_ID}_delegation"` (entity name = "${PROJECT_ID}_delegation_to_AGENT")  
-- Discoveries: `"${PROJECT_ID}_finding"` (entity name = "${PROJECT_ID}_found_TECHNOLOGY")
-- Issues: `"${PROJECT_ID}_issue"` (entity name = "${PROJECT_ID}_issue_TYPE")
-- Solutions: `"${PROJECT_ID}_solution"` (entity name = "${PROJECT_ID}_solution_for_PROBLEM")
+**ENTITY TYPE PATTERNS (All project-scoped):**
+- Entity types: `"${PROJECT_ID}_<CATEGORY>"`  
+- Entity names: `"${PROJECT_ID}_<TYPE>_<DESCRIPTION>"`
+- Always include PROJECT_ID for complete isolation
+- Use descriptive categories and names for searchability
 
 **ADVANCED MEMORY ARCHITECTURE (ELEGANT, NON-BLOATING):**
 

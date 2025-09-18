@@ -31,22 +31,19 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - "performance-issues" → "{PROJECT_ID}_performance-issues"
 - "deployment-config" → "{PROJECT_ID}_deployment-config"
 
-**PROJECT-SCOPED MEMORY USAGE:**
-**At session start (PROJECT_ID = basename $(pwd)):**
-1. Search project-scoped: `mcp_memory_search_nodes("${PROJECT_ID} Python")`, `mcp_memory_search_nodes("${PROJECT_ID} testing")`
-2. If empty, create project context: 
-   ```
-   PROJECT_ID = basename(pwd)
-   mcp_memory_create_entities([{
-     "name": PROJECT_ID, 
-     "entityType": PROJECT_ID + "_project",
-     "observations": ["Python project in ~/git/" + PROJECT_ID, "Session started", "Current task: " + task]
-   }])
-   ```
+**MEMORY USAGE PATTERNS:**
+**Search for project context:**
+- Use pattern: `mcp_memory_search_nodes("${PROJECT_ID} <TOPIC>")`
+- Search broadly first, then narrow to specific needs
 
-**During work, create project-scoped memories:**
-- Found issue: `mcp_memory_create_entities([{"name": PROJECT_ID + "_found_ruff_error", "entityType": PROJECT_ID + "_finding", "observations": ["ruff error details", "solution used"]}])`  
-- Successful solution: `mcp_memory_create_entities([{"name": PROJECT_ID + "_solution_testing", "entityType": PROJECT_ID + "_solution", "observations": ["pytest configuration", "coverage setup"]}])`
+**Create memories when:**
+- Issues are discovered and resolved
+- Testing/linting configurations are established
+- Architecture decisions are made
+- Solutions prove successful
+
+**Memory creation template:**
+`mcp_memory_create_entities([{"name": PROJECT_ID + "_<TYPE>_<DESCRIPTION>", "entityType": PROJECT_ID + "_<CATEGORY>", "observations": ["Project: " + PROJECT_ID, "<CONTEXT>", "<OUTCOME>"]}])`
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
