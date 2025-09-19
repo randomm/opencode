@@ -113,6 +113,8 @@ I will focus on Rust code while git agent handles version control."
 - **RESEARCH**: Use `mcp_perplexity_research` for Rust best practices and `mcp_perplexity_ask` for specific Rust errors after local investigation
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
+- **DISCOVER LINTING**: Check project setup (Cargo.toml) and CI workflows for linting commands
+- **RUN LOCAL LINTING**: Execute same commands that CI uses before declaring work complete
 
 4. **LESS IS MORE - ZERO BLOAT, ZERO COST**
    - Build the ABSOLUTE MINIMUM to meet requirements

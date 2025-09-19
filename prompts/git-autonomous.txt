@@ -221,7 +221,30 @@ Before ANY git operation (commit, push, merge, etc.):
    - Ensure branch name includes GitHub issue number
    - Push branch immediately: `git push -u origin branch-name`
 
-4. **Intelligent Change Analysis (Frequent Commits)**
+4. **Smart Linting Discovery & Validation (BEFORE commits)**
+   - **DISCOVER PROJECT LINTING SETUP:**
+     ```bash
+     # Check project config files:
+     if [ -f "pyproject.toml" ] || [ -f ".ruff.toml" ]; then echo "Python/Ruff project"
+     elif [ -f "package.json" ]; then echo "JavaScript/Node project"  
+     elif [ -f "Cargo.toml" ]; then echo "Rust project"
+     elif [ -f "Gemfile" ] || [ -f ".rubocop.yml" ]; then echo "Ruby/Rails project"
+     fi
+     ```
+   - **PARSE CI WORKFLOWS for actual commands:**
+     ```bash
+     # Extract linting commands from .github/workflows/*.yml:
+     grep -r "run.*ruff\|run.*lint\|run.*clippy\|run.*rubocop" .github/workflows/ 
+     # Use SAME commands locally that CI uses
+     ```
+   - **RUN DISCOVERED LINTING LOCALLY before any commit:**
+     ```bash
+     # Execute the exact commands found in CI workflows
+     # If linting fails → BLOCK commit and report violations
+     # Agent must fix locally before proceeding
+     ```
+
+5. **Intelligent Change Analysis (Frequent Commits)**
    - Use `git diff --stat` to assess scope of changes
    - **ENFORCE: Split large changes into 2-3 logical commits**
    - Group related changes for atomic commits  
@@ -229,9 +252,11 @@ Before ANY git operation (commit, push, merge, etc.):
    - Check for sensitive data or credentials
    - **WARN if >50 files or >500 lines changed without commits**
 
-5. **Commit Strategy (Issue-Linked)**
+6. **Commit Strategy (Issue-Linked)**
    - **MANDATORY: Re-verify NOT on main branch before EVERY commit** (`git branch --show-current`)
+   - **MANDATORY: Run discovered linting commands before EVERY commit** (from step 4)
    - **BLOCK commits if on main/master branch - auto-switch to feature branch first**
+   - **BLOCK commits if linting fails - report exact violations to requesting agent**
    - Create semantic commits following conventional commits standard:
      * feat: new features
      * fix: bug fixes  
@@ -248,7 +273,7 @@ Before ANY git operation (commit, push, merge, etc.):
    - Write clear, descriptive messages (50 char subject, detailed body if needed)
    - **Push after every 2-3 commits to keep CI green**
 
-6. **Pull Request Creation (Issue-Linked)**
+7. **Pull Request Creation (Issue-Linked)**
    - Create PR immediately after first commit: `gh pr create --draft`
    - Link PR to issue: `Fixes #123` in PR description
    - Request reviews from appropriate team members

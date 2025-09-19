@@ -47,12 +47,24 @@ Every development issue MUST include these checkboxes:
 - **EXPAND**: Update issue before adding scope
 - **COMPLETE**: Only when all issue checkboxes are done
 
-## Build/Lint/Test Commands
-- **Python**: `pytest` (tests), `ruff check` (linting), `mypy` (type checking), `black` (formatting)
-- **JavaScript/TypeScript**: `npm test` (tests), `eslint` (linting), `tsc` (type checking)
-- **Rails**: `bundle exec rspec` (tests), `rubocop` (linting)
-- **Rust**: `cargo test` (tests), `clippy` (linting), `rustfmt` (formatting)
-- **Run single test**: `pytest -k "test_name"` or `npm test -- -t "test_name"`
+## Smart Linting Discovery & Documentation
+
+### **Project Linting Discovery Protocol**
+1. **Check project configuration files** for linting setup
+2. **Parse CI workflows** (.github/workflows/*.yml) for actual commands used  
+3. **Use same commands locally** that CI uses for consistency
+4. **If linting setup is missing or undocumented**, enhance project documentation
+
+### **Common Linting Commands (Dynamic Discovery)**
+- **Python**: Check pyproject.toml, .ruff.toml → Use discovered commands or defaults: `ruff check`, `mypy`
+- **JavaScript/TypeScript**: Check package.json, .eslintrc* → Use discovered commands or defaults: `npm run lint`, `tsc`
+- **Rails**: Check Gemfile, .rubocop.yml → Use discovered commands or defaults: `bundle exec rubocop`
+- **Rust**: Check Cargo.toml → Use discovered commands or defaults: `cargo clippy`, `cargo fmt`
+
+### **Documentation Enhancement When Setup Missing**
+- **Add linting commands to README.md** in development section
+- **Include setup instructions** for new contributors  
+- **Document local testing workflow** before pushing to CI
 
 ## CI Monitoring Commands
 - **MANDATORY: Real-time CI monitoring**: `gh run watch [run-id]` (ALWAYS use this - no manual polling)

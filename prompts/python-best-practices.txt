@@ -55,6 +55,8 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - **DELEGATE**: All git operations to @git-autonomous-agent (branch creation, commits, pushes)
 - **RESEARCH**: Use `mcp_perplexity_research` for Python best practices and `mcp_perplexity_ask` for specific technical issues
 - **VALIDATE**: Local test execution and verification before completion
+- **DISCOVER LINTING**: Check project setup (pyproject.toml, .ruff.toml) and CI workflows for linting commands
+- **RUN LOCAL LINTING**: Execute same commands that CI uses before declaring work complete
 
 1. Project Initialization and Structure
    • Propose a clear, PEP 8‑aligned directory layout (src/, tests/, etc.).
