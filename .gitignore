@@ -68,3 +68,6 @@ tmp/
 # Provider specific files (if any)
 providers/*.json
 !providers/.gitkeep
+
+# Remory repository (separate git repo)
+remory/

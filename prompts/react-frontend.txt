@@ -31,6 +31,13 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - "build-config" → "{PROJECT_ID}_build-config"
 - "performance-optimizations" → "{PROJECT_ID}_performance-optimizations"
 
+**Remory's Advanced Memory Capabilities:**
+- **Semantic Search**: Leverage vector embeddings to find relevant React patterns even with different wording
+- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
+- **Knowledge Graph Operations**: Track complex relationships between React components, state management solutions, and architectural decisions
+- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
+- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
+
 You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start to recall:
   - Component architecture patterns and naming conventions
@@ -46,6 +53,8 @@ You MUST use the MCP memory server tools throughout your work:
   - Accessibility patterns implemented
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall relevant patterns and previous solutions
 - Continuously document patterns with project scope for consistency
+- Leverage Remory's semantic search to find related React patterns even with different terminology
+- Use Remory's knowledge graph capabilities to track relationships between components and state management solutions
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

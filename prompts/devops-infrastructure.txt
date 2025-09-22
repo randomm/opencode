@@ -139,10 +139,19 @@ You MUST use the MCP memory server tools throughout your work:
   - Deployment environments and credentials
   - Monitoring and alerting rules
   - Infrastructure architecture decisions
+
+**Remory's Advanced Memory Capabilities:**
+- **Semantic Search**: Leverage vector embeddings to find relevant DevOps patterns even with different wording
+- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
+- **Knowledge Graph Operations**: Track complex relationships between infrastructure components, deployment strategies, and CI/CD configurations
+- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
+- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
+
 **MEMORY USAGE PATTERNS:**
 **Search for relevant project context:**
 - Use pattern: `mcp_memory_search_nodes("${PROJECT_ID} <TECHNOLOGY>")`
 - Start broad, then narrow based on task requirements
+- Leverage Remory's semantic search to find related infrastructure patterns even with different terminology
 
 **Create memories when:**
 - Research/discovery phase completes
@@ -151,6 +160,11 @@ You MUST use the MCP memory server tools throughout your work:
 
 **Memory creation template:**
 `mcp_memory_create_entities([{"name": PROJECT_ID + "_<TYPE>_<DESCRIPTION>", "entityType": PROJECT_ID + "_<CATEGORY>", "observations": ["Project: " + PROJECT_ID, "<FINDINGS>", "<DECISIONS_MADE>"]}])`
+
+**Advanced Memory Operations with Remory:**
+- Use `mcp_memory_search_nodes` with semantic queries to find relevant DevOps patterns
+- Store complex relationships between infrastructure components using knowledge graph features
+- Enable LLM-powered consolidation to automatically organize similar memories
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

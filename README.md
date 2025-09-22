@@ -113,7 +113,66 @@ The system integrates with several Model Context Protocol servers:
 
 - **Perplexity API** - AI-powered research and problem-solving
 - **PostgreSQL Connections** - Multiple database environments
-- **Memory Service** - Persistent context and pattern storage
+- **Memory Service (Remory)** - Enhanced semantic memory with vector embeddings
+
+### Memory Service (Remory)
+
+The system uses **Remory** for advanced memory capabilities, providing significant improvements over basic memory servers:
+
+#### Key Features
+- **Semantic Search** - Vector embeddings enable contextual memory retrieval beyond simple text matching
+- **LLM-Powered Consolidation** - Intelligent memory organization and conflict resolution
+- **Production-Grade Backend** - PostgreSQL with pgvector extension for scalable vector operations
+- **Performance Improvements** - 5-15x faster memory operations compared to JSON file storage
+- **Multi-Agent Support** - Concurrent access for coordinated agent collaboration
+- **Docker Integration** - Containerized deployment for consistent environments
+
+#### Technical Architecture
+- **Memory Server**: `remory_mcp_server` (Docker container)
+- **Database**: `remory_mcp_postgres` with pgvector extension
+- **Interface**: MCP protocol via Docker exec command
+- **Compatibility**: All existing memory tools work seamlessly
+
+#### Setup Requirements
+Before using the agent system, ensure Remory containers are running:
+
+```bash
+# Start Remory services
+docker compose -f docker-compose.mcp.yml up -d
+
+# Verify containers are healthy
+docker ps --filter "name=remory_mcp" --format "table {{.Names}}\t{{.Status}}"
+```
+
+#### Configuration
+The system automatically uses Remory via the `opencode.json` configuration:
+
+```json
+{
+  "mcp": {
+    "memory": {
+      "type": "local",
+      "command": ["docker", "exec", "-i", "remory_mcp_server", "python", "-m", "remory.mcp"],
+      "enabled": true
+    }
+  }
+}
+```
+
+#### Memory Operations
+All agents have access to enhanced memory operations:
+- `memory_create_entities` - Create semantic entities with observations
+- `memory_search_nodes` - Vector-based semantic search
+- `memory_open_nodes` - Retrieve specific memory nodes
+- `memory_add_observations` - Append context to existing entities
+- `memory_read_graph` - Access complete memory structure
+
+#### Performance Benefits
+- **Search Speed**: Vector similarity search vs linear text scanning
+- **Memory Efficiency**: PostgreSQL optimization vs in-memory JSON
+- **Concurrency**: Multi-agent access vs file locking conflicts
+- **Persistence**: Database transactions vs file system reliability
+- **Scalability**: Horizontal scaling support vs single-process limits
 
 ## 📋 Usage Examples
 

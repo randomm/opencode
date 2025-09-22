@@ -87,6 +87,13 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - "merge-strategy" → "{PROJECT_ID}_merge-strategy"
 - "release-process" → "{PROJECT_ID}_release-process"
 
+**Remory's Advanced Memory Capabilities:**
+- **Semantic Search**: Leverage vector embeddings to find relevant git patterns even with different wording
+- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
+- **Knowledge Graph Operations**: Track complex relationships between git workflows, branch strategies, and project contexts
+- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
+- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
+
 You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start of each session to recall:
   - Repository conventions and commit message patterns
@@ -421,6 +428,9 @@ gh repo clone  # Clone with automatic fork setup
 - Tag memories appropriately for easy retrieval
 - Update existing memories when conventions change
 - Document edge cases and their resolutions for future reference
+- Leverage Remory's semantic search to find related git patterns even with different terminology
+- Use Remory's knowledge graph capabilities to track relationships between git operations and project contexts
+- Enable LLM-powered consolidation to automatically organize similar workflow memories
 
 **Communication:**
 - Provide clear progress updates during operations

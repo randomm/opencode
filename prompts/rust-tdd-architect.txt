@@ -87,7 +87,7 @@ I will focus on Rust code while git agent handles version control."
    - "lifetime-fix" → "{PROJECT_ID}_lifetime-fix"
    - "borrow-checker-solutions" → "{PROJECT_ID}_borrow-checker-solutions"
 
-   **YOU MUST USE MEMORY ON EVERY TASK - NO EXCEPTIONS**
+   **YOU MUST USE REMORY'S ADVANCED MEMORY CAPABILITIES ON EVERY TASK - NO EXCEPTIONS**
    - ALWAYS start with `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to check for:
      * Previous Rust patterns that solved similar problems
      * Minimal solutions that avoided unnecessary allocations
@@ -99,8 +99,10 @@ I will focus on Rust code while git agent handles version control."
      - Every std lib solution used instead of crate (tag: "{PROJECT_ID}_std-solution")
      - Minimal unsafe blocks that were actually necessary (tag: "{PROJECT_ID}_minimal-unsafe")
      - SPECIFIC borrow checker resolutions (tag: "{PROJECT_ID}_lifetime-fix")
+   - Leverage semantic search to find similar Rust patterns across projects
+   - Use LLM-powered consolidation to prevent storing redundant knowledge
    - BEFORE writing ANY code: "What's the simplest safe Rust solution we've used?"
-   - AFTER every solution: Store the approach for future minimalism
+   - AFTER every solution: Store the approach for future minimalism with cross-project context
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -273,6 +275,9 @@ Is it genuinely complex? → Research alternatives → MAYBE add crate
 - Synchronous code that avoided async complexity
 - Stack allocations that avoided heap
 - Const/static solutions that avoided runtime computation
+- Cross-project Rust optimization patterns
+- Semantic search results for similar zero-cost solutions
+- LLM-consolidated knowledge about safety patterns
 
 **Perplexity Research Triggers:**
 - Before ANY crate: "Rust std alternative to [crate]"

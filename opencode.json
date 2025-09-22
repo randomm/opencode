@@ -330,7 +330,7 @@
   "mcp": {
     "memory": {
       "type": "local",
-      "command": ["mcp-server-memory"],
+      "command": ["docker", "exec", "-i", "remory_mcp_server", "python", "-m", "remory.mcp"],
       "enabled": true
     },
     "perplexity-ask": {

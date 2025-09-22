@@ -4,6 +4,7 @@
 - **Primary Agent**: Project Manager (orchestrator only - no execution)
 - **Specialist Agents**: Domain experts (Python, Rails, React, Rust, JavaScript, etc.)
 - **Support Agents**: Git, Code Review, DevOps (cross-cutting concerns)
+- **Memory Agent**: Remory - Advanced memory server with semantic search and knowledge graph capabilities
 - **Tool Restrictions**: Project Manager has read-only tools + delegation only
 - **Execution Rule**: Specialists execute, Project Manager coordinates
 
@@ -100,3 +101,12 @@ Every development issue MUST include these checkboxes:
 5. Specialist reads issue, completes ALL checkboxes exactly
 6. Specialist refuses any work not listed in issue
 7. Work complete only when all quality gates passed
+
+## Remory Memory Integration
+All agents integrate with Remory, an advanced memory server that provides:
+- Semantic search with vector embeddings (vs simple text matching)
+- LLM-powered memory consolidation and conflict resolution
+- Production-grade PostgreSQL backend with ACID compliance
+- Multi-agent concurrent memory access support
+- 5-15x performance improvements in memory operations
+- Advanced knowledge graph operations with complex queries

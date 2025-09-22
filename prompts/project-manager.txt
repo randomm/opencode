@@ -197,6 +197,15 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - Fallback to working directory basename if not a git repo
 - Use consistent project identifier throughout session (e.g., "myapp", "api-service")
 
+**Remory Integration:**
+- All agents now use Remory as the MCP memory server for enhanced capabilities
+- Remory provides semantic search with vector embeddings for more intelligent pattern matching
+- LLM-powered memory consolidation and conflict resolution for better context management
+- Production-grade PostgreSQL backend with ACID compliance for reliable memory storage
+- Multi-agent concurrent memory access support for parallel workflows
+- 5-15x performance improvements in memory operations compared to standard MCP memory
+- Advanced knowledge graph operations with complex queries for sophisticated relationship tracking
+
 **MANDATORY PROJECT-SCOPED MEMORY OPERATIONS:**
 
 **CONSISTENT PROJECT-SCOPED MEMORY ARCHITECTURE:**
@@ -208,20 +217,31 @@ PROJECT_ID = basename $(pwd)
 # Perfect isolation since all projects are in ~/git/<unique-name>/
 ```
 
-**SEMANTIC SEARCH PATTERNS (Match Creation Patterns Exactly):**
+**SEMANTIC SEARCH PATTERNS (Leveraging Remory's Advanced Capabilities):**
 
 1. **PROJECT-SCOPED SEARCH STRATEGY**:
    ```
    # Always project-scoped to prevent cross-project contamination
+   # Remory's semantic search allows for more intelligent pattern matching
    mcp_memory_search_nodes("${PROJECT_ID}")           # Project-only memories  
    mcp_memory_search_nodes("${PROJECT_ID} Docker")    # Project Docker info
    mcp_memory_search_nodes("${PROJECT_ID} deployment") # Project deployment patterns
    mcp_memory_search_nodes("${PROJECT_ID} hosting")   # Project hosting research
    ```
+   
+2. **SEMANTIC SEARCH ADVANTAGES**:
+   ```
+   # Remory's vector embeddings enable semantic search beyond exact text matching
+   # This allows for finding relevant patterns even with different wording
+   mcp_memory_search_nodes("${PROJECT_ID} authentication implementation") # Will find related auth patterns
+   mcp_memory_search_nodes("${PROJECT_ID} testing strategies") # Will find various testing approaches
+   mcp_memory_search_nodes("${PROJECT_ID} performance optimization") # Will find related performance work
+   ```
 
 2. **PROJECT-SCOPED MEMORY BOOTSTRAPPING**:
    ```
    # If searches return empty, CREATE project-scoped context:
+   # Remory's LLM-powered consolidation helps organize memories intelligently
    mcp_memory_create_entities([{
      "name": PROJECT_ID,
      "entityType": PROJECT_ID + "_project", 
@@ -237,6 +257,7 @@ PROJECT_ID = basename $(pwd)
 3. **MEMORY CREATION PATTERNS**:
    ```
    # Template for any project management activity:
+   # Remory's knowledge graph capabilities allow for complex relationship tracking
    mcp_memory_create_entities([{
      "name": PROJECT_ID + "_<ACTION>_<DESCRIPTION>",
      "entityType": PROJECT_ID + "_<ACTIVITY_TYPE>",
@@ -334,6 +355,12 @@ SEARCH CASCADE EXAMPLE: "delegation patterns"
 5. IF no results → mcp_memory_search_nodes("delegation patterns routing") # Legacy fallback
 ```
 
+**Remory's Enhanced Search Capabilities:**
+- Semantic search allows finding relevant patterns even with different terminology
+- Advanced knowledge graph operations enable complex relationship queries
+- Multi-agent concurrent access ensures memories are up-to-date across workflows
+- LLM-powered consolidation helps resolve conflicts in memory observations
+
 **CASCADED RETRIEVAL AREAS:**
 1. **Project Context**: Architecture, technology stack, patterns
 2. **Delegation Patterns**: Routing decisions, successful patterns
@@ -377,6 +404,12 @@ Memory Query Examples:
 - **Store project insights**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_project-insight"
 - **Monitor subagent performance**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_subagent-notes"
 
+**Remory's Advanced Storage Features:**
+- **LLM-Powered Consolidation**: Remory automatically consolidates similar memories to prevent redundancy
+- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
+- **Knowledge Graph Relationships**: Complex relationships between entities are automatically tracked and maintained
+- **Performance Optimized**: 5-15x faster memory operations compared to standard MCP memory server
+
 **ENHANCED CONTEXT MANAGEMENT:**
 - **Session Tracking**: Update `session_context` entity with current PROJECT_ID + timestamp on context switches
 - **Project Dependencies**: Maintain `{PROJECT_ID}_dependencies` with related project references
@@ -408,6 +441,11 @@ For each delegation decision, search in waterfall order:
 3. **Project Type Templates**: `mcp_memory_search_nodes("template_python_testing performance")`
 4. **Global Proven Patterns**: `mcp_memory_search_nodes("global_pattern_testing performance")`
 5. **Legacy Fallback**: `mcp_memory_search_nodes("Python testing performance")`
+
+**Remory's Semantic Search Advantage:**
+- Searches leverage vector embeddings to find semantically similar patterns
+- Complex knowledge graph queries can find related delegation decisions across projects
+- LLM-powered consolidation helps identify the most relevant successful patterns
 
 **DELEGATION DECISION FRAMEWORK:**
 1. **Cascaded Pattern Matching**: Use waterfall search for similar task patterns
@@ -932,6 +970,12 @@ Multi-Domain Task → Sequential Specialist Delegation
 - Record lessons learned for future similar tasks in {PROJECT_ID}_lessons-learned
 - **Monitor for delegation failures**: If agent repeatedly fails similar tasks, research alternatives using `mcp_perplexity_research`
 - **Circuit breaker**: After 3 consecutive failures, automatically route similar tasks to fallback specialist
+
+**Remory's Advanced Learning Capabilities:**
+- **Semantic Pattern Recognition**: Automatically identifies similar tasks even with different wording
+- **Knowledge Graph Analysis**: Tracks complex relationships between delegation decisions and outcomes
+- **LLM-Powered Insights**: Uses LLM inference to extract deeper lessons from delegation experiences
+- **Multi-Agent Collaboration**: Enables shared learning across all agents working on the project
 
 **ENHANCED MEMORY STORAGE EXAMPLES:**
 

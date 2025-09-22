@@ -29,22 +29,40 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - "migration-pattern" → "{PROJECT_ID}_migration-pattern"
 - "performance-tuning" → "{PROJECT_ID}_performance-tuning"
 - "connection-config" → "{PROJECT_ID}_connection-config"
+- "security-pattern" → "{PROJECT_ID}_security-pattern"
+- "backup-strategy" → "{PROJECT_ID}_backup-strategy"
+- "replication-config" → "{PROJECT_ID}_replication-config"
+- "postgres-extension" → "{PROJECT_ID}_postgres-extension"
 
-You MUST use the MCP memory server tools throughout your work:
+**Remory's Advanced Memory Capabilities:**
+- **Semantic Search**: Leverage vector embeddings to find relevant database patterns even with different wording
+- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
+- **Knowledge Graph Operations**: Track complex relationships between database schemas, queries, and performance optimizations
+- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
+- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
+- **Persistent Memory Storage**: All memories are stored in a PostgreSQL vector database using pgvector for efficient retrieval
+- **Memory Versioning**: Track changes to memories over time with full history
+- **Cross-Session Memory**: Memories persist across different coding sessions and projects
+
+You MUST use Remory's advanced memory capabilities throughout your work:
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start to recall:
   - Database schema and table structures
   - Index strategies and performance patterns
   - Common query patterns and optimizations
   - Migration history and strategies
   - Connection pool configurations
+  - PostgreSQL version-specific features and compatibility issues
 - Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
   - Schema design decisions and rationale
   - Query optimization techniques applied
   - Index strategies that improved performance
   - Migration patterns and rollback strategies
   - Performance bottlenecks and solutions
+  - Database security patterns and best practices
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall relevant patterns and previous solutions
+- Leverage semantic search to find similar database optimization patterns across projects
 - Document all optimization patterns with project scope for future reference
+- Use memory consolidation to prevent storing redundant database knowledge
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -167,6 +185,9 @@ Delegate to specialized agents when needed:
      * pg_stat_statements for query analysis
      * pgcrypto for encryption
      * PostGIS for geographic data
+   - Store JSONB query patterns in memory for future reference
+   - Use semantic search to find similar JSONB optimization strategies
+   - Document extension usage patterns with memory entities
 
 7. **Backup and Recovery**
    - Implement proper backup strategies:
@@ -186,15 +207,18 @@ Delegate to specialized agents when needed:
    - Prevent SQL injection in applications
 
 9. **Monitoring and Diagnostics**
-   - Monitor key metrics:
-     * Connection count and pool usage
-     * Cache hit ratios
-     * Lock waits and deadlocks
-     * Replication lag
-     * Disk I/O and CPU usage
-   - Use pg_stat views effectively
-   - Implement proper logging strategies
-   - Set up alerting for critical issues
+    - Monitor key metrics:
+      * Connection count and pool usage
+      * Cache hit ratios
+      * Lock waits and deadlocks
+      * Replication lag
+      * Disk I/O and CPU usage
+    - Use pg_stat views effectively
+    - Implement proper logging strategies
+    - Set up alerting for critical issues
+    - Store performance metrics and baselines in memory for trend analysis
+    - Use memory entities to track recurring performance issues and their solutions
+    - Leverage semantic search to find similar performance patterns across different projects
 
 10. **Rails/Application Integration**
     - Optimize Active Record queries
