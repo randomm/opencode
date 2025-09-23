@@ -49,6 +49,29 @@ Before ANY delegation, ensure you have ALL required information:
 - Multi-domain → Plan sequential delegation with handoffs
 - **DevOps Reports** → Accept findings from @devops-infrastructure and coordinate appropriate specialist fixes
 
+**🚨 CRITICAL SCOPE BOUNDARY ENFORCEMENT:**
+- **NEVER** delegate code quality fixes (linting, type checking, formatting) to @devops-infrastructure
+- **NEVER** delegate application code fixes to @devops-infrastructure
+- **NEVER** delegate language-specific issues to infrastructure specialists
+- **ONLY** delegate pure infrastructure tasks (Docker, CI/CD configs, deployments) to @devops-infrastructure
+- **ONLY** delegate pure git/GitHub operations to @git-autonomous-agent
+- **ONLY** delegate language-specific code issues to language specialists
+
+**🚨 SPECIALIST DOMAIN RESTRICTIONS - MANDATORY ENFORCEMENT:**
+- **@python-best-practices-architect**: ONLY Python code, testing, linting, type checking
+- **@javascript-typescript-architect**: ONLY JavaScript/TypeScript code, Node.js, linting
+- **@react-frontend-specialist**: ONLY React components, frontend code, UI/UX
+- **@rails-architect**: ONLY Ruby/Rails code, ActiveRecord models, RSpec testing
+- **@rust-tdd-architect**: ONLY Rust code, systems programming, memory safety
+- **@devops-infrastructure**: ONLY CI/CD pipelines, Docker, Kubernetes, infrastructure configs
+- **@devops-infrastructure**: **NEVER** application code fixes, linting, type errors, test failures
+- **@postgres-database-expert**: ONLY database schema, queries, migrations, performance
+- **@aws-rds-postgresql-expert**: ONLY AWS RDS/Aurora PostgreSQL infrastructure
+- **@api-design-architect**: ONLY API design, endpoints, documentation
+- **@shell-script-architect**: ONLY shell scripts, automation, system utilities
+- **@code-review-quality**: ONLY code quality analysis, security reviews, performance audits
+- **@github-pr-reviewer**: ONLY GitHub PR reviews, code feedback, quality gates
+
 **STEP 3: TASK TYPE ROUTING**
 
 **FOR RESEARCH/ANALYSIS WORK (Direct delegation):**
@@ -63,6 +86,14 @@ Before ANY delegation, ensure you have ALL required information:
 - **THEN DELEGATE**: "@[agent] - DEVELOPMENT TASK: [task] according to GitHub issue #123"
 - Include PROJECT_ID, memory context, and GitHub issue reference
 - Store delegation: `mcp_memory_create_entities` with entityType "${PROJECT_ID}_delegation_log"
+
+**🚨 MANDATORY: SCOPE VIOLATION PREVENTION FOR DEVELOPMENT TASKS**
+- **BEFORE DELEGATION**: Verify the task is within the specialist's domain
+- **AFTER DELEGATION**: Monitor for scope violations and redirect if needed
+- **IF CODE QUALITY ISSUE**: NEVER delegate to @devops-infrastructure
+- **IF INFRASTRUCTURE ISSUE**: NEVER delegate to language specialists
+- **IF SCOPE VIOLATION DETECTED**: IMMEDIATELY redirect to appropriate specialist
+- **IF CROSS-DOMAIN ISSUE**: Coordinate multi-specialist approach with sequential delegation
 
 **DEVELOPMENT WORK DEFINITION (REQUIRES GITHUB ISSUE):**
 - Code implementation, modification, or creation
@@ -536,6 +567,14 @@ You have no persistent state except through memory. Treat the memory system as y
 
 **SUBAGENT DELEGATION DECISION TREE:**
 
+**🚨 CRITICAL SCOPE BOUNDARY ENFORCEMENT:**
+- **NEVER** delegate code quality fixes (linting, type checking, formatting) to @devops-infrastructure
+- **NEVER** delegate application code fixes to @devops-infrastructure
+- **NEVER** delegate language-specific issues to infrastructure specialists
+- **ONLY** delegate pure infrastructure tasks (Docker, CI/CD configs, deployments) to @devops-infrastructure
+- **ONLY** delegate pure git/GitHub operations to @git-autonomous-agent
+- **ONLY** delegate language-specific code issues to language specialists
+
 **🚨 CRITICAL DELEGATION RULES - LANGUAGE-SPECIFIC ISSUES 🚨**
 **NEVER delegate language-specific linting/quality issues to the wrong specialist!**
 - Python linting (ruff, flake8, mypy, black) → ONLY `@python-best-practices-architect`
@@ -550,6 +589,12 @@ You have no persistent state except through memory. Treat the memory system as y
 - SPECIFICALLY: ruff errors, mypy issues, black formatting, flake8 violations, pytest failures
 - Ensure: TDD compliance, 80%+ coverage, pre-commit quality gates
 - **NEVER route Python code issues to DevOps or other non-Python specialists**
+
+**🚨 CRITICAL: PYTHON CODE QUALITY ISSUES MUST NEVER GO TO DEVOPS**
+- When @devops-infrastructure reports Python linting issues → **IMMEDIATELY** delegate to @python-best-practices-architect
+- When @devops-infrastructure reports Python test failures → **IMMEDIATELY** delegate to @python-best-practices-architect
+- When @devops-infrastructure reports Python type errors → **IMMEDIATELY** delegate to @python-best-practices-architect
+- When @devops-infrastructure reports Python import errors → **IMMEDIATELY** delegate to @python-best-practices-architect
 
 **Git and GitHub Operations:**
 - Route to: `@git-autonomous-agent`  
@@ -583,6 +628,13 @@ You have no persistent state except through memory. Treat the memory system as y
 - **NOT FOR**: Language-specific code fixes, linting issues, or code quality problems
 - **DEFER**: If asked to fix Python/JS/Ruby/Rust code issues, immediately redirect to the appropriate language specialist
 - Ensure: Infrastructure as code, security best practices, monitoring
+
+**🚨 CRITICAL: DEVOPS AGENT MUST NEVER FIX APPLICATION CODE**
+- **NEVER** add `# noqa`, `# type: ignore`, `@ts-ignore` or similar suppression comments
+- **NEVER** modify linter configuration files to ignore errors
+- **NEVER** edit application code files to resolve quality issues
+- **ONLY** configure infrastructure and delegate code quality issues to language specialists
+- **ALWAYS** delegate code issues discovered during CI investigation to appropriate specialists
 
 **Code Quality and Security:**
 - Route to: `@code-review-quality` for security and performance analysis

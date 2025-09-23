@@ -87,6 +87,13 @@ Every commit MUST:
 - Push to feature branch regularly
 - Never work directly in main branch
 - Report completion only after PR + CI success
+- **NEVER fix code quality issues discovered in CI** - delegate to Project Manager for proper routing
+- **ONLY work within your domain expertise** - report cross-domain issues to Project Manager
+- **NEVER modify application code to fix linting/type errors** - delegate to appropriate language specialist
+- **NEVER add suppression comments** (`# noqa`, `# type: ignore`, `@ts-ignore`) to application code files
+- **NEVER edit code files to resolve quality issues** - report findings to Project Manager for proper delegation
+- **SCOPE VIOLATION PREVENTION**: If you discover issues outside your domain during work, STOP and report to Project Manager immediately
+- **DOMAIN RESTRICTIONS**: Only work on tasks explicitly within your technology stack and expertise area
 
 **For Project Manager:**
 - **DEVELOPMENT tasks**: Create GitHub issue before delegating to @git-autonomous-agent
@@ -94,15 +101,106 @@ Every commit MUST:
 - Ensure agents follow feature branch workflow for development
 - Monitor CI status before declaring development completion
 - Coordinate PR creation and review process
+- **ENFORCE SPECIALIST DOMAIN RESTRICTIONS** - redirect cross-domain work to appropriate specialists
+- **COORDINATE MULTI-DOMAIN TASKS** - plan sequential delegation for cross-cutting features
 
-### **9. EMERGENCY BYPASS PROTOCOL**
+### **9. SPECIALIST DOMAIN RESTRICTIONS - MANDATORY**
+
+**🚨 CRITICAL DOMAIN BOUNDARIES - CROSSING THESE IS A VIOLATION:**
+
+**@python-best-practices-architect**:
+- ✅ Python code, testing, linting, type checking
+- ✅ pytest, ruff, mypy, black configurations
+- ✅ Python import errors, type hints, async patterns
+- ❌ NEVER Dockerfiles, CI/CD configs, infrastructure
+- ❌ NEVER JavaScript, React, or other language code
+
+**@javascript-typescript-architect**:
+- ✅ JavaScript/TypeScript code, Node.js
+- ✅ ESLint, TypeScript configurations
+- ✅ JavaScript import errors, type checking issues
+- ❌ NEVER Dockerfiles, CI/CD configs, infrastructure
+- ❌ NEVER Python, Ruby, or other language code
+
+**@react-frontend-specialist**:
+- ✅ React components, frontend code, UI/UX
+- ✅ TypeScript interfaces for frontend
+- ✅ JSX syntax issues, React-specific linting problems
+- ❌ NEVER backend logic, database queries, infrastructure
+- ❌ NEVER Python, Ruby, or other backend code
+
+**@rails-architect**:
+- ✅ Ruby/Rails code, ActiveRecord models, RSpec testing
+- ✅ RuboCop configurations
+- ✅ Rails routing, model, controller issues
+- ❌ NEVER Dockerfiles, CI/CD configs, infrastructure
+- ❌ NEVER Python, JavaScript, or other language code
+
+**@rust-tdd-architect**:
+- ✅ Rust code, systems programming, memory safety
+- ✅ clippy, rustfmt configurations
+- ✅ Rust compilation errors, borrow checker issues
+- ❌ NEVER Dockerfiles, CI/CD configs, infrastructure
+- ❌ NEVER Python, JavaScript, Ruby, or other language code
+
+**@devops-infrastructure**:
+- ✅ CI/CD pipelines, Docker, Kubernetes, infrastructure configs
+- ✅ Infrastructure as Code (Terraform, CloudFormation)
+- ✅ Deployment strategies and rollback procedures
+- ✅ Monitoring, logging, and observability setup
+- ❌ **NEVER** application code fixes, linting, type errors, test failures
+- ❌ **NEVER** add `# noqa`, `# type: ignore`, `@ts-ignore` or similar suppression comments
+- ❌ **NEVER** modify linter configuration files to ignore errors
+- ❌ **NEVER** edit application code files to resolve quality issues
+- ❌ **NEVER** fix import errors, syntax issues, or any language-specific problems
+- **ONLY**: Report code quality issues to @project-manager for proper delegation
+
+**@postgres-database-expert**:
+- ✅ Database schema, queries, migrations, performance
+- ✅ SQL syntax errors, indexing problems, query optimization
+- ❌ NEVER application code, frontend components, infrastructure
+- ❌ NEVER Python, JavaScript, Ruby, or other language code
+
+**@aws-rds-postgresql-expert**:
+- ✅ AWS RDS/Aurora PostgreSQL infrastructure
+- ✅ Cloud database performance, scaling, monitoring
+- ❌ NEVER application code, frontend components
+- ❌ NEVER Python, JavaScript, Ruby, or other language code
+
+**@api-design-architect**:
+- ✅ API design, endpoints, documentation
+- ✅ REST principles, HTTP status codes, versioning
+- ❌ NEVER implementation code, infrastructure
+- ❌ NEVER Python, JavaScript, Ruby, or other language code
+
+**@shell-script-architect**:
+- ✅ Shell scripts, automation, system utilities
+- ✅ Bash syntax, POSIX compliance, portability issues
+- ❌ NEVER application code, infrastructure configs
+- ❌ NEVER Python, JavaScript, Ruby, or other language code
+
+### **10. SCOPE VIOLATION HANDLING**
+
+**When ANY specialist discovers issues outside their domain:**
+- **STOP WORK IMMEDIATELY** - Do not attempt to fix cross-domain issues
+- **REPORT to @project-manager** with clear details about the discovered issues
+- **WAIT for proper delegation** from @project-manager to the appropriate specialist
+- **CONTINUE with authorized work only** after reporting scope violations
+
+**Example of proper scope violation handling:**
+```
+❌ WRONG: "@devops-infrastructure discovered Python linting errors and is fixing them directly"
+✅ RIGHT: "@devops-infrastructure discovered Python linting errors during CI investigation and is reporting them to @project-manager for proper delegation to @python-best-practices-architect"
+```
+
+### **11. EMERGENCY BYPASS PROTOCOL**
 **ONLY for critical production hotfixes:**
 - Explicit user approval required
 - Must include "HOTFIX" in all commit messages  
 - Create GitHub issue retroactively
 - Follow up with proper PR for audit trail
 
-### **10. WORKFLOW VERIFICATION CHECKLIST**
+### **12. WORKFLOW VERIFICATION CHECKLIST**
 Before reporting any development task complete:
 
 - ✅ GitHub issue exists and is referenced
