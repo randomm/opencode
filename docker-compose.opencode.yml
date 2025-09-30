@@ -1,0 +1,71 @@
+# Docker Compose configuration for OpenCode Sandbox
+# Provides isolated environment for OpenCode CLI with MCP server access
+#
+# Usage:
+#   docker compose -f docker-compose.opencode.yml up -d
+#   docker exec -it opencode_sandbox zsh
+#
+# Or use the convenience script:
+#   ./scripts/opencode-sandbox
+
+services:
+  # ===========================================================================
+  # OpenCode Sandbox - Isolated OpenCode CLI environment
+  # ===========================================================================
+  opencode-sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
+      args:
+        USER_ID: ${USER_ID:-1000}
+        GROUP_ID: ${GROUP_ID:-1000}
+    container_name: opencode_sandbox
+    networks:
+      - remory_network
+    environment:
+      # Pass through API keys
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY}
+      # OpenCode will use container-specific config
+      - OPENCODE_CONFIG=/home/opencode/.config/opencode/opencode.container.json
+    volumes:
+      # Project workspace (bidirectional)
+      - ${WORKSPACE:-${HOME}/git}:/workspace
+      # OpenCode configuration (read-only host config + writable container config)
+      - ./opencode.container.json:/home/opencode/.config/opencode/opencode.container.json:ro
+      - ./prompts:/home/opencode/.config/opencode/prompts:ro
+      - ./instructions:/home/opencode/.config/opencode/instructions:ro
+      - ./CLAUDE.md:/home/opencode/.config/opencode/CLAUDE.md:ro
+      # SSH keys for git operations (read-only)
+      - ${HOME}/.ssh:/home/opencode/.ssh:ro
+      # Git config (read-only)
+      - ${HOME}/.gitconfig:/home/opencode/.gitconfig:ro
+      # OpenCode data from host (includes auth, logs, projects)
+      - ${HOME}/.local/share/opencode:/home/opencode/.local/share/opencode
+      # OpenCode binary (container-specific ARM64 build)
+      - opencode_bin:/home/opencode/.opencode
+      # Docker socket for MCP server access
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    # Allow Docker socket access
+    user: "opencode"
+    group_add:
+      - "0"  # Add root group for Docker socket access
+    # Keep container running
+    command: tail -f /dev/null
+
+# ===========================================================================
+# Network Configuration
+# ===========================================================================
+networks:
+  remory_network:
+    external: true
+    name: remory_network
+
+# ===========================================================================
+# Volumes
+# ===========================================================================
+volumes:
+  opencode_bin:
+    driver: local

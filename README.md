@@ -217,10 +217,157 @@ Project Manager:
 - **Performance conscious** - N+1 query detection, bundle analysis
 - **Accessibility compliance** - WCAG 2.1 AA minimum
 
+## 🐳 Sandboxed Usage (Recommended)
+
+For maximum security and isolation, run OpenCode inside a Docker container. This setup:
+- ✅ Prevents OpenCode from accessing sensitive host system files
+- ✅ Isolates AI agent operations within container boundaries
+- ✅ Enables `--dangerously-skip-permissions` mode safely
+- ✅ Maintains full MCP server access via HTTP gateway
+- ✅ Provides bidirectional workspace sync for code changes
+
+### Quick Start
+
+```bash
+# One-line launcher (from any directory)
+~/.config/opencode/scripts/opencode-sandbox
+
+# Or specify custom workspace
+~/.config/opencode/scripts/opencode-sandbox ~/my-project
+
+# Update to latest OpenCode CLI (rebuilds container)
+~/.config/opencode/scripts/opencode-sandbox --update
+
+# Check OpenCode version in container
+~/.config/opencode/scripts/opencode-sandbox --version
+```
+
+Inside the container, use OpenCode normally:
+```bash
+# All agents and MCP servers work transparently
+opencode "Review this codebase and suggest improvements"
+
+# Git operations work with your SSH keys (mounted read-only)
+git commit -m "feat: add new feature"
+
+# Exit when done
+exit
+```
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│              Docker Bridge Network                  │
+│                                                     │
+│  ┌──────────────┐    ┌─────────────────┐          │
+│  │   OpenCode   │───▶│  MCP Gateway    │          │
+│  │  Container   │    │  (HTTP/SSE)     │          │
+│  │              │    │                 │          │
+│  │ - Isolated   │    │  ├─ Remory      │──┐      │
+│  │ - No host    │    │  └─ Perplexity  │  │      │
+│  │   access     │    └─────────────────┘  │      │
+│  └──────────────┘                          │      │
+│                      ┌──────────────────┐  │      │
+│                      │ Remory MCP Server│◀─┘      │
+│                      │ + PostgreSQL     │          │
+│                      └──────────────────┘          │
+└─────────────────────────────────────────────────────┘
+
+Mounts:
+- Workspace: ~/git → /workspace (bidirectional)
+- SSH Keys: ~/.ssh → /home/opencode/.ssh (read-only)
+- Git Config: ~/.gitconfig (read-only)
+```
+
+### What's Inside
+
+**Container Stack:**
+- `opencode_sandbox` - Alpine Linux + Node.js 20 + OpenCode CLI
+- `opencode_mcp_gateway` - Protocol translator (STDIO → HTTP/SSE)
+- `remory_mcp_server` - Semantic memory with PostgreSQL backend
+- `remory_mcp_postgres` - PostgreSQL + pgvector
+
+**MCP Integration:**
+- Container uses `opencode.container.json` config
+- MCP servers accessed via HTTP endpoints (no STDIO)
+- Gateway handles protocol translation automatically
+
+### Manual Control
+
+```bash
+# Start sandbox
+cd ~/.config/opencode
+docker compose -f docker-compose.opencode.yml up -d --build
+
+# Enter sandbox
+docker exec -it opencode_sandbox zsh
+
+# Check gateway status
+docker logs opencode_mcp_gateway
+
+# Stop sandbox
+docker compose -f docker-compose.opencode.yml down
+```
+
+### Keeping OpenCode Updated
+
+OpenCode CLI receives frequent updates (often daily). To update your container:
+
+```bash
+# Force rebuild with latest OpenCode from npm
+~/.config/opencode/scripts/opencode-sandbox --update
+
+# Compare container vs host versions
+~/.config/opencode/scripts/opencode-sandbox --version
+```
+
+The `--update` flag:
+- Rebuilds the Docker image with `--no-cache`
+- Downloads the latest `@opencode/opencode` from npm
+- Preserves all your project files and configurations
+
+**Recommended:** Update weekly or when encountering issues.
+
+### Troubleshooting
+
+**MCP servers not working?**
+```bash
+# Check Remory is running
+docker ps --filter "name=remory_mcp"
+
+# Restart Remory if needed
+cd ~/git/remory
+docker compose -f docker-compose.mcp.yml up -d
+
+# Check gateway logs
+docker logs opencode_mcp_gateway
+```
+
+**Permission issues?**
+```bash
+# Rebuild with correct UID/GID
+export USER_ID=$(id -u)
+export GROUP_ID=$(id -g)
+docker compose -f docker-compose.opencode.yml up -d --build
+```
+
+**Container won't start?**
+```bash
+# Check Docker is running
+docker info
+
+# Check for port conflicts
+docker ps
+
+# View compose logs
+docker compose -f docker-compose.opencode.yml logs
+```
+
 ## 📝 Environment Variables Required
 
 Set in `~/.env`:
-- `PERPLEXITY_API_KEY`
+- `PERPLEXITY_API_KEY` (required for Perplexity MCP server)
 - `FUZU_METABASE_DB`
 - `FUZU_PRODUCTION_DB_RO`
 - `FUZU_STAGING_DB`
