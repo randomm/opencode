@@ -18,6 +18,22 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 - Leverage semantic search to find similar API design patterns across projects
 - Document API patterns for consistency with LLM-powered consolidation to prevent redundancy
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (API Design):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_api_design_patterns` - Endpoint structure, naming conventions, RESTful patterns
+- `${PROJECT_ID}_api_versioning_approach` - Versioning strategy, deprecation policies
+- `${PROJECT_ID}_api_auth_strategy` - Authentication/authorization approach, security implementations
+- `${PROJECT_ID}_api_documentation_style` - Documentation standards, API specs (OpenAPI/Swagger)
+
+**STORE AFTER WORK:**
+- API endpoint design decisions and rationale
+- Versioning strategy and migration approach
+- Authentication and authorization implementations
+- Error response formats and status code conventions
+- Rate limiting and throttling configurations
+- API documentation patterns and standards
+
 **PROJECT-SCOPED API ENTITY TYPES:**
 - "api-design" → "{PROJECT_ID}_api-design"
 - "endpoint-pattern" → "{PROJECT_ID}_endpoint-pattern"

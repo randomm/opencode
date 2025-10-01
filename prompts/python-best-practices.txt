@@ -59,6 +59,21 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - Store complex relationships between components using knowledge graph features
 - Enable LLM-powered consolidation to automatically organize similar memories
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (Python):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_python_testing_setup` - pytest configuration, fixtures, coverage requirements
+- `${PROJECT_ID}_python_linting_config` - ruff, mypy, black configurations and standards
+- `${PROJECT_ID}_python_dependencies` - Package management approach, version constraints
+- `${PROJECT_ID}_python_async_patterns` - AsyncIO usage patterns and event loop handling
+
+**STORE AFTER WORK:**
+- Testing strategies that proved effective (parallel execution, mocking patterns)
+- Linting configurations and rule rationale
+- Dependency decisions and version compatibility notes
+- Performance optimizations discovered
+- Integration patterns with other components
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements

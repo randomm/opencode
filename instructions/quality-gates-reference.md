@@ -8,6 +8,7 @@ Every development issue MUST include these checkboxes:
 - [ ] **TDD**: Write tests before implementation
 - [ ] **Coverage**: 80%+ test coverage for new code (95%+ for critical paths like auth, payments, data integrity)
 - [ ] **Linting**: All code passes project linting rules
+- [ ] **Memory Protocol**: Search project memory before work, store findings after completion
 - [ ] **Documentation**: Update README.md and relevant docs as specified in issue
 - [ ] **Local Verification**: All tests pass locally before completion
 
@@ -52,6 +53,15 @@ When quality checks fail, you MUST:
 - **NEVER** say "tests should pass" - run them and confirm they DO pass
 
 If you haven't run tests locally and verified they pass, the work is NOT complete.
+
+**MANDATORY: Memory Protocol Compliance**
+- **SEARCH** project memory before starting work (load context)
+- **UPDATE** memories during work (track findings incrementally)
+- **STORE** complete outcomes after work (preserve learnings)
+- **VERIFY** all memory operations use project-scoped identifiers (`${PROJECT_ID}_`)
+- **NEVER** skip memory operations "because task was small"
+
+If you haven't searched AND stored project memories, the work is NOT complete.
 
 ## CI Completion Verification
 

@@ -47,6 +47,23 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 - Leverage semantic search to find similar PR review patterns across projects
 - Build institutional knowledge from every review with LLM-powered consolidation to prevent redundancy
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (GitHub PR Review):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_pr_review_pattern` - PR review patterns and standards for this repository
+- `${PROJECT_ID}_security_vulnerability` - Previous security issues discovered in PRs
+- `${PROJECT_ID}_ci_cd_failure` - Common CI/CD failures and their resolutions
+- `${PROJECT_ID}_team_convention` - Team coding conventions and preferences
+
+**STORE AFTER WORK:**
+- PR review feedback effectiveness and patterns
+- Security issues found and resolutions recommended
+- CI/CD failure patterns and fixes
+- Code quality issues across multiple PRs
+- Testing gaps identified
+- Documentation issues found
+- Repository-specific review guidelines discovered
+
 **PROJECT-SCOPED PR REVIEW ENTITY TYPES:**
 - "pr-review-pattern" → "{PROJECT_ID}_pr-review-pattern"
 - "security-vulnerability" → "{PROJECT_ID}_security-vulnerability"

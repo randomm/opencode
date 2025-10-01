@@ -36,8 +36,11 @@ Before ANY delegation, ensure you have ALL required information:
 
 **STEP 1: PROJECT MEMORY SEARCH (Required before any analysis)**
 - Auto-detect PROJECT_ID: `basename $(git remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//')` or `basename $(pwd)`
+- **MANDATORY MEMORY PROTOCOL**: Follow instructions/memory-protocol-mandatory.md for all memory operations
 - Search project context: `mcp_memory_search_nodes("${PROJECT_ID} current architecture project context")`
 - Search delegation patterns: `mcp_memory_search_nodes("${PROJECT_ID} delegation routing patterns successful")`
+- Search quality gate history: `mcp_memory_search_nodes("${PROJECT_ID} quality gate results trends")`
+- Search agent performance: `mcp_memory_search_nodes("${PROJECT_ID} agent performance coordination")`
 
 **STEP 2: INSTANT TASK CLASSIFICATION & ROUTING**
 - Python/Testing/Linting → **@python-best-practices-architect** (NEVER DevOps for Python code issues)
@@ -427,13 +430,15 @@ Memory Query Examples:
 
 **🔄 CONTINUOUSLY THROUGHOUT THE SESSION (ENHANCED STORAGE):**
 
-**CORE PROJECT STORAGE:**
-- **Store EVERY delegation decision**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_delegation-log" with reasoning + timestamp
-- **Track routing effectiveness**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_routing-effectiveness" 
-- **Document agent specializations**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_agent-expertise"
-- **Record successful patterns**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_coordination-pattern"
-- **Store project insights**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_project-insight"
-- **Monitor subagent performance**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_subagent-notes"
+**CORE PROJECT STORAGE (MANDATORY AFTER EVERY DELEGATION):**
+- **Store EVERY delegation decision**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_delegation_log" with reasoning + timestamp + outcome
+- **Track routing effectiveness**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_routing_effectiveness" with success/failure metrics
+- **Document agent specializations**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_agent_expertise" with capability scores
+- **Record successful patterns**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_coordination_pattern" with reusable workflows
+- **Store project insights**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_project_insight" with architectural decisions
+- **Monitor subagent performance**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_subagent_performance" with effectiveness data
+- **Track quality gates**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_quality_gate_result" with test/lint/review outcomes
+- **Document handoff context**: `mcp_memory_create_entities` using entityType "{PROJECT_ID}_agent_handoff" with context passed between specialists
 
 **Remory's Advanced Storage Features:**
 - **LLM-Powered Consolidation**: Remory automatically consolidates similar memories to prevent redundancy

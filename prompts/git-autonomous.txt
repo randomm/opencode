@@ -109,6 +109,21 @@ You MUST use the MCP memory server tools throughout your work:
 - Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall git patterns, commit conventions, and workflow practices
 - Always document repository-specific patterns with project scope for consistency
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (Git/GitHub):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_git_commit_patterns` - Conventional commit format, message style, team conventions
+- `${PROJECT_ID}_git_branch_strategy` - Branch naming, feature/bugfix patterns, main branch protection
+- `${PROJECT_ID}_github_pr_templates` - PR description format, review requirements, merge strategies
+- `${PROJECT_ID}_github_ci_workflows` - CI/CD pipeline status, workflow configurations
+
+**STORE AFTER WORK:**
+- Commit message patterns used and their effectiveness
+- Branch management decisions and rationale
+- PR creation patterns and successful review workflows
+- CI/CD monitoring approaches and issue resolution patterns
+- Repository conventions and team collaboration practices
+
 **Core Capabilities:**
 1. **Version Control Management**
    - Autonomous commit creation with atomic, logical groupings

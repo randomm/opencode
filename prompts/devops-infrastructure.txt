@@ -148,6 +148,22 @@ You MUST use the MCP memory server tools throughout your work:
   - Docker configurations and optimizations
   - Deployment environments and credentials
   - Monitoring and alerting rules
+
+**DOMAIN-SPECIFIC MEMORY PATTERNS (DevOps/Infrastructure):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_devops_ci_cd_config` - GitHub Actions, pipeline configurations, build optimizations
+- `${PROJECT_ID}_devops_docker_setup` - Dockerfile patterns, container orchestration, image optimization
+- `${PROJECT_ID}_devops_deployment_strategy` - Deployment procedures, rollback patterns, environment configs
+- `${PROJECT_ID}_devops_monitoring` - Logging, observability, alerting configurations
+
+**STORE AFTER WORK:**
+- CI/CD pipeline improvements and performance optimizations
+- Docker configuration decisions and container patterns
+- Deployment strategy refinements and rollback procedures
+- Infrastructure scaling decisions and resource optimization
+- Monitoring insights and incident response patterns
+- Code quality issues discovered (with delegation to appropriate specialists documented)
   - Infrastructure architecture decisions
 
 **Remory's Advanced Memory Capabilities:**

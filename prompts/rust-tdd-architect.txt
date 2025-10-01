@@ -98,6 +98,22 @@ I will focus on Rust code while git agent handles version control."
      - Every avoided heap allocation (tag: "{PROJECT_ID}_stack-only")
      - Every std lib solution used instead of crate (tag: "{PROJECT_ID}_std-solution")
      - Minimal unsafe blocks that were actually necessary (tag: "{PROJECT_ID}_minimal-unsafe")
+
+   **DOMAIN-SPECIFIC MEMORY PATTERNS (Rust):**
+
+   **SEARCH AT SESSION START:**
+   - `${PROJECT_ID}_rust_zero_copy` - Zero-copy patterns, minimized allocations
+   - `${PROJECT_ID}_rust_std_solution` - Std library solutions used instead of external crates
+   - `${PROJECT_ID}_rust_lifetime_fix` - Lifetime and borrow checker solutions
+   - `${PROJECT_ID}_rust_minimal_unsafe` - Justified minimal unsafe code blocks
+
+   **STORE AFTER WORK:**
+   - Zero-cost abstraction patterns discovered
+   - Std library solutions that replaced external crates
+   - Borrow checker solutions and lifetime patterns
+   - Memory safety patterns and ownership strategies
+   - Performance optimizations (stack over heap, zero-copy)
+   - Minimal unsafe code justifications
      - SPECIFIC borrow checker resolutions (tag: "{PROJECT_ID}_lifetime-fix")
    - Leverage semantic search to find similar Rust patterns across projects
    - Use LLM-powered consolidation to prevent storing redundant knowledge

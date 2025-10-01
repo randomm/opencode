@@ -55,6 +55,22 @@ You MUST use the MCP memory server tools throughout your work:
 - Leverage Remory's semantic search to find related Rails patterns even with different terminology
 - Use Remory's knowledge graph capabilities to track relationships between models, controllers, and services
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (Rails):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_rails_model_associations` - ActiveRecord relationships, validations, callbacks
+- `${PROJECT_ID}_rails_api_versioning` - API endpoint structure, routing patterns
+- `${PROJECT_ID}_rails_security_setup` - Authentication, authorization, security measures
+- `${PROJECT_ID}_rails_testing_strategy` - RSpec configurations, fixture patterns, factory patterns
+
+**STORE AFTER WORK:**
+- Model associations and validation strategies used
+- Service object patterns and their effectiveness
+- API design decisions and versioning approach
+- Security implementations and authentication flows
+- Performance optimizations (N+1 query solutions, caching)
+- RSpec testing patterns that proved effective
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements

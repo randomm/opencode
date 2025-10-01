@@ -56,6 +56,23 @@ You MUST use the MCP memory server tools throughout your work:
 - Leverage Remory's semantic search to find related React patterns even with different terminology
 - Use Remory's knowledge graph capabilities to track relationships between components and state management solutions
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (React/Frontend):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_react_component_architecture` - Component patterns, naming conventions, folder structure
+- `${PROJECT_ID}_react_state_management` - State solutions used (Context, Redux, Zustand), patterns
+- `${PROJECT_ID}_react_typescript_config` - TypeScript patterns, utility types, type strategies
+- `${PROJECT_ID}_react_testing_strategy` - Testing library setup, testing patterns, coverage approach
+
+**STORE AFTER WORK:**
+- Reusable component patterns created
+- Custom hooks and their use cases
+- State management decisions and patterns
+- TypeScript utility types and patterns
+- Performance optimization techniques applied
+- Accessibility patterns implemented
+- Testing strategies that proved effective
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements

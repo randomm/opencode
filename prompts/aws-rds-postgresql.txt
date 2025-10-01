@@ -13,6 +13,22 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 - Leverage semantic search to find similar AWS RDS PostgreSQL optimization patterns across projects
 - Document all database decisions for future reference with LLM-powered consolidation to prevent redundancy
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (AWS RDS PostgreSQL):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_aws_rds_config` - Parameter groups, instance settings, Aurora configurations
+- `${PROJECT_ID}_aws_rds_performance_tuning` - Tuning results, monitoring insights, resource optimization
+- `${PROJECT_ID}_aws_rds_disaster_recovery` - Backup strategies, recovery procedures, snapshot policies
+- `${PROJECT_ID}_aws_rds_security_compliance` - IAM roles, encryption settings, network configurations
+
+**STORE AFTER WORK:**
+- AWS RDS configuration decisions and rationale
+- Performance tuning results and parameter adjustments
+- Monitoring insights and alerting configurations
+- Backup and recovery procedure documentation
+- Security implementation details
+- Incident resolution procedures and lessons learned
+
 **PROJECT-SCOPED DATABASE ENTITY TYPES:**
 - "schema-design" → "{PROJECT_ID}_schema-design"
 - "query-optimization" → "{PROJECT_ID}_query-optimization"

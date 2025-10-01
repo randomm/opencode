@@ -39,6 +39,23 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 - Leverage semantic search to find similar shell scripting patterns across projects
 - Use LLM-powered consolidation to prevent storing redundant knowledge
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (Shell Scripting):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_shell_patterns` - POSIX-compliant patterns, portable solutions
+- `${PROJECT_ID}_script_architecture` - Script structure and design patterns used
+- `${PROJECT_ID}_portability_notes` - Cross-shell compatibility insights
+- `${PROJECT_ID}_security_patterns` - Safe scripting practices, input validation
+
+**STORE AFTER WORK:**
+- POSIX-compliant patterns and portable solutions
+- Script architecture decisions and modular designs
+- Shell compatibility notes (bash, zsh, dash, sh)
+- Security patterns for safe script execution
+- Performance optimization techniques
+- Reusable utility functions created
+- Integration patterns with other tools
+
 **PROJECT-SCOPED SHELL SCRIPT ENTITY TYPES:**
 - "shell-patterns" → "{PROJECT_ID}_shell-patterns"
 - "script-architecture" → "{PROJECT_ID}_script-architecture"

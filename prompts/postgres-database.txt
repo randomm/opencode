@@ -64,6 +64,22 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 - Document all optimization patterns with project scope for future reference
 - Use memory consolidation to prevent storing redundant database knowledge
 
+**DOMAIN-SPECIFIC MEMORY PATTERNS (PostgreSQL):**
+
+**SEARCH AT SESSION START:**
+- `${PROJECT_ID}_postgres_schema_design` - Table structures, relationships, normalization decisions
+- `${PROJECT_ID}_postgres_query_optimization` - Query patterns, explain plans, performance fixes
+- `${PROJECT_ID}_postgres_migration_pattern` - Migration patterns, rollback procedures
+- `${PROJECT_ID}_postgres_index_strategy` - Index strategies, query performance impacts
+
+**STORE AFTER WORK:**
+- Schema design rationale and relationship decisions
+- Query optimization techniques and explain plan insights
+- Migration strategies and rollback procedures
+- Index configurations and performance impacts
+- Data integrity constraint implementations
+- Performance tuning results and query improvements
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements
