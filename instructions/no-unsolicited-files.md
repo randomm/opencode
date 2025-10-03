@@ -1,189 +1,195 @@
-# Essential vs Speculative Documentation Policy
+# Documentation & File Creation Policy
 
-**CRITICAL RULE: NEVER create speculative documentation or "nice-to-have" files. ALWAYS maintain essential project documentation.**
+## Core Principle
+Documentation is valuable when needed, but MUST be created intentionally with user approval. Never auto-create documentation files.
 
-**ULTRA-CRITICAL MINIMALIST ENGINEERING PRINCIPLE: Every file is a liability, but essential documentation prevents developer confusion and enables project success. Question everything except what users NEED to understand and use the project.**
+## Documentation Approval Process
 
-## What This Means
+### MANDATORY WORKFLOW:
+1. **Subagent** identifies potential documentation need during work
+2. **Subagent checks conventions first**: Look at existing docs/ structure, naming patterns, CONTRIBUTING.md
+3. **Subagent asks PM**: "This feature may need documentation. Should I create docs/feature-name.md?"
+4. **PM asks user**: "Should we create documentation for [feature]? Suggested: docs/feature-name.md"
+5. **User approves/denies** - explicit decision required
+6. **ONLY if approved**: Create documentation following conventions
 
-### ALWAYS Create/Maintain (Essential Documentation):
-- ✅ **README.md** in project root (project overview, setup, basic usage)
-- ✅ **docs/** directory with organized guides when features exist
-- ✅ **API documentation** in docs/ when APIs are implemented
-- ✅ **Setup/installation guides** when complex setup is required
-- ✅ **Usage examples** for key features in README.md or docs/
+### NEVER:
+- ❌ Auto-create documentation because "it might be helpful"
+- ❌ Create documentation without asking user
+- ❌ Assume documentation is needed
+- ❌ Create multiple documentation files without approval
 
-### NEVER Create Without Explicit Request (Speculative Documentation):
-- ❌ CHANGELOG.md files (use git history)
-- ❌ TODO.md or ROADMAP.md files (use TodoWrite tool)
-- ❌ PROJECT_PLAN.md or similar planning documents
-- ❌ CONTRIBUTING.md or CODE_OF_CONDUCT.md (unless established project)
-- ❌ Architecture diagrams or documentation (unless requested)
-- ❌ Random markdown files in arbitrary locations
-- ❌ "Helpful" boilerplate or template files
+## Documentation Structure
 
-### When Essential Documentation is Automatically Created:
-✅ **Implementing new features** → Update README.md and relevant docs/
-✅ **Creating APIs** → Add/update API documentation in docs/
-✅ **Complex setup requirements** → Ensure setup guide exists
-✅ **Project has missing README.md** → Create comprehensive overview
-✅ **Adding significant functionality** → Document in appropriate location
+### Location Rules:
+- ✅ `README.md` - Project root (overview + links to docs/)
+- ✅ `docs/` - All detailed documentation lives here
+- ✅ `docs/feature-name.md` - Specific feature documentation
+- ❌ `FEATURE_NAME.md` in project root - Never create docs in root except README.md
+- ❌ Multiple READMEs - Only ONE README.md in project root
 
-### What Still Requires Explicit Request:
-❌ "Document this function" → Use code comments, not files
-❌ "Plan the implementation" → Use TodoWrite tool, not files  
-❌ "Track this for later" → Use memory tools, not files
-❌ "Explain the architecture" → Explain in chat unless complex project needs docs/
-❌ Speculative documentation → Only create what users need NOW
+### Naming Conventions:
+- ✅ `lowercase-with-hyphens.md`
+- ✅ `docs/setup-guide.md`
+- ✅ `docs/api-reference.md`
+- ❌ `ALL_CAPS.md` - **NEVER use ALL CAPS naming**
+- ❌ `PascalCase.md` - Avoid PascalCase
+- ❌ `snake_case.md` - Use hyphens, not underscores
 
-## Why This Balanced Approach Matters
+### Documentation Organization:
+```
+project-root/
+├── README.md                      # Main overview, links to docs/
+└── docs/
+    ├── setup-guide.md            # Installation and setup
+    ├── api-reference.md          # API documentation
+    ├── architecture.md           # System architecture
+    └── contributing.md           # Contribution guidelines
+```
 
-1. **Essential vs Bloat**: Essential documentation enables success, speculative documentation creates maintenance burden
-2. **Developer Onboarding**: Every project needs README.md and proper docs/ for new developers
-3. **Focus**: Concentrate on user-needed documentation, not "helpful" extras
-4. **Standards**: Follow documentation conventions (README.md in root, organized docs/)
-5. **Maintainability**: Update documentation when features change, but don't create unnecessary files
+## Convention Discovery
 
-## What to Do Instead
-
-### For Essential Documentation:
-- **Create/update README.md** for project overview, setup, and basic usage
-- **Maintain docs/ directory** with organized guides for complex features
-- **Add API documentation** when implementing APIs
-- **Update existing docs** when features change
-- **Follow project conventions** for documentation structure
-
-### For Non-Essential Information:
-- **Use code comments** for explaining complex logic  
-- **Use memory tools** to store project patterns and context
-- **Use TodoWrite** for task tracking and planning
-- **Explain in chat** for one-off questions
-- **Wait for user request** before creating speculative documentation
-
-### When Starting New Projects:
-- Create the **essential code files**  
-- Add **required configuration** (.gitignore, package.json, etc.)
-- **Always create README.md** with project overview, setup instructions, and basic usage
-- **Create docs/ directory** if the project has complex features that need detailed documentation
-- **Never create speculative files** (changelogs, project plans, etc.)
-
-### When Implementing Features:
-- **Update README.md** if the feature affects setup or basic usage
-- **Add/update docs/** for complex features that need detailed explanation
-- **Add code comments** for complex logic within implementation
-- **Don't create separate planning files** - use TodoWrite and memory tools
+### Before Creating ANY Documentation:
+1. **Check existing docs/** structure and patterns
+2. **Read CONTRIBUTING.md** or docs/README.md if they exist
+3. **Look at existing filenames** for naming patterns
+4. **Follow project conventions** if they exist
+5. **Ask user about conventions** if project has none
 
 ## Examples
 
-**User**: "Create a new Python project for data analysis"
-- ❌ **WRONG**: Create random planning files, changelogs, or speculative docs
-- ✅ **RIGHT**: Create Python files, requirements.txt, README.md with overview/setup/usage
+### ❌ WRONG (Auto-created 7 files without asking):
+During a task, agent created:
+- `README_PHASE2.md`
+- `QUICK_START.md`
+- `PHASE2_INDEX.md`
+- `TAILSCALE_SSH_SETUP.md`
+- `PHASE2_DELIVERABLES.md`
+- `SETUP_FLOW.txt`
+- `COMMANDS.txt`
 
-**User**: "Fix the login bug and document the solution"  
-- ❌ **WRONG**: Create a BUGFIX_DOCUMENTATION.md file
-- ✅ **RIGHT**: Fix the bug, add comments in code, update relevant docs/ if needed
+**Problems**:
+- No user approval requested
+- ALL_CAPS naming
+- In project root instead of docs/
+- Redundant files (7 docs for one feature)
+- Multiple READMEs
 
-**User**: "Implement user authentication API"
-- ❌ **WRONG**: Create PROJECT_PLAN.md or ARCHITECTURE.md files
-- ✅ **RIGHT**: Implement API, update README.md usage section, add API docs in docs/api.md
+### ✅ RIGHT (Asked user, got approval, proper structure):
+**Subagent**: "I've completed the Tailscale SSH setup. This feature may benefit from documentation. Should I create docs/tailscale-setup.md?"
 
-**User**: "Plan how to implement this feature"
-- ❌ **WRONG**: Create IMPLEMENTATION_PLAN.md
-- ✅ **RIGHT**: Use TodoWrite tool, explain plan in chat
+**PM asks user**: "Should we create documentation for the Tailscale SSH integration? Suggested: docs/tailscale-setup.md"
 
-## Remember
+**User**: "Yes, create docs/tailscale-setup.md"
 
-Essential documentation (README.md, docs/) enables project success and developer onboarding. Speculative documentation creates maintenance burden. Create what users NEED to understand and use the project, but never create random "helpful" files.
+**Result**:
+- `docs/tailscale-setup.md` - Comprehensive setup guide
+- `README.md` updated with: "See [Tailscale Setup](docs/tailscale-setup.md) for instructions"
+- Single focused documentation file
+- Proper naming and location
 
-**Essential documentation = automatic. Speculative documentation = ask first.**
+## README.md Policy
 
-## Documentation Placement Rules (When Documentation IS Explicitly Requested)
+### When to Update README.md:
+- ✅ Feature changes project setup/installation
+- ✅ Feature changes basic usage patterns
+- ✅ New feature needs to be discoverable
+- ✅ Project structure changes
 
-**IF the user explicitly requests documentation creation:**
+### How to Update README.md:
+- Add link to new documentation in docs/
+- Keep README.md high-level
+- Don't duplicate docs/ content in README.md
+- Link format: `[Feature Name](docs/feature-name.md)`
 
-### 1. NEVER Place Documentation in Project Root Unless Specifically Requested
-- ❌ **WRONG**: Auto-placing README.md in project root
-- ✅ **RIGHT**: Ask "Would you like this in the project root or docs/ directory?"
+## Non-Essential Files
 
-### 2. Research Project Documentation Conventions First
-**BEFORE creating any documentation file:**
-- Check if project has existing `docs/`, `documentation/`, or `wiki/` directory
-- Look for existing documentation patterns in the codebase
-- Follow the project's established structure
+### NEVER Create Without Explicit Request:
+- ❌ `CHANGELOG.md` - Use git history
+- ❌ `TODO.md` or `ROADMAP.md` - Use TodoWrite tool
+- ❌ `PROJECT_PLAN.md` - Planning docs not needed
+- ❌ `ARCHITECTURE.md` - Only if explicitly requested
+- ❌ Random `.txt` files for notes
+- ❌ Speculative documentation "for later"
 
-### 3. Preferred Documentation Locations (In Order of Preference)
-1. **docs/** directory (most common convention)
-2. **documentation/** directory  
-3. **wiki/** or project-specific docs folder
-4. **Project root ONLY if explicitly requested or no docs directory exists**
+### Use Instead:
+- **Git history** for changelog tracking
+- **TodoWrite tool** for task management
+- **Memory tools** to store patterns and context
+- **Code comments** for implementation details
+- **Chat responses** for one-off explanations
 
-### 4. Always Ask About Location
-Even when documentation is explicitly requested:
-- ✅ **"Where would you like this documentation file? In docs/ directory or project root?"**
-- ✅ **"I see you have a docs/ folder. Should I place this README there or in the root?"**
-- ✅ **"This project follows [pattern]. Should I maintain that convention?"**
+## When Documentation IS Appropriate
 
-### 5. Maintain Project Documentation Architecture
-- **Respect existing patterns**: If project uses `docs/api/` for API docs, continue that pattern
-- **Follow naming conventions**: Match existing file naming (kebab-case, snake_case, etc.)
-- **Mirror directory structure**: If code is organized by feature, organize docs similarly
+### Good Reasons to Create Documentation (with approval):
+- Complex setup process that users will repeat
+- API endpoints that need reference documentation
+- Architecture decisions that need explanation
+- Contribution guidelines for team members
+- Feature usage that isn't obvious from code
+
+### Bad Reasons to Create Documentation:
+- "Might be helpful someday"
+- "Professional projects have lots of docs"
+- "Let me create docs for each phase"
+- "Quick reference guides" for simple features
+- "Index files" that just list other files
 
 ## Minimalist Documentation Principles
 
-**When creating ANY documentation (even when requested):**
+### When Approved to Create Documentation:
 
-### Be Intentionally Effective  
-- **Every sentence must have clear value** - Remove fluff and pleasantries, but include sufficient detail
-- **One purpose per document** - Each document should serve a specific user need
-- **Eliminate redundancy** - Don't repeat information available elsewhere
-- **Choose the right format** - Sometimes comprehensive documentation is better than code comments
+**Be Intentionally Effective:**
+- Every sentence must have clear value
+- One purpose per document
+- Eliminate redundancy
+- Keep it focused and minimal
 
-### Question Documentation Necessity
-**Before writing ANY documentation, ask:**
+**Question Before Writing:**
 - Is this information obvious from reading the code?
 - Will this become outdated quickly?
 - Can this be expressed as a code comment instead?
-- Does this solve a real problem users have?
-- Is there already similar documentation elsewhere?
+- Does this solve a real user problem?
 
-### Keep Documentation Minimal and Focused
+**Structure:**
 ```markdown
-✅ GOOD: Minimal, focused documentation
-# User Authentication
+# Feature Name
+
+Brief description (1-2 sentences)
 
 ## Quick Start
-1. Import: `from auth import login`
-2. Use: `token = login(username, password)`
-3. Headers: `Authorization: Bearer {token}`
+1. Step one
+2. Step two
+3. Step three
 
-## Error Codes
-- 401: Invalid credentials
-- 429: Rate limited
+## Common Issues
+- Issue 1: Solution
+- Issue 2: Solution
 ```
 
+**NOT:**
 ```markdown
-❌ BAD: Verbose, over-documented
-# Comprehensive User Authentication System Documentation
+# Comprehensive Feature Documentation
 
-Welcome to our authentication system! This document will guide you through...
+Welcome! This is a comprehensive guide...
 
 ## Table of Contents
 1. Introduction
 2. Overview
 3. Getting Started
 4. Prerequisites
-5. Installation
-6. Configuration
-7. Usage Examples
-...
+... (excessive structure)
 ```
 
-## The Golden Rule of Documentation
+## The Golden Rule
 
-**Good documentation is essential for complex projects. Users need sufficient information to understand what the project is, how to use it, and how to contribute. However, documentation should be created intentionally, placed appropriately, and written with clear purpose - not generated automatically or speculatively.**
+**User approval required for ALL documentation creation.**
 
-**Examples of Good Documentation Structure:**
-- Clear README.md explaining project purpose, features, and getting started
-- Well-organized docs/ directory with specific guides (quickstart, API reference, architecture)  
-- Each document serves a specific user need (new users, developers, contributors)
-- Sufficient detail without unnecessary verbosity
+If you're unsure whether documentation is needed:
+1. Check existing project conventions
+2. Ask project manager
+3. PM asks user
+4. Wait for explicit approval
+5. Only then create (in docs/, lowercase-with-hyphens.md)
+
+**When in doubt, ASK. Never assume.**

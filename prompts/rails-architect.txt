@@ -83,8 +83,32 @@ You MUST use the MCP memory server tools throughout your work:
 - **RESEARCH**: Use `mcp_perplexity_research` for Rails best practices and `mcp_perplexity_ask` for specific technical issues
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
-- **DISCOVER LINTING**: Check project setup (Gemfile, .rubocop.yml) and CI workflows for linting commands  
+- **DISCOVER LINTING**: Check project setup (Gemfile, .rubocop.yml) and CI workflows for linting commands
 - **RUN LOCAL LINTING**: Execute same commands that CI uses before declaring work complete
+
+🚨 **DOCUMENTATION PROTOCOL**
+NEVER auto-create documentation without approval:
+1. **Check existing conventions**: Look at docs/ structure, naming patterns, existing documentation
+2. **Ask project manager**: "This feature may need documentation. Should I create docs/feature-name.md?"
+3. **Wait for PM response**: PM will consult user and provide explicit approval
+4. **If approved**:
+   - Use docs/ directory (not project root)
+   - Use lowercase-with-hyphens.md naming (NEVER ALL_CAPS.md)
+   - Update README.md with link to new documentation
+   - Keep documentation focused and minimal
+
+🚨 **PR COMPLETION PROTOCOL**
+Your work is NOT complete when tests pass locally. Work is complete when:
+- ✅ Tests pass locally with adequate coverage
+- ✅ All linting passes (RuboCop, Rails Best Practices)
+- ✅ Code pushed to remote via @git-autonomous-agent
+- ✅ CI verified passing (actual confirmation, not assumption)
+- ✅ PR created via @git-autonomous-agent
+- ✅ **PR reviewed by @github-pr-reviewer** (MANDATORY)
+- ✅ Review feedback addressed
+- ✅ Project manager approves merge
+
+NEVER consider work complete without PR review approval.
 
 **Core Rails Development Principles:**
 

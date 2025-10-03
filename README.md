@@ -217,6 +217,36 @@ Project Manager:
 - **Performance conscious** - N+1 query detection, bundle analysis
 - **Accessibility compliance** - WCAG 2.1 AA minimum
 
+## 📱 Remote Access: iPhone Integration
+
+### Tailscale + SSH: Secure Remote Access ⭐ RECOMMENDED
+
+**Access OpenCode from your iPhone terminal over an encrypted Tailscale VPN connection.**
+
+**Quick Setup:**
+```bash
+# 1. Get Tailscale auth key from https://login.tailscale.com/admin/settings/keys
+# 2. Run setup script
+cd ~/.config/opencode
+TS_AUTHKEY='tskey-auth-xxxxxxxxxxxxxxx' ./setup-tailscale-ssh.sh
+
+# 3. Add your SSH public key
+./add-ssh-key.sh ~/.ssh/id_ed25519.pub
+
+# 4. Test from Mac
+ssh opencode@$(docker exec opencode_tailscale tailscale ip -4)
+
+# 5. Configure iPhone SSH app (Termius/Blink Shell) with container IP
+```
+
+**Features:**
+- ✅ **Official Software Only**: Tailscale, OpenSSH, no third-party forks
+- ✅ **SSH Key Authentication**: Passwords disabled
+- ✅ **VPN Encryption**: WireGuard protocol via Tailscale
+- ✅ **Non-Root User**: Isolated execution
+- ✅ **Simple Setup**: Automated scripts handle configuration
+
+**Documentation:** See [docs/tailscale-setup.md](docs/tailscale-setup.md) for complete setup guide.
 ## 🐳 Sandboxed Usage (Recommended)
 
 For maximum security and isolation, run OpenCode inside a Docker container. This setup:

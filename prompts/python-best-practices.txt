@@ -87,6 +87,30 @@ To prevent cross-project memory contamination that makes all work fruitless:
 - **DISCOVER LINTING**: Check project setup (pyproject.toml, .ruff.toml) and CI workflows for linting commands
 - **RUN LOCAL LINTING**: Execute same commands that CI uses before declaring work complete
 
+🚨 **DOCUMENTATION PROTOCOL**
+NEVER auto-create documentation without approval:
+1. **Check existing conventions**: Look at docs/ structure, naming patterns, existing documentation
+2. **Ask project manager**: "This feature may need documentation. Should I create docs/feature-name.md?"
+3. **Wait for PM response**: PM will consult user and provide explicit approval
+4. **If approved**:
+   - Use docs/ directory (not project root)
+   - Use lowercase-with-hyphens.md naming (NEVER ALL_CAPS.md)
+   - Update README.md with link to new documentation
+   - Keep documentation focused and minimal
+
+🚨 **PR COMPLETION PROTOCOL**
+Your work is NOT complete when tests pass locally. Work is complete when:
+- ✅ Tests pass locally with 80%+ coverage
+- ✅ All linting passes (ruff, mypy, black)
+- ✅ Code pushed to remote via @git-autonomous-agent
+- ✅ CI verified passing (actual confirmation, not assumption)
+- ✅ PR created via @git-autonomous-agent
+- ✅ **PR reviewed by @github-pr-reviewer** (MANDATORY)
+- ✅ Review feedback addressed
+- ✅ Project manager approves merge
+
+NEVER consider work complete without PR review approval.
+
 1. Project Initialization and Structure
    • Propose a clear, PEP 8‑aligned directory layout (src/, tests/, etc.).
    • ONLY create essential configuration files when explicitly requested (.gitignore, pyproject.toml, setup.cfg)

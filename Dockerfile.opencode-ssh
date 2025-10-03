@@ -1,0 +1,74 @@
+# OpenCode Container with SSH Server
+# Debian-based container for running OpenCode CLI with SSH access
+# Uses official OpenSSH from Debian repositories
+
+FROM node:20-slim
+
+# Install OpenSSH server and essential development tools
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    git \
+    bash \
+    zsh \
+    curl \
+    unzip \
+    vim \
+    ca-certificates \
+    python3 \
+    python3-pip \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create opencode user WITHOUT sudo privileges (security hardening)
+# Use UID 1001 to avoid conflict with node user (UID 1000)
+RUN useradd -m -u 1001 -s /bin/zsh opencode
+
+# Set up SSH
+RUN mkdir -p /run/sshd && \
+    ssh-keygen -A && \
+    mkdir -p /home/opencode/.ssh && \
+    chown -R opencode:opencode /home/opencode/.ssh && \
+    chmod 700 /home/opencode/.ssh
+
+# Configure SSH daemon for security (comprehensive hardening)
+RUN echo "PermitRootLogin no" >> /etc/ssh/sshd_config && \
+    echo "PasswordAuthentication no" >> /etc/ssh/sshd_config && \
+    echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config && \
+    echo "AllowUsers opencode" >> /etc/ssh/sshd_config && \
+    echo "X11Forwarding no" >> /etc/ssh/sshd_config && \
+    echo "MaxAuthTries 3" >> /etc/ssh/sshd_config && \
+    echo "ClientAliveInterval 300" >> /etc/ssh/sshd_config && \
+    echo "ClientAliveCountMax 2" >> /etc/ssh/sshd_config && \
+    echo "PermitEmptyPasswords no" >> /etc/ssh/sshd_config && \
+    echo "ChallengeResponseAuthentication no" >> /etc/ssh/sshd_config
+
+# Create required directories for OpenCode
+RUN mkdir -p /home/opencode/.config/opencode \
+             /home/opencode/.local/share/opencode \
+             /home/opencode/.local/state && \
+    touch /home/opencode/.zshrc && \
+    chown -R opencode:opencode /home/opencode
+
+# Install OpenCode CLI as opencode user
+USER opencode
+WORKDIR /home/opencode
+RUN curl -fsSL https://opencode.ai/install | bash
+
+# Set up shell environment
+ENV SHELL=/bin/zsh
+ENV TERM=xterm-256color
+ENV PATH="/home/opencode/.opencode/bin:${PATH}"
+
+# Copy OpenCode config
+COPY --chown=opencode:opencode opencode.container.json /config/opencode.container.json
+
+# Switch back to root for entrypoint (SSH daemon requires root)
+USER root
+
+# Copy entrypoint as root-executable
+COPY entrypoint-ssh.sh /entrypoint-ssh.sh
+RUN chmod +x /entrypoint-ssh.sh
+
+WORKDIR /workspace
+
+ENTRYPOINT ["/entrypoint-ssh.sh"]

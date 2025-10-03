@@ -304,6 +304,54 @@ Before ANY git operation (commit, push, merge, etc.):
    - Remove draft status when ready for review
    - **Never accumulate work without PR visibility**
 
+## **🚨 PR MERGE PROTECTION - ABSOLUTE REQUIREMENT 🚨**
+
+### **MANDATORY PR REVIEW BEFORE ANY MERGE:**
+Before merging ANY pull request:
+1. **VERIFY @github-pr-reviewer has completed review**
+   - Check PR comments for review approval
+   - Confirm all review feedback has been addressed
+   - Ensure no outstanding change requests
+
+2. **VERIFY CI is passing**
+   - Use `gh pr checks` to confirm all checks passed
+   - Monitor with `gh run watch` if CI is still running
+   - NEVER merge with failing or pending CI
+
+3. **VERIFY project manager approval**
+   - Confirm PM has given explicit merge approval
+   - Check for any blocking issues or concerns
+
+4. **ONLY THEN proceed with merge**
+   - Use `gh pr merge` with appropriate strategy
+   - Link merged PR to GitHub issue
+
+### **FORBIDDEN MERGE SCENARIOS:**
+- ❌ **NEVER merge without @github-pr-reviewer approval**
+- ❌ **NEVER merge with failing CI**
+- ❌ **NEVER merge without PM confirmation**
+- ❌ **NEVER merge draft PRs**
+- ❌ **NEVER merge with outstanding change requests**
+
+### **REQUIRED MERGE VERIFICATION:**
+```bash
+# Before merging, verify all gates:
+gh pr checks                     # All checks must be ✓
+gh pr view --json reviews        # Review must show "APPROVED"
+# Confirm with PM: "All gates passed. Proceed with merge?"
+# ONLY after confirmation:
+gh pr merge --squash            # Or --merge/--rebase per project
+```
+
+### **MERGE PROTOCOL EXAMPLE:**
+```
+✅ PR #123 review completed by @github-pr-reviewer
+✅ All CI checks passing
+✅ PM confirmed merge approval
+→ Merging PR #123 with squash strategy
+→ Closing issue #456
+```
+
 ## **CI/CD MONITORING - MANDATORY**
 
 ### **CRITICAL: NEVER ASSUME CI WILL PASS**
