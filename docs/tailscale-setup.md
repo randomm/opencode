@@ -1,14 +1,15 @@
 # Tailscale + SSH OpenCode Setup
 
-Secure remote access to OpenCode from your iPhone using Tailscale VPN and SSH.
+Secure remote access to OpenCode from your iPhone using Tailscale VPN and SSH with persistent sessions.
 
 ## Overview
 
-This setup provides encrypted remote access to the OpenCode CLI through a containerized environment. You can use OpenCode from your iPhone terminal app over a secure Tailscale VPN connection.
+The unified OpenCode container provides encrypted remote access through a containerized environment with persistent screen sessions. You can start work on your Mac, detach, and continue from your iPhone terminal app - all in the same session.
 
 **Architecture:**
 ```
-iPhone (Tailscale) → Mac (Tailscale) → Docker Container (Tailscale + SSH + OpenCode)
+Mac Terminal → Docker exec → Unified Container ← SSH ← Tailscale ← iPhone
+                            (screen session shared)
 ```
 
 **Security:**
@@ -49,55 +50,75 @@ tailscale status  # Should show your Mac's Tailscale IP (100.x.x.x)
    - ✅ **Ephemeral** (auto-cleanup when container stops)
 4. Copy the key (starts with `tskey-auth-...`)
 
-### 2. Build and Start Services
-
-Run the setup script with your auth key as an environment variable:
+### 2. Set Up Environment
 
 ```bash
-cd /Users/janni/.config/opencode
-TS_AUTHKEY='tskey-auth-xxxxxxxxxxxxxxx' ./setup-tailscale-ssh.sh
+cd ~/.config/opencode
+
+# Set environment variables
+export TS_AUTHKEY='tskey-auth-xxxxx'
+export GH_TOKEN='ghp_xxxxx'           # Optional: GitHub CLI auto-auth
+export PERPLEXITY_API_KEY='pplx_xxxxx' # Optional: Perplexity MCP
+
+# Or create .env file (recommended)
+cat > .env << EOF
+TS_AUTHKEY=tskey-auth-xxxxx
+GH_TOKEN=ghp_xxxxx
+PERPLEXITY_API_KEY=pplx_xxxxx
+EOF
 ```
 
-**Note:** The auth key is passed directly to the script without being saved anywhere.
+### 3. Start Unified Container
 
-This will:
-- Build the OpenCode container with SSH server
-- Start Tailscale and OpenCode services
-- Display the container's Tailscale IP address
-
-### 3. Add Your SSH Public Key
-
-**Option A: Using the helper script**
 ```bash
-# If you have a public key file
+# Smart launcher handles everything
+./scripts/opencode
+
+# This will:
+# - Check/start Remory MCP server
+# - Build unified container (first time)
+# - Start Tailscale and OpenCode services
+# - Create persistent screen session
+# - Attach you to the session
+```
+
+### 4. Add Your SSH Public Key
+
+```bash
+# Use the helper script
 ./add-ssh-key.sh ~/.ssh/id_ed25519.pub
 
 # Or provide the key directly
 ./add-ssh-key.sh 'ssh-ed25519 AAAA...'
 ```
 
-**Option B: Manual method**
-```bash
-# Get your public key
-cat ~/.ssh/id_ed25519.pub
+### 5. Test Multi-Device Workflow
 
-# Add it to the container
-docker exec opencode_with_ssh bash -c "echo 'ssh-ed25519 AAAA...' >> /home/opencode/.ssh/authorized_keys"
-docker exec opencode_with_ssh chmod 600 /home/opencode/.ssh/authorized_keys
+**On Mac:**
+```bash
+# Attach to session
+./scripts/opencode
+
+# Work in OpenCode
+opencode "Review this codebase"
+
+# Detach from session: Ctrl+A then D
+# (Session keeps running!)
 ```
 
-### 4. Test SSH Connection from Mac
-
+**On iPhone:**
 ```bash
-# Get the container's Tailscale IP
-TAILSCALE_IP=$(docker exec opencode_tailscale tailscale ip -4)
+# Get SSH connection info
+./scripts/opencode --ssh
 
-# Connect via SSH
-ssh opencode@$TAILSCALE_IP
+# Connect via SSH (using Termius, Blink Shell, etc.)
+ssh opencode@<tailscale-ip>
 
-# Once connected, test OpenCode
-opencode --help
-opencode @project-manager "Hello from SSH!"
+# Attach to the SAME session you were using on Mac!
+screen -r opencode-main
+
+# Continue working...
+# Detach: Ctrl+A then D
 ```
 
 ### 5. Configure iPhone SSH Client
@@ -137,7 +158,7 @@ docker exec opencode_tailscale tailscale ip -4
 docker exec opencode_tailscale tailscale status
 
 # View container logs
-docker logs opencode_with_ssh
+docker logs opencode
 docker logs opencode_tailscale
 
 # Check container status
@@ -161,13 +182,13 @@ docker compose -f docker-compose.tailscale.yml logs -f
 
 ```bash
 # View authorized SSH keys
-docker exec opencode_with_ssh cat /home/opencode/.ssh/authorized_keys
+docker exec opencode cat /home/opencode/.ssh/authorized_keys
 
 # Add another SSH key
 ./add-ssh-key.sh ~/.ssh/another_key.pub
 
 # Check SSH key permissions
-docker exec opencode_with_ssh ls -la /home/opencode/.ssh/
+docker exec opencode ls -la /home/opencode/.ssh/
 ```
 
 ## Troubleshooting
@@ -195,13 +216,13 @@ echo $TS_AUTHKEY
 **Solutions:**
 ```bash
 # Verify SSH daemon is running
-docker exec opencode_with_ssh pgrep sshd
+docker exec opencode pgrep sshd
 
 # Check SSH configuration
-docker exec opencode_with_ssh cat /etc/ssh/sshd_config | grep -E "(PermitRoot|PasswordAuth|PubkeyAuth)"
+docker exec opencode cat /etc/ssh/sshd_config | grep -E "(PermitRoot|PasswordAuth|PubkeyAuth)"
 
 # Verify SSH is listening on port 22
-docker exec opencode_with_ssh netstat -tlnp | grep :22
+docker exec opencode netstat -tlnp | grep :22
 ```
 
 ### Permission Denied (publickey)
@@ -211,13 +232,13 @@ docker exec opencode_with_ssh netstat -tlnp | grep :22
 **Solutions:**
 ```bash
 # Verify authorized_keys file exists and has correct permissions
-docker exec opencode_with_ssh ls -la /home/opencode/.ssh/
+docker exec opencode ls -la /home/opencode/.ssh/
 
 # Re-add your SSH public key
 ./add-ssh-key.sh ~/.ssh/id_ed25519.pub
 
 # Check authorized_keys content
-docker exec opencode_with_ssh cat /home/opencode/.ssh/authorized_keys
+docker exec opencode cat /home/opencode/.ssh/authorized_keys
 ```
 
 ### Can't Find Tailscale IP

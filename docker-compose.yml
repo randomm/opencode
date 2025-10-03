@@ -1,0 +1,121 @@
+# Unified OpenCode Container with Tailscale
+# Single container accessible via Docker exec (Mac) and SSH (iPhone)
+# Supports persistent sessions using screen for multi-device workflow
+
+services:
+  # ===========================================================================
+  # Tailscale VPN Sidecar
+  # ===========================================================================
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: opencode_tailscale
+    hostname: opencode-server
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    volumes:
+      - tailscale-state:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    networks:
+      - remory_network
+    restart: unless-stopped
+
+  # ===========================================================================
+  # Unified OpenCode Container
+  # ===========================================================================
+  opencode:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode-unified
+    container_name: opencode
+    network_mode: "service:tailscale"  # Share Tailscale's network
+    depends_on:
+      - tailscale
+    environment:
+      # OpenCode configuration
+      - OPENCODE_CONFIG=/config/opencode.container.json
+      # GitHub CLI authentication (optional)
+      - GH_TOKEN=${GH_TOKEN:-}
+      # Perplexity API key for MCP server (load from environment)
+      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+    volumes:
+      # ===========================================================================
+      # Workspace and Project Files
+      # ===========================================================================
+      - ~/git:/workspace
+      
+      # ===========================================================================
+      # OpenCode Configuration (read-only from host)
+      # ===========================================================================
+      - ./opencode.container.json:/config/opencode.container.json:ro
+      - ./prompts:/home/opencode/.config/opencode/prompts:ro
+      - ./instructions:/home/opencode/.config/opencode/instructions:ro
+      - ./CLAUDE.md:/home/opencode/.config/opencode/CLAUDE.md:ro
+      - ./AGENTS.md:/home/opencode/.config/opencode/AGENTS.md:ro
+      
+      # ===========================================================================
+      # Git Configuration (read-only)
+      # ===========================================================================
+      - ~/.gitconfig:/home/opencode/.gitconfig:ro
+      
+      # ===========================================================================
+      # SSH Keys (read-only)
+      # ===========================================================================
+      # Mount as volume for SSH access, not direct host mount
+      - opencode-ssh:/home/opencode/.ssh
+      
+      # ===========================================================================
+      # Persistent Data
+      # ===========================================================================
+      # OpenCode binary and data
+      - opencode-bin:/home/opencode/.opencode
+      - opencode-data:/home/opencode/.local/share/opencode
+      
+      # GitHub CLI authentication persistence
+      - opencode-gh-config:/home/opencode/.config/gh
+      
+      # ===========================================================================
+      # Docker Socket (for MCP server access)
+      # ===========================================================================
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+
+# ===========================================================================
+# Volumes
+# ===========================================================================
+volumes:
+  # Tailscale state
+  tailscale-state:
+    driver: local
+  
+  # SSH keys (separate from host for security)
+  opencode-ssh:
+    driver: local
+  
+  # OpenCode binary (container-specific)
+  opencode-bin:
+    driver: local
+  
+  # OpenCode data
+  opencode-data:
+    driver: local
+  
+  # GitHub CLI config (persist authentication)
+  opencode-gh-config:
+    driver: local
+
+# ===========================================================================
+# Networks
+# ===========================================================================
+networks:
+  remory_network:
+    external: true
+    name: remory_network

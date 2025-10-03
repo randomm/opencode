@@ -1,0 +1,94 @@
+# OpenCode Screen Configuration
+# Provides helpful defaults for persistent session management
+
+# ===========================================================================
+# General Settings
+# ===========================================================================
+
+# Disable startup message
+startup_message off
+
+# Set scrollback buffer (lines)
+defscrollback 10000
+
+# Enable visual bell instead of audible
+vbell on
+
+# Set default shell
+shell -$SHELL
+
+# ===========================================================================
+# Status Line
+# ===========================================================================
+
+# Status line at bottom showing session name, windows, and time
+hardstatus alwayslastline
+hardstatus string '%{= kG}[ %{G}%H %{g}][%= %{= kw}%?%-Lw%?%{r}(%{W}%n*%f%t%?(%u)%?%{r})%{w}%?%+Lw%?%?%= %{g}][%{B} %Y-%m-%d %{W}%c %{g}]'
+
+# ===========================================================================
+# Key Bindings
+# ===========================================================================
+
+# Detach session: Ctrl+A then D (default)
+# Create new window: Ctrl+A then C
+# Switch windows: Ctrl+A then N (next) or P (previous)
+# List windows: Ctrl+A then " (double quote)
+# Rename window: Ctrl+A then A
+
+# Make navigation easier - Ctrl+A then number goes to that window
+bind -c demo 1 select 1
+bind -c demo 2 select 2
+bind -c demo 3 select 3
+bind -c demo 4 select 4
+bind -c demo 5 select 5
+
+# ===========================================================================
+# Window Settings
+# ===========================================================================
+
+# Auto-title windows based on running command
+shelltitle "$ |zsh"
+
+# Start window numbering at 1 (not 0)
+bind c screen 1
+bind 0 select 10
+
+# ===========================================================================
+# Terminal Settings
+# ===========================================================================
+
+# Enable 256 colors
+term screen-256color
+
+# Enable alternate screen (for vim, less, etc)
+altscreen on
+
+# ===========================================================================
+# Copy/Paste Settings
+# ===========================================================================
+
+# Enter copy mode: Ctrl+A then [
+# Use vi-like keys in copy mode
+markkeys "h=^B:l=^F:$=^E"
+
+# ===========================================================================
+# Helpful Comments for Users
+# ===========================================================================
+
+# Common Commands:
+#   Ctrl+A D         - Detach from session (session keeps running)
+#   Ctrl+A C         - Create new window
+#   Ctrl+A N         - Next window
+#   Ctrl+A P         - Previous window
+#   Ctrl+A "         - List all windows
+#   Ctrl+A A         - Rename current window
+#   Ctrl+A [         - Enter copy/scrollback mode (q to exit)
+#   Ctrl+A K         - Kill current window
+#   Ctrl+A \         - Kill all windows and terminate screen
+#
+# To reattach to this session:
+#   From Mac:     ./scripts/opencode
+#   From SSH:     screen -r opencode-main
+#
+# List all sessions:
+#   screen -ls

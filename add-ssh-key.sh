@@ -33,18 +33,18 @@ if [[ ! "$SSH_KEY" =~ ^(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp[0-9]+)[[:space:]][A
 fi
 
 # Check if container is running
-if ! docker ps | grep -q opencode_with_ssh; then
-  echo "ERROR: opencode_with_ssh container is not running"
-  echo "Run ./setup-tailscale-ssh.sh first"
+if ! docker ps | grep -q opencode; then
+  echo "ERROR: opencode container is not running"
+  echo "Run ./scripts/opencode first"
   exit 1
 fi
 
 echo ""
 echo "Adding SSH key to container..."
 # Use stdin to avoid shell interpolation and prevent command injection
-echo "$SSH_KEY" | docker exec -i opencode_with_ssh tee -a /home/opencode/.ssh/authorized_keys > /dev/null
-docker exec opencode_with_ssh chmod 600 /home/opencode/.ssh/authorized_keys
-docker exec opencode_with_ssh chown opencode:opencode /home/opencode/.ssh/authorized_keys
+echo "$SSH_KEY" | docker exec -i opencode tee -a /home/opencode/.ssh/authorized_keys > /dev/null
+docker exec opencode chmod 600 /home/opencode/.ssh/authorized_keys
+docker exec opencode chown opencode:opencode /home/opencode/.ssh/authorized_keys
 
 echo "✓ SSH key added successfully"
 echo ""

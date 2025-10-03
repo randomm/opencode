@@ -217,37 +217,206 @@ Project Manager:
 - **Performance conscious** - N+1 query detection, bundle analysis
 - **Accessibility compliance** - WCAG 2.1 AA minimum
 
-## 📱 Remote Access: iPhone Integration
+## 🐳 Unified Container: Multi-Access Development Environment
 
-### Tailscale + SSH: Secure Remote Access ⭐ RECOMMENDED
+**Single container accessible from Mac terminal AND iPhone via SSH with persistent sessions.**
 
-**Access OpenCode from your iPhone terminal over an encrypted Tailscale VPN connection.**
+### Quick Start
 
-**Quick Setup:**
 ```bash
-# 1. Get Tailscale auth key from https://login.tailscale.com/admin/settings/keys
-# 2. Run setup script
+# Start or attach to OpenCode (from Mac)
 cd ~/.config/opencode
-TS_AUTHKEY='tskey-auth-xxxxxxxxxxxxxxx' ./setup-tailscale-ssh.sh
+./scripts/opencode
 
-# 3. Add your SSH public key
-./add-ssh-key.sh ~/.ssh/id_ed25519.pub
+# Work in the session
+opencode "Implement user authentication"
 
-# 4. Test from Mac
-ssh opencode@$(docker exec opencode_tailscale tailscale ip -4)
+# Detach from session (keeps running): Ctrl+A then D
 
-# 5. Configure iPhone SSH app (Termius/Blink Shell) with container IP
+# Reattach later (from Mac or iPhone via SSH)
+./scripts/opencode
 ```
 
-**Features:**
-- ✅ **Official Software Only**: Tailscale, OpenSSH, no third-party forks
-- ✅ **SSH Key Authentication**: Passwords disabled
-- ✅ **VPN Encryption**: WireGuard protocol via Tailscale
-- ✅ **Non-Root User**: Isolated execution
-- ✅ **Simple Setup**: Automated scripts handle configuration
+### Architecture
 
-**Documentation:** See [docs/tailscale-setup.md](docs/tailscale-setup.md) for complete setup guide.
-## 🐳 Sandboxed Usage (Recommended)
+```
+┌─────────────────────────────────────────────────────────┐
+│         Unified OpenCode Container                      │
+│                                                         │
+│  Features:                                              │
+│  ✅ OpenCode CLI                                        │
+│  ✅ SSH Server (Tailscale VPN)                         │
+│  ✅ GitHub CLI (gh) - auto-authenticated               │
+│  ✅ Docker socket (MCP server access)                  │
+│  ✅ screen/tmux (persistent sessions)                  │
+│                                                         │
+│  Access Methods:                                        │
+│  1. Mac: ./scripts/opencode (docker exec)              │
+│  2. iPhone: ssh opencode@<tailscale-ip>                │
+│  3. Both: Attach to same screen session!               │
+└─────────────────────────────────────────────────────────┘
+
+Containers:
+1. opencode - Unified container (all features)
+2. opencode_tailscale - Tailscale VPN sidecar
+3. remory_mcp_server - Memory system (on host network)
+4. remory_mcp_postgres - Memory database (on host network)
+```
+
+### Multi-Device Workflow
+
+The unified container supports **persistent screen sessions** that work across devices:
+
+```bash
+# On Mac: Start working
+./scripts/opencode
+opencode "Debug payment processing"
+# Detach: Ctrl+A then D
+
+# On iPhone: Continue same session
+ssh opencode@<tailscale-ip>
+screen -r opencode-main
+# See exactly where you left off!
+# Keep working or detach again
+```
+
+### Setup
+
+#### Initial Setup
+
+```bash
+cd ~/.config/opencode
+
+# Set environment variables
+export TS_AUTHKEY='tskey-auth-xxxxx'  # From Tailscale admin
+export GH_TOKEN='ghp_xxxxx'           # Optional: GitHub CLI auto-auth
+export PERPLEXITY_API_KEY='pplx_xxxxx' # Optional: Perplexity MCP
+
+# Or create .env file
+cat > .env << EOF
+TS_AUTHKEY=tskey-auth-xxxxx
+GH_TOKEN=ghp_xxxxx
+PERPLEXITY_API_KEY=pplx_xxxxx
+EOF
+
+# Start unified container
+./scripts/opencode
+```
+
+#### SSH Access Setup (for iPhone)
+
+```bash
+# Add your SSH public key to container
+./add-ssh-key.sh ~/.ssh/id_ed25519.pub
+
+# Get SSH connection info
+./scripts/opencode --ssh
+
+# Connect from iPhone (using Termius, Blink Shell, etc.)
+ssh opencode@<tailscale-ip>
+screen -r opencode-main
+```
+
+### Features
+
+#### Persistent Sessions
+- **Screen multiplexer** - Sessions survive disconnections
+- **Multi-device access** - Same session on Mac and iPhone
+- **Multiple windows** - Organize work across terminal windows
+- **Session sharing** - Perfect for pair programming
+
+#### Development Tools
+- **OpenCode CLI** - Latest version with all agents
+- **GitHub CLI (gh)** - Auto-authenticated if GH_TOKEN set
+- **Docker socket** - Access MCP servers and containers
+- **Git integration** - Your SSH keys and config mounted
+- **Shell history** - Persistent bash and zsh history
+
+#### Security
+- **SSH key-only auth** - Passwords disabled
+- **Root login disabled** - Non-root user only
+- **Tailscale VPN** - Encrypted WireGuard tunnel
+- **Docker group access** - Socket permissions via group, not root
+
+### Helper Script Commands
+
+```bash
+# Attach to existing or start new
+./scripts/opencode
+
+# Show container status
+./scripts/opencode --status
+
+# Get SSH connection info
+./scripts/opencode --ssh
+
+# Create new screen window
+./scripts/opencode --new-session
+
+# Stop container
+./scripts/opencode --stop
+
+# Show help
+./scripts/opencode --help
+```
+
+### Session Management
+
+Learn screen commands for persistent sessions:
+
+| Action | Keys | Description |
+|--------|------|-------------|
+| Detach | `Ctrl+A` then `D` | Leave session running |
+| New Window | `Ctrl+A` then `C` | Create terminal window |
+| Next Window | `Ctrl+A` then `N` | Switch to next window |
+| List Windows | `Ctrl+A` then `"` | Show all windows |
+| Scrollback | `Ctrl+A` then `[` | Scroll terminal history |
+
+**Full Guide:** See [docs/session-management.md](docs/session-management.md)
+
+### Troubleshooting
+
+**Container won't start?**
+```bash
+# Check Docker is running
+docker info
+
+# View logs
+docker logs opencode
+
+# Restart
+./scripts/opencode --stop
+./scripts/opencode
+```
+
+**SSH not working?**
+```bash
+# Re-add SSH key
+./add-ssh-key.sh ~/.ssh/id_ed25519.pub
+
+# Check SSH daemon
+docker exec opencode pgrep sshd
+
+# Get Tailscale IP
+docker exec opencode_tailscale tailscale ip -4
+```
+
+**Screen session not found?**
+```bash
+# List sessions
+docker exec opencode su - opencode -c "screen -ls"
+
+# Manually create if missing
+docker exec opencode su - opencode -c "screen -dmS opencode-main"
+```
+
+### Documentation
+
+- **[Session Management Guide](docs/session-management.md)** - Learn screen/tmux
+- **[Tailscale Setup](docs/tailscale-setup.md)** - Detailed SSH setup
+- **[Migration Guide](MIGRATION.md)** - Migrate from old dual-container setup
+
+## 🐳 Legacy Sandbox (Deprecated)
 
 For maximum security and isolation, run OpenCode inside a Docker container. This setup:
 - ✅ Prevents OpenCode from accessing sensitive host system files
@@ -392,6 +561,36 @@ docker ps
 
 # View compose logs
 docker compose -f docker-compose.opencode.yml logs
+```
+
+## 🧪 Running Tests
+
+The project uses **BATS (Bash Automated Testing System)** for testing container functionality.
+
+### Install BATS
+
+**macOS:**
+```bash
+brew install bats-core
+```
+
+**Docker-based (no installation needed):**
+```bash
+# Run tests using official BATS Docker image
+docker run --rm -v "$PWD:/code" bats/bats:latest /code/tests/test_unified_container.bats
+```
+
+### Run Tests
+
+```bash
+# Local BATS installation
+bats tests/test_unified_container.bats
+
+# All tests in tests/ directory
+bats tests/
+
+# Docker-based runner (recommended for CI/CD)
+docker run --rm -v "$PWD:/code" bats/bats:latest /code/tests/
 ```
 
 ## 📝 Environment Variables Required
