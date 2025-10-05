@@ -1,3 +1,6 @@
 # Minimal screen configuration
 term screen-256color
 defutf8 on
+defbce on
+encoding UTF-8 UTF-8
+bindkey -k kb stuff ^H

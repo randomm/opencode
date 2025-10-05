@@ -38,10 +38,16 @@ services:
     environment:
       # OpenCode configuration
       - OPENCODE_CONFIG=/config/opencode.container.json
-      # GitHub CLI authentication (optional)
-      - GH_TOKEN=${GH_TOKEN:-}
-      # Perplexity API key for MCP server (load from environment)
-      - PERPLEXITY_API_KEY=${PERPLEXITY_API_KEY:-}
+      # API Keys (pass through from shell environment)
+      - ANTHROPIC_API_KEY
+      - CLAUDE_API_KEY
+      - OPENAI_API_KEY
+      - GEMINI_API_KEY
+      - GOOGLE_AI_API_KEY
+      # GitHub CLI authentication
+      - GH_TOKEN
+      # Perplexity API key for MCP server
+      - PERPLEXITY_API_KEY
     volumes:
       # ===========================================================================
       # Workspace and Project Files
@@ -52,10 +58,10 @@ services:
       # OpenCode Configuration (read-only from host)
       # ===========================================================================
       - ./opencode.container.json:/config/opencode.container.json:ro
-      - ./prompts:/home/opencode/.config/opencode/prompts:ro
-      - ./instructions:/home/opencode/.config/opencode/instructions:ro
-      - ./CLAUDE.md:/home/opencode/.config/opencode/CLAUDE.md:ro
-      - ./AGENTS.md:/home/opencode/.config/opencode/AGENTS.md:ro
+      - ./prompts:/config/prompts:ro
+      - ./instructions:/config/instructions:ro
+      - ./CLAUDE.md:/config/CLAUDE.md:ro
+      - ./AGENTS.md:/config/AGENTS.md:ro
       
       # ===========================================================================
       # Git Configuration (read-only)

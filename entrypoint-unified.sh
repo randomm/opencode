@@ -27,15 +27,6 @@ if [ -n "${GH_TOKEN:-}" ]; then
   fi
 fi
 
-# Create screen session if it doesn't exist
-if ! su - opencode -c "screen -ls 2>/dev/null" | grep -q "opencode-main"; then
-  su - opencode -c "screen -dmS opencode-main zsh"
-  sleep 1
-  echo "✓ Screen session 'opencode-main' created"
-else
-  echo "✓ Screen session 'opencode-main' already exists"
-fi
-
 echo ""
 echo "=== Container Ready ==="
 echo "SSH: port 22"

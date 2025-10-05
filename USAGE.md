@@ -1,24 +1,30 @@
 # OpenCode Usage
 
+## Setup (First Time)
+```bash
+# Add oc command to PATH
+ln -s ~/.config/opencode/scripts/oc ~/.local/bin/oc
+```
+
 ## Start
 ```bash
 cd ~/.config/opencode
 docker compose up -d
 ```
 
-## Use from Mac
+## Use
 ```bash
-docker exec -it -u opencode opencode screen -r opencode-main
+oc  # from Mac (auto-creates session if needed)
 ```
 
-## Use from iPhone
+From iPhone:
 ```bash
 ssh opencode@100.65.79.62
-screen -r opencode-main
+screen -xRR opencode-main
 ```
 
-## Detach from screen
-Press: `Ctrl+A` then `D`
+## Detach
+`Ctrl+A` then `D`
 
 ## Stop
 ```bash

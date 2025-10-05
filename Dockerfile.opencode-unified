@@ -67,10 +67,10 @@ RUN mkdir -p /home/opencode/.config/opencode \
              /home/opencode/.config/gh \
              /home/opencode/.local/share/opencode \
              /home/opencode/.local/state && \
-    touch /home/opencode/.zshrc \
-          /home/opencode/.bash_history \
+    echo '# opencode\nexport PATH=/home/opencode/.opencode/bin:$PATH\nstty erase '\''^?'\'' 2>/dev/null || true' > /home/opencode/.zshrc && \
+    touch /home/opencode/.bash_history \
           /home/opencode/.zsh_history && \
-    chmod 644 /home/opencode/.bash_history /home/opencode/.zsh_history && \
+    chmod 644 /home/opencode/.bash_history /home/opencode/.zsh_history /home/opencode/.zshrc && \
     chown -R opencode:opencode /home/opencode
 
 # Install OpenCode CLI as opencode user
