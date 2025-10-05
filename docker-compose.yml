@@ -44,8 +44,8 @@ services:
       - OPENAI_API_KEY
       - GEMINI_API_KEY
       - GOOGLE_AI_API_KEY
-      # GitHub CLI authentication
-      - GH_TOKEN
+      # GitHub CLI authentication (map host GITHUB_PAT to container GH_TOKEN)
+      - GH_TOKEN=${GITHUB_PAT}
       # Perplexity API key for MCP server
       - PERPLEXITY_API_KEY
     volumes:
