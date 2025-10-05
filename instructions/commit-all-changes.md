@@ -26,19 +26,9 @@ Gather information about the repository:
 - Run `git status` to see all changes (staged, unstaged, untracked)
 - Use `git diff` to examine unstaged changes
 - Use `git diff --cached` to examine staged changes
-- List any untracked files that might need attention
+- List untracked files
 
-### 3. Check .gitignore Configuration
-Review if any files should be excluded:
-- Examine current `.gitignore` file
-- Look for common patterns that might be missing:
-  - Build artifacts (`dist/`, `build/`, `*.pyc`, `__pycache__/`)
-  - Dependencies (`node_modules/`, `venv/`, `.env`)
-  - IDE files (`.vscode/`, `.idea/`, `*.swp`)
-  - OS files (`.DS_Store`, `Thumbs.db`)
-- If improvements are needed, ask: "I noticed [specific files/patterns]. Should I update .gitignore to exclude these?"
-
-### 4. Analyze Commit History and Style
+### 3. Analyze Commit History and Style
 Understand the project's commit conventions:
 - Run `git log --oneline -10` to see recent commit messages
 - Identify the commit style pattern:
@@ -68,23 +58,17 @@ For each logical group of changes:
 3. Create the commit with `git commit -m "message"` or multi-line format if needed
 4. Verify the commit was created successfully
 
-### 7. Handle Special Cases
+### 6. Handle Special Cases
 - **Binary files**: Ask before committing large binary files
 - **Sensitive files**: Alert if files might contain secrets (`.env`, `config.json`, etc.)
 - **Merge conflicts**: If found, guide through resolution before continuing
 - **Empty commits**: Skip if no actual changes exist
 
-### 8. Final Verification
+### 7. Final Verification
 After all commits are created:
 - Show `git log --oneline -5` to display recent commits
 - Run `git status` to confirm working directory is clean
 - Report summary: "Created X commits with Y files changed"
-
-## GitHub Integration (if available)
-If the GitHub MCP tool is available and user has a remote repository:
-- Check if remote is configured with `git remote -v`
-- Offer to push changes: "Would you like me to push these commits to origin?"
-- If creating a new feature, offer to create a pull request
 
 ## Error Handling
 - If any Git command fails, explain the error clearly

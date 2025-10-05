@@ -76,9 +76,9 @@ During a task, agent created:
 - Multiple READMEs
 
 ### ✅ RIGHT (Asked user, got approval, proper structure):
-**Subagent**: "I've completed the Tailscale SSH setup. This feature may benefit from documentation. Should I create docs/tailscale-setup.md?"
+**Subagent**: "Tailscale SSH setup complete. Create documentation?"
 
-**PM asks user**: "Should we create documentation for the Tailscale SSH integration? Suggested: docs/tailscale-setup.md"
+**PM asks user**: "Create documentation for Tailscale SSH? Suggested: docs/tailscale-setup.md"
 
 **User**: "Yes, create docs/tailscale-setup.md"
 

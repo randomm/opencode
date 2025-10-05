@@ -12,6 +12,11 @@
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      },
       "tools": {
         "glob": true,
         "grep": true,

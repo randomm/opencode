@@ -3,6 +3,9 @@
 **CRITICAL: ALL development work MUST follow GitHub issue + feature branch workflow.**
 **EXCEPTION: Pure research/analysis tasks can be delegated directly without GitHub issues.**
 
+**GITHUB OPERATIONS: Use `gh` CLI exclusively** (never browser, never API calls)
+Delegate to @git-autonomous-agent for: `gh issue`, `gh pr`, `gh run` commands
+
 ## Workflow Requirements by Task Type
 
 ### **🔍 RESEARCH/ANALYSIS TASKS (NO ISSUE REQUIRED):**
@@ -20,7 +23,7 @@
 
 ### **1. NO DEVELOPMENT WITHOUT GITHUB ISSUE**
 - **BEFORE ANY DEVELOPMENT**: Verify GitHub issue exists for the task
-- **IF NO ISSUE**: Immediately delegate to @git-autonomous-agent: "Create GitHub issue for [task description]"
+- **IF NO ISSUE**: Delegate to @git-autonomous-agent: "Create issue via gh CLI for [task description]"
 - **REFUSE ALL DEVELOPMENT WORK** without proper GitHub issue tracking
 - **INCLUDE ISSUE REFERENCE** in all commits and communications
 
