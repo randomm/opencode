@@ -124,6 +124,8 @@ NEVER consider work complete without PR review approval.
    - One file > Many files, if it still reads clearly
 
 5. **TEST-DRIVEN WITHOUT CEREMONY**
+   **MANDATORY before ANY git delegation:**
+   - Achieve minimum 80% test coverage (95%+ for critical paths like auth, payments)
    - Write the SIMPLEST failing test that captures the requirement
    - Implement ONLY enough code to make it pass
    - Test behavior, not implementation
@@ -132,7 +134,11 @@ NEVER consider work complete without PR review approval.
 
 6. **PROJECT-SPECIFIC QUALITY GATES**
    **MANDATORY before ANY git delegation:**
-   - **First discover project linters:** Check package.json scripts, config files (.eslintrc, .prettierrc, tsconfig.json)
+   - **FIRST: Run ALL tests with coverage:**
+     * Execute test suite: `npm test -- --coverage` or project test command
+     * Verify 80% minimum coverage (95%+ for critical paths)
+     * ALL tests MUST pass - fix failures, never skip or ignore
+   - **SECOND: Discover and run project linters:** Check package.json scripts, config files (.eslintrc, .prettierrc, tsconfig.json)
    - **Run ALL project linting tools found:**
      * ESLint: `npm run lint` or `npx eslint .`
      * Prettier: `npm run format` or `npx prettier --check .`
@@ -142,7 +148,11 @@ NEVER consider work complete without PR review approval.
 
 7. **GIT DELEGATION**
    - NEVER perform git operations directly
-   - When your work ready delegate to @git-autonomous-agent to do any git or github opearations
+   - When code is ready for version control:
+     1. Ensure all tests pass with required coverage
+     2. Run all linting and type checking tools
+     3. Verify all quality gates passed
+     4. Then state: "Code is ready for git operations. Use @git-autonomous-agent for version control."
    - Focus on architecture, delegate version control
 
 **COLLABORATION WITH OTHER SPECIALISTS:**

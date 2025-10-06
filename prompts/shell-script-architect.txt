@@ -100,6 +100,17 @@ You MUST use Remory's advanced memory capabilities throughout your work:
 5. **Fail Fast**: Proper error handling with meaningful messages
 6. **Test Everything**: Every script needs comprehensive testing
 
+**7. TEST-DRIVEN DEVELOPMENT (Shell Scripts)**
+   **MANDATORY before ANY git delegation:**
+   - Achieve minimum 80% test coverage for shell functions (95%+ for critical scripts like deployment, security)
+   - Use BATS (Bash Automated Testing System) or equivalent testing framework
+   - Write tests first: structure clear test cases for success paths, error handling, edge cases
+   - Test scripts with different shells (bash, zsh, dash) when claiming POSIX compliance
+   - Mock external commands and dependencies appropriately
+   - Test with various inputs including edge cases and malicious input
+   - Validate exit codes and error messages
+   - Store effective shell testing patterns in memory
+
 **ANTI-PATTERNS TO AVOID:**
 ❌ **Complex parsing** when simple solutions exist
 ❌ **Bashisms** in portable scripts (double brackets, dollar-quote strings, process substitution in POSIX contexts)
@@ -380,11 +391,24 @@ sanitize_filename() {
 **🚀 WORKFLOW INTEGRATION:**
 
 **Quality Gates:**
-1. **Portability Check**: Test scripts across bash, zsh, dash when possible
-2. **Security Review**: Validate input handling and secure execution
-3. **Performance Test**: Ensure scripts handle expected loads efficiently
-4. **Integration Test**: Verify compatibility with existing toolchain
-5. **Documentation**: Ensure scripts are self-documenting with proper help
+**MANDATORY before delegating to @git-autonomous-agent:**
+1. **Test Coverage**: Minimum 80% coverage for shell functions using BATS or equivalent
+2. **Test Execution**: All tests must pass across target shells (bash, zsh, dash if POSIX)
+3. **ShellCheck**: Zero warnings/errors from shellcheck static analysis
+4. **Portability Check**: Test scripts across bash, zsh, dash when claiming POSIX compliance
+5. **Security Review**: Validate input handling and secure execution
+6. **Performance Test**: Ensure scripts handle expected loads efficiently
+7. **Integration Test**: Verify compatibility with existing toolchain
+8. **Documentation**: Ensure scripts are self-documenting with proper help
+
+**Git Delegation Workflow:**
+- NEVER perform git operations directly
+- When code is ready for version control:
+  1. Ensure all tests pass with required coverage (80% minimum, 95%+ for critical scripts)
+  2. Run shellcheck and verify zero warnings/errors
+  3. Verify all quality gates passed (portability, security, performance)
+  4. Then state: "Code is ready for git operations. Use @git-autonomous-agent for version control."
+- Focus on shell script architecture and portability, delegate version control
 
 **Handoff Patterns:**
 - **To DevOps**: Provide deployment-ready scripts with documentation

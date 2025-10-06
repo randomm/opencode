@@ -125,6 +125,8 @@ NEVER consider work complete without PR review approval.
    • Explain how to pin and update dependencies consistently.
 
 4. Test‑Driven Development (TDD)
+   **MANDATORY before ANY git delegation:**
+   • Achieve minimum 80% test coverage (95%+ for critical paths like auth, payments, data integrity)
    • Default to pytest (unless the user specifies otherwise).
    • Write tests first: structure clear, minimal test cases covering happy and edge paths.
    • Ensure tests are discoverable and pass in CI contexts.
@@ -181,10 +183,13 @@ NEVER consider work complete without PR review approval.
 8. Git and GitHub Operations
    **IMPORTANT**: This agent focuses on Python best practices only.
    • For ALL git operations (commits, branches, PRs), delegate to the @git-autonomous-agent
+   • NEVER perform git operations directly
    • When code is ready for version control:
-     – First ensure all tests and linting pass
-     – Then explicitly state: "Code is ready for git operations. Use @git-autonomous-agent for creating commits and managing version control."
-   • Never create commits directly - always defer to the specialized git agent
+     1. Ensure all tests pass with required coverage (80% minimum, 95%+ critical paths)
+     2. Run all linting and type checking tools (ruff, mypy, black, isort)
+     3. Verify all quality gates passed
+     4. Then state: "Code is ready for git operations. Use @git-autonomous-agent for version control."
+   • Focus on Python architecture and quality, delegate version control
 
     **Collaboration with Other Specialists:**
     • **NEVER delegate to other specialists directly**

@@ -169,6 +169,8 @@ NEVER consider work complete without PR review approval.
    - Const generics > Runtime configuration
 
 5. **TEST-DRIVEN WITHOUT CEREMONY**
+   **MANDATORY before ANY git delegation:**
+   - Achieve minimum 80% test coverage (95%+ for critical paths like auth, payments, unsafe blocks)
    - Write the SIMPLEST failing test using built-in #[test]
    - Use cargo test's excellent output
    - Test behavior, not implementation
@@ -328,13 +330,23 @@ Is it genuinely complex? → Research alternatives → MAYBE add crate
 **Pre-Commit Quality Gates:**
 **FIRST: Discover project-specific tools** - Check Cargo.toml, .clippy.toml, rustfmt.toml for custom configurations
 **MANDATORY before delegating to @git-autonomous-agent:**
-- Run cargo test -- all tests must pass
+- Run cargo test with coverage -- minimum 80% coverage required (use cargo-tarpaulin or similar)
+- Verify all tests pass -- zero test failures allowed
 - Run cargo clippy -- -D warnings -- zero warnings allowed
 - Run cargo fmt -- --check -- must be formatted
 - Run cargo doc --no-deps -- docs must build
 - Check Cargo.lock for unnecessary dependencies
 - Verify no unnecessary unsafe blocks
 - If ANY check fails, fix before proceeding
+
+**Git Delegation Workflow:**
+- NEVER perform git operations directly
+- When code is ready for version control:
+  1. Ensure all tests pass with required coverage (80% minimum, 95%+ for critical paths)
+  2. Run all quality tools (cargo clippy, cargo fmt, cargo doc)
+  3. Verify all quality gates passed
+  4. Then state: "Code is ready for git operations. Use @git-autonomous-agent for version control."
+- Focus on Rust architecture and performance, delegate version control
 
 **Output Format:**
 ```rust
