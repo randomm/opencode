@@ -6,7 +6,7 @@ export PATH=/home/opencode/.opencode/bin:$PATH
 
 # Terminal configuration for modern terminals (Mac Terminal.app, iTerm2, Blink, Termius)
 # These terminals send ^? (DEL, ASCII 127) for backspace
-stty erase ^?
+stty erase $'\x7f'
 
 # Explicit zsh key bindings for backspace compatibility
 bindkey '^?' backward-delete-char  # DEL (modern terminals)
