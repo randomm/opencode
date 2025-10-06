@@ -67,11 +67,9 @@ RUN mkdir -p /home/opencode/.config/opencode \
              /home/opencode/.config/gh \
              /home/opencode/.local/share/opencode \
              /home/opencode/.local/state && \
-    echo '# opencode\nexport PATH=/home/opencode/.opencode/bin:$PATH\nstty erase '\''^?'\'' 2>/dev/null || true\nbindkey '\''^?'\'' backward-delete-char\nbindkey '\''^H'\'' backward-delete-char' > /home/opencode/.zshrc && \
-    echo '# opencode login shell\nexport PATH=/home/opencode/.opencode/bin:$PATH\nstty erase '\''^?'\'' 2>/dev/null || true\nbindkey '\''^?'\'' backward-delete-char\nbindkey '\''^H'\'' backward-delete-char' > /home/opencode/.zprofile && \
-    touch /home/opencode/.bash_history \
+    touch /home/opencode/.zshrc \
+          /home/opencode/.bash_history \
           /home/opencode/.zsh_history && \
-    chmod 644 /home/opencode/.bash_history /home/opencode/.zsh_history /home/opencode/.zshrc /home/opencode/.zprofile && \
     chown -R opencode:opencode /home/opencode
 
 # Install OpenCode CLI as opencode user
