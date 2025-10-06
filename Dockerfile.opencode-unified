@@ -67,8 +67,7 @@ RUN mkdir -p /home/opencode/.config/opencode \
              /home/opencode/.config/gh \
              /home/opencode/.local/share/opencode \
              /home/opencode/.local/state && \
-    touch /home/opencode/.zshrc \
-          /home/opencode/.bash_history \
+    touch /home/opencode/.bash_history \
           /home/opencode/.zsh_history && \
     chown -R opencode:opencode /home/opencode
 
@@ -79,6 +78,9 @@ RUN curl -fsSL https://opencode.ai/install | bash
 
 # Copy screen configuration
 COPY --chown=opencode:opencode .screenrc /home/opencode/.screenrc
+
+# Copy zsh configuration
+COPY --chown=opencode:opencode .zshrc /home/opencode/.zshrc
 
 # Set up shell environment
 ENV SHELL=/bin/zsh
