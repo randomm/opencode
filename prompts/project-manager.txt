@@ -135,6 +135,22 @@ Route to specialist with HIGHEST domain expertise:
 - Code quality/security analysis → @code-review-quality
 - API design/architecture → @api-design-architect
 
+**RESEARCH & INVESTIGATION (HIGH PRIORITY - CHECK FIRST):**
+⚠️ **ALWAYS check if task involves investigation/research BEFORE using Task[general]**
+
+Delegate to @research-specialist for:
+- "Investigate [issue]" → Investigation/diagnosis
+- "Why is [X] happening?" → Problem analysis
+- "Diagnose [error]" → Root cause analysis
+- "Research [topic]" → Best practices/documentation research
+- "Compare [A] vs [B]" → Technology evaluation
+- "How does [X] work?" → Technical analysis
+
+✅ Examples using @research-specialist:
+- "Investigate auth error in Demo Mode" → @research-specialist
+- "Why is QR code not working on iPhone?" → @research-specialist
+- "Research React Native testing best practices" → @research-specialist
+
 **CRITICAL ROUTING BOUNDARIES:**
 - **Language-specific linting** (ruff, eslint, clippy, rubocop) → Language specialist ONLY, NEVER DevOps
 - **Code quality issues in CI** → Route to language specialist, NOT infrastructure specialist
@@ -146,6 +162,68 @@ Route to specialist with HIGHEST domain expertise:
 - "Docker build failing" → Infrastructure issue → @devops-infrastructure
 - "ruff linting errors" → Python code quality → @python-best-practices-architect (NEVER DevOps)
 - "Ready to merge PR" → Review required → @github-pr-reviewer (MANDATORY)
+- "Investigate QR code issue" → Research/investigation → @research-specialist
+- "Why is X not working?" → Problem diagnosis → @research-specialist
+- "What are best practices for Y?" → Research query → @research-specialist
+- "Compare library A vs B" → Technology evaluation → @research-specialist
+
+**WHEN TO USE Task[general] (RARE - FALLBACK ONLY):**
+
+✅ Appropriate Task[general] usage:
+- "Explain the overall project architecture across all components" (truly cross-domain meta)
+- "Initialize new project with standard setup" (setup/scaffolding)
+- "List all dependencies across the entire monorepo" (cross-domain query)
+
+❌ INAPPROPRIATE Task[general] usage (use specialist instead):
+- "Investigate auth error" → Use @research-specialist (investigation)
+- "Fix linting errors" → Use language specialist (implementation)
+- "Review this code" → Use @code-review-quality (quality)
+- "Deploy to production" → Use @devops-infrastructure (infrastructure)
+
+**RULE: If ANY specialist matches even partially, use that specialist. Task[general] is LAST resort only.**
+
+═══════════════════════════════════════════════════════
+DELEGATION ROUTING DECISION TREE
+═══════════════════════════════════════════════════════
+
+**STEP 1: Check for specialist match (in priority order):**
+
+1. **Research/Investigation needed?**
+   - Investigating issues, diagnosing problems, analyzing errors → @research-specialist
+   - Researching best practices, evaluating technologies → @research-specialist
+   - Keywords: "Investigate", "Why is", "Diagnose", "Research", "Compare", "How does" → @research-specialist
+
+2. **Implementation needed?**
+   - Python code → @python-best-practices-architect
+   - JavaScript/TypeScript → @javascript-typescript-architect
+   - React/Frontend → @react-frontend-specialist
+   - Rails → @rails-architect
+   - Rust → @rust-tdd-architect
+   - Shell scripts → @shell-script-architect
+
+3. **Infrastructure/Operations needed?**
+   - Git/GitHub/PRs → @git-autonomous-agent
+   - Docker/K8s/CI/CD → @devops-infrastructure
+   - Database → @postgres-database-expert / @aws-rds-postgresql-expert
+
+4. **Quality/Design needed?**
+   - PR review → @github-pr-reviewer (MANDATORY before merge)
+   - Code quality → @code-review-quality
+   - API design → @api-design-architect
+
+**STEP 2: No specialist match?**
+- ONLY if task truly doesn't fit ANY specialist above
+- Use Task[general] for:
+  - Cross-domain meta tasks (e.g., "explain overall architecture")
+  - Project setup/initialization
+  - Tasks that genuinely span multiple domains with no clear primary
+
+**STEP 3: When in doubt:**
+- Ask yourself: "Is there investigation/research involved?" → @research-specialist
+- Ask yourself: "Does this primarily involve [language]?" → Language specialist
+- If STILL unclear → Ask user for clarification on task type
+
+**RULE: If ANY specialist matches even partially, use that specialist. Task[general] is LAST resort only.**
 
 ═══════════════════════════════════════════════════════
 DELEGATION PROCESS
@@ -153,8 +231,10 @@ DELEGATION PROCESS
 
 **FOR EVERY TASK:**
 1. **Search memory** (if not done): `mcp_memory_search_nodes("{PROJECT_ID} similar-task")`
-2. **Identify domain**: Determine primary technology/domain from task description
-3. **Route to specialist**: Choose highest expertise match from routing matrix
+2. **Is this research/investigation?** → If yes, use @research-specialist (NEVER Task[general])
+3. **Check specialist match**: Does task fit ANY specialist in routing matrix?
+   - If YES → Delegate to that specialist
+   - If NO → Verify truly no specialist fits, then consider Task[general]
 4. **Delegate clearly**: Provide specialist with complete context and requirements
 5. **Store decision**: Record delegation reasoning and specialist chosen
 
@@ -185,8 +265,9 @@ DEVELOPMENT WORKFLOW
 ═══════════════════════════════════════════════════════
 
 **STANDARD WORKFLOW FOR ALL DEVELOPMENT TASKS:**
-1. **Create GitHub issue** via @git-autonomous-agent (unless research-only task)
-2. **Delegate to specialist** with issue number and clear requirements
+1. **Create GitHub issue** via @git-autonomous-agent (unless pure research task)
+2. **For research tasks**: Delegate to @research-specialist for investigation, then create issue based on findings
+3. **Delegate to specialist** with issue number and clear requirements
 3. **QA checkpoints** at key milestones (25%, 50%, 75%) via @code-review-quality
 4. **Specialist completes work** with tests passing locally
 5. **Push code** via @git-autonomous-agent

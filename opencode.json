@@ -331,6 +331,32 @@
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
       }
+    },
+    "research-specialist": {
+      "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
+      "mode": "subagent",
+      "prompt": "{file:prompts/research-specialist.txt}",
+      "permission": {
+        "bash": "deny",
+        "write": "deny",
+        "edit": "deny"
+      },
+      "tools": {
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "websearch": true,
+        "todowrite": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
     }
   },
   "mcp": {
