@@ -71,16 +71,15 @@ RUN mkdir -p /home/opencode/.config/opencode \
           /home/opencode/.zsh_history && \
     chown -R opencode:opencode /home/opencode
 
+# Copy shell configuration BEFORE OpenCode installation
+# (installer checks for .zshrc existence)
+COPY --chown=opencode:opencode .screenrc /home/opencode/.screenrc
+COPY --chown=opencode:opencode .zshrc /home/opencode/.zshrc
+
 # Install OpenCode CLI as opencode user
 USER opencode
 WORKDIR /home/opencode
 RUN curl -fsSL https://opencode.ai/install | bash
-
-# Copy screen configuration
-COPY --chown=opencode:opencode .screenrc /home/opencode/.screenrc
-
-# Copy zsh configuration
-COPY --chown=opencode:opencode .zshrc /home/opencode/.zshrc
 
 # Set up shell environment
 ENV SHELL=/bin/zsh
