@@ -36,8 +36,8 @@ services:
     depends_on:
       - tailscale
     environment:
-      # OpenCode configuration
-      - OPENCODE_CONFIG=/config/opencode.container.json
+      # OpenCode configuration (points to user's config directory)
+      - OPENCODE_CONFIG=/home/opencode/.config/opencode/opencode.json
       # API Keys (pass through from shell environment)
       - ANTHROPIC_API_KEY
       - CLAUDE_API_KEY
@@ -57,11 +57,11 @@ services:
       # ===========================================================================
       # OpenCode Configuration (read-only from host)
       # ===========================================================================
-      - ./opencode.container.json:/config/opencode.container.json:ro
-      - ./prompts:/config/prompts:ro
-      - ./instructions:/config/instructions:ro
-      - ./CLAUDE.md:/config/CLAUDE.md:ro
-      - ./AGENTS.md:/config/AGENTS.md:ro
+      - ./opencode.container.json:/home/opencode/.config/opencode/opencode.json:ro
+      - ./prompts:/home/opencode/.config/opencode/prompts:ro
+      - ./instructions:/home/opencode/.config/opencode/instructions:ro
+      - ./CLAUDE.md:/home/opencode/.config/opencode/CLAUDE.md:ro
+      - ./AGENTS.md:/home/opencode/.config/opencode/AGENTS.md:ro
       
       # ===========================================================================
       # Git Configuration (read-only)

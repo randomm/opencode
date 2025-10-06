@@ -21,10 +21,21 @@ fi
 # Auto-authenticate GitHub CLI if token present
 if [ -n "${GH_TOKEN:-}" ]; then
   echo "Authenticating GitHub CLI..."
-  if su - opencode -c "echo '$GH_TOKEN' | gh auth login --with-token 2>/dev/null"; then
-    su - opencode -c "gh config set git_protocol ssh 2>/dev/null" || true
+  if su - opencode -c "echo '${GH_TOKEN}' | gh auth login --with-token"; then
+    su - opencode -c "gh config set git_protocol ssh" || true
     echo "✓ GitHub CLI authenticated"
+  else
+    echo "⚠️  GitHub CLI authentication failed"
   fi
+fi
+
+# Create screen session if it doesn't exist
+if ! su - opencode -c "screen -ls 2>/dev/null" | grep -q "opencode-main"; then
+  su - opencode -c "screen -dmS opencode-main zsh"
+  sleep 1
+  echo "✓ Screen session 'opencode-main' created"
+else
+  echo "✓ Screen session 'opencode-main' already exists"
 fi
 
 echo ""
