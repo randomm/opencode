@@ -16,6 +16,7 @@ This system implements a **pure orchestration** pattern where specialized AI age
 ### Intelligent Task Delegation
 - **Project Manager** analyzes requirements and routes to appropriate specialists
 - **Zero overlap** - each agent has clear domain boundaries
+- **Task tool is synchronous** - PM waits (blocked) for specialist completion before continuing
 - **Cross-agent collaboration** - specialists delegate to each other when needed
 
 ### Test-Driven Development Enforcement
@@ -43,6 +44,8 @@ This system implements a **pure orchestration** pattern where specialized AI age
 - **`rust-tdd-architect`** - Zero-cost abstractions, memory safety, cargo tools
 - **`javascript-typescript-architect`** - Minimalist JS/TS, built-in APIs first
 - **`rails-architect`** - Rails conventions, RSpec, security best practices
+- **`shell-script-architect`** - POSIX-first shell scripting, BATS testing, portability
+- **`research-specialist`** - Technical investigation, problem analysis, Perplexity research
 
 ### Domain Specialists
 - **`react-frontend-specialist`** - Component architecture, accessibility, performance
@@ -202,11 +205,27 @@ Project Manager:
 
 ## 🔄 Development Workflow
 
+### Delegation Model
+
+**Project Manager → Subagent Communication:**
+1. PM invokes Task tool with specialist name and requirements
+2. **PM waits (blocked)** - Cannot continue until specialist completes
+3. Specialist executes work (could take minutes or hours)
+4. Specialist returns complete results to PM
+5. PM proceeds with next action based on results
+
+**Parallel Execution:**
+- PM can launch multiple specialists in single message (multiple Task calls)
+- All run concurrently, PM waits for all to complete
+- Enables coordinated multi-domain work
+
+### Development Steps
+
 1. **Task Analysis** - Project Manager understands requirements
 2. **Specialist Routing** - Tasks delegated to appropriate agents
 3. **TDD Implementation** - Tests first, then minimal implementation
 4. **Quality Validation** - Linting, testing, coverage checks
-5. **Cross-Agent Coordination** - Integration between domains  
+5. **Cross-Agent Coordination** - Integration between domains
 6. **Git Operations** - Automated commits, PRs, and deployment
 
 ## 🚦 Quality Standards
@@ -223,8 +242,9 @@ Project Manager:
 
 ### Quick Start
 
+**From Mac:**
 ```bash
-# Start or attach to OpenCode (from Mac)
+# Start or attach to OpenCode
 cd ~/.config/opencode
 ./scripts/opencode
 
@@ -232,10 +252,18 @@ cd ~/.config/opencode
 opencode "Implement user authentication"
 
 # Detach from session (keeps running): Ctrl+A then D
-
-# Reattach later (from Mac or iPhone via SSH)
-./scripts/opencode
 ```
+
+**From iPhone (via SSH):**
+```bash
+# SSH connection automatically attaches to session
+ssh opencode@<tailscale-ip>
+
+# Already in the same session as Mac! 🎉
+# Work or detach with: Ctrl+A then D
+```
+
+The script **automatically refreshes** the screen session to ensure the latest shell configuration is loaded, fixing backspace issues after container rebuilds.
 
 ### Architecture
 
@@ -273,12 +301,13 @@ The unified container supports **persistent screen sessions** that work across d
 opencode "Debug payment processing"
 # Detach: Ctrl+A then D
 
-# On iPhone: Continue same session
+# On iPhone: Auto-attached to same session!
 ssh opencode@<tailscale-ip>
-screen -r opencode-main
-# See exactly where you left off!
-# Keep working or detach again
+# See exactly where you left off - no manual screen commands needed!
+# Keep working or detach with: Ctrl+A then D
 ```
+
+**Session Auto-Refresh:** Each connection refreshes the screen session to load the latest `.zshrc` configuration, preventing stale shell state and backspace issues after container rebuilds.
 
 ### Setup
 
@@ -309,12 +338,12 @@ EOF
 # Add your SSH public key to container
 ./add-ssh-key.sh ~/.ssh/id_ed25519.pub
 
-# Get SSH connection info
-./scripts/opencode --ssh
+# Get Tailscale IP address
+docker exec opencode_tailscale tailscale ip -4
 
 # Connect from iPhone (using Termius, Blink Shell, etc.)
 ssh opencode@<tailscale-ip>
-screen -r opencode-main
+# Auto-attaches to screen session - no manual commands needed! 🚀
 ```
 
 ### Features

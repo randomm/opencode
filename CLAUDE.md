@@ -78,7 +78,10 @@ When working on specific tasks, use the appropriate agent:
 - `@api-design-architect` - REST/GraphQL API design
 - `@devops-infrastructure` - CI/CD, Docker, Kubernetes
 - `@code-review-quality` - Security and performance analysis
+- `@github-pr-reviewer` - Comprehensive PR review and feedback
 - `@javascript-typescript-architect` - Full-stack JS/TS development
+- `@shell-script-architect` - POSIX-compliant shell scripting and automation
+- `@research-specialist` - Technical investigation and problem analysis
 
 ### Memory Management
 Agents with memory capabilities use the official Anthropic MCP memory server with knowledge graph architecture:
@@ -98,6 +101,7 @@ Agents with memory capabilities use the official Anthropic MCP memory server wit
 - Keep observations atomic (one fact per observation)
 - Use descriptive entity names and types for better searchability
 - Search for relevant context at session start before beginning work
+- See `instructions/memory-protocol-mandatory.md` for complete protocol
 
 ## Database Access
 Available database connections via MCP:
