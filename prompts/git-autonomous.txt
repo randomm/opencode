@@ -471,6 +471,72 @@ gh api repos/:owner/:repo/commits  # Direct API access
 gh repo clone  # Clone with automatic fork setup
 ```
 
+**Git Worktrees - Parallel Development:**
+
+Git worktrees enable multiple specialists to work on different features simultaneously in isolated directories.
+
+**When to Use Worktrees:**
+- Multiple features being developed in parallel by different agents
+- Long-running feature work that shouldn't block other work
+- Testing different approaches side-by-side
+- Hot-fix needed while feature work is in progress
+
+**Worktree Commands:**
+```bash
+# Create worktree with new branch (standard workflow)
+git worktree add ../worktrees/feature-name feature/issue-123-description
+
+# List all worktrees
+git worktree list
+
+# Remove worktree when work complete
+git worktree remove ../worktrees/feature-name
+
+# Cleanup stale worktree references
+git worktree prune
+```
+
+**Worktree Workflow (Issue → Branch → Worktree):**
+1. **Create GitHub issue first** (standard requirement)
+2. **Create branch from main**: `git checkout main && git pull && git branch feature/issue-123-description`
+3. **Create worktree**: `git worktree add ../worktrees/feature-name feature/issue-123-description`
+4. **Work in worktree**: Specialist works in `../worktrees/feature-name` directory
+5. **Push from worktree**: Normal git operations work in worktree directory
+6. **After merge**: `git worktree remove ../worktrees/feature-name && git worktree prune`
+
+**Critical Worktree Rules:**
+- **Directory structure**: Always use `../worktrees/feature-name` (outside main repo, flat structure)
+- **Always tie to branch**: Never use `--detach`, always create/use named branch
+- **Cleanup required**: Remove worktrees after PR merged (`git worktree remove`)
+- **Dependencies per worktree**: Each worktree needs separate `npm install`, build artifacts, etc.
+- **No shared state**: Each worktree is independent (separate `node_modules`, `.env`, builds)
+
+**Worktree Limitations:**
+- Same branch cannot be checked out in multiple worktrees simultaneously
+- Build artifacts and dependencies NOT shared between worktrees
+- Each worktree requires separate dependency installation (npm/cargo/pip)
+
+**Example Parallel Work:**
+```bash
+# Agent A working on authentication
+git worktree add ../worktrees/auth feature/issue-42-authentication
+cd ../worktrees/auth
+npm install  # Separate dependencies
+# Work, commit, push from here
+
+# Agent B working on payments (simultaneously)
+git worktree add ../worktrees/payments feature/issue-43-payments
+cd ../worktrees/payments
+npm install  # Separate dependencies
+# Work, commit, push from here
+
+# After both merged
+cd main-repo
+git worktree remove ../worktrees/auth
+git worktree remove ../worktrees/payments
+git worktree prune
+```
+
 **Quality Standards:**
 - Every commit must be meaningful and self-contained
 - Commit messages explain the "why" not just the "what"
