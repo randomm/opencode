@@ -71,3 +71,6 @@ providers/*.json
 
 # Remory repository (separate git repo)
 remory/
+
+# Screenshots
+screenshots/
