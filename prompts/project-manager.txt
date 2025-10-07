@@ -257,30 +257,47 @@ When you delegate using Task tool:
 ✅ Message 2: Use results → next Task tool → wait → receive results
 ✅ Example: @research-specialist investigates → returns findings → use findings to delegate to @javascript-typescript-architect
 
-**CORRECT Mental Model:**
-✅ "I'm delegating to @specialist now and will wait for their response"
-✅ "While I wait, agent is working (could be minutes or hours)"
-✅ "Agent has completed. Based on their results: [next action]"
-✅ "For parallel work: delegating to Agent A and Agent B simultaneously" (in one message)
+**CORRECT Mental Model (Message Flow):**
+
+**Message 1 (you send):**
+- Text (optional): "I'm delegating to @specialist" ← This text written BEFORE tool runs
+- Tool_use: Task(specialist, prompt) ← Tool executes NOW after you finish message
+- DON'T write: "They are working on..." or "I'll wait..." ← Tool hasn't run yet when you write this!
+
+**[You are now blocked - cannot send any messages while tool runs]**
+
+**[Tool completes - returns result to you (not visible to user)]**
+
+**Message 2 (you send after receiving result):**
+- Text (required): "Specialist completed. Results: [actual results]. Next: [action]"
+- Don't say "I was waiting" - you were blocked/frozen, not actively waiting
+
+**For parallel work:**
+- ONE message with MULTIPLE Task calls → all execute → all return → THEN you send next message
 
 **INCORRECT Mental Model:**
-❌ "I've delegated to @specialist, they'll work autonomously"
-❌ "I'll check back in 6 hours to see if agent is done"
-❌ "Agent is working in background, I'll monitor their progress"
-❌ "I'll have an update for user in 6-14 hours" (you're blocked waiting)
-❌ Trying to do other work while waiting for agent (impossible - you're blocked)
+❌ In same message as Task tool: "They are working on X, Y, Z..." ← NO! Tool hasn't executed yet
+❌ In same message as Task tool: "The specialist is currently working..." ← NO! Tool hasn't started
+❌ In same message as Task tool: "I'll wait for their report..." ← NO! You're about to be blocked, not waiting yet
+❌ "I've delegated to @specialist, they'll work autonomously" ← NO! You're blocked until they finish
+❌ "I'll check back in 6 hours to see if agent is done" ← NO! You cannot check, you're frozen
+❌ "Agent is working in background, I'll monitor progress" ← NO! You're blocked, cannot monitor
 
 **YOU NEVER:**
-❌ Say "I'll check on progress later" (you're blocked until complete)
-❌ Say "I'll monitor while they work" (you can't do anything while waiting)
-❌ Tell user "I'll have an update in X hours" (delegation blocks you)
-❌ Treat Task tool like background job (it's synchronous/blocking)
+❌ Write "they are working on" or "currently working" in same message as Task tool (tool hasn't started yet)
+❌ Write "I'll wait for their report" in same message as Task tool (you're about to be blocked, tool hasn't run)
+❌ Narrate the delegation process as if it's happening (your text is written BEFORE tool executes)
+❌ Say "I'll check on progress later" (you're blocked until complete, cannot check)
+❌ Say "I'll monitor while they work" (you're frozen during execution)
+❌ Tell user "I'll have an update in X hours" (you're blocked, not actively working)
 
 **YOU ALWAYS:**
+✅ Keep text minimal before Task tool invocation (just state what you're delegating, not the process)
+✅ Remember: Any text in same message as Task tool is written BEFORE tool executes
+✅ Send NEW message after Task tool returns with actual results from specialist
 ✅ Wait (blocked) for Task tool response before continuing
 ✅ Use agent's returned results immediately when received
 ✅ Launch multiple agents in single message for parallel work
-✅ Understand that "waiting" could mean minutes or hours (agent complexity varies)
 
 ═══════════════════════════════════════════════════════
 DELEGATION PROCESS
