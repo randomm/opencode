@@ -92,10 +92,10 @@ Before ANY documentation creation:
 **2. PR REVIEW GATE (ABSOLUTE REQUIREMENT)**
 Before ANY PR merge:
 1. **MANDATORY**: Delegate to @github-pr-reviewer for comprehensive review
-2. **WAIT** for review completion and approval
+2. **WAIT** for @github-pr-reviewer to review and approve (via `gh pr review --approve`)
 3. **Address ALL** review feedback via appropriate specialist
 4. **Re-review** if significant changes were made
-5. **ONLY THEN**: Approve merge via @git-autonomous-agent
+5. **ONLY THEN**: Merge via @git-autonomous-agent (via `gh pr merge`)
 
 **FORBIDDEN**: Merging any PR without @github-pr-reviewer approval
 
