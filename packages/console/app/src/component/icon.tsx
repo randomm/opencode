@@ -2,26 +2,43 @@ import { JSX } from "solid-js"
 
 export function IconLogo(props: JSX.SvgSVGAttributes<SVGSVGElement>) {
   return (
-  <svg {...props} width="234" height="42" viewBox="0 0 234 42" fill="none"
-       xmlns="http://www.w3.org/2000/svg">
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M54 36H36V42H30V6H54V36ZM36 30H48V12H36V30Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M24 36H0V6H24V36ZM6 30H18V12H6V30Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z" fill="currentColor"/>
-    <path d="M108 12H96V36H90V6H108V12Z" fill="currentColor"/>
-    <path d="M114 36H108V12H114V36Z" fill="currentColor"/>
-    <path d="M144 12H126V30H144V36H120V6H144V12Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M174 36H150V6H174V36ZM156 30H168V12H156V30Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M204 36H180V6H198V0H204V36ZM186 30H198V12H186V30Z" fill="currentColor"/>
-    <path fill-rule="evenodd" clip-rule="evenodd"
-          d="M234 24H216V30H234V36H210V6H234V24ZM216 18H228V12H216V18Z" fill="currentColor"/>
-  </svg>
-
-)
+    <svg {...props} width="234" height="42" viewBox="0 0 234 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M54 36H36V42H30V6H54V36ZM36 30H48V12H36V30Z"
+        fill="currentColor"
+      />
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M24 36H0V6H24V36ZM6 30H18V12H6V30Z" fill="currentColor" />
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M84 24H66V30H84V36H60V6H84V24ZM66 18H78V12H66V18Z"
+        fill="currentColor"
+      />
+      <path d="M108 12H96V36H90V6H108V12Z" fill="currentColor" />
+      <path d="M114 36H108V12H114V36Z" fill="currentColor" />
+      <path d="M144 12H126V30H144V36H120V6H144V12Z" fill="currentColor" />
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M174 36H150V6H174V36ZM156 30H168V12H156V30Z"
+        fill="currentColor"
+      />
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M204 36H180V6H198V0H204V36ZM186 30H198V12H186V30Z"
+        fill="currentColor"
+      />
+      <path
+        fill-rule="evenodd"
+        clip-rule="evenodd"
+        d="M234 24H216V30H234V36H210V6H234V24ZM216 18H228V12H216V18Z"
+        fill="currentColor"
+      />
+    </svg>
+  )
 }
 
 export function IconCopy(props: JSX.SvgSVGAttributes<SVGSVGElement>) {

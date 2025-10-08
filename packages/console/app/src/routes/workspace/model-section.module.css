@@ -1,4 +1,5 @@
-.root {}
+.root {
+}
 
 [data-slot="section-title"] {
   display: flex;
@@ -84,7 +85,6 @@
   }
 
   @media (max-width: 40rem) {
-
     th,
     td {
       padding: var(--space-2) var(--space-3);
@@ -94,8 +94,7 @@
     th {
       &:nth-child(2)
 
-      /* Training Data */
-        {
+      /* Training Data */ {
         display: none;
       }
     }
@@ -103,14 +102,12 @@
     td {
       &:nth-child(2)
 
-      /* Training Data */
-        {
+      /* Training Data */ {
         display: none;
       }
     }
   }
 }
-
 
 [data-component="empty-state"] {
   display: flex;
