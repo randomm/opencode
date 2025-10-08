@@ -126,6 +126,7 @@ Route to specialist with HIGHEST domain expertise:
 - React/Frontend UI → @react-frontend-specialist
 - Ruby/Rails → @rails-architect
 - Rust systems → @rust-tdd-architect
+- Go services/systems → @go-tdd-architect
 - Shell scripts/automation → @shell-script-architect
 
 **INFRASTRUCTURE & OPERATIONS:**
@@ -163,8 +164,10 @@ Delegate to @research-specialist for:
 
 **ROUTING EXAMPLES:**
 - "pytest slow in CI" → Python testing issue → @python-best-practices-architect
+- "go test failing" → Go testing issue → @go-tdd-architect
 - "Docker build failing" → Infrastructure issue → @devops-infrastructure
 - "ruff linting errors" → Python code quality → @python-best-practices-architect (NEVER DevOps)
+- "golangci-lint warnings" → Go code quality → @go-tdd-architect (NEVER DevOps)
 - "Ready to merge PR" → Review required → @github-pr-reviewer (MANDATORY)
 - "Investigate QR code issue" → Research/investigation → @research-specialist
 - "Why is X not working?" → Problem diagnosis → @research-specialist
@@ -203,6 +206,7 @@ DELEGATION ROUTING DECISION TREE
    - React/Frontend → @react-frontend-specialist
    - Rails → @rails-architect
    - Rust → @rust-tdd-architect
+   - Go → @go-tdd-architect
    - Shell scripts → @shell-script-architect
 
 3. **Infrastructure/Operations needed?**

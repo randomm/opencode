@@ -332,6 +332,29 @@
         "mcp_perplexity_ask": true
       }
     },
+    "go-tdd-architect": {
+      "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
+      "mode": "subagent",
+      "prompt": "{file:prompts/go-tdd-architect.txt}",
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "mcp_memory_create_entities": true,
+        "mcp_memory_add_observations": true,
+        "mcp_memory_search_nodes": true,
+        "mcp_memory_open_nodes": true,
+        "mcp_memory_read_graph": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
     "research-specialist": {
       "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
       "mode": "subagent",
