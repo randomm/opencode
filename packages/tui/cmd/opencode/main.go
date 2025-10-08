@@ -72,7 +72,14 @@ func main() {
 	batch := errgroup.Group{}
 
 	batch.Go(func() error {
-		result, err := httpClient.Project.Current(context.Background(), opencode.ProjectCurrentParams{})
+		// Use OPENCODE_ORIGINAL_CWD from environment if available (set by wrapper script)
+		wd := os.Getenv("OPENCODE_ORIGINAL_CWD")
+		if wd == "" {
+			wd, _ = os.Getwd()
+		}
+		result, err := httpClient.Project.Current(context.Background(), opencode.ProjectCurrentParams{
+			Directory: opencode.F(wd),
+		})
 		if err != nil {
 			return err
 		}
@@ -81,7 +88,14 @@ func main() {
 	})
 
 	batch.Go(func() error {
-		result, err := httpClient.Agent.List(context.Background(), opencode.AgentListParams{})
+		// Use OPENCODE_ORIGINAL_CWD from environment if available (set by wrapper script)
+		wd := os.Getenv("OPENCODE_ORIGINAL_CWD")
+		if wd == "" {
+			wd, _ = os.Getwd()
+		}
+		result, err := httpClient.Agent.List(context.Background(), opencode.AgentListParams{
+			Directory: opencode.F(wd),
+		})
 		if err != nil {
 			return err
 		}
@@ -90,7 +104,14 @@ func main() {
 	})
 
 	batch.Go(func() error {
-		result, err := httpClient.Path.Get(context.Background(), opencode.PathGetParams{})
+		// Use OPENCODE_ORIGINAL_CWD from environment if available (set by wrapper script)
+		wd := os.Getenv("OPENCODE_ORIGINAL_CWD")
+		if wd == "" {
+			wd, _ = os.Getwd()
+		}
+		result, err := httpClient.Path.Get(context.Background(), opencode.PathGetParams{
+			Directory: opencode.F(wd),
+		})
 		if err != nil {
 			return err
 		}
@@ -136,7 +157,9 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGTERM, syscall.SIGINT)
 
 	go func() {
-		stream := httpClient.Event.ListStreaming(ctx, opencode.EventListParams{})
+		stream := httpClient.Event.ListStreaming(ctx, opencode.EventListParams{
+			Directory: opencode.F(project.Worktree),
+		})
 		for stream.Next() {
 			evt := stream.Current().AsUnion()
 			program.Send(evt)

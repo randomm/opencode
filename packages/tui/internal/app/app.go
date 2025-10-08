@@ -112,9 +112,16 @@ func New(
 	initialSession *string,
 ) (*App, error) {
 	util.RootPath = project.Worktree
-	util.CwdPath, _ = os.Getwd()
+	// Use OPENCODE_ORIGINAL_CWD from environment if available (set by wrapper script)
+	if originalCwd := os.Getenv("OPENCODE_ORIGINAL_CWD"); originalCwd != "" {
+		util.CwdPath = originalCwd
+	} else {
+		util.CwdPath, _ = os.Getwd()
+	}
 
-	configInfo, err := httpClient.Config.Get(ctx, opencode.ConfigGetParams{})
+	configInfo, err := httpClient.Config.Get(ctx, opencode.ConfigGetParams{
+		Directory: opencode.F(project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +196,9 @@ func New(
 
 	slog.Debug("Loaded config", "config", configInfo)
 
-	customCommands, err := httpClient.Command.List(ctx, opencode.CommandListParams{})
+	customCommands, err := httpClient.Command.List(ctx, opencode.CommandListParams{
+		Directory: opencode.F(project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +470,9 @@ func findProviderByID(providers []opencode.Provider, providerID string) *opencod
 }
 
 func (a *App) InitializeProvider() tea.Cmd {
-	providersResponse, err := a.Client.App.Providers(context.Background(), opencode.AppProvidersParams{})
+	providersResponse, err := a.Client.App.Providers(context.Background(), opencode.AppProvidersParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		slog.Error("Failed to list providers", "error", err)
 		// TODO: notify user
@@ -717,6 +728,7 @@ func (a *App) InitializeProject(ctx context.Context) tea.Cmd {
 
 	go func() {
 		_, err := a.Client.Session.Init(ctx, a.Session.ID, opencode.SessionInitParams{
+			Directory:  opencode.F(a.Project.Worktree),
 			MessageID:  opencode.F(id.Ascending(id.Message)),
 			ProviderID: opencode.F(a.Provider.ID),
 			ModelID:    opencode.F(a.Model.ID),
@@ -747,6 +759,7 @@ func (a *App) CompactSession(ctx context.Context) tea.Cmd {
 			compactCtx,
 			a.Session.ID,
 			opencode.SessionSummarizeParams{
+				Directory:  opencode.F(a.Project.Worktree),
 				ProviderID: opencode.F(a.Provider.ID),
 				ModelID:    opencode.F(a.Model.ID),
 			},
@@ -773,7 +786,9 @@ func (a *App) MarkProjectInitialized(ctx context.Context) error {
 }
 
 func (a *App) CreateSession(ctx context.Context) (*opencode.Session, error) {
-	session, err := a.Client.Session.New(ctx, opencode.SessionNewParams{})
+	session, err := a.Client.Session.New(ctx, opencode.SessionNewParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -798,6 +813,7 @@ func (a *App) SendPrompt(ctx context.Context, prompt Prompt) (*App, tea.Cmd) {
 
 	cmds = append(cmds, func() tea.Msg {
 		_, err := a.Client.Session.Prompt(ctx, a.Session.ID, opencode.SessionPromptParams{
+			Directory: opencode.F(a.Project.Worktree),
 			Model: opencode.F(opencode.SessionPromptParamsModel{
 				ProviderID: opencode.F(a.Provider.ID),
 				ModelID:    opencode.F(a.Model.ID),
@@ -832,6 +848,7 @@ func (a *App) SendCommand(ctx context.Context, command string, args string) (*Ap
 
 	cmds = append(cmds, func() tea.Msg {
 		params := opencode.SessionCommandParams{
+			Directory: opencode.F(a.Project.Worktree),
 			Command:   opencode.F(command),
 			Arguments: opencode.F(args),
 			Agent:     opencode.F(a.Agents[a.AgentIndex].Name),
@@ -872,8 +889,9 @@ func (a *App) SendShell(ctx context.Context, command string) (*App, tea.Cmd) {
 			context.Background(),
 			a.Session.ID,
 			opencode.SessionShellParams{
-				Agent:   opencode.F(a.Agent().Name),
-				Command: opencode.F(command),
+				Directory: opencode.F(a.Project.Worktree),
+				Agent:     opencode.F(a.Agent().Name),
+				Command:   opencode.F(command),
 			},
 		)
 		if err != nil {
@@ -895,7 +913,9 @@ func (a *App) Cancel(ctx context.Context, sessionID string) error {
 		a.compactCancel = nil
 	}
 
-	_, err := a.Client.Session.Abort(ctx, sessionID, opencode.SessionAbortParams{})
+	_, err := a.Client.Session.Abort(ctx, sessionID, opencode.SessionAbortParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		slog.Error("Failed to cancel session", "error", err)
 		return err
@@ -904,7 +924,9 @@ func (a *App) Cancel(ctx context.Context, sessionID string) error {
 }
 
 func (a *App) ListSessions(ctx context.Context) ([]opencode.Session, error) {
-	response, err := a.Client.Session.List(ctx, opencode.SessionListParams{})
+	response, err := a.Client.Session.List(ctx, opencode.SessionListParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -916,7 +938,9 @@ func (a *App) ListSessions(ctx context.Context) ([]opencode.Session, error) {
 }
 
 func (a *App) DeleteSession(ctx context.Context, sessionID string) error {
-	_, err := a.Client.Session.Delete(ctx, sessionID, opencode.SessionDeleteParams{})
+	_, err := a.Client.Session.Delete(ctx, sessionID, opencode.SessionDeleteParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		slog.Error("Failed to delete session", "error", err)
 		return err
@@ -936,7 +960,9 @@ func (a *App) UpdateSession(ctx context.Context, sessionID string, title string)
 }
 
 func (a *App) ListMessages(ctx context.Context, sessionId string) ([]Message, error) {
-	response, err := a.Client.Session.Messages(ctx, sessionId, opencode.SessionMessagesParams{})
+	response, err := a.Client.Session.Messages(ctx, sessionId, opencode.SessionMessagesParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -958,7 +984,9 @@ func (a *App) ListMessages(ctx context.Context, sessionId string) ([]Message, er
 }
 
 func (a *App) ListProviders(ctx context.Context) ([]opencode.Provider, error) {
-	response, err := a.Client.App.Providers(ctx, opencode.AppProvidersParams{})
+	response, err := a.Client.App.Providers(ctx, opencode.AppProvidersParams{
+		Directory: opencode.F(a.Project.Worktree),
+	})
 	if err != nil {
 		return nil, err
 	}

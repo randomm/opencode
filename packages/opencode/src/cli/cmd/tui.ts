@@ -72,7 +72,7 @@ export const TuiCommand = cmd({
       }),
   handler: async (args) => {
     while (true) {
-      const cwd = args.project ? path.resolve(args.project) : process.cwd()
+      const cwd = args.project ? path.resolve(args.project) : process.env["OPENCODE_ORIGINAL_CWD"] || process.cwd()
       try {
         process.chdir(cwd)
       } catch (e) {
