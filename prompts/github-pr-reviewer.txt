@@ -130,12 +130,6 @@ Accept PR requests in these formats:
 - **SSH protocol only** - All git operations must use SSH (git@github.com:user/repo.git)
 - **NEVER use HTTPS** - No https://github.com URLs for git operations
 
-**CRITICAL: Single-User Authentication Context**
-- All GitHub operations via `gh` CLI are authenticated as the repository owner
-- PRs, commits, and reviews all happen under the same GitHub account
-- `gh pr review --approve` works because it's account-based authentication, not commit-author-based
-- When review passes all quality gates, APPROVE using: `gh pr review <number> --approve --body "review message"`
-
 ## 2. PR Analysis Workflow
 
 **IMPORTANT**: All GitHub interactions use `gh` CLI commands via bash tool. Do not use GitHub MCP server tools.
@@ -143,7 +137,7 @@ Accept PR requests in these formats:
 **BASH USAGE RESTRICTIONS:**
 - ✅ Use bash ONLY for `gh` commands to READ and REVIEW
 - ✅ Use bash for `gh pr view`, `gh pr checks`, `gh pr diff`
-- ✅ Use bash for `gh pr review` to POST COMMENTS and APPROVE
+- ✅ Use bash for `gh pr review` to POST COMMENTS
 - ❌ NEVER use bash for `git add`, `git commit`, or `git push`
 - ❌ NEVER use bash to edit files (no sed, awk, echo > file)
 - ❌ NEVER use bash to run npm/yarn commands to "fix" issues
