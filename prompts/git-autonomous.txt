@@ -502,12 +502,12 @@ git worktree prune
 3. **Create worktree**: `git worktree add ../worktrees/feature-name feature/issue-123-description`
 4. **Work in worktree**: Specialist works in `../worktrees/feature-name` directory
 5. **Push from worktree**: Normal git operations work in worktree directory
-6. **After merge**: `git worktree remove ../worktrees/feature-name && git worktree prune`
+6. **After merge**: Execute Worktree Cleanup Protocol (see below)
 
 **Critical Worktree Rules:**
 - **Directory structure**: Always use `../worktrees/feature-name` (outside main repo, flat structure)
 - **Always tie to branch**: Never use `--detach`, always create/use named branch
-- **Cleanup required**: Remove worktrees after PR merged (`git worktree remove`)
+- **Cleanup required**: Execute Worktree Cleanup Protocol after PR merged (mandatory)
 - **Dependencies per worktree**: Each worktree needs separate `npm install`, build artifacts, etc.
 - **No shared state**: Each worktree is independent (separate `node_modules`, `.env`, builds)
 
@@ -530,11 +530,75 @@ cd ../worktrees/payments
 npm install  # Separate dependencies
 # Work, commit, push from here
 
-# After both merged
-cd main-repo
-git worktree remove ../worktrees/auth
-git worktree remove ../worktrees/payments
-git worktree prune
+# After both merged - execute cleanup protocol for each
+```
+
+**WORKTREE CLEANUP PROTOCOL:**
+
+Execute after PR merge and issue closure (delegated by project manager):
+
+**SAFETY CHECKS (MUST VERIFY FIRST):**
+1. **Verify PR merged** (not just closed):
+   ```bash
+   gh pr view <PR-number> --json mergedAt,state -q '.mergedAt,.state'
+   # Must show merge timestamp and "MERGED" state
+   ```
+
+2. **Verify no uncommitted changes**:
+   ```bash
+   cd ../worktrees/<feature-name>
+   git status --porcelain
+   # Must be empty output (clean working tree)
+   ```
+
+3. **Verify branch fully pushed**:
+   ```bash
+   git branch -r --contains <branch-name>
+   # Must show remote branch exists
+   ```
+
+**CLEANUP SEQUENCE:**
+1. **Return to main worktree**:
+   ```bash
+   cd <main-repo-path>
+   ```
+
+2. **Remove worktree directory**:
+   ```bash
+   git worktree remove ../worktrees/<feature-name>
+   ```
+
+3. **Delete remote branch** (GitHub can auto-delete, verify first):
+   ```bash
+   gh pr view <PR-number> --json headRefName -q '.headRefName'
+   # Check if branch still exists on remote
+   git push origin --delete <branch-name>  # Only if still exists
+   ```
+
+4. **Delete local branch**:
+   ```bash
+   git branch -d <branch-name>  # Safe delete (verifies merged)
+   ```
+
+5. **Prune worktree references**:
+   ```bash
+   git worktree prune
+   ```
+
+**ERROR HANDLING:**
+- **Uncommitted changes** → ERROR: "Worktree has uncommitted work at <path>. Cannot cleanup. Please verify and commit/stash changes first."
+- **PR not merged** → ERROR: "PR #<number> not merged yet (state: <state>). Cleanup blocked until merge completes."
+- **Worktree not found** → WARNING: "Worktree already removed or not found at <path>. Skipping removal, continuing with branch cleanup."
+- **Branch delete fails** → INFO: "Branch may already be deleted remotely (GitHub auto-delete enabled). Proceeding with local cleanup."
+
+**CONFIRMATION MESSAGE:**
+After successful cleanup, report:
+```
+✅ Worktree cleanup complete:
+   - Removed: ../worktrees/<feature-name>
+   - Deleted remote branch: <branch-name> (if existed)
+   - Deleted local branch: <branch-name>
+   - Pruned worktree references
 ```
 
 **Quality Standards:**
