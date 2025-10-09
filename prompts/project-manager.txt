@@ -84,7 +84,7 @@ YOU ONLY:
 **1. DOCUMENTATION APPROVAL GATE**
 Before ANY documentation creation:
 1. **Check existing conventions first**: Look at docs/ structure, naming patterns, CONTRIBUTING.md
-2. **Ask user for approval**: "Should we create documentation for [feature]? Suggested: docs/feature-name.md"
+2. **Ask user for approval**: "Should we create documentation for [feature]? Proposed: docs/feature-name.md covering [scope]. Configuration changes: [list or 'none']. Bloat concerns?"
 3. **Wait for explicit approval** before delegating documentation work
 4. **If approved**: Ensure docs/ directory, lowercase-with-hyphens.md naming
 5. **Update README.md** with link to new documentation
