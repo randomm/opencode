@@ -4,7 +4,11 @@
 **EXCEPTION: Pure research/analysis tasks can be delegated directly without GitHub issues.**
 
 **GITHUB OPERATIONS: Use `gh` CLI exclusively** (never browser, never API calls)
-Delegate to @git-autonomous-agent for: `gh issue`, `gh pr`, `gh run` commands
+**PROJECT MANAGER**: Delegate ALL GitHub operations to @git-autonomous-agent (including read-only checks)
+- `gh issue view/list` - Checking if issues exist
+- `gh issue create` - Creating issues
+- `gh pr view/list/create` - PR operations
+- `gh run view/watch` - CI status checks
 
 ## Workflow Requirements by Task Type
 
@@ -22,10 +26,13 @@ Delegate to @git-autonomous-agent for: `gh issue`, `gh pr`, `gh run` commands
 ### **💻 DEVELOPMENT TASKS (GITHUB ISSUE MANDATORY):**
 
 ### **1. NO DEVELOPMENT WITHOUT GITHUB ISSUE**
-- **BEFORE ANY DEVELOPMENT**: Verify GitHub issue exists for the task
-- **IF NO ISSUE**: Delegate to @git-autonomous-agent: "Create issue via gh CLI for [task description]"
+- **BEFORE ANY DEVELOPMENT**: Delegate to @git-autonomous-agent to verify GitHub issue exists
+- **IF NO ISSUE**: @git-autonomous-agent will create issue via gh CLI
 - **REFUSE ALL DEVELOPMENT WORK** without proper GitHub issue tracking
 - **INCLUDE ISSUE REFERENCE** in all commits and communications
+
+**PROJECT MANAGER NOTE:** You have NO bash access and cannot run `gh` commands directly.
+Always delegate GitHub verification and operations to @git-autonomous-agent.
 
 ### **2. FEATURE BRANCH WORKFLOW MANDATORY**
 - **NEVER work directly in main branch**
@@ -34,16 +41,23 @@ Delegate to @git-autonomous-agent for: `gh issue`, `gh pr`, `gh run` commands
 - **PUSH TO FEATURE BRANCH**: All work goes to feature branch, not main
 
 ### **3. DEVELOPMENT WORKFLOW ENFORCEMENT STEPS**
-Every development agent MUST follow this sequence for DEVELOPMENT tasks only:
 
-1. **VERIFY ISSUE**: Check if GitHub issue exists
-2. **CREATE ISSUE** (if missing): Delegate to @git-autonomous-agent
-3. **CREATE FEATURE BRANCH**: From current main branch  
-4. **IMPLEMENT CHANGES**: Work in feature branch only
-5. **PUSH TO REMOTE**: Push feature branch regularly
-6. **CREATE PR**: When work complete
-7. **CI VERIFICATION**: Ensure CI passes on PR
-8. **ONLY THEN COMPLETE**: Report success after CI green
+**PROJECT MANAGER WORKFLOW:**
+1. **DELEGATE ISSUE VERIFICATION**: Ask @git-autonomous-agent to check if GitHub issue exists
+2. **WAIT FOR RESPONSE**: If no issue, @git-autonomous-agent creates one
+3. **DELEGATE WORK**: Once issue confirmed, delegate to appropriate specialist
+4. **WAIT FOR COMPLETION**: Specialist implements in feature branch
+5. **DELEGATE PR CREATION**: @git-autonomous-agent creates PR
+6. **DELEGATE CI CHECK**: @git-autonomous-agent monitors CI status
+7. **DECLARE SUCCESS**: Only after CI green and @git-autonomous-agent confirms
+
+**DEVELOPMENT AGENT WORKFLOW:**
+1. **RECEIVE TASK**: From project manager with issue number
+2. **CREATE FEATURE BRANCH**: From current main branch
+3. **IMPLEMENT CHANGES**: Work in feature branch only
+4. **PUSH TO REMOTE**: Push feature branch regularly
+5. **REPORT COMPLETION**: To project manager
+6. **PM HANDLES REST**: PR creation and CI monitoring delegated to git agent
 
 ### **4. DEVELOPMENT WORKFLOW VIOLATION DETECTION**
 Development agents MUST check for violations before starting DEVELOPMENT work:
@@ -99,11 +113,14 @@ Every commit MUST:
 - **DOMAIN RESTRICTIONS**: Only work on tasks explicitly within your technology stack and expertise area
 
 **For Project Manager:**
-- **DEVELOPMENT tasks**: Create GitHub issue before delegating to @git-autonomous-agent
+- **YOU HAVE NO BASH ACCESS** - Cannot run `gh` commands directly
+- **DEVELOPMENT tasks**: Delegate to @git-autonomous-agent to verify/create GitHub issue FIRST
 - **RESEARCH tasks**: Delegate directly to appropriate specialist (no issue needed)
+- **ALL GITHUB OPERATIONS**: Delegate to @git-autonomous-agent (issues, PRs, CI checks)
+- Wait for @git-autonomous-agent confirmation before proceeding with work delegation
 - Ensure agents follow feature branch workflow for development
-- Monitor CI status before declaring development completion
-- Coordinate PR creation and review process
+- Delegate CI monitoring to @git-autonomous-agent before declaring completion
+- Coordinate PR creation through @git-autonomous-agent
 - **ENFORCE SPECIALIST DOMAIN RESTRICTIONS** - redirect cross-domain work to appropriate specialists
 - **COORDINATE MULTI-DOMAIN TASKS** - plan sequential delegation for cross-cutting features
 
