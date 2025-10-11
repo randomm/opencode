@@ -36,7 +36,7 @@
     "python-best-practices-architect": {
       "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/python-best-practices.txt}",
       "tools": {
         "bash": true,
@@ -60,7 +60,7 @@
     "git-autonomous-agent": {
       "description": "Git and GitHub workflow expert for version control and PR management",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/git-autonomous.txt}",
       "tools": {
         "bash": true,
@@ -82,7 +82,7 @@
     "rails-architect": {
       "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/rails-architect.txt}",
       "tools": {
         "bash": true,
@@ -106,7 +106,7 @@
     "react-frontend-specialist": {
       "description": "Minimalist React/TypeScript specialist focused on essential components",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/react-frontend.txt}",
       "tools": {
         "bash": true,
@@ -130,7 +130,7 @@
     "postgres-database-expert": {
       "description": "PostgreSQL expert for schema design, query optimization, and migrations",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/postgres-database.txt}",
       "tools": {
         "bash": true,
@@ -157,7 +157,7 @@
     "aws-rds-postgresql-expert": {
       "description": "AWS RDS Aurora PostgreSQL expert DBA for cloud-native database architecture, performance tuning, and operations",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/aws-rds-postgresql.txt}",
       "tools": {
         "bash": true,
@@ -186,7 +186,7 @@
     "api-design-architect": {
       "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/api-design.txt}",
       "tools": {
         "bash": true,
@@ -211,7 +211,7 @@
     "devops-infrastructure": {
       "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/devops-infrastructure.txt}",
       "tools": {
         "bash": true,
@@ -236,7 +236,7 @@
     "code-review-quality": {
       "description": "Code review expert for security, performance, and quality analysis",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/code-review.txt}",
       "tools": {
         "glob": true,
@@ -256,7 +256,7 @@
     "github-pr-reviewer": {
       "description": "GitHub PR review agent for comprehensive code analysis and automated feedback",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/github-pr-reviewer.txt}",
       "permission": {
         "edit": "deny",
@@ -294,7 +294,7 @@
     "javascript-typescript-architect": {
       "description": "Minimalist JS/TS architect - builds ABSOLUTE MINIMUM using memory-driven TDD, researches native alternatives via Perplexity",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/javascript-typescript.txt}",
       "tools": {
         "bash": true,
@@ -318,7 +318,7 @@
     "rust-tdd-architect": {
       "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/rust-tdd-architect.txt}",
       "tools": {
         "bash": true,
@@ -342,7 +342,7 @@
     "shell-script-architect": {
       "description": "Minimalist shell scripting expert - POSIX-first, portable, elegant automation using built-in commands and defensive programming",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/shell-script-architect.txt}",
       "tools": {
         "bash": true,
@@ -366,7 +366,7 @@
     "go-tdd-architect": {
       "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/go-tdd-architect.txt}",
       "tools": {
         "bash": true,
@@ -390,7 +390,7 @@
     "research-specialist": {
       "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
       "mode": "subagent",
-      "model": "cerebras/qwen-3-coder-480b",
+      "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/research-specialist.txt}",
       "permission": {
         "bash": "deny",
