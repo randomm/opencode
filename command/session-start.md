@@ -3,6 +3,20 @@ description: Initialize new coding session with full project context
 agent: project-manager
 ---
 
+🚨 **THIS IS A READ-ONLY RESEARCH TASK - NOT DEVELOPMENT WORK** 🚨
+
+**CRITICAL INSTRUCTIONS:**
+- ❌ DO NOT create GitHub issues
+- ❌ DO NOT create feature branches
+- ❌ DO NOT make any commits
+- ❌ DO NOT push anything to remote
+- ✅ READ-ONLY operations only (Glob, Read, Memory, Delegation)
+- ✅ Gather context and report to user
+
+This is a **session initialization task** exempt from GitHub workflow requirements.
+
+═══════════════════════════════════════════════════════
+
 You are starting a new coding session. Follow this MANDATORY protocol to establish project context:
 
 ═══════════════════════════════════════════════════════

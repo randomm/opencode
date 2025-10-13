@@ -14,14 +14,21 @@
 
 ### **🔍 RESEARCH/ANALYSIS TASKS (NO ISSUE REQUIRED):**
 **Direct delegation allowed for:**
+- **Session initialization** (`/session-start` command) - Context gathering only
 - Information gathering and research
-- Technology evaluation and comparison  
+- Technology evaluation and comparison
 - Pricing analysis and cost assessment
 - Feasibility studies without implementation
 - Tool/service recommendations
 - Architecture research and analysis
 
-**Keywords indicating research:** research, investigate, analyze, compare, evaluate, find, assess, study, pricing, alternatives, feasibility, pros/cons
+**NO GitHub workflow for these tasks:**
+- ❌ No GitHub issues needed
+- ❌ No feature branches
+- ❌ No commits or pushes
+- ✅ Read-only operations only
+
+**Keywords indicating research:** research, investigate, analyze, compare, evaluate, find, assess, study, pricing, alternatives, feasibility, pros/cons, session-start, initialization, context
 
 ### **💻 DEVELOPMENT TASKS (GITHUB ISSUE MANDATORY):**
 
