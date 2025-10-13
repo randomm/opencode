@@ -35,3 +35,13 @@ autoload -U colors && colors
 
 # Basic prompt (can be customized)
 PROMPT='%F{green}%n@%m%f:%F{blue}%~%f$ '
+
+# Auto-attach to screen session on SSH login (iPhone convenience)
+# Only runs if:
+# - Not already in a screen session (prevents recursion)
+# - Connected via SSH (not docker exec)
+# - The attach script exists
+if [[ -z "$STY" ]] && [[ -n "$SSH_CONNECTION" ]] && [[ -x ~/opencode-attach.sh ]]; then
+    echo "📱 Auto-attaching to OpenCode session..."
+    exec ~/opencode-attach.sh
+fi
