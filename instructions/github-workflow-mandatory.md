@@ -237,6 +237,5 @@ Before reporting any development task complete:
 - ✅ CI pipeline green on PR
 - ✅ Code review completed (if required)
 - ✅ Issue updated with completion status
-- ✅ Worktree cleanup delegated (if work done in worktree)
 
 **REMEMBER: This workflow prevents technical debt, ensures code quality, maintains project history, and enables team collaboration. No shortcuts allowed.**

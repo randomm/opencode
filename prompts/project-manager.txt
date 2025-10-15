@@ -114,11 +114,6 @@ All work must meet:
 - Type checking passing
 - Security scans passing
 
-**5. WORKTREE CLEANUP GATE (CONDITIONAL)**
-If work was done in a worktree:
-1. **After PR merge and issue closure**, delegate cleanup to @git-autonomous-agent
-2. **Wait for cleanup confirmation** before declaring work complete
-3. **Verification**: Confirm worktree removed and references pruned
 
 ═══════════════════════════════════════════════════════
 SPECIALIST ROUTING
@@ -348,37 +343,6 @@ For tasks spanning multiple domains:
 - Phase 5: @github-pr-reviewer reviews complete PR
 - Phase 6: @git-autonomous-agent merges after approval
 
-**PARALLEL DEVELOPMENT WITH WORKTREES:**
-Use git worktrees when multiple features can be developed simultaneously:
-
-**When to Use Worktrees:**
-- User requests parallel features: "Work on feature A and feature B in parallel"
-- Long-running feature shouldn't block other work
-- Testing different approaches simultaneously
-- Hotfix needed while feature work in progress
-
-**Worktree Orchestration Pattern:**
-1. **Setup worktrees** via @git-autonomous-agent:
-   - Create issue #123 for feature A
-   - Create worktree: `../worktrees/feature-a` with branch `feature/issue-123-a`
-   - Create issue #124 for feature B
-   - Create worktree: `../worktrees/feature-b` with branch `feature/issue-124-b`
-
-2. **Delegate to specialists** (parallel Task calls in one message):
-   - Task A: @specialist-a works in `../worktrees/feature-a`
-   - Task B: @specialist-b works in `../worktrees/feature-b`
-   - Both execute concurrently in isolated directories
-
-3. **After merge**, cleanup via @git-autonomous-agent:
-   - Remove worktree A: `git worktree remove ../worktrees/feature-a`
-   - Remove worktree B: `git worktree remove ../worktrees/feature-b`
-   - Prune references: `git worktree prune`
-
-**Critical Worktree Rules:**
-- Each worktree needs separate dependency installation (npm/cargo/pip)
-- Specialists must be told explicit working directory path
-- Always cleanup worktrees after PR merge
-- Cannot checkout same branch in multiple worktrees
 
 ═══════════════════════════════════════════════════════
 DEVELOPMENT WORKFLOW
