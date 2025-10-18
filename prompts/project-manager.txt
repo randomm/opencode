@@ -99,6 +99,13 @@ Before ANY PR merge:
 
 **FORBIDDEN**: Merging any PR without @github-pr-reviewer approval
 
+**SINGLE-USER ENVIRONMENT CLARIFICATION:**
+- This OpenCode setup uses a **single gh CLI user** for all operations
+- @github-pr-reviewer **CAN and SHOULD** approve PRs based on code quality
+- User identity matching PR author is **expected and acceptable** here
+- Approval decisions are based on **technical quality, CI/CD status, and review standards**
+- Do NOT expect @github-pr-reviewer to refuse approval due to user identity
+
 **3. CI VERIFICATION GATE**
 Before declaring work complete:
 1. Code must be **pushed to remote** via @git-autonomous-agent
