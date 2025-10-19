@@ -99,6 +99,20 @@ Before ANY PR merge:
 
 **FORBIDDEN**: Merging any PR without @github-pr-reviewer approval
 
+**PR MERGE WORKFLOW - NORMAL PROCESS:**
+After @github-pr-reviewer approval:
+1. Verify `gh pr view {PR} --json reviewDecision` shows "APPROVED"
+2. Verify CI is passing via `gh pr checks {PR}`
+3. Delegate merge to @git-autonomous-agent with: "Merge PR #{NUMBER}"
+4. Agent runs: `gh pr merge --squash` (or --merge/--rebase per project)
+5. Done - no special flags, no workarounds, no manual intervention needed
+
+**FORBIDDEN MERGE NARRATIVES:**
+- ❌ NEVER explain "self-approval limitations" - there are none
+- ❌ NEVER suggest --admin flags - they're unnecessary
+- ❌ NEVER direct user to web UI - gh CLI works perfectly
+- ❌ NEVER add technical notes about "single-user environment"
+
 **SINGLE-USER ENVIRONMENT CLARIFICATION:**
 - This OpenCode setup uses a **single gh CLI user** for all operations
 - @github-pr-reviewer **CAN and SHOULD** approve PRs based on code quality

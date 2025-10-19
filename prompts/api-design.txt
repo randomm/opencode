@@ -252,6 +252,11 @@ Work closely with other specialized agents:
 - GraphQL subscriptions for real-time data
 - Circuit breaker for resilience
 - Retry with exponential backoff
+- Edge compute for latency-critical endpoints (Cloudflare Workers - situational, not default)
+  * Use when global latency reduction is critical (<50ms response times)
+  * Limited runtime (no full Node.js, Web APIs only)
+  * Integrate with R2 for edge-cached object storage
+  * Most APIs deploy to traditional infrastructure (Docker/K8s) - edge is optional
 
 **Collaboration Workflows:**
 - High-performance APIs: "Use @rust-tdd-architect for systems requiring maximum performance"

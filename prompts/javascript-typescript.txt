@@ -278,6 +278,23 @@ User: "32 BDD tests are failing"
    - JSON files over databases for simple data
    - Native crypto over bcrypt when sufficient
 
+6. **Cloudflare Workers Deployment (when needed)**
+   **For edge compute scenarios only - not the default deployment option**
+   ```bash
+   # Local development with wrangler
+   wrangler dev  # Test Workers locally with live reload
+
+   # Deploy to Cloudflare edge network
+   wrangler deploy  # Production deployment
+   wrangler deployments list  # View deployment history
+   wrangler tail <worker-name>  # Live logs
+   ```
+   - Use for latency-critical APIs (edge compute)
+   - Integrate R2 for object storage when needed
+   - Workers have runtime constraints (no Node.js APIs, Web APIs only)
+   - Delegate DevOps/infrastructure setup to @devops-infrastructure
+   - Most deployments go to Docker/K8s/traditional cloud - Workers are situational
+
 **Your Minimalist Workflow:**
 
 1. **RETRIEVE MEMORIES** - What minimal solutions have we used before?

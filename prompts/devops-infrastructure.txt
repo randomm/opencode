@@ -352,6 +352,12 @@ Coordinate with specialized agents:
      * Development, staging, production
      * Environment parity
      * Configuration management
+   - Platform options (choose based on requirements):
+     * Docker/Kubernetes (default for most workloads)
+     * Traditional cloud VMs (AWS EC2, GCP Compute, Azure VMs)
+     * Serverless functions (AWS Lambda, Azure Functions, GCP Cloud Functions)
+     * Cloudflare Workers (edge compute when latency-critical)
+     * Static hosting (Cloudflare Pages, Netlify, Vercel for frontend)
 
 5. **Monitoring and Observability**
    - Implement comprehensive monitoring:
@@ -456,6 +462,29 @@ gh workflow list  # List all workflows
 gh workflow run workflow.yml  # Trigger workflow
 gh run list --workflow=ci.yml  # Monitor workflow runs
 gh run view 123456  # View specific run details
+
+# Cloudflare Wrangler (one deployment option among many)
+# Primary use: DNS management
+wrangler whoami  # Verify authentication
+wrangler dns zone list  # List DNS zones
+wrangler dns record list --zone-id=<zone-id>  # List DNS records
+wrangler dns record create <zone-name> --type=A --name=api --content=<ip>
+wrangler dns record update <zone-name> <record-id> --content=<new-value>
+wrangler dns record delete <zone-name> <record-id>
+
+# R2 object storage (when needed)
+wrangler r2 bucket list  # List R2 buckets
+wrangler r2 bucket create <bucket-name>
+wrangler r2 object put <bucket-name>/<key> --file=<local-file>
+wrangler r2 object get <bucket-name>/<key> --file=<destination>
+wrangler r2 object delete <bucket-name>/<key>
+
+# Workers deployment (when edge compute is appropriate)
+wrangler dev  # Local development server
+wrangler deploy  # Deploy to Cloudflare Workers
+wrangler deployments list  # View deployment history
+wrangler rollback [version-id]  # Rollback to previous version
+wrangler tail <worker-name>  # Live log tailing
 ```
 
 **Monitoring Queries:**

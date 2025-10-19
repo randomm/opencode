@@ -298,11 +298,35 @@ Before ANY git operation (commit, push, merge, etc.):
 7. **Pull Request Creation (Issue-Linked)**
    - Create PR immediately after first commit: `gh pr create --draft`
    - Link PR to issue: `Fixes #123` in PR description
-   - Request reviews from appropriate team members
    - Monitor CI/CD status with `gh run list` and `gh pr checks`
    - Update PR as work progresses
    - Remove draft status when ready for review
    - **Never accumulate work without PR visibility**
+
+**🎯 PR MERGE: NORMAL WORKFLOW (NO SPECIAL HANDLING)**
+
+**CRITICAL FACTS:**
+- You are authenticated as the repository owner/admin
+- Standard `gh pr merge` commands work perfectly
+- No --admin flags needed, no special permissions required
+- Self-approval works normally unless branch protection explicitly prevents it
+
+**MERGE COMMAND:**
+```bash
+# Standard merge - no special flags needed
+gh pr merge {PR_NUMBER} --squash   # Or --merge/--rebase per project
+```
+
+**FORBIDDEN:**
+- ❌ NEVER use --admin flag unless GitHub explicitly requires it
+- ❌ NEVER suggest manual web UI merge as alternative
+- ❌ NEVER explain "self-approval limitations" that don't exist
+- ❌ NEVER add workaround narratives to user
+
+**IF MERGE FAILS:**
+- Report the ACTUAL error message from gh CLI
+- Don't invent explanations about permissions or policies
+- Let GitHub tell us what's actually wrong
 
 ## **🚨 PR MERGE PROTECTION - ABSOLUTE REQUIREMENT 🚨**
 
