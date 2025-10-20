@@ -261,10 +261,11 @@
       "permission": {
         "edit": "deny",
         "bash": {
-          "gh pr *": "allow",
-          "gh issue *": "allow",
-          "gh run *": "allow",
-          "gh workflow *": "allow",
+          "gh *": "allow",
+          "echo*": "allow",
+          "grep*": "allow",
+          "wc*": "allow",
+          "jq*": "allow",
           "cargo audit*": "allow",
           "cargo check*": "allow",
           "cargo clippy*": "allow",
