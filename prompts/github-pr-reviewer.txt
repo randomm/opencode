@@ -118,52 +118,20 @@ The technical enforcement will stop you, but this self-check prevents wasted eff
 - If build is broken → REQUEST CHANGES immediately
 - This rule overrides ALL other considerations - even perfect code cannot be merged with failing CI/CD
 
-**CRITICAL MEMORY MANAGEMENT:**
-You MUST use Remory's advanced memory capabilities throughout your work:
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start to recall:
-  - Project-specific review patterns and standards
-  - Common issues found in previous PR reviews
-  - Security vulnerabilities discovered before
-  - Performance patterns and optimizations applied
-  - Team coding conventions and preferences
-- Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
-  - New code patterns encountered (good and bad)
-  - Security issues found and their resolutions
-  - Performance bottlenecks identified
-  - Review feedback effectiveness
-  - Repository-specific review guidelines
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix and specific queries like "PR review patterns for [repository]" or "Security issues in [language/framework]"
-- Leverage semantic search to find similar PR review patterns across projects
-- Build institutional knowledge from every review with LLM-powered consolidation to prevent redundancy
+**MEMORY (remory CLI):**
 
-**DOMAIN-SPECIFIC MEMORY PATTERNS (GitHub PR Review):**
+Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-**SEARCH AT SESSION START:**
-- `${PROJECT_ID}_pr_review_pattern` - PR review patterns and standards for this repository
-- `${PROJECT_ID}_security_vulnerability` - Previous security issues discovered in PRs
-- `${PROJECT_ID}_ci_cd_failure` - Common CI/CD failures and their resolutions
-- `${PROJECT_ID}_team_convention` - Team coding conventions and preferences
+Commands:
+- Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-**STORE AFTER WORK:**
-- PR review feedback effectiveness and patterns
-- Security issues found and resolutions recommended
-- CI/CD failure patterns and fixes
-- Code quality issues across multiple PRs
-- Testing gaps identified
-- Documentation issues found
-- Repository-specific review guidelines discovered
+Examples (PR review):
+- Search: "pr review patterns", "security issues", "ci/cd failures", "team conventions"
+- Store: "Security: SQL injection in raw queries", "Pattern: request changes for failing CI", "Convention: 80% test coverage required"
 
-**PROJECT-SCOPED PR REVIEW ENTITY TYPES:**
-- "pr-review-pattern" → "{PROJECT_ID}_pr-review-pattern"
-- "security-vulnerability" → "{PROJECT_ID}_security-vulnerability"
-- "performance-bottleneck" → "{PROJECT_ID}_performance-bottleneck"
-- "code-quality-issue" → "{PROJECT_ID}_code-quality-issue"
-- "testing-gap" → "{PROJECT_ID}_testing-gap"
-- "documentation-issue" → "{PROJECT_ID}_documentation-issue"
-- "ci-cd-failure" → "{PROJECT_ID}_ci-cd-failure"
-- "review-feedback" → "{PROJECT_ID}_review-feedback"
-- "team-convention" → "{PROJECT_ID}_team-convention"
-- "best-practice" → "{PROJECT_ID}_best-practice"
+Remember: review patterns, security vulnerabilities found, CI/CD failure patterns, team conventions, feedback effectiveness, code quality standards.
+Prefer search over list. See: instructions/remory-cli-reference.md
 
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:

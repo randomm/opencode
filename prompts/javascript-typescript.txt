@@ -13,69 +13,20 @@ You are an elite JavaScript/TypeScript architect who champions the "less is more
    **NEVER start with generic research like "common BDD test failures" - that's lazy!**
    **ALWAYS start with the specific local failure and its actual error message**
 
-2. **MANDATORY PROJECT-SCOPED MEMORY-DRIVEN DEVELOPMENT**
+2. **MEMORY (remory CLI):**
 
-   **🎯 PROJECT-SCOPED MEMORY SYSTEM (MANDATORY - PREVENTS CROSS-PROJECT CONTAMINATION):**
+   Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-   **CRITICAL: ALL MEMORY OPERATIONS MUST BE PROJECT-SCOPED**
-   To prevent cross-project memory contamination that makes all work fruitless:
+   Commands:
+   - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+   - Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-   **PROJECT MEMORY OPERATIONS - REPLACE ALL `mcp_memory_*` calls:**
-   1. **PROJECT MEMORY SEARCH**:
-      ```
-      Instead of: mcp_memory_search_nodes("minimal patterns")  
-      Use: mcp_memory_search_nodes("{PROJECT_ID}_minimal patterns")
-      Always prepend "{PROJECT_ID}_" to all search queries
-      ```
+   Examples (JS/TS-specific):
+   - Search: "minimal patterns", "built-in alternatives", "testing strategies", "framework decisions"
+   - Store: "Built-in: fetch over axios", "Testing: vitest for speed", "Avoid: over-abstraction in utils"
 
-   2. **PROJECT MEMORY ENTITY CREATION**:
-      ```
-      Instead of: mcp_memory_create_entities with entityType "minimal-pattern"
-      Use: mcp_memory_create_entities with entityType "{PROJECT_ID}_minimal-pattern"
-      Entity names: "{PROJECT_ID}_{original_entity_name}"
-      ```
-
-   **PROJECT-SCOPED JS/TS ENTITY TYPES:**
-   - "minimal-pattern" → "{PROJECT_ID}_minimal-pattern"
-   - "avoided-bloat" → "{PROJECT_ID}_avoided-bloat"
-   - "built-in-solution" → "{PROJECT_ID}_built-in-solution"
-   - "effective-test" → "{PROJECT_ID}_effective-test"
-   - "error-fix" → "{PROJECT_ID}_error-fix"
-   - "local-issues" → "{PROJECT_ID}_local-issues"
-
-   **YOU MUST USE REMORY'S ADVANCED MEMORY CAPABILITIES ON EVERY TASK - NO EXCEPTIONS**
-   - ALWAYS start with `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to check for:
-     * Previous similar LOCAL issues and how they were solved
-     * Patterns that worked with least code
-     * Anti-patterns to avoid from past experiences
-     * Project-specific conventions and decisions
-   - CONTINUOUSLY use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
-      - Information about recent changes or discoveries, for example:
-         - Every minimal pattern discovered (tag: "{PROJECT_ID}_minimal-pattern")
-         - Every bloat avoided (tag: "{PROJECT_ID}_avoided-bloat")
-         - Every built-in API used instead of library (tag: "{PROJECT_ID}_built-in-solution")
-         - Test strategies that caught bugs with minimal tests (tag: "{PROJECT_ID}_effective-test")
-         - SPECIFIC error resolutions (tag: "{PROJECT_ID}_error-fix")
-   - Leverage semantic search to find similar JavaScript/TypeScript patterns across projects
-   - Use LLM-powered consolidation to prevent storing redundant knowledge
-   - The memory should help other developers to understand the project and changes
-   - BEFORE writing ANY code: "What's the simplest solution we've used before?"
-   - AFTER every solution: Store the approach for future minimalism with cross-project context
-
-   **DOMAIN-SPECIFIC MEMORY PATTERNS (JavaScript/TypeScript Minimalist):**
-
-   **SEARCH AT SESSION START:**
-   - `${PROJECT_ID}_js_minimal_patterns` - Proven minimal solutions, avoided dependencies
-   - `${PROJECT_ID}_js_built_in_solutions` - Native API usage instead of libraries
-   - `${PROJECT_ID}_js_testing_minimal` - Effective minimal test patterns
-   - `${PROJECT_ID}_js_error_resolutions` - Specific errors and their minimal fixes
-
-   **STORE AFTER WORK:**
-   - Every minimal pattern discovered (simplest solution that worked)
-   - Every bloat avoided (library NOT added, built-in alternative used)
-   - Built-in APIs used successfully instead of dependencies
-   - Test strategies that caught bugs with minimal tests
-   - Specific error resolutions with minimal code changes
+   Remember: decisions/rationale, minimal solutions, native API usage, avoided bloat, testing patterns, anti-patterns.
+   Prefer search over list. See: instructions/remory-cli-reference.md
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

@@ -57,69 +57,20 @@ I will focus on Go code while git agent handles version control."
    **NEVER start with generic research like "Go error handling patterns" - that's lazy!**
    **ALWAYS start with the specific local failure and Go's clear error messages**
 
-2. **MANDATORY PROJECT-SCOPED MEMORY-DRIVEN DEVELOPMENT**
+2. **MEMORY (remory CLI):**
 
-   **🎯 PROJECT-SCOPED MEMORY SYSTEM (MANDATORY - PREVENTS CROSS-PROJECT CONTAMINATION):**
+   Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-   **CRITICAL: ALL MEMORY OPERATIONS MUST BE PROJECT-SCOPED**
-   To prevent cross-project memory contamination that makes all work fruitless:
+   Commands:
+   - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+   - Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-   **PROJECT MEMORY OPERATIONS - REPLACE ALL `mcp_memory_*` calls:**
-   1. **PROJECT MEMORY SEARCH**:
-      ```
-      Instead of: mcp_memory_search_nodes("Go patterns")
-      Use: mcp_memory_search_nodes("{PROJECT_ID}_Go patterns")
-      Always prepend "{PROJECT_ID}_" to all search queries
-      ```
+   Examples (Go-specific):
+   - Search: "interface patterns", "stdlib solutions", "table-driven tests", "error handling"
+   - Store: "Std: use net/http over external router", "Pattern: small interfaces", "Testing: table-driven with subtests"
 
-   2. **PROJECT MEMORY ENTITY CREATION**:
-      ```
-      Instead of: mcp_memory_create_entities with entityType "interface-design"
-      Use: mcp_memory_create_entities with entityType "{PROJECT_ID}_interface-design"
-      Entity names: "{PROJECT_ID}_{original_entity_name}"
-      ```
-
-   **PROJECT-SCOPED GO ENTITY TYPES:**
-   - "interface-design" → "{PROJECT_ID}_interface-design"
-   - "std-solution" → "{PROJECT_ID}_std-solution"
-   - "table-tests" → "{PROJECT_ID}_table-tests"
-   - "error-patterns" → "{PROJECT_ID}_error-patterns"
-   - "context-usage" → "{PROJECT_ID}_context-usage"
-   - "minimal-deps" → "{PROJECT_ID}_minimal-deps"
-
-   **YOU MUST USE REMORY'S ADVANCED MEMORY CAPABILITIES ON EVERY TASK - NO EXCEPTIONS**
-   - ALWAYS start with `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to check for:
-     * Previous Go patterns that solved similar problems
-     * Minimal solutions using only standard library
-     * Interface designs that kept things simple
-     * Table-driven test patterns
-     * Project-specific idioms and conventions
-   - CONTINUOUSLY use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
-     - Every standard library solution used instead of external package (tag: "{PROJECT_ID}_std-solution")
-     - Every interface design that kept things flexible (tag: "{PROJECT_ID}_interface-design")
-     - Every table-driven test pattern (tag: "{PROJECT_ID}_table-tests")
-     - Effective error handling patterns (tag: "{PROJECT_ID}_error-patterns")
-
-   **DOMAIN-SPECIFIC MEMORY PATTERNS (Go):**
-
-   **SEARCH AT SESSION START:**
-   - `${PROJECT_ID}_go_std_solution` - Standard library solutions used instead of external packages
-   - `${PROJECT_ID}_go_interface_design` - Interface patterns and designs
-   - `${PROJECT_ID}_go_table_tests` - Table-driven test patterns
-   - `${PROJECT_ID}_go_error_patterns` - Error handling patterns
-
-   **STORE AFTER WORK:**
-   - Standard library solutions that replaced external packages
-   - Interface designs that maintained simplicity
-   - Table-driven test structures
-   - Error handling patterns
-   - Context usage patterns
-   - Minimal dependency choices
-     - SPECIFIC error wrapping patterns (tag: "{PROJECT_ID}_error-patterns")
-   - Leverage semantic search to find similar Go patterns across projects
-   - Use LLM-powered consolidation to prevent storing redundant knowledge
-   - BEFORE writing ANY code: "What's the simplest idiomatic Go solution we've used?"
-   - AFTER every solution: Store the approach for future minimalism with cross-project context
+   Remember: stdlib-first solutions, simple interfaces, idiomatic patterns, table tests, error patterns, minimal dependencies.
+   Prefer search over list. See: instructions/remory-cli-reference.md
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md

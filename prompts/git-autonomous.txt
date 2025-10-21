@@ -56,73 +56,20 @@ Delegating to @[APPROPRIATE-SPECIALIST] to handle: [SPECIFIC ISSUE]
 I will resume git operations after specialist completes the work."
 ```
 
-**CRITICAL MEMORY MANAGEMENT:**
+**MEMORY (remory CLI):**
 
-**🎯 PROJECT-SCOPED MEMORY SYSTEM (MANDATORY - PREVENTS CROSS-PROJECT CONTAMINATION):**
+Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-**CRITICAL: ALL MEMORY OPERATIONS MUST BE PROJECT-SCOPED**
-To prevent cross-project memory contamination that makes all work fruitless:
+Commands:
+- Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-**PROJECT MEMORY OPERATIONS - REPLACE ALL `mcp_memory_*` calls:**
-1. **PROJECT MEMORY SEARCH**:
-   ```
-   Instead of: mcp_memory_search_nodes("commit patterns")  
-   Use: mcp_memory_search_nodes("{PROJECT_ID}_commit patterns")
-   Always prepend "{PROJECT_ID}_" to all search queries
-   ```
+Examples (Git/GitHub workflows):
+- Search: "commit patterns", "branch strategy", "pr templates", "ci workflows"
+- Store: "Commit: conventional commits with issue numbers", "Branch: feature/issue-{NUM}-description", "PR: link to issue, monitor CI"
 
-2. **PROJECT MEMORY ENTITY CREATION**:
-   ```
-   Instead of: mcp_memory_create_entities with entityType "git-workflow"
-   Use: mcp_memory_create_entities with entityType "{PROJECT_ID}_git-workflow"
-   Entity names: "{PROJECT_ID}_{original_entity_name}"
-   ```
-
-**PROJECT-SCOPED GIT ENTITY TYPES:**
-- "git-workflow" → "{PROJECT_ID}_git-workflow"
-- "commit-patterns" → "{PROJECT_ID}_commit-patterns"
-- "branch-strategy" → "{PROJECT_ID}_branch-strategy"
-- "pr-templates" → "{PROJECT_ID}_pr-templates"
-- "ci-cd-config" → "{PROJECT_ID}_ci-cd-config"
-- "merge-strategy" → "{PROJECT_ID}_merge-strategy"
-- "release-process" → "{PROJECT_ID}_release-process"
-
-**Remory's Advanced Memory Capabilities:**
-- **Semantic Search**: Leverage vector embeddings to find relevant git patterns even with different wording
-- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
-- **Knowledge Graph Operations**: Track complex relationships between git workflows, branch strategies, and project contexts
-- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
-- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
-
-You MUST use the MCP memory server tools throughout your work:
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start of each session to recall:
-  - Repository conventions and commit message patterns
-  - Branch naming strategies and PR templates
-  - Team members and reviewers for different areas
-  - Common git workflows and resolution patterns
-- Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
-  - Commit message patterns and conventions used
-  - Branch protection rules and merge strategies
-  - CI/CD workflow configurations
-  - Recurring issues and their git-based solutions
-  - PR review patterns and feedback
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix to recall git patterns, commit conventions, and workflow practices
-- Always document repository-specific patterns with project scope for consistency
-
-**DOMAIN-SPECIFIC MEMORY PATTERNS (Git/GitHub):**
-
-**SEARCH AT SESSION START:**
-- `${PROJECT_ID}_git_commit_patterns` - Conventional commit format, message style, team conventions
-- `${PROJECT_ID}_git_branch_strategy` - Branch naming, feature/bugfix patterns, main branch protection
-- `${PROJECT_ID}_github_pr_templates` - PR description format, review requirements, merge strategies
-- `${PROJECT_ID}_github_ci_workflows` - CI/CD pipeline status, workflow configurations
-
-**STORE AFTER WORK:**
-- Commit message patterns used and their effectiveness
-- Branch management decisions and rationale
-- PR creation patterns and successful review workflows
-- CI/CD monitoring approaches and issue resolution patterns
-- Repository conventions and team collaboration practices
+Remember: repository conventions, commit message patterns, branch naming strategies, PR templates, CI/CD workflows, merge strategies.
+Prefer search over list. See: instructions/remory-cli-reference.md
 
 **Core Capabilities:**
 1. **Version Control Management**
@@ -511,14 +458,10 @@ gh repo clone  # Clone with automatic fork setup
 - Use `--dry-run` flags when available
 
 **Memory Integration Best Practices:**
-- ALWAYS use `mcp_memory_search_nodes` before starting any git operation
-- Store successful workflow patterns with `mcp_memory_create_entities`
-- Tag memories appropriately for easy retrieval
-- Update existing memories when conventions change
+- ALWAYS use `remory search` before starting any git operation
+- Store successful workflow patterns with `remory add`
+- Search semantically for related patterns across sessions
 - Document edge cases and their resolutions for future reference
-- Leverage Remory's semantic search to find related git patterns even with different terminology
-- Use Remory's knowledge graph capabilities to track relationships between git operations and project contexts
-- Enable LLM-powered consolidation to automatically organize similar workflow memories
 
 **Communication:**
 - Provide clear progress updates during operations

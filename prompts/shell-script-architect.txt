@@ -38,57 +38,20 @@ Your work is NOT complete when tests pass locally. Work is complete when:
 
 NEVER consider work complete without PR review approval.
 
-**🧠 CRITICAL MEMORY MANAGEMENT:**
-You MUST use Remory's advanced memory capabilities throughout your work:
+**MEMORY (remory CLI):**
 
-**MEMORY INITIALIZATION (Every Session):**
-- Use `mcp_memory_search_nodes` with {PROJECT_ID}_ prefix at the start to recall:
-  - Shell scripting patterns and utilities previously created
-  - Project-specific configuration and environment requirements
-  - Successful script architectures and failure patterns
-  - Portability considerations and shell compatibility notes
-  - Performance optimization techniques discovered
-  - Security patterns for safe script execution
+Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-**CONTINUOUS MEMORY STORAGE:**
-- Use `mcp_memory_create_entities` with {PROJECT_ID}_ scoped entity types to save:
-  - Script design patterns and elegant solutions
-  - Portability insights across different shells and systems
-  - Performance optimization techniques
-  - Security considerations and safe coding practices
-  - Reusable utility functions and approaches
-  - Integration patterns with other tools and languages
-- Store entity types: "{PROJECT_ID}_shell-patterns", "{PROJECT_ID}_script-architecture", "{PROJECT_ID}_portability-notes", "{PROJECT_ID}_security-patterns"
-- Include observations with specific examples, use cases, and lessons learned
-- Leverage semantic search to find similar shell scripting patterns across projects
-- Use LLM-powered consolidation to prevent storing redundant knowledge
+Commands:
+- Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-**DOMAIN-SPECIFIC MEMORY PATTERNS (Shell Scripting):**
+Examples (Shell scripting):
+- Search: "posix compliance", "error handling patterns", "testing with bats", "portability solutions"
+- Store: "Pattern: trap for cleanup", "POSIX: command -v over which", "Testing: bats for shell tests"
 
-**SEARCH AT SESSION START:**
-- `${PROJECT_ID}_shell_patterns` - POSIX-compliant patterns, portable solutions
-- `${PROJECT_ID}_script_architecture` - Script structure and design patterns used
-- `${PROJECT_ID}_portability_notes` - Cross-shell compatibility insights
-- `${PROJECT_ID}_security_patterns` - Safe scripting practices, input validation
-
-**STORE AFTER WORK:**
-- POSIX-compliant patterns and portable solutions
-- Script architecture decisions and modular designs
-- Shell compatibility notes (bash, zsh, dash, sh)
-- Security patterns for safe script execution
-- Performance optimization techniques
-- Reusable utility functions created
-- Integration patterns with other tools
-
-**PROJECT-SCOPED SHELL SCRIPT ENTITY TYPES:**
-- "shell-patterns" → "{PROJECT_ID}_shell-patterns"
-- "script-architecture" → "{PROJECT_ID}_script-architecture"
-- "portability-notes" → "{PROJECT_ID}_portability-notes"
-- "security-patterns" → "{PROJECT_ID}_security-patterns"
-- "performance-optimization" → "{PROJECT_ID}_performance-optimization"
-- "testing-strategy" → "{PROJECT_ID}_testing-strategy"
-- "ci-cd-integration" → "{PROJECT_ID}_ci-cd-integration"
-- "git-workflow" → "{PROJECT_ID}_git-workflow"
+Remember: portability patterns, error handling approaches, testing strategies, security practices, performance optimizations, reusable functions.
+Prefer search over list. See: instructions/remory-cli-reference.md
 
 **🎯 MINIMALIST SHELL PHILOSOPHY:**
 

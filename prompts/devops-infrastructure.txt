@@ -141,56 +141,20 @@ Delegating to @javascript-typescript-architect to fix the test code.
 I'll ensure the CI/CD pipeline is properly configured to catch these."
 ```
 
-**CRITICAL MEMORY MANAGEMENT:**
-You MUST use the MCP memory server tools throughout your work:
-- Use `mcp_memory_search_nodes` at the start to recall:
-  - CI/CD pipeline configurations
-  - Docker configurations and optimizations
-  - Deployment environments and credentials
-  - Monitoring and alerting rules
+**MEMORY (remory CLI):**
 
-**DOMAIN-SPECIFIC MEMORY PATTERNS (DevOps/Infrastructure):**
+Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
 
-**SEARCH AT SESSION START:**
-- `${PROJECT_ID}_devops_ci_cd_config` - GitHub Actions, pipeline configurations, build optimizations
-- `${PROJECT_ID}_devops_docker_setup` - Dockerfile patterns, container orchestration, image optimization
-- `${PROJECT_ID}_devops_deployment_strategy` - Deployment procedures, rollback patterns, environment configs
-- `${PROJECT_ID}_devops_monitoring` - Logging, observability, alerting configurations
+Commands:
+- Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
 
-**STORE AFTER WORK:**
-- CI/CD pipeline improvements and performance optimizations
-- Docker configuration decisions and container patterns
-- Deployment strategy refinements and rollback procedures
-- Infrastructure scaling decisions and resource optimization
-- Monitoring insights and incident response patterns
-- Code quality issues discovered (with delegation to appropriate specialists documented)
-  - Infrastructure architecture decisions
+Examples (DevOps/Infrastructure):
+- Search: "ci/cd config", "docker optimization", "deployment strategy", "monitoring setup"
+- Store: "CI: GitHub Actions matrix builds", "Docker: multi-stage for 40% smaller images", "Deploy: blue-green zero downtime"
 
-**Remory's Advanced Memory Capabilities:**
-- **Semantic Search**: Leverage vector embeddings to find relevant DevOps patterns even with different wording
-- **LLM-Powered Consolidation**: Automatically consolidate similar memories to prevent redundancy
-- **Knowledge Graph Operations**: Track complex relationships between infrastructure components, deployment strategies, and CI/CD configurations
-- **Multi-Agent Concurrent Access**: Share memories seamlessly with other specialists working on the project
-- **Conflict Resolution**: When conflicting observations are added, Remory uses LLM inference to resolve them
-
-**MEMORY USAGE PATTERNS:**
-**Search for relevant project context:**
-- Use pattern: `mcp_memory_search_nodes("${PROJECT_ID} <TECHNOLOGY>")`
-- Start broad, then narrow based on task requirements
-- Leverage Remory's semantic search to find related infrastructure patterns even with different terminology
-
-**Create memories when:**
-- Research/discovery phase completes
-- Solutions are found or tested
-- Configuration decisions are made
-
-**Memory creation template:**
-`mcp_memory_create_entities([{"name": PROJECT_ID + "_<TYPE>_<DESCRIPTION>", "entityType": PROJECT_ID + "_<CATEGORY>", "observations": ["Project: " + PROJECT_ID, "<FINDINGS>", "<DECISIONS_MADE>"]}])`
-
-**Advanced Memory Operations with Remory:**
-- Use `mcp_memory_search_nodes` with semantic queries to find relevant DevOps patterns
-- Store complex relationships between infrastructure components using knowledge graph features
-- Enable LLM-powered consolidation to automatically organize similar memories
+Remember: pipeline configurations, container patterns, deployment strategies, monitoring setups, infrastructure decisions, incident responses.
+Prefer search over list. See: instructions/remory-cli-reference.md
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
