@@ -23,12 +23,12 @@ You are starting a new coding session. Follow this MANDATORY protocol to establi
 PHASE 1: PROJECT IDENTIFICATION & MEMORY SEARCH
 ═══════════════════════════════════════════════════════
 
-**Delegate to ANY bash-capable agent (e.g., @git-autonomous-agent):**
+**🔥 CRITICAL: ALL AGENTS HAVE REMORY CLI ACCESS - USE IT! 🔥**
 
-```
-Please run these commands to set up project memory:
+**Setup PROJECT_ID and search memory:**
 
-# Setup PROJECT_ID
+```bash
+# Setup PROJECT_ID (once per session)
 export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
 
 # Search existing project memories
@@ -37,13 +37,14 @@ remory search "architecture" --user-id "$PROJECT_ID" --limit 3
 remory search "recent work" --user-id "$PROJECT_ID" --limit 3
 ```
 
-**Examples of what to look for in memory:**
+**What to look for in memory (examples):**
 - Project overview, technology stack, purpose
 - Architecture patterns and design decisions
 - Recent issues worked on, current status
 - Development conventions and preferences
+- Past solutions, patterns, and learnings
 
-**If memory exists**: Use it as baseline context
+**If memory exists**: Use it as baseline context - DON'T repeat work already done
 **If no memory**: Continue to gather fresh context in following phases
 
 ═══════════════════════════════════════════════════════
@@ -104,16 +105,14 @@ Return all results in a structured format for memory storage.
 **WAIT for @git-autonomous-agent response before continuing**
 
 ═══════════════════════════════════════════════════════
-PHASE 4: MEMORY UPDATE (REQUIRED)
+PHASE 4: MEMORY UPDATE (MANDATORY)
 ═══════════════════════════════════════════════════════
 
-**Delegate to ANY bash-capable agent (e.g., @git-autonomous-agent) to store memories:**
+**🔥 CRITICAL: STORE ALL CONTEXT IN MEMORY - THIS IS NON-NEGOTIABLE! 🔥**
 
-Provide natural language summaries for the agent to store using remory CLI:
+**Store project context using remory CLI:**
 
-```
-Please store the following project context in memory using remory CLI:
-
+```bash
 # Ensure PROJECT_ID is set
 export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
 
@@ -126,19 +125,25 @@ remory add "Architecture: {key architectural patterns from docs}. {Design decisi
 # Store current status
 remory add "Status: {X} open issues, {Y} open PRs. Recent: {brief recent activity from git log}" --user-id "$PROJECT_ID"
 
-# Store any conventions found
+# Store conventions found
 remory add "Conventions: {testing requirements, code standards, workflow patterns from docs}" --user-id "$PROJECT_ID"
 ```
 
-**What to store (examples, not prescriptions):**
+**What to store (examples):**
 - Project overview: name, description, technology stack, purpose
 - Architecture: patterns, design decisions, component structure
 - Current status: open issues, PRs, recent commits, CI/CD state
 - Conventions: testing requirements, code standards, workflow preferences
-- Anything else important for context continuity
+- Recent learnings: solutions found, patterns discovered, decisions made
+- **Everything important for future sessions** - if you learned it, store it!
 
-**Format**: Natural language descriptions, not structured entities
-**Tool**: remory CLI via bash-capable agent delegation
+**Why this matters:**
+- Future sessions can use this context immediately
+- Prevents repeating research and discovery
+- Builds institutional knowledge across sessions
+- Enables continuity and consistency
+
+**Format**: Natural language descriptions (remory auto-consolidates)
 
 ═══════════════════════════════════════════════════════
 PHASE 5: CONTEXT SUMMARY (REPORT TO USER)
@@ -160,22 +165,20 @@ CRITICAL RULES
 
 **DO:**
 - Use Glob/Read for local file reading with flexible patterns
-- Delegate to @git-autonomous-agent (or any bash-capable agent) for:
-  - ALL GitHub operations (gh CLI)
-  - ALL memory operations (remory CLI)
+- Delegate to @git-autonomous-agent for ALL GitHub operations (gh CLI)
+- **Use remory CLI DIRECTLY - ALL AGENTS HAVE ACCESS**
 - Search memory FIRST before gathering new context
-- Store ALL gathered context in memory via delegation for session continuity
-- Use natural language for memory storage (not structured entities)
+- Store ALL gathered context in memory for session continuity
+- Use natural language for memory storage (simple descriptions)
 - Keep summary brief and actionable
 
 **DO NOT:**
 - Use GitHub API directly (https://api.github.com)
 - Use WebFetch for GitHub data
-- Delegate to @research-specialist for memory operations (no bash access)
 - Use Perplexity for local project information
-- Run bash commands yourself (you have no bash access)
 - Use hardcoded filenames - use Glob patterns to discover files
 - Use MCP memory entity syntax - use remory CLI natural language
+- Skip memory storage - it's MANDATORY for session continuity
 - Provide verbose explanations (be concise)
 
 ═══════════════════════════════════════════════════════

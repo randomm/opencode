@@ -14,7 +14,13 @@
       "model": "anthropic/claude-sonnet-4-5-20250929",
       "prompt": "{file:prompts/project-manager.txt}",
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "remory *": "allow",
+          "export PROJECT_ID=*": "allow",
+          "cat .project-id": "allow",
+          "uuidgen": "allow",
+          "*": "deny"
+        },
         "write": "deny",
         "edit": "deny"
       },
@@ -193,6 +199,15 @@
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/code-review.txt}",
+      "permission": {
+        "bash": {
+          "remory *": "allow",
+          "export PROJECT_ID=*": "allow",
+          "cat .project-id": "allow",
+          "uuidgen": "allow",
+          "*": "deny"
+        }
+      },
       "tools": {
         "glob": true,
         "grep": true,
@@ -238,6 +253,9 @@
           "cat*": "allow",
           "head*": "allow",
           "tail*": "allow",
+          "remory *": "allow",
+          "export PROJECT_ID=*": "allow",
+          "uuidgen": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -349,7 +367,13 @@
       "model": "{env:SUBAGENT_MODEL}",
       "prompt": "{file:prompts/research-specialist.txt}",
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "remory *": "allow",
+          "export PROJECT_ID=*": "allow",
+          "cat .project-id": "allow",
+          "uuidgen": "allow",
+          "*": "deny"
+        },
         "write": "deny",
         "edit": "deny"
       },
