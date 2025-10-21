@@ -27,11 +27,21 @@ PHASE 1: PROJECT IDENTIFICATION & MEMORY SEARCH
 
 **Setup PROJECT_ID and search memory:**
 
-```bash
-# Setup PROJECT_ID (once per session)
-export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
+**Simple approach for PROJECT_ID:**
+1. Check if `.project-id` exists: `cat .project-id`
+2. If it exists, copy the UUID and use it
+3. If it doesn't exist, generate one: `uuidgen` (copy output, then save with `echo "uuid" | tee .project-id`)
+4. Set it: `export PROJECT_ID="the-uuid-from-above"`
 
-# Search existing project memories
+**Or delegate to a bash-capable agent:**
+Since complex bash syntax (`&&`, `||`, `$()`, `|`) may not work with selective permissions,
+you can ask any language specialist agent to run:
+```bash
+export PROJECT_ID="$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))"
+```
+
+**Then search project memories:**
+```bash
 remory search "project context" --user-id "$PROJECT_ID" --limit 3
 remory search "architecture" --user-id "$PROJECT_ID" --limit 3
 remory search "recent work" --user-id "$PROJECT_ID" --limit 3
@@ -113,21 +123,23 @@ PHASE 4: MEMORY UPDATE (MANDATORY)
 **Store project context using remory CLI:**
 
 ```bash
-# Ensure PROJECT_ID is set
-export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
-
 # Store project overview
 remory add "Project: {name} - {description from README}. Stack: {technologies}. Purpose: {main purpose}" --user-id "$PROJECT_ID"
-
+```
+```bash
 # Store architecture insights
 remory add "Architecture: {key architectural patterns from docs}. {Design decisions noted}" --user-id "$PROJECT_ID"
-
+```
+```bash
 # Store current status
 remory add "Status: {X} open issues, {Y} open PRs. Recent: {brief recent activity from git log}" --user-id "$PROJECT_ID"
-
+```
+```bash
 # Store conventions found
 remory add "Conventions: {testing requirements, code standards, workflow patterns from docs}" --user-id "$PROJECT_ID"
 ```
+
+**Note:** Run each `remory add` command separately. PROJECT_ID should already be set from PHASE 1.
 
 **What to store (examples):**
 - Project overview: name, description, technology stack, purpose

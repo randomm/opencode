@@ -17,8 +17,10 @@
         "bash": {
           "remory *": "allow",
           "export PROJECT_ID=*": "allow",
-          "cat .project-id": "allow",
-          "uuidgen": "allow",
+          "cat .project-id*": "allow",
+          "uuidgen*": "allow",
+          "echo*": "allow",
+          "tee*": "allow",
           "*": "deny"
         },
         "write": "deny",
@@ -203,8 +205,10 @@
         "bash": {
           "remory *": "allow",
           "export PROJECT_ID=*": "allow",
-          "cat .project-id": "allow",
-          "uuidgen": "allow",
+          "cat .project-id*": "allow",
+          "uuidgen*": "allow",
+          "echo*": "allow",
+          "tee*": "allow",
           "*": "deny"
         }
       },
@@ -255,7 +259,8 @@
           "tail*": "allow",
           "remory *": "allow",
           "export PROJECT_ID=*": "allow",
-          "uuidgen": "allow",
+          "uuidgen*": "allow",
+          "tee*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -370,8 +375,10 @@
         "bash": {
           "remory *": "allow",
           "export PROJECT_ID=*": "allow",
-          "cat .project-id": "allow",
-          "uuidgen": "allow",
+          "cat .project-id*": "allow",
+          "uuidgen*": "allow",
+          "echo*": "allow",
+          "tee*": "allow",
           "*": "deny"
         },
         "write": "deny",
