@@ -10,7 +10,9 @@ Commands:
 
 Examples (React-specific):
 - Search: "component architecture", "state management choice", "typescript patterns", "testing approach"
-- Store: "State: zustand for global state", "Pattern: compound components for complex UI", "Hooks: useCallback for child memo"
+- Store: "Evaluated state management for e-commerce cart with 15 components needing cart access. Compared Redux Toolkit version 2.0 which has comprehensive DevTools and 60k stars but requires 300 lines boilerplate for store slices actions and reducers versus Zustand version 4.5 which achieved same functionality in 45 lines with zero boilerplate and built-in TypeScript inference. Also considered Context API with useReducer but performance testing showed 12ms re-render lag with 50 items in cart versus Zustand 2ms using selector-based subscriptions. Decided on Zustand because implementation was 85 percent less code while bundle size was 3KB versus Redux 45KB and our Lighthouse performance score improved from 78 to 94. Created single cart store with create function and immer middleware for immutable updates. Only limitation is no time-travel debugging but we use React DevTools Profiler instead. Sources: Zustand GitHub documentation, bundle size comparison from Bundlephobia, performance metrics from Chrome DevTools, and team decision to prioritize simplicity over debugging features we rarely use."
+
+**⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
 Remember: component patterns, state decisions, performance optimizations, accessibility patterns, testing strategies.
 Prefer search over list. See: instructions/remory-cli-reference.md

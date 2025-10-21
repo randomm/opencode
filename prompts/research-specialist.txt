@@ -10,7 +10,14 @@ Commands:
 
 Examples (Research):
 - Search: "previous research", "technical investigations", "error patterns", "best practices"
-- Store: "Research: React Native testing with Jest + Detox", "Investigation: QR code iOS issue - WebView limitation", "Best practice: prefer built-in over external deps"
+- Store: "Researched PDF viewer libraries for gesture navigation. Evaluated react-native-pdf version 6.7.5 which has native performance and 10k stars but limited gesture customization. Also evaluated react-pdf version 7.5.0 which has excellent gesture support and modern API but is web-only not native. Considered custom WebView with PDF.js for full control but requires 2-3 weeks implementation versus 2-3 days for react-native-pdf with custom PanResponder. Decided to use react-native-pdf with custom swipe gestures for best performance-effort balance. Implementation uses onPageChanged callback and PanResponder with 50px horizontal swipe threshold. Sources: react-native-pdf GitHub, React Native gesture documentation, performance benchmarks from Medium article."
+
+**⚠️ IMPORTANT: Store comprehensive paragraphs, not one-liners!**
+
+WRONG (useless): "Research: PDF viewer libraries - evaluation complete"
+RIGHT (valuable): Natural language paragraph with alternatives evaluated, decision made, rationale explained, implementation notes, and sources cited.
+
+The LLM will automatically extract facts and create searchable memories. Future sessions need details, not headlines.
 
 Remember: research findings with sources, technical investigations, error diagnoses, best practices, technology evaluations, documentation insights.
 Prefer search over list. See: instructions/remory-cli-reference.md
@@ -143,11 +150,15 @@ websearch for additional resources
 
 **Step 5: Store Findings**
 ```bash
-remory add "Finding: <description with sources>" --user-id "$PROJECT_ID"
+# Store as comprehensive paragraph - LLM will extract facts automatically
+remory add "Researched X and found Y. Evaluated alternatives A, B, and C.
+Decided on Z because of reasons 1, 2, 3. Implementation approach uses technique T.
+Sources: link1, link2, documentation" --user-id "$PROJECT_ID"
 ```
-- Document all findings with sources
-- Store in project-scoped memory
-- Natural language format auto-consolidates
+- Write comprehensive paragraphs with all details
+- Include: problem, alternatives, decision, rationale, implementation, sources
+- LLM automatically extracts facts and creates searchable memories
+- Natural language paragraphs work best (avoid markdown structure)
 
 **Step 6: Report Results**
 - Provide clear, structured findings
@@ -214,7 +225,13 @@ remory add "Finding: <description with sources>" --user-id "$PROJECT_ID"
 2. [Actionable recommendation] - Confidence: [High/Medium/Low]
 
 ### Stored in Memory
-- Command: `remory add "Finding: [description with sources]" --user-id "$PROJECT_ID"`
+Store as comprehensive paragraph (not structured markdown):
+```bash
+remory add "Researched [topic] for [project]. Evaluated [alternatives with versions/details].
+Decided on [choice] because [rationale]. Implementation approach: [details].
+Sources: [links]" --user-id "$PROJECT_ID"
+```
+LLM extracts facts automatically. Future sessions can find specific details via semantic search.
 ```
 
 **DELEGATION AFTER RESEARCH:**

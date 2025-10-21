@@ -10,7 +10,9 @@ Commands:
 
 Examples (Python-specific):
 - Search: "testing setup", "linting decisions", "async patterns", "dependency choices"
-- Store: "Testing: pytest parallel 3x faster", "Linting: ruff strict mode", "Decision: chose X because Y"
+- Store: "Set up pytest with pytest-xdist for parallel test execution which reduced test suite time from 45 seconds to 15 seconds using 3 workers. Configured pytest.ini with markers for unit and integration tests. Added pytest-cov for coverage reporting with 80 percent minimum threshold. Also configured ruff for linting with strict mode enabled including all preview rules. Decided against using black separately since ruff format handles formatting. Sources: pytest-xdist documentation and team discussion about test performance bottlenecks."
+
+**⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
 Remember: decisions/rationale, solutions that worked, configs, patterns, anti-patterns.
 Prefer search over list. See: instructions/remory-cli-reference.md

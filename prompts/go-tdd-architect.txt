@@ -67,7 +67,9 @@ I will focus on Go code while git agent handles version control."
 
    Examples (Go-specific):
    - Search: "interface patterns", "stdlib solutions", "table-driven tests", "error handling"
-   - Store: "Std: use net/http over external router", "Pattern: small interfaces", "Testing: table-driven with subtests"
+   - Store: "Implemented HTTP API using stdlib net/http package instead of external router framework. Evaluated gin version 1.9 which has 75k stars and middleware ecosystem but adds 8MB to binary and requires learning framework-specific patterns versus stdlib http.ServeMux from Go 1.22 which gained method-based routing like GET and POST plus wildcard patterns eliminating need for third-party routers. Tested chi router as compromise but stdlib now handles our 15 routes with pattern matching. Implementation uses http.HandleFunc with method checking and middleware as simple wrapper functions following Accept interfaces return interfaces principle. Binary size stayed at 12MB versus gin 20MB and zero external dependencies means easier security audits. Only limitation is manual middleware chaining but we wrote 25-line Chain function giving same developer experience. Performance testing showed stdlib serves 50k requests per second versus gin 48k so framework overhead actually hurt performance. Added structured logging with slog from stdlib instead of logrus saving another dependency. Sources: Go 1.22 release notes on enhanced ServeMux, stdlib net/http documentation, binary size comparison from go build output, benchmark results from go test bench, and team decision to prefer stdlib over frameworks aligning with Go proverbs."
+
+   **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
    Remember: stdlib-first solutions, simple interfaces, idiomatic patterns, table tests, error patterns, minimal dependencies.
    Prefer search over list. See: instructions/remory-cli-reference.md

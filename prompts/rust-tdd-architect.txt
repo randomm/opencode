@@ -67,7 +67,9 @@ I will focus on Rust code while git agent handles version control."
 
    Examples (Rust-specific):
    - Search: "ownership patterns", "lifetime solutions", "zero-cost abstractions", "std alternatives"
-   - Store: "Pattern: Arc<Mutex<T>> for shared state", "Avoid: clone in hot loops", "Std: use std::collections over crate"
+   - Store: "Implemented zero-copy file processing using memory-mapped IO with std memmap2 crate version 0.9.4 instead of loading entire files into memory. Evaluated std fs read to string which would use 500MB for large logs versus mmap which uses zero heap allocation and provides OS-level caching. Decided on mmap because profiling showed 85 percent memory reduction and 3x throughput improvement for our log analysis workload. Implementation uses unsafe MmapOptions with read-only mode and advise sequential access pattern. Alternative considered was streaming with BufReader but that still required 50MB buffer versus mmap zero allocation. Also evaluated async tokio fs but synchronous mmap was sufficient for our batch processing use case. Sources: Rust std fs documentation, memmap2 GitHub benchmarks, and profiling results from cargo flamegraph showing mmap eliminated all allocation bottlenecks."
+
+   **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
    Remember: decisions/rationale, solutions that worked, borrow checker fixes, performance patterns, anti-patterns.
    Prefer search over list. See: instructions/remory-cli-reference.md

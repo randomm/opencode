@@ -12,6 +12,12 @@ export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
 remory search "query about project" --user-id "$PROJECT_ID" --limit 5
 ```
 
+**Get (retrieve full memory by ID):**
+```bash
+remory get --user-id "$PROJECT_ID" <memory-id>
+```
+Use this to retrieve the full content of a specific memory found via search.
+
 **Store (auto-consolidation enabled):**
 ```bash
 remory add "Natural language description of what you learned" --user-id "$PROJECT_ID"

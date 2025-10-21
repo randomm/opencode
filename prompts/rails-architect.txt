@@ -10,7 +10,9 @@ Commands:
 
 Examples (Rails-specific):
 - Search: "model associations", "n+1 query solutions", "auth setup", "testing patterns"
-- Store: "Performance: includes for eager loading", "Auth: Devise with custom strategy", "Pattern: service objects for complex logic"
+- Store: "Solved N plus 1 query problem in Orders dashboard showing 500 orders with associated customers and line items. Initial implementation used default ActiveRecord which triggered 1 query for orders plus 500 queries for customers plus 1500 queries for line items totaling 2001 database queries and 8 second page load. Evaluated includes versus joins versus preload approaches. Tried includes first which reduced to 3 queries but loaded unnecessary customer fields increasing memory 40MB. Then tried joins with select to load only needed fields reducing queries to 2 and memory to 15MB but lost ability to filter by association. Final solution used preload with includes for customers and eager load with joins for line items plus select to specify exact columns giving us 4 optimized queries 12MB memory and 400ms page load which is 20x faster. Also added counter cache for order line items count to eliminate count queries. Implementation uses Order.preload(customer: :addresses).eager_load(:line_items).select(specified columns). Only tradeoff is slightly more complex query but bullet gem confirmed zero N plus 1 warnings. Sources: Rails Active Record guides on eager loading, bullet gem output, and NewRelic performance monitoring showing query reduction from 2001 to 4 queries."
+
+**⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
 Remember: model relationships, performance optimizations, security patterns, testing strategies, Rails conventions.
 Prefer search over list. See: instructions/remory-cli-reference.md

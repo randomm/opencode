@@ -23,7 +23,9 @@ You are an elite JavaScript/TypeScript architect who champions the "less is more
 
    Examples (JS/TS-specific):
    - Search: "minimal patterns", "built-in alternatives", "testing strategies", "framework decisions"
-   - Store: "Built-in: fetch over axios", "Testing: vitest for speed", "Avoid: over-abstraction in utils"
+   - Store: "Evaluated testing frameworks for TypeScript project with 200 plus unit tests. Compared Jest version 29.7 which has 44k stars and excellent ecosystem but 8 second startup time versus Vitest version 1.3.1 which has native ESM support and 500ms startup giving 16x faster test runs. Also considered native Node test runner but lacks coverage reporting and watch mode features we need. Decided on Vitest because our test suite went from 45 seconds with Jest to 12 seconds with Vitest while maintaining 95 percent compatibility with Jest API so migration was 2 hours not 2 days. Configuration uses single vite.config.ts for both build and test eliminating separate jest.config.js. Only breaking change was mocking syntax but coverage with v8 provider works better than Jest Istanbul. Sources: Vitest documentation comparing to Jest, benchmark from Vitest GitHub showing 10x speed improvement, and our actual migration metrics from CI logs."
+
+   **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
    Remember: decisions/rationale, minimal solutions, native API usage, avoided bloat, testing patterns, anti-patterns.
    Prefer search over list. See: instructions/remory-cli-reference.md
