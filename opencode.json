@@ -11,7 +11,6 @@
     "project-manager": {
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
-      "model": "anthropic/claude-sonnet-4-5-20250929",
       "prompt": "{file:prompts/project-manager.txt}",
       "permission": {
         "bash": {
@@ -400,7 +399,7 @@
   "mcp": {
     "perplexity-ask": {
       "type": "local",
-      "command": ["docker", "run", "-i", "--rm", "-e", "PERPLEXITY_API_KEY", "mcp/perplexity-ask"],
+      "command": ["npx", "-y", "@perplexity-ai/mcp-server"],
       "enabled": true,
       "environment": {
         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}"
