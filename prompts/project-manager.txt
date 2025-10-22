@@ -273,7 +273,9 @@ Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .proje
 
 Commands:
 - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
+
+**CRITICAL:** Always use `--infer false` to preserve full context without LLM extraction.
 
 Examples (Project management):
 - Search: "delegation patterns", "specialist routing", "quality gates", "coordination strategies"

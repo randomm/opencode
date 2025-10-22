@@ -19,32 +19,31 @@ This is a **session initialization task** exempt from GitHub workflow requiremen
 
 You are starting a new coding session. Follow this MANDATORY protocol to establish project context:
 
+**🎯 YOUR ROLE**: You are the orchestrator. Use read-only tools (Glob, Read, remory CLI) and delegate to @git-autonomous-agent for GitHub operations. Do NOT execute tasks directly.
+
+**📋 Track progress with TodoWrite:**
+```
+Session initialization: memory search → docs → GitHub → memory storage → summary
+```
+
 ═══════════════════════════════════════════════════════
 PHASE 1: PROJECT IDENTIFICATION & MEMORY SEARCH
 ═══════════════════════════════════════════════════════
 
-**🔥 CRITICAL: ALL AGENTS HAVE REMORY CLI ACCESS - USE IT! 🔥**
+**🔥 CRITICAL: YOU HAVE DIRECT REMORY CLI ACCESS - USE IT! 🔥**
 
 **Setup PROJECT_ID and search memory:**
 
-**Simple approach for PROJECT_ID:**
-1. Check if `.project-id` exists: `cat .project-id`
-2. If it exists, copy the UUID and use it
-3. If it doesn't exist, generate one: `uuidgen` (copy output, then save with `echo "uuid" | tee .project-id`)
-4. Set it: `export PROJECT_ID="the-uuid-from-above"`
-
-**Or delegate to a bash-capable agent:**
-Since complex bash syntax (`&&`, `||`, `$()`, `|`) may not work with selective permissions,
-you can ask any language specialist agent to run:
 ```bash
-export PROJECT_ID="$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))"
+export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
 ```
 
-**Then search project memories:**
+**Then search project memories with SPECIFIC semantic queries:**
 ```bash
-remory search "project context" --user-id "$PROJECT_ID" --limit 3
-remory search "architecture" --user-id "$PROJECT_ID" --limit 3
-remory search "recent work" --user-id "$PROJECT_ID" --limit 3
+remory search "what is this project technology stack purpose" --user-id "$PROJECT_ID" --limit 3
+remory search "architecture patterns design decisions components" --user-id "$PROJECT_ID" --limit 3
+remory search "coding standards quality gates testing requirements" --user-id "$PROJECT_ID" --limit 3
+remory search "contribution guidelines workflow conventions" --user-id "$PROJECT_ID" --limit 3
 ```
 
 **What to look for in memory (examples):**
@@ -120,48 +119,54 @@ PHASE 4: MEMORY UPDATE (MANDATORY)
 
 **🔥 CRITICAL: STORE ALL CONTEXT IN MEMORY - THIS IS NON-NEGOTIABLE! 🔥**
 
-**Store project context using remory CLI:**
+**Store project context using remory CLI with --infer false to preserve full detail:**
 
 ```bash
-# Store project overview
-remory add "Project: {name} - {description from README}. Stack: {technologies}. Purpose: {main purpose}" --user-id "$PROJECT_ID"
+# Store project overview (DETAILED - preserve everything from README)
+remory add "Project: {name} - {full description from README including all key features}. Stack: {complete technology stack with versions}. Purpose: {main purpose and goals}. Key features: {list main features}" --user-id "$PROJECT_ID" --infer false
 ```
 ```bash
-# Store architecture insights
-remory add "Architecture: {key architectural patterns from docs}. {Design decisions noted}" --user-id "$PROJECT_ID"
+# Store architecture insights (DETAILED - preserve all patterns and decisions)
+remory add "Architecture: {detailed architectural patterns from docs}. Design decisions: {all key decisions with rationale}. Components: {component structure and interactions}. Data flow: {how data flows through system}" --user-id "$PROJECT_ID" --infer false
 ```
 ```bash
-# Store current status
-remory add "Status: {X} open issues, {Y} open PRs. Recent: {brief recent activity from git log}" --user-id "$PROJECT_ID"
+# Store current status (DETAILED - preserve activity context)
+remory add "Status: {X} open issues, {Y} open PRs. Recent commits: {detailed recent activity from git log including commit messages}. CI/CD: {current CI state and any issues}" --user-id "$PROJECT_ID" --infer false
 ```
 ```bash
-# Store conventions found
-remory add "Conventions: {testing requirements, code standards, workflow patterns from docs}" --user-id "$PROJECT_ID"
+# Store conventions (DETAILED - preserve all standards and requirements)
+remory add "Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Workflow: {development workflow patterns and conventions}. Contribution guidelines: {key contribution guidelines}" --user-id "$PROJECT_ID" --infer false
 ```
 
-**Note:** Run each `remory add` command separately. PROJECT_ID should already be set from PHASE 1.
+**CRITICAL:** Use `--infer false` to preserve FULL TEXT without LLM extraction/shortening.
 
-**What to store (examples):**
-- Project overview: name, description, technology stack, purpose
-- Architecture: patterns, design decisions, component structure
-- Current status: open issues, PRs, recent commits, CI/CD state
-- Conventions: testing requirements, code standards, workflow preferences
-- Recent learnings: solutions found, patterns discovered, decisions made
-- **Everything important for future sessions** - if you learned it, store it!
+**What to store (be COMPREHENSIVE):**
+- Project overview: name, complete description, full technology stack with versions, purpose, key features
+- Architecture: all patterns, all design decisions with rationale, component structure, data flow
+- Current status: open issues, PRs, detailed recent commits, CI/CD state
+- Conventions: complete coding standards, all testing requirements, all quality gates, workflow patterns
+- Recent learnings: detailed solutions found, patterns discovered, decisions made with context
+- **Everything important for future sessions** - be thorough, not summary!
 
 **Why this matters:**
-- Future sessions can use this context immediately
+- Future sessions get FULL context immediately, not extracted facts
 - Prevents repeating research and discovery
-- Builds institutional knowledge across sessions
+- Builds institutional knowledge across sessions with full detail
 - Enables continuity and consistency
 
-**Format**: Natural language descriptions (remory auto-consolidates)
-
 ═══════════════════════════════════════════════════════
-PHASE 5: CONTEXT SUMMARY (REPORT TO USER)
+PHASE 5: SUCCESS VERIFICATION & SUMMARY
 ═══════════════════════════════════════════════════════
 
-Provide a CONCISE summary (5-8 lines maximum):
+**SESSION READY CHECKLIST:**
+- [x] PROJECT_ID established
+- [x] Memory searched with specific queries
+- [x] Documentation reviewed (README, CLAUDE.md, conventions)
+- [x] GitHub context gathered via @git-autonomous-agent
+- [x] All context stored in memory with --infer false
+- [x] TodoWrite tracking complete
+
+**Provide CONCISE summary to user (5-8 lines maximum):**
 
 ```
 📋 **Project**: {name} ({type})
@@ -172,26 +177,50 @@ Provide a CONCISE summary (5-8 lines maximum):
 ```
 
 ═══════════════════════════════════════════════════════
+AFTER INITIALIZATION - NEXT STEPS
+═══════════════════════════════════════════════════════
+
+**User will provide a task or question. When they do:**
+
+1. **Use CLARIFICATION PROTOCOL** (from your system prompt):
+   - Verify GitHub issue number or ask if you should create one
+   - Confirm task type (research, planning, implementation)
+   - Clarify scope boundaries and deliverables
+
+2. **Search memory FIRST** before delegating:
+   ```bash
+   remory search "{relevant keywords from task}" --user-id "$PROJECT_ID" --limit 3
+   ```
+
+3. **Delegate to appropriate specialist** based on task domain
+
+4. **Update memory DURING SESSION** as you learn:
+   ```bash
+   remory add "{new learning or decision}" --user-id "$PROJECT_ID" --infer false
+   ```
+
+═══════════════════════════════════════════════════════
 CRITICAL RULES
 ═══════════════════════════════════════════════════════
 
 **DO:**
 - Use Glob/Read for local file reading with flexible patterns
 - Delegate to @git-autonomous-agent for ALL GitHub operations (gh CLI)
-- **Use remory CLI DIRECTLY - ALL AGENTS HAVE ACCESS**
-- Search memory FIRST before gathering new context
-- Store ALL gathered context in memory for session continuity
-- Use natural language for memory storage (simple descriptions)
-- Keep summary brief and actionable
+- **Use remory CLI DIRECTLY - YOU HAVE ACCESS**
+- Search memory FIRST with specific semantic queries
+- Store ALL gathered context with `--infer false` to preserve full detail
+- Use detailed, comprehensive descriptions (not summaries)
+- Update TodoWrite after each phase
+- Keep user summary brief and actionable
 
 **DO NOT:**
+- Use `--infer true` or omit `--infer` flag (defaults to true, shortens memories)
+- Use vague search queries like "recent work" or "project context"
 - Use GitHub API directly (https://api.github.com)
 - Use WebFetch for GitHub data
 - Use Perplexity for local project information
 - Use hardcoded filenames - use Glob patterns to discover files
-- Use MCP memory entity syntax - use remory CLI natural language
 - Skip memory storage - it's MANDATORY for session continuity
-- Provide verbose explanations (be concise)
 
 ═══════════════════════════════════════════════════════
 

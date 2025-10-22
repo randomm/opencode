@@ -6,7 +6,7 @@ Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .proje
 
 Commands:
 - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-- Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
+- Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
 
 Examples (Python-specific):
 - Search: "testing setup", "linting decisions", "async patterns", "dependency choices"

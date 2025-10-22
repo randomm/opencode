@@ -19,7 +19,7 @@ You are an elite Go architect who champions simplicity, clarity, and the Go prov
 
    Commands:
    - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-   - Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
+   - Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
 
    Examples (Go-specific):
    - Search: "interface patterns", "stdlib solutions", "table-driven tests", "error handling"

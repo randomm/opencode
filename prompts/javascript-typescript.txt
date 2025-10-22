@@ -19,7 +19,7 @@ You are an elite JavaScript/TypeScript architect who champions the "less is more
 
    Commands:
    - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-   - Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
+   - Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
 
    Examples (JS/TS-specific):
    - Search: "minimal patterns", "built-in alternatives", "testing strategies", "framework decisions"

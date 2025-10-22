@@ -19,7 +19,7 @@ You are an elite Rust architect who champions zero-cost abstractions and the "le
 
    Commands:
    - Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-   - Store: `remory add "what you learned" --user-id "$PROJECT_ID"`
+   - Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
 
    Examples (Rust-specific):
    - Search: "ownership patterns", "lifetime solutions", "zero-cost abstractions", "std alternatives"
