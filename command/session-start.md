@@ -60,25 +60,34 @@ remory search "contribution guidelines workflow conventions" --user-id "$PROJECT
 PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
 ═══════════════════════════════════════════════════════
 
-**Use Glob to discover documentation (flexible patterns):**
+**MANDATORY - Discover and read:**
 
-**MANDATORY reads:**
-1. `CLAUDE.md` - Project-specific instructions for AI agents
-2. `README.md` - Project overview and setup
+1. **CLAUDE.md** - Project-specific instructions for AI agents
+2. **README.md** - Project overview and setup
+3. **Project workflow and contribution guidelines** - Figure out how this project operates
+   - Common files: CONTRIBUTING.md, CODE_OF_CONDUCT.md, docs/contributing.md, .github/CONTRIBUTING.md
+   - Use Read, Glob, or Grep as needed to discover what exists
+   - These files define:
+     - Commit message conventions
+     - PR process and review requirements
+     - Communication style and tone
+     - Quality gates and testing requirements
+     - Branch naming and workflow
+   - **CRITICAL**: You must understand the workflow before doing any work
 
-**OPTIONAL - Use Glob to discover what exists:**
-3. **Contributing guides**: `**/*contribut*.md` (e.g., CONTRIBUTING.md, CONTRIBUTION_GUIDE.md, docs/contributing.md)
-4. **Testing docs**: `**/*test*convention*.md`, `**/TEST*.md` (e.g., TESTING_CONVENTIONS.md, docs/testing.md)
-5. **Architecture docs**: `**/*architecture*.md`, `**/ARCHITECTURE.md` (e.g., docs/architecture.md, ARCHITECTURE.md)
-6. **Convention docs**: `**/*convention*.md`, `**/*standard*.md` (e.g., docs/conventions.md, coding-standards.md)
+**OPTIONAL - Discover if they exist:**
+
+4. **Testing conventions** - Examples: TESTING.md, docs/testing.md, test/README.md
+5. **Architecture documentation** - Examples: ARCHITECTURE.md, docs/architecture.md, docs/design.md
+6. **Coding standards** - Examples: STANDARDS.md, docs/conventions.md, style-guide.md
 
 **Approach:**
-- Use Glob patterns to find files, not hardcoded paths
+- Be intelligent - use appropriate discovery tools (Read, Glob, Grep)
+- Try common filenames first, then search if needed
 - Read what exists, skip what doesn't
-- Be flexible - projects name files differently
-- Use Read tool for file contents
+- Projects structure documentation differently - adapt to what you find
 
-**Use Glob/Read tools only** - No bash commands for reading files
+**Use Glob/Read/Grep tools only** - No bash commands for reading files
 
 ═══════════════════════════════════════════════════════
 PHASE 3: GITHUB CONTEXT (DELEGATION REQUIRED)
@@ -134,17 +143,18 @@ remory add "Architecture: {detailed architectural patterns from docs}. Design de
 remory add "Status: {X} open issues, {Y} open PRs. Recent commits: {detailed recent activity from git log including commit messages}. CI/CD: {current CI state and any issues}" --user-id "$PROJECT_ID" --infer false
 ```
 ```bash
-# Store conventions (DETAILED - preserve all standards and requirements)
-remory add "Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Workflow: {development workflow patterns and conventions}. Contribution guidelines: {key contribution guidelines}" --user-id "$PROJECT_ID" --infer false
+# Store workflow and conventions (DETAILED - preserve COMPLETE workflow information)
+remory add "Project workflow: {commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING}. Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Contribution guidelines: {all contribution rules and conventions}" --user-id "$PROJECT_ID" --infer false
 ```
 
 **CRITICAL:** Use `--infer false` to preserve FULL TEXT without LLM extraction/shortening.
 
 **What to store (be COMPREHENSIVE):**
 - Project overview: name, complete description, full technology stack with versions, purpose, key features
+- **Workflow (CRITICAL)**: commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md
 - Architecture: all patterns, all design decisions with rationale, component structure, data flow
 - Current status: open issues, PRs, detailed recent commits, CI/CD state
-- Conventions: complete coding standards, all testing requirements, all quality gates, workflow patterns
+- Conventions: complete coding standards, all testing requirements, all quality gates
 - Recent learnings: detailed solutions found, patterns discovered, decisions made with context
 - **Everything important for future sessions** - be thorough, not summary!
 
