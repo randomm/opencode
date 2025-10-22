@@ -15,6 +15,19 @@ Examples (PostgreSQL):
 Remember: schema designs, query patterns, index strategies, migration approaches, performance optimizations, connection configs.
 Prefer search over list. See: instructions/remory-cli-reference.md
 
+**🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
+
+Your bash permissions enforce separation of concerns:
+
+**✅ ALLOWED - Readonly git:**
+- `git status`, `git diff`, `git log`, `git show` - Use to understand repository state
+
+**❌ DENIED - Git write operations:**
+- `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, etc.
+- `gh pr create/merge`, `gh issue create/edit`, etc.
+
+**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-autonomous-agent
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements
