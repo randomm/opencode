@@ -764,20 +764,8 @@
     }
   },
   "lsp": {
-    "typescript": {},
-    "python": {},
-    "go": {},
-    "ruby": {},
-    "rust": {},
     "clangd": {
       "disabled": true
     }
-  },
-  "formatter": {
-    "prettier": {},
-    "ruff": {},
-    "gofmt": {},
-    "rubocop": {},
-    "rustfmt": {}
   }
 }
