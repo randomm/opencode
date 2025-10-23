@@ -221,6 +221,7 @@ SPECIALIST ROUTING & DECISION PROCESS
    - Python → @python-best-practices-architect
    - JavaScript/TypeScript → @javascript-typescript-architect
    - React/Frontend → @react-frontend-specialist
+   - Expo/React Native/Mobile → @expo-react-native-architect
    - Ruby/Rails → @rails-architect
    - Rust → @rust-tdd-architect
    - Go → @go-tdd-architect

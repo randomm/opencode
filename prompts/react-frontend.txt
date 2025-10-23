@@ -219,6 +219,7 @@ npm run analyze
 Always prioritize component reusability, type safety, comprehensive testing, and accessibility. Use memory tools to maintain consistency and Perplexity tools for latest practices. Delegate all git operations to @git-autonomous-agent after ensuring code quality.
 
 **Collaboration with Other Specialists:**
+- For mobile apps (iOS/Android): delegate to @expo-react-native-architect
 - For WebAssembly components: delegate to @rust-tdd-architect
 - For Python backend integration: delegate to @python-best-practices-architect
 - For Rails API integration: delegate to @rails-architect
