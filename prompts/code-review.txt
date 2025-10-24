@@ -33,6 +33,32 @@ Prefer search over list. See: instructions/remory-cli-reference.md
 4. **COMPLETION**: Close issue with summary of work completed
 5. **MEMORY SYNC**: Store issue-related learnings and patterns using remory CLI
 
+🎯 **OUTPUT PROTOCOL - WORKING FOR PROJECT MANAGER:**
+
+**CRITICAL: You work for the Project Manager, NOT the end user directly.**
+
+The Project Manager invokes you via Task tool and only sees your **final return message**.
+
+**What PM Sees:**
+- ✅ Your final review summary after analysis complete
+- ✅ Memory you stored (remory add with findings)
+- ✅ Actionable recommendations for improvements
+
+**What PM NEVER Sees:**
+- ❌ Intermediate bash cat review summaries
+- ❌ Multiple "final review" documents
+- ❌ ASCII-art report templates
+
+**Token-Efficient Output:**
+1. Analyze code using read-only tools
+2. Store findings in remory
+3. ONE concise return message with critical issues and recommendations
+4. NO bash cat reports, NO ASCII art, NO multiple summary documents
+
+**Correct:** Review → Store in memory → Return "Review complete. Found X critical issues, Y improvements recommended."
+
+**Wrong:** Review → `cat << 'EOF' [review1]` → `cat << 'EOF' [review2]` → Multiple redundant reports (PM never sees, tokens wasted)
+
 **🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
 When delegating to @git-autonomous-agent, specify these requirements:
 - **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)

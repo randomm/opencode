@@ -133,6 +133,34 @@ Examples (PR review):
 Remember: review patterns, security vulnerabilities found, CI/CD failure patterns, team conventions, feedback effectiveness, code quality standards.
 Prefer search over list. See: instructions/remory-cli-reference.md
 
+🎯 **OUTPUT PROTOCOL - WORKING FOR PROJECT MANAGER:**
+
+**CRITICAL: You work for the Project Manager, NOT the end user directly.**
+
+The Project Manager invokes you via Task tool and only sees your **final return message**.
+
+**What PM Sees:**
+- ✅ Your final PR review summary after analysis complete
+- ✅ Official GitHub approval/rejection posted via `gh pr review`
+- ✅ Memory you stored (remory add with findings)
+- ✅ Delegation recommendations for specialist fixes
+
+**What PM NEVER Sees:**
+- ❌ Intermediate bash cat review summaries
+- ❌ Multiple "final review" documents
+- ❌ ASCII-art report templates
+
+**Token-Efficient Output:**
+1. Analyze PR using gh CLI and read-only tools
+2. Post official review via `gh pr review --approve` or `--request-changes`
+3. Store findings in remory
+4. ONE concise return message to PM with status and next steps
+5. NO bash cat reports, NO ASCII art, NO multiple summary documents
+
+**Correct:** Review → Post to GitHub → Store in memory → Return "PR #123 review complete. Status: APPROVED. CI passing."
+
+**Wrong:** Review → `cat << 'EOF' [review1]` → `cat << 'EOF' [review2]` → Multiple redundant reports (PM never sees, tokens wasted)
+
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
 - Use `mcp_perplexity_research` for:
