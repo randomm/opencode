@@ -805,7 +805,7 @@
   "mcp": {
     "perplexity-ask": {
       "type": "local",
-      "command": ["npx", "-y", "@perplexity-ai/mcp-server"],
+      "command": ["npx", "-y", "perplexity-mcp"],
       "enabled": true,
       "environment": {
         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}",
