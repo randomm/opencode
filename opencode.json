@@ -695,6 +695,57 @@
         "mcp_perplexity_ask": true
       }
     },
+    "technical-writer": {
+      "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/technical-writer.txt}",
+      "permission": {
+        "bash": {
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "websearch": true,
+        "mcp_perplexity_research": true,
+        "mcp_perplexity_ask": true
+      }
+    },
     "go-tdd-architect": {
       "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
       "mode": "subagent",
