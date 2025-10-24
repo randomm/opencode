@@ -15,6 +15,7 @@
       "permission": {
         "bash": {
           "remory *": "allow",
+          "PROJECT_ID=* && remory *": "allow",
           "export PROJECT_ID=*": "allow",
           "cat .project-id*": "allow",
           "uuidgen*": "allow",
