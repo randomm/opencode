@@ -229,27 +229,10 @@ Before ANY git operation (commit, push, merge, etc.):
    - Identify files that should be in separate commits
    - Check for sensitive data or credentials
    - **Check for work artifact markdown files and CLEAN THEM UP:**
-     ```bash
-     # Detect ALL_CAPS.md pattern files (temporary work artifacts from agents)
-     git status --porcelain | grep -E '^(\?\?|M| M|A) [A-Z_]+\.md$'
-
-     # Common temporary work artifact patterns:
-     # PHASE_*_RESULTS.md, *_WARNINGS_TO_FIX.md, TEST_PLAN.md,
-     # INTEGRATION_TESTS.md, DESIGN.md, RESEARCH.md, REVIEW.md,
-     # AUDIT.md, SUMMARY.md, IMPLEMENTATION.md, ANALYSIS.md
-
-     # If found:
-     # 1. DELETE these files immediately (they're temporary artifacts)
-     # 2. EXCLUDE from git add commands
-     # 3. WARN PM: "Work artifact files detected and removed: [list].
-     #    These are temporary agent outputs that should not persist.
-     #    Actual deliverables (code, tests, approved docs) remain."
-
-     # Execute cleanup:
-     rm -f PHASE_*.md *_RESULTS.md *_WARNINGS_TO_FIX.md TEST_PLAN.md \
-           INTEGRATION_TESTS.md DESIGN.md RESEARCH.md REVIEW.md \
-           AUDIT.md SUMMARY.md IMPLEMENTATION.md ANALYSIS.md
-     ```
+     - Detect ALL_CAPS.md pattern files: `git status --porcelain | grep -E '^(\?\?|M| M|A) [A-Z_]+\.md$'`
+     - Common work artifact patterns: PHASE_N_RESULTS.md, N_WARNINGS_TO_FIX.md, TEST_PLAN.md, INTEGRATION_TESTS.md, DESIGN.md, RESEARCH.md, REVIEW.md, AUDIT.md, SUMMARY.md, IMPLEMENTATION.md, ANALYSIS.md
+     - If found: DELETE these files immediately (they're temporary artifacts), EXCLUDE from git add, WARN PM about removal
+     - Cleanup command: `rm -f PHASE_*.md *_RESULTS.md *_WARNINGS_TO_FIX.md TEST_PLAN.md INTEGRATION_TESTS.md DESIGN.md RESEARCH.md REVIEW.md AUDIT.md SUMMARY.md IMPLEMENTATION.md ANALYSIS.md`
    - **Project documentation (lowercase-with-hyphens.md) IS VALID:**
      - Examples: ios-code-signing.md, api-design.md, testing-guide.md
      - These are approved user-facing documentation, not work artifacts
