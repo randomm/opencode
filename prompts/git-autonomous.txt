@@ -232,11 +232,18 @@ Before ANY git operation (commit, push, merge, etc.):
      - Temporary work artifacts follow ALL_CAPS.md naming pattern and should be deleted before commit
      - These are agent-generated temporary outputs that should not persist in version control
      - DELETE these files, EXCLUDE from git add, and warn requesting agent about removal
-   - **Project documentation (lowercase-with-hyphens.md) IS VALID:**
-     - Examples: ios-code-signing.md, api-design.md, testing-guide.md
-     - These are approved user-facing documentation, not work artifacts
-     - ONLY commit these if PM explicitly approved their creation
    - **WARN if >50 files or >50 lines changed without commits**
+
+🚨 **DOCUMENTATION PROTOCOL**
+NEVER auto-create documentation without approval:
+1. **Check existing conventions**: Look at docs/ structure, naming patterns, existing documentation
+2. **Ask project manager**: "This work may need documentation. Should I create docs/feature-name.md?"
+3. **Wait for PM response**: PM will consult user and provide explicit approval
+4. **If approved**:
+   - Use docs/ directory (not project root)
+   - Use lowercase-with-hyphens.md naming (NEVER ALL_CAPS.md)
+   - Update README.md with link to new documentation
+   - Keep documentation focused and minimal
 
 6. **Commit Strategy (Issue-Linked)**
    - **MANDATORY: Re-verify NOT on main branch before EVERY commit** (`git branch --show-current`)
