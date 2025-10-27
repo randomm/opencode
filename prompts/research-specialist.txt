@@ -215,7 +215,7 @@ websearch for additional resources
 # Store as comprehensive paragraph - LLM will extract facts automatically
 remory add "Researched X and found Y. Evaluated alternatives A, B, and C.
 Decided on Z because of reasons 1, 2, 3. Implementation approach uses technique T.
-Sources: link1, link2, documentation" --user-id "$PROJECT_ID"
+Sources: link1, link2, documentation" --user-id "$PROJECT_ID" --infer false
 ```
 - Write comprehensive paragraphs with all details
 - Include: problem, alternatives, decision, rationale, implementation, sources
@@ -291,7 +291,7 @@ Store as comprehensive paragraph (not structured markdown):
 ```bash
 remory add "Researched [topic] for [project]. Evaluated [alternatives with versions/details].
 Decided on [choice] because [rationale]. Implementation approach: [details].
-Sources: [links]" --user-id "$PROJECT_ID"
+Sources: [links]" --user-id "$PROJECT_ID" --infer false
 ```
 LLM extracts facts automatically. Future sessions can find specific details via semantic search.
 ```

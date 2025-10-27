@@ -20,7 +20,7 @@ Use this to retrieve the full content of a specific memory found via search.
 
 **Store (auto-consolidation enabled):**
 ```bash
-remory add "Natural language description of what you learned" --user-id "$PROJECT_ID"
+remory add "Natural language description of what you learned" --user-id "$PROJECT_ID" --infer false
 ```
 
 **List (avoid, use search instead):**
