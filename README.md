@@ -63,7 +63,8 @@ This system implements a **pure orchestration** pattern where specialized AI age
 
 ```
 .
-├── opencode.json           # Agent definitions and tool configurations
+├── opencode.work.json      # Work machine config (Shortcut CLI enabled)
+├── opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
 ├── CLAUDE.md              # Project instructions and conventions
 ├── prompts/               # Individual agent prompt files
 │   ├── project-manager.txt
@@ -86,9 +87,9 @@ This system implements a **pure orchestration** pattern where specialized AI age
 
 ### Machine-Specific Configuration
 
-This configuration supports **machine-specific overlays** for settings that differ between work and personal environments (e.g., Shortcut CLI access).
+This configuration uses **machine-specific configs** to handle different permission requirements between work and personal environments.
 
-**Setup:**
+**REQUIRED Setup (on each machine):**
 
 1. **Work Machine** - Enable Shortcut CLI:
    ```bash
@@ -102,18 +103,20 @@ This configuration supports **machine-specific overlays** for settings that diff
    export OPENCODE_CONFIG=~/.config/opencode/opencode.personal.json
    ```
 
-**How It Works:**
-- `opencode.json` - Base configuration (synced across machines)
-- `opencode.work.json` - Work overlay with `"short *": "allow"` (committed)
-- `opencode.personal.json` - Personal overlay with `"short *": "deny"` (committed)
-- OpenCode loads the custom config via `OPENCODE_CONFIG` which takes precedence
-- Both machines have both overlay files, environment variable determines which loads
+**Important:** You MUST set `OPENCODE_CONFIG` in your shell profile. Without it, OpenCode won't find a configuration file.
 
-**Files:**
-- All overlay files are committed and synced via git
-- Only agent permission blocks are included in overlays (minimal duplication)
-- Base config remains the source of truth for all other settings
-- Set `OPENCODE_CONFIG` once per machine in shell profile
+**How It Works:**
+- No base config - each machine uses its specific config file
+- `opencode.work.json` - Complete config with `"short *": "allow"` for Shortcut CLI
+- `opencode.personal.json` - Complete config with `"short *": "deny"` for Shortcut CLI
+- Both configs are identical except for Shortcut CLI permissions
+- Both files committed and synced via git
+- Environment variable determines which config loads
+
+**Why Two Files:**
+- Avoids confusion from having three nearly identical configs
+- Makes machine-specific differences explicit and clear
+- Each config is complete and standalone
 
 ## 🎯 Core Principles
 

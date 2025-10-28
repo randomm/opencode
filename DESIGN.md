@@ -381,7 +381,8 @@ User: Sees "Performance issue resolved. Login now 150ms (was 1.8s)."
 
 ```
 .
-├── opencode.json                 # Agent definitions, tools, permissions
+├── opencode.work.json            # Work machine config (Shortcut CLI enabled)
+├── opencode.personal.json        # Personal machine config (Shortcut CLI disabled)
 │
 ├── prompts/                      # Agent system prompts
 │   ├── project-manager.txt       # PM orchestration logic
@@ -430,11 +431,11 @@ User: Sees "Performance issue resolved. Login now 150ms (was 1.8s)."
 ### Adding a New Specialist
 
 1. Create prompt file in `prompts/new-specialist.txt`
-2. Define in `opencode.json`:
+2. Define in both config files (opencode.work.json and opencode.personal.json):
    - Description
    - Mode: "subagent"
    - Model: `{env:SUBAGENT_MODEL}`
-   - Permissions (deny git operations)
+   - Permissions (deny git operations, add shortcut CLI permission)
    - Tools needed
 3. Update `project-manager.txt` specialist routing section
 4. Test with PM delegation
@@ -458,7 +459,7 @@ SUBAGENT_MODEL="qwen/qwen3-coder-32b"       # Best cost/performance
 SUBAGENT_MODEL="anthropic/claude-sonnet-4.5" # Maximum quality
 ```
 
-PM always uses Sonnet 4.5 (defined in `opencode.json` as primary agent).
+PM always uses Sonnet 4.5 (defined as primary agent in machine-specific configs).
 
 ---
 

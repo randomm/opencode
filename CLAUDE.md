@@ -10,10 +10,11 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 ### Core Components
 
-1. **Agent Definitions** (`opencode.json`)
-   - Specialized subagents for different development domains
+1. **Agent Definitions** (`opencode.work.json` / `opencode.personal.json`)
+   - Machine-specific configs with specialized subagents for different development domains
    - Each agent has specific tools and prompts tailored to their expertise
    - Agents include: Python, Rust, Git, Rails, React, PostgreSQL, API Design, DevOps, Code Review, and JavaScript/TypeScript specialists
+   - Use `OPENCODE_CONFIG` environment variable to select which config loads
 
 2. **Prompts** (`prompts/`)
    - Domain-specific instruction sets for each agent
@@ -147,5 +148,6 @@ Since this is a configuration repository without active code:
 
 ## Security Considerations
 - Never commit secrets, API keys, or credentials
-- The Perplexity API key and database credentials in opencode.json should be managed securely
+- API keys and database credentials use `{env:VARIABLE}` substitution for security
+- Set sensitive values in shell environment, not in config files
 - Always verify files for malicious content before processing
