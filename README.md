@@ -1,15 +1,72 @@
 # OpenCode AI Agent Configuration
 
-A comprehensive multi-agent development system built on OpenCode with specialized AI architects for different technology domains. This configuration creates a coordinated team of AI specialists that handle complex development workflows through intelligent task delegation and collaboration.
+## Vision: Your Independent AI Delivery Team
+
+This OpenCode configuration is designed as an **independent AI delivery team** that handles complete software development workflows. The key principle: **you stay high-level, the team handles execution details**.
+
+### The Core Experience
+
+```
+You: "Add OAuth authentication with 2FA support"
+
+Project Manager:
+  ├─ Creates GitHub issue with quality checklist
+  ├─ Delegates database schema → @postgres-database-expert
+  ├─ Delegates API design → @api-design-architect
+  ├─ Delegates backend implementation → @python-best-practices-architect
+  ├─ Delegates frontend → @react-frontend-specialist
+  ├─ Delegates testing → Each specialist (TDD enforced)
+  ├─ Delegates code review → @github-pr-reviewer
+  ├─ Delegates git operations → @git-autonomous-agent
+  └─ Delivers: Production-ready feature, tested, reviewed, merged
+
+You: Approve and continue with next high-level task
+```
+
+**You communicate requirements. The team delivers working software.**
 
 ## 🏗️ Architecture Overview
 
-This system implements a **pure orchestration** pattern where specialized AI agents collaborate to deliver high-quality code across multiple technology stacks:
+### Orchestrator-Specialist Pattern
 
-- **Project Manager** (Orchestrator) - Routes tasks to specialists, manages dependencies
-- **Language Specialists** - Python, Rust, JavaScript/TypeScript, Rails architects
-- **Domain Experts** - React frontend, PostgreSQL database, API design specialists  
-- **Operational Agents** - Git autonomous, DevOps infrastructure, code review experts
+Traditional AI coding assistants try to do everything themselves. This configuration separates **coordination** from **execution**:
+
+```
+┌─────────────────────────────────────────────────────┐
+│  User (High-Level Requirements)                      │
+│  "Build feature X with quality Y"                    │
+└────────────────┬────────────────────────────────────┘
+                 │
+                 ▼
+┌─────────────────────────────────────────────────────┐
+│  Project Manager (Orchestrator)                      │
+│  - Understands full context                          │
+│  - Routes to specialists                             │
+│  - Enforces quality gates                            │
+│  - Coordinates dependencies                          │
+│  - Read-only tools: cannot execute, only delegate    │
+└────────────────┬────────────────────────────────────┘
+                 │
+                 ├──────┬──────┬──────┬──────┬────────┐
+                 ▼      ▼      ▼      ▼      ▼        ▼
+          ┌──────────────────────────────────────────────┐
+          │  Specialist Agents (Execution)               │
+          │  - Domain expertise                          │
+          │  - Full execution tools                      │
+          │  - TDD enforcement                           │
+          │  - Quality validation                        │
+          │                                              │
+          │  Python │ Rust │ Rails │ React │ DevOps     │
+          │  Git │ Database │ API │ Code Review         │
+          └──────────────────────────────────────────────┘
+```
+
+**Benefits:**
+- User focuses on WHAT, not HOW
+- Domain expertise in each technology stack
+- Parallel execution across multiple specialists
+- Quality enforcement at orchestration level
+- Context management across domains
 
 ## 🚀 Key Features
 
@@ -33,6 +90,48 @@ This system implements a **pure orchestration** pattern where specialized AI age
 - **All GitHub operations** use `gh` CLI for consistency
 - **Seamless PR workflows** with automated checks and reviews
 - **Integrated CI/CD** monitoring and failure handling
+
+### Permission Boundaries (Security Through Isolation)
+
+**Project Manager (Primary Agent):**
+- Tools: Read, Glob, Grep, WebFetch, TodoWrite, Memory
+- Bash: Memory CLI only (`remory`, `export PROJECT_ID`, etc.)
+- **CANNOT**: Write files, edit code, execute arbitrary bash, run git
+- **Purpose**: Forces proper delegation, maintains orchestration purity
+
+**Specialist Agents (Subagents):**
+- Tools: Full execution (Bash, Read, Write, Edit, etc.)
+- Bash: Everything EXCEPT git write operations
+- **CANNOT**: Git add, commit, push, merge, PR creation
+- **Purpose**: Execute in their domain, delegate git operations
+
+**Git Agent:**
+- Tools: Full bash access for all git/gh CLI operations
+- **Purpose**: Single source of truth for version control
+
+**Review Agents:**
+- Tools: Read-only analysis (no Write/Edit)
+- Bash: Testing commands, linting tools only
+- **Purpose**: Review without altering code
+
+### Model Selection Strategy
+
+**Project Manager: Claude Sonnet 4.5**
+- Superior reasoning for complex coordination
+- Context management across long conversations
+- Quality gate enforcement
+
+**Specialists: Configurable via `SUBAGENT_MODEL`**
+```bash
+# Cost-effective (recommended)
+export SUBAGENT_MODEL="qwen/qwen3-coder-32b"
+
+# Fast and cheap
+export SUBAGENT_MODEL="anthropic/claude-haiku-4"
+
+# Maximum quality
+export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
+```
 
 ## 🤖 Agent Roster
 
@@ -140,9 +239,76 @@ This configuration uses **machine-specific configs** to handle different permiss
 
 ### 4. Agent Boundaries
 - **Project Manager**: Pure orchestration, no execution
-- **Language Agents**: Domain-specific implementation  
+- **Language Agents**: Domain-specific implementation
 - **Git Agent**: All version control operations
 - **DevOps Agent**: Infrastructure and deployment
+
+### 5. Issue-Driven Workflow
+- All work starts with GitHub issue
+- PM creates issue with quality checklist
+- Issue defines exact scope and deliverables
+- Work beyond issue scope is refused
+- Completion = all checkboxes checked
+
+### 6. Memory-Driven Context
+- Project-scoped memory (`PROJECT_ID` per repository)
+- Semantic search for relevant context
+- Cross-session continuity
+- Use `--infer false` to preserve full context without LLM summarization
+
+## 📋 Workflow Patterns
+
+### Pattern 1: Feature Development
+```
+User: "Add dark mode toggle to settings"
+
+PM:
+  1. Creates GitHub issue #42 with quality checklist
+  2. Delegates to @react-frontend-specialist
+     - Implements component with tests
+     - Runs linting and type checking
+     - Achieves 85% test coverage
+  3. Delegates to @git-autonomous-agent
+     - Creates feature branch, commits, pushes
+     - Creates PR
+  4. Delegates to @github-pr-reviewer
+     - Reviews code quality, checks coverage
+     - Approves PR
+  5. Delegates merge to @git-autonomous-agent
+  6. Reports completion to user
+```
+
+### Pattern 2: Multi-Domain Feature
+```
+User: "Add payment processing with Stripe"
+
+PM:
+  1. Creates GitHub issue #56
+  2. Delegates in parallel:
+     - @postgres-database-expert: Schema design
+     - @api-design-architect: API structure
+     - @python-best-practices-architect: Backend logic
+     - @react-frontend-specialist: Payment UI
+  3. Coordinates testing across all layers
+  4. Delegates deployment to @devops-infrastructure
+  5. Standard git workflow and PR review
+```
+
+### Pattern 3: Investigation & Fix
+```
+User: "Why is the login endpoint slow?"
+
+PM:
+  1. Delegates to @research-specialist
+     - Checks database query logs
+     - Identifies N+1 query problem
+  2. Delegates fix to @rails-architect
+     - Implements eager loading
+     - Adds regression tests
+  3. Delegates verification to @devops-infrastructure
+     - Confirms 10x improvement in staging
+  4. Standard git workflow for merge
+```
 
 ## 🛠️ MCP Integrations
 
@@ -183,6 +349,37 @@ All agents have access to enhanced memory operations:
 - **Concurrency**: Multi-agent access vs file locking conflicts
 - **Persistence**: Database transactions vs file system reliability
 - **Scalability**: Horizontal scaling support vs single-process limits
+
+## 📌 When To Use This Configuration
+
+**Ideal for:**
+- Software development projects requiring high quality
+- Multi-domain features (backend + frontend + database + deployment)
+- Teams wanting AI assistance without quality compromise
+- Projects with established quality standards (TDD, linting, coverage)
+- Long-running projects benefiting from institutional memory
+
+**Not ideal for:**
+- Quick prototypes where quality is secondary
+- Single-file scripts or simple tasks
+- Environments without git/GitHub workflow
+- Projects that cannot wait for proper testing
+
+## 🔧 Extending This Configuration
+
+### Adding a New Specialist
+
+1. Create prompt file in `prompts/new-specialist.txt`
+2. Define in both config files (opencode.work.json and opencode.personal.json):
+   - Description, Mode: "subagent", Model: `{env:SUBAGENT_MODEL}`
+   - Permissions (deny git operations, add shortcut CLI permission)
+   - Tools needed
+3. Update `project-manager.txt` specialist routing section
+4. Test with PM delegation
+
+### Customizing Quality Gates
+
+Edit `instructions/quality-gates-reference.md` to adjust coverage requirements, linting tools, or testing requirements. All specialists read this instruction file automatically.
 
 ## 📋 Usage Examples
 
