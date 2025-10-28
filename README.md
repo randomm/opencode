@@ -84,6 +84,37 @@ This system implements a **pure orchestration** pattern where specialized AI age
 └── providers/            # MCP provider configurations
 ```
 
+### Machine-Specific Configuration
+
+This configuration supports **machine-specific overlays** for settings that differ between work and personal environments (e.g., Shortcut CLI access).
+
+**Setup:**
+
+1. **Work Machine** - Enable Shortcut CLI:
+   ```bash
+   # Add to ~/.zshrc or ~/.bashrc
+   export OPENCODE_CONFIG=~/.config/opencode/opencode.work.json
+   ```
+
+2. **Personal Machine** - Disable Shortcut CLI:
+   ```bash
+   # Add to ~/.zshrc or ~/.bashrc
+   export OPENCODE_CONFIG=~/.config/opencode/opencode.personal.json
+   ```
+
+**How It Works:**
+- `opencode.json` - Base configuration (synced across machines)
+- `opencode.work.json` - Work overlay with `"short *": "allow"` (committed)
+- `opencode.personal.json` - Personal overlay with `"short *": "deny"` (committed)
+- OpenCode loads the custom config via `OPENCODE_CONFIG` which takes precedence
+- Both machines have both overlay files, environment variable determines which loads
+
+**Files:**
+- All overlay files are committed and synced via git
+- Only agent permission blocks are included in overlays (minimal duplication)
+- Base config remains the source of truth for all other settings
+- Set `OPENCODE_CONFIG` once per machine in shell profile
+
 ## 🎯 Core Principles
 
 ### 1. Minimalist Engineering
