@@ -76,7 +76,7 @@ When working on specific tasks, use the appropriate agent:
 - `@postgres-database-expert` - Database schema and queries
 - `@aws-rds-postgresql-expert` - AWS RDS Aurora PostgreSQL DBA operations
 - `@api-design-architect` - REST/GraphQL API design
-- `@devops-infrastructure` - CI/CD, Docker, Kubernetes
+- `@devops-infrastructure` - CI/CD, Kubernetes
 - `@code-review-quality` - Security and performance analysis
 - `@github-pr-reviewer` - Comprehensive PR review and feedback
 - `@javascript-typescript-architect` - Full-stack JS/TS development

@@ -558,10 +558,6 @@
           "wc*": "allow",
           "sort*": "allow",
           "uniq*": "allow",
-          "docker ps*": "allow",
-          "docker logs*": "allow",
-          "docker inspect*": "allow",
-          "docker exec*": "allow",
           "git status*": "allow",
           "git log*": "allow",
           "git show*": "allow",
@@ -572,10 +568,6 @@
           "git pull*": "deny",
           "git merge*": "deny",
           "git rebase*": "deny",
-          "docker stop*": "deny",
-          "docker rm*": "deny",
-          "docker restart*": "deny",
-          "docker compose*": "deny",
           "*": "deny"
         }
       }

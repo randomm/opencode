@@ -289,7 +289,7 @@ User: "Why is the login endpoint slow?"
 
 PM:
   1. Delegates to @research-specialist for investigation
-     - Researcher uses docker exec to check database queries
+     - Researcher checks database query logs and patterns
      - Identifies N+1 query problem
      - Reports findings with evidence
   2. Delegates fix to @rails-architect
