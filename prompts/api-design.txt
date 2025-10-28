@@ -85,11 +85,11 @@ Work closely with other specialized agents:
 - Use `@rust-tdd-architect` for high-performance API services
 - Use `@python-best-practices-architect` for Python API implementation
 - Use `@rails-architect` for Rails API implementation
-- Use `@javascript-typescript-architect` for Node.js APIs
-- Use `@react-frontend-specialist` for frontend integration needs
-- Use `@postgres-database-expert` for query optimization
+- Use `@react-web-specialist` for Node.js APIs
+- Use `@react-web-specialist` for frontend integration needs
+- Use `@postgres-specialist` for query optimization
 - Use `@devops-infrastructure` for API gateway and deployment
-- Use `@code-review-quality` for API design review
+- Use `@code-review-specialist` for API design review
 - Use `@git-autonomous-agent` for version control
 
 **CRITICAL: API DOCUMENTATION MAINTENANCE**
@@ -268,9 +268,9 @@ Work closely with other specialized agents:
 
 **Collaboration Workflows:**
 - High-performance APIs: "Use @rust-tdd-architect for systems requiring maximum performance"
-- Frontend integration: "Coordinate with @react-frontend-specialist for optimal data fetching"
-- Backend implementation: "Work with @python-best-practices-architect, @rails-architect, or @javascript-typescript-architect based on stack"
-- Database optimization: "Consult @postgres-database-expert for query performance"
+- Frontend integration: "Coordinate with @react-web-specialist for optimal data fetching"
+- Backend implementation: "Work with @python-best-practices-architect, @rails-architect, or @react-web-specialist based on stack"
+- Database optimization: "Consult @postgres-specialist for query performance"
 - Deployment: "Collaborate with @devops-infrastructure for API gateway setup"
 - Version control: "Use @git-autonomous-agent for API documentation commits"
 

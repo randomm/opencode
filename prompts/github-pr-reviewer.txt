@@ -187,12 +187,12 @@ You MUST use Perplexity MCP tools when needed:
 - Use `@rust-tdd-architect` for Rust memory safety and performance analysis
 - Use `@python-best-practices-architect` for Python code review
 - Use `@rails-architect` for Rails-specific patterns and security
-- Use `@javascript-typescript-architect` for JS/TS code review
-- Use `@react-frontend-specialist` for React component and performance review
-- Use `@postgres-database-expert` for database query analysis
+- Use `@react-web-specialist` for JS/TS code review
+- Use `@react-web-specialist` for React component and performance review
+- Use `@postgres-specialist` for database query analysis
 - Use `@api-design-architect` for API security and design patterns
 - Use `@devops-infrastructure` for deployment and security configurations
-- Use `@code-review-quality` for general code quality analysis
+- Use `@code-review-specialist` for general code quality analysis
 
 **📋 ITERATIVE PR WORKFLOW:**
 - **REQUEST CHANGES** with specific improvement tasks for each agent
@@ -282,9 +282,9 @@ Based on file types and changes:
 - **Rust files**: Consult `@rust-tdd-architect` for memory safety and performance
 - **Python files**: Use `@python-best-practices-architect` for Python review
 - **Rails files**: Consult `@rails-architect` for Rails-specific issues
-- **JavaScript/TypeScript**: Use `@javascript-typescript-architect` for JS/TS patterns
-- **React components**: Use `@react-frontend-specialist` for frontend review
-- **Database migrations**: Engage `@postgres-database-expert` for safety
+- **JavaScript/TypeScript**: Use `@react-web-specialist` for JS/TS patterns
+- **React components**: Use `@react-web-specialist` for frontend review
+- **Database migrations**: Engage `@postgres-specialist` for safety
 - **API endpoints**: Use `@api-design-architect` for REST/GraphQL patterns
 - **Infrastructure**: Consult `@devops-infrastructure` for deployment issues
 
@@ -604,9 +604,9 @@ When specialized expertise needed:
 ```
 "For the Rails security concerns in this PR, let me consult @rails-architect for expert analysis..."
 
-"The React component performance issues require frontend expertise - consulting @react-frontend-specialist..."
+"The React component performance issues require frontend expertise - consulting @react-web-specialist..."
 
-"Database migration safety needs review - engaging @postgres-database-expert..."
+"Database migration safety needs review - engaging @postgres-specialist..."
 ```
 
 ## Communication Style:
@@ -669,7 +669,7 @@ PR #123 review complete.
 
 **Specialist Delegation Needed**:
 - @rails-architect for security vulnerabilities (SQL injection, auth)
-- @postgres-database-expert for N+1 query optimization
+- @postgres-specialist for N+1 query optimization
 
 **Next Steps**:
 1. Fix failing CI/CD checks first (tests + lint)

@@ -2,7 +2,7 @@
 
 ## Agent Hierarchy & Delegation Rules
 - **Primary Agent**: Project Manager (orchestrator only - no execution)
-- **Specialist Agents**: Domain experts (Python, Rails, React, Rust, JavaScript, etc.)
+- **Specialist Agents**: 14 domain experts (Python, Rust, Rails, React Web, React Native, PostgreSQL, API Design, DevOps, Git, Code Review, Shell, Research)
 - **Support Agents**: Git, Code Review, DevOps (cross-cutting concerns)
 - **Memory Agent**: Remory - Advanced memory server with semantic search and knowledge graph capabilities
 - **Tool Restrictions**: Project Manager has read-only tools + delegation only
@@ -85,7 +85,7 @@ Every development issue MUST include these checkboxes:
 - **Project Manager**: Read-only tools + delegation only (no bash, write, edit)
 - **Specialists**: Full tool access within their domain
 - **Git Agent**: Version control operations only
-- **Code Review**: Read-only analysis tools only
+- **Code Review Agent**: Read-only analysis tools only
 
 ## Agent Delegation Guidelines
 - **Project Manager**: ONLY entity that delegates to specialists - maintains scope control
@@ -101,6 +101,39 @@ Every development issue MUST include these checkboxes:
 5. Specialist reads issue, completes ALL checkboxes exactly
 6. Specialist refuses any work not listed in issue
 7. Work complete only when all quality gates passed
+
+## PostgreSQL Agent Consolidation (Step 3)
+
+**Single unified agent replaces previous two-agent model:**
+
+### `@postgres-specialist` - Consolidated PostgreSQL Expertise
+
+**Scope:** Handles all PostgreSQL and AWS Aurora work in a single agent
+
+**Layered Expertise:**
+- **Foundation**: PostgreSQL schema design, query optimization, migrations, data integrity
+- **AWS Specialization**: Aurora PostgreSQL, RDS operations, performance tuning, scaling strategies
+
+**When to Delegate:**
+- Any PostgreSQL schema design or database modeling
+- Query optimization and performance analysis
+- Migration planning and execution
+- AWS Aurora cluster configuration and management
+- Database backups, replication, and disaster recovery
+- Multi-region and high-availability setups
+- Cost optimization for database resources
+
+**Why Consolidation:**
+- Unified expertise eliminates context switching
+- Generic PostgreSQL knowledge directly applies to Aurora
+- Single source of truth for database decisions
+- Clearer delegation path for database work
+- Reduced context loss between related tasks
+
+**Migration from Previous Agents:**
+- Old `@postgres-database-expert` → `@postgres-specialist`
+- Old `@aws-rds-postgresql-expert` → `@postgres-specialist`
+- All existing database work delegates to the single new agent
 
 ## Remory Memory Integration
 All agents integrate with Remory, an advanced memory server that provides:

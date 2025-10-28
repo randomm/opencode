@@ -11,12 +11,12 @@ You: "Add OAuth authentication with 2FA support"
 
 Project Manager:
   ├─ Creates GitHub issue with quality checklist
-  ├─ Delegates database schema → @postgres-database-expert
+  ├─ Delegates database schema → @postgres-specialist
   ├─ Delegates API design → @api-design-architect
   ├─ Delegates backend implementation → @python-best-practices-architect
-  ├─ Delegates frontend → @react-frontend-specialist
+   ├─ Delegates frontend → @react-web-specialist or @react-native-mobile-specialist
   ├─ Delegates testing → Each specialist (TDD enforced)
-  ├─ Delegates code review → @github-pr-reviewer
+   ├─ Delegates code review → @code-review-specialist
   ├─ Delegates git operations → @git-autonomous-agent
   └─ Delivers: Production-ready feature, tested, reviewed, merged
 
@@ -56,8 +56,8 @@ Traditional AI coding assistants try to do everything themselves. This configura
           │  - TDD enforcement                           │
           │  - Quality validation                        │
           │                                              │
-          │  Python │ Rust │ Rails │ React │ DevOps     │
-          │  Git │ Database │ API │ Code Review         │
+   │  Python │ Rust │ Rails │ Web/Mobile │ DevOps     │
+           │  Git │ Database │ API │ Code Review         │
           └──────────────────────────────────────────────┘
 ```
 
@@ -109,7 +109,7 @@ Traditional AI coding assistants try to do everything themselves. This configura
 - Tools: Full bash access for all git/gh CLI operations
 - **Purpose**: Single source of truth for version control
 
-**Review Agents:**
+**Code Review Agent:**
 - Tools: Read-only analysis (no Write/Edit)
 - Bash: Testing commands, linting tools only
 - **Purpose**: Review without altering code
@@ -141,45 +141,48 @@ export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 ### Language Architects (TDD Focused)
 - **`python-best-practices-architect`** - Python with pytest, mypy, black
 - **`rust-tdd-architect`** - Zero-cost abstractions, memory safety, cargo tools
-- **`javascript-typescript-architect`** - Minimalist JS/TS, built-in APIs first
 - **`rails-architect`** - Rails conventions, RSpec, security best practices
 - **`shell-script-architect`** - POSIX-first shell scripting, BATS testing, portability
 - **`research-specialist`** - Technical investigation, problem analysis, Perplexity research
 
+### Frontend Specialists (Platform-Based)
+- **`react-web-specialist`** - React/TypeScript/JavaScript web apps, responsive UI, performance optimization
+- **`react-native-mobile-specialist`** - Expo and React Native mobile apps, cross-platform development
+
 ### Domain Specialists
-- **`react-frontend-specialist`** - Component architecture, accessibility, performance
-- **`postgres-database-expert`** - Schema design, query optimization, migrations
-- **`aws-rds-postgresql-expert`** - Aurora PostgreSQL DBA operations
+- **`postgres-specialist`** - PostgreSQL schema design, query optimization, migrations, AWS Aurora expertise
 - **`api-design-architect`** - RESTful design, GraphQL, API security
 
 ### Operations & Quality
 - **`git-autonomous-agent`** - Version control, branching, PR management
 - **`devops-infrastructure`** - CI/CD, Kubernetes, monitoring
-- **`code-review-quality`** - Security analysis, performance review
-- **`github-pr-reviewer`** - Comprehensive PR analysis and feedback
+- **`code-review-specialist`** - Security analysis, performance review, GitHub PR workflows
 
 ## 🔧 Configuration Structure
 
 ```
-.
-├── opencode.work.json      # Work machine config (Shortcut CLI enabled)
-├── opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
+opencode.work.json      # Work machine config (Shortcut CLI enabled)
+opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
 ├── CLAUDE.md              # Project instructions and conventions
 ├── prompts/               # Individual agent prompt files
 │   ├── project-manager.txt
 │   ├── python-best-practices.txt
 │   ├── rust-tdd-architect.txt
-│   ├── javascript-typescript.txt
 │   ├── rails-architect.txt
-│   ├── react-frontend.txt
-│   ├── postgres-database.txt
+│   ├── react-web-specialist.txt
+│   ├── react-native-mobile-specialist.txt
+│   ├── postgres-specialist.txt
 │   ├── api-design.txt
 │   ├── git-autonomous.txt
 │   ├── devops-infrastructure.txt
-│   └── ...
+│   ├── shell-script-architect.txt
+│   ├── research-specialist.txt
+│   └── code-review-specialist.txt
 ├── instructions/          # Global development standards
 │   ├── commit-all-changes.md
-│   ├── test-driven-development.md
+│   ├── github-workflow-mandatory.md
+│   ├── memory-protocol-mandatory.md
+│   ├── quality-gates-reference.md
 │   └── no-unsolicited-files.md
 └── providers/            # MCP provider configurations
 ```
@@ -216,6 +219,26 @@ This configuration uses **machine-specific configs** to handle different permiss
 - Avoids confusion from having three nearly identical configs
 - Makes machine-specific differences explicit and clear
 - Each config is complete and standalone
+
+## 🌐 Frontend Agent Separation
+
+The frontend development has been consolidated into two platform-specialized agents:
+
+- **`react-web-specialist`** - For browser-based React applications
+  - React/TypeScript/JavaScript web apps
+  - Responsive UI and performance optimization
+  - Single Page Applications (SPAs)
+  - Server-side rendering with Node.js
+  - Web accessibility (a11y)
+
+- **`react-native-mobile-specialist`** - For cross-platform mobile applications
+  - Expo and React Native development
+  - iOS and Android application development
+  - Cross-platform code sharing
+  - Native module integration
+  - Mobile-specific performance optimization
+
+**Delegation Rule:** Choose the agent based on the target platform (web browser vs. mobile), not the underlying technology.
 
 ## 🎯 Core Principles
 
@@ -258,24 +281,24 @@ This configuration uses **machine-specific configs** to handle different permiss
 
 ## 📋 Workflow Patterns
 
-### Pattern 1: Feature Development
+### Pattern 1: Feature Development (Web)
 ```
 User: "Add dark mode toggle to settings"
 
 PM:
-  1. Creates GitHub issue #42 with quality checklist
-  2. Delegates to @react-frontend-specialist
-     - Implements component with tests
-     - Runs linting and type checking
-     - Achieves 85% test coverage
-  3. Delegates to @git-autonomous-agent
-     - Creates feature branch, commits, pushes
-     - Creates PR
-  4. Delegates to @github-pr-reviewer
-     - Reviews code quality, checks coverage
-     - Approves PR
-  5. Delegates merge to @git-autonomous-agent
-  6. Reports completion to user
+   1. Creates GitHub issue #42 with quality checklist
+   2. Delegates to @react-web-specialist
+      - Implements component with tests
+      - Runs linting and type checking
+      - Achieves 85% test coverage
+   3. Delegates to @git-autonomous-agent
+      - Creates feature branch, commits, pushes
+      - Creates PR
+    4. Delegates to @code-review-specialist
+       - Reviews code quality, checks coverage
+       - Approves PR
+    5. Delegates merge to @git-autonomous-agent
+    6. Reports completion to user
 ```
 
 ### Pattern 2: Multi-Domain Feature
@@ -283,15 +306,15 @@ PM:
 User: "Add payment processing with Stripe"
 
 PM:
-  1. Creates GitHub issue #56
-  2. Delegates in parallel:
-     - @postgres-database-expert: Schema design
-     - @api-design-architect: API structure
-     - @python-best-practices-architect: Backend logic
-     - @react-frontend-specialist: Payment UI
-  3. Coordinates testing across all layers
-  4. Delegates deployment to @devops-infrastructure
-  5. Standard git workflow and PR review
+   1. Creates GitHub issue #56
+   2. Delegates in parallel:
+      - @postgres-specialist: Schema design
+      - @api-design-architect: API structure
+      - @python-best-practices-architect: Backend logic
+      - @react-web-specialist: Payment UI (web) or @react-native-mobile-specialist: Payment UI (mobile)
+   3. Coordinates testing across all layers
+   4. Delegates deployment to @devops-infrastructure
+   5. Standard git workflow and PR review
 ```
 
 ### Pattern 3: Investigation & Fix
@@ -387,13 +410,13 @@ Edit `instructions/quality-gates-reference.md` to adjust coverage requirements, 
 ```
 User: "Add user authentication with OAuth and 2FA"
 Project Manager: 
-  1. Routes database schema to @postgres-database-expert
-  2. Routes API design to @api-design-architect  
-  3. Routes backend logic to @python-best-practices-architect
-  4. Routes frontend to @react-frontend-specialist
-  5. Routes deployment to @devops-infrastructure
-  6. Coordinates testing across all layers
-  7. Delegates final commit to @git-autonomous-agent
+   1. Routes database schema to @postgres-specialist
+   2. Routes API design to @api-design-architect  
+   3. Routes backend logic to @python-best-practices-architect
+   4. Routes frontend to @react-web-specialist (web) or @react-native-mobile-specialist (mobile)
+   5. Routes deployment to @devops-infrastructure
+   6. Coordinates testing across all layers
+   7. Delegates final commit to @git-autonomous-agent
 ```
 
 ### Bug Investigation
@@ -403,7 +426,7 @@ Project Manager:
   1. Routes to @devops-infrastructure for deployment check
   2. Routes to @git-autonomous-agent for recent changes
   3. Routes to @python-best-practices-architect for backend debug
-  4. Routes to @postgres-database-expert for query analysis
+  4. Routes to @postgres-specialist for query analysis
   5. Coordinates fix across impacted systems
 ```
 

@@ -182,14 +182,10 @@ Every commit MUST:
 - ❌ **NEVER** fix import errors, syntax issues, or any language-specific problems
 - **ONLY**: Report code quality issues to @project-manager for proper delegation
 
-**@postgres-database-expert**:
+**@postgres-specialist**:
 - ✅ Database schema, queries, migrations, performance
 - ✅ SQL syntax errors, indexing problems, query optimization
-- ❌ NEVER application code, frontend components, infrastructure
-- ❌ NEVER Python, JavaScript, Ruby, or other language code
-
-**@aws-rds-postgresql-expert**:
-- ✅ AWS RDS/Aurora PostgreSQL infrastructure
+- ✅ AWS RDS/Aurora PostgreSQL infrastructure and operations
 - ✅ Cloud database performance, scaling, monitoring
 - ❌ NEVER application code, frontend components
 - ❌ NEVER Python, JavaScript, Ruby, or other language code

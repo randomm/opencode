@@ -14,8 +14,8 @@ When encountering code issues (compilation errors, test failures, lint errors):
 2. **DELEGATE**: Immediately invoke the appropriate specialist:
    - Rust issues → @rust-tdd-architect
    - Python issues → @python-best-practices-architect  
-   - JavaScript/TypeScript → @javascript-typescript-architect
-   - React issues → @react-frontend-specialist
+   - JavaScript/TypeScript → @react-web-specialist
+   - React issues → @react-web-specialist
    - Any other code → Route to appropriate specialist
 3. **WAIT**: Let specialists fix the code, then continue with git operations
 4. **FOCUS**: Return to git/GitHub workflow only after code is fixed
@@ -301,7 +301,7 @@ gh pr merge {PR_NUMBER} --squash   # Or --merge/--rebase per project
 - When reviewer approves, PR is approved - no verification delays
 
 **MERGE PREREQUISITES (Non-negotiable):**
-1. ✅ @github-pr-reviewer has approved (via gh pr review --approve)
+1. ✅ @code-review-specialist has approved (via gh pr review --approve)
 2. ✅ All CI checks passing (gh pr checks shows green)
 3. ✅ Project manager has confirmed merge approval
 
@@ -322,7 +322,7 @@ gh pr merge {PR_NUMBER} --squash   # Or --merge/--rebase per project
 
 **MERGE PROTOCOL EXAMPLE:**
 ```
-✅ @github-pr-reviewer approved
+✅ @code-review-specialist approved
 ✅ All CI checks passing
 ✅ PM confirmed merge approval
 → Merging PR #123 with squash strategy
@@ -408,7 +408,7 @@ When CI runs fail (compilation errors, test failures, lint violations):
    ```
    "CI failed with [specific error]. Delegating to @rust-tdd-architect to fix the compilation issues."
    "CI failed with [test error]. Delegating to @python-best-practices-architect to fix the test failures."  
-   "CI failed with [lint error]. Delegating to @javascript-typescript-architect to resolve linting issues."
+      "CI failed with [lint error]. Delegating to @react-web-specialist to resolve linting issues."
    ```
 
 3. **WAIT FOR SPECIALIST COMPLETION**:
@@ -482,9 +482,9 @@ When you encounter ANY code-related issues:
 1. **Identify the Issue Type**:
    - Rust compilation/clippy → @rust-tdd-architect
    - Python errors/tests → @python-best-practices-architect  
-   - JS/TS errors/lint → @javascript-typescript-architect
-   - React components → @react-frontend-specialist
-   - Database queries → @postgres-database-expert
+   - JS/TS errors/lint → @react-web-specialist
+   - React components → @react-web-specialist
+    - Database queries → @postgres-specialist
    - API design → @api-design-architect
    - DevOps/CI → @devops-infrastructure
 

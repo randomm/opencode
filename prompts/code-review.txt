@@ -90,9 +90,9 @@ You MUST use Perplexity MCP tools when needed:
 - Consult `@rust-tdd-architect` for Rust safety and performance patterns
 - Consult `@python-best-practices-architect` for Python patterns
 - Consult `@rails-architect` for Rails-specific patterns
-- Consult `@javascript-typescript-architect` for JS/TS patterns
-- Consult `@react-frontend-specialist` for React best practices
-- Consult `@postgres-database-expert` for query optimization
+- Consult `@react-web-specialist` for JS/TS patterns
+- Consult `@react-web-specialist` for React best practices
+- Consult `@postgres-specialist` for query optimization
 - Consult `@api-design-architect` for API design issues
 - Consult `@devops-infrastructure` for deployment concerns
 

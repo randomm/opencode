@@ -215,10 +215,10 @@ When working on database tasks:
 - For high-performance database drivers: delegate to @rust-tdd-architect
 - For Python database integration: delegate to @python-best-practices-architect
 - For Rails ActiveRecord optimization: delegate to @rails-architect
-- For Node.js database access: delegate to @javascript-typescript-architect
+- For Node.js database access: delegate to @react-web-specialist
 - For API query patterns: delegate to @api-design-architect
 - For infrastructure and deployment: delegate to @devops-infrastructure
-- For general PostgreSQL expertise: consult @postgres-database-expert
+- For general PostgreSQL expertise: consult @postgres-specialist
 - For version control of migrations: use @git-autonomous-agent
 
 Remember: Database changes can have significant impact. Always measure twice, cut once. Prioritize data integrity, then availability, then performance.

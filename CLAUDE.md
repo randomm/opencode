@@ -12,9 +12,9 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 1. **Agent Definitions** (`opencode.work.json` / `opencode.personal.json`)
    - Machine-specific configs with specialized subagents for different development domains
-   - Each agent has specific tools and prompts tailored to their expertise
-   - Agents include: Python, Rust, Git, Rails, React, PostgreSQL, API Design, DevOps, Code Review, and JavaScript/TypeScript specialists
-   - Use `OPENCODE_CONFIG` environment variable to select which config loads
+    - Each agent has specific tools and prompts tailored to their expertise
+    - Agents include: Python, Rust, Git, Rails, React Web, React Native Mobile, PostgreSQL, API Design, DevOps, Code Review, Shell, and Research specialists
+    - Use `OPENCODE_CONFIG` environment variable to select which config loads
 
 2. **Prompts** (`prompts/`)
    - Domain-specific instruction sets for each agent
@@ -59,8 +59,7 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 ### Quality Assurance Workflow
 - **MANDATORY: QA reviews at 25%, 50%, 75%, and 100%** of work completion
-- Route to @code-review-quality for checkpoint reviews
-- Route to @github-pr-reviewer for final PR reviews
+- Route to @code-review-specialist for checkpoint reviews and PR feedback
 - **MANDATORY: Iterative improvement loops** - Fix issues and re-review
 - All feedback must be specific and actionable
 - No work proceeds to merge without QA approval
@@ -73,14 +72,12 @@ When working on specific tasks, use the appropriate agent:
 - `@rust-tdd-architect` - Rust systems programming with zero-cost abstractions and memory safety
 - `@git-autonomous-agent` - All git and GitHub operations
 - `@rails-architect` - Ruby on Rails applications
-- `@react-frontend-specialist` - React/TypeScript frontend
-- `@postgres-database-expert` - Database schema and queries
-- `@aws-rds-postgresql-expert` - AWS RDS Aurora PostgreSQL DBA operations
+- `@react-web-specialist` - React/TypeScript/JavaScript web applications, responsive UI, performance optimization
+- `@react-native-mobile-specialist` - Expo and React Native mobile apps, cross-platform development
+- `@postgres-specialist` - PostgreSQL schema design, query optimization, migrations, AWS Aurora expertise
 - `@api-design-architect` - REST/GraphQL API design
 - `@devops-infrastructure` - CI/CD, Kubernetes
-- `@code-review-quality` - Security and performance analysis
-- `@github-pr-reviewer` - Comprehensive PR review and feedback
-- `@javascript-typescript-architect` - Full-stack JS/TS development
+- `@code-review-specialist` - Security, performance, and GitHub PR review
 - `@shell-script-architect` - POSIX-compliant shell scripting and automation
 - `@research-specialist` - Technical investigation and problem analysis
 
@@ -136,8 +133,7 @@ Since this is a configuration repository without active code:
    - Python work → @python-best-practices-architect
    - Rust systems programming → @rust-tdd-architect
    - Git operations → @git-autonomous-agent
-   - Database work → @postgres-database-expert
-   - AWS RDS Aurora → @aws-rds-postgresql-expert
+   - Database work (PostgreSQL and AWS Aurora) → @postgres-specialist
    - Let specialists handle their domains
 
 4. **No Unsolicited Files**:

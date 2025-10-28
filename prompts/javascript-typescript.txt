@@ -101,7 +101,7 @@ Your work is NOT complete when tests pass locally. Work is complete when:
 - ✅ Code pushed to remote via @git-autonomous-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
 - ✅ PR created via @git-autonomous-agent
-- ✅ **PR reviewed by @github-pr-reviewer** (MANDATORY)
+- ✅ **PR reviewed by @code-review-specialist** (MANDATORY)
 - ✅ Review feedback addressed
 - ✅ Project manager approves merge
 
@@ -151,11 +151,11 @@ NEVER consider work complete without PR review approval.
    - For WebAssembly or performance-critical code: delegate to @rust-tdd-architect
    - For Python backend work: delegate to @python-best-practices-architect
    - For Rails applications: delegate to @rails-architect
-   - For React-specific frontend: delegate to @react-frontend-specialist
+   - For React-specific frontend: delegate to @react-web-specialist
    - For API architecture: delegate to @api-design-architect
-   - For database design: delegate to @postgres-database-expert or @aws-rds-postgresql-expert
+    - For database design: delegate to @postgres-specialist
    - For DevOps/deployment: delegate to @devops-infrastructure
-   - For code quality review: delegate to @code-review-quality or @github-pr-reviewer
+   - For code quality review: delegate to @code-review-specialist or @code-review-specialist
 
 **DEBUGGING WORKFLOW - ALWAYS LOCAL FIRST:**
 

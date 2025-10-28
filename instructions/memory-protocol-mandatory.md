@@ -4,7 +4,7 @@
 
 ## Core Principle
 
-The MCP memory server is the **primary mechanism for continuity** across:
+Remory is the **primary mechanism for continuity** across:
 - Agent sessions (same agent, different invocations)
 - Agent handoffs (different agents, same project)
 - Project evolution (knowledge accumulation over time)
@@ -17,25 +17,16 @@ Every agent MUST use memory as their external persistent brain for project conte
 
 **REQUIRED AT SESSION START:**
 
-1. **For MCP Memory Tool (most agents):**
-   ```
-   # MCP tool automatically handles user IDs, no PROJECT_ID needed
-   mcp_memory_search_nodes("project_name project context architecture")
-   mcp_memory_search_nodes("project_name current work active tasks")
-   mcp_memory_search_nodes("project_name session state")
-   ```
+Use Remory CLI for all memory operations:
+```bash
+remory search "project context" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
+remory search "project_id current work" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
+remory search "project_id domain-specific context" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
+```
 
-2. **For Remory CLI (project-manager agent ONLY):**
-   ```bash
-   remory search "project context" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
-   ```
+**CRITICAL:** Use inline `$(cat .project-id ...)` pattern. DO NOT use separate `export PROJECT_ID=...` commands as environment variables don't persist between bash tool invocations.
 
-   **CRITICAL:** Use inline `$(cat .project-id ...)` pattern in `--user-id` argument. DO NOT use separate `export PROJECT_ID=...` commands as environment variables don't persist between bash tool invocations.
-
-3. **Search Domain-Specific Context (MANDATORY - PER AGENT TYPE):**
-   - Each agent searches for their domain-specific memories
-   - Examples in agent-specific sections below
-   - Leverage Remory's semantic search for pattern matching
+See `instructions/remory-cli-reference.md` for quick command reference.
 
 **PROHIBITION:**
 - NEVER begin work without searching project memory first
@@ -72,39 +63,20 @@ Every agent MUST use memory as their external persistent brain for project conte
 
 **REQUIRED BEFORE COMPLETION:**
 
-1. **Store Work Outcomes:**
-   ```
-   mcp_memory_create_entities([{
-     "name": "${PROJECT_ID}_<DOMAIN>_<DESCRIPTION>",
-     "entityType": "${PROJECT_ID}_<CATEGORY>",
-     "observations": [
-       "Project: ${PROJECT_ID}",
-       "Agent: <agent-name>",
-       "Task: <task-description>",
-       "Outcome: <what-was-accomplished>",
-       "Lessons: <what-was-learned>",
-       "Timestamp: <ISO-8601-datetime>"
-     ]
-   }])
-   ```
+Store work outcomes using Remory CLI:
+```bash
+remory add "Project: ${PROJECT_ID}. Agent: <agent-name>. Task: <task-description>. 
+Outcome: <what-was-accomplished>. Lessons: <what-was-learned>. 
+Successful approaches: <patterns>. Blockers: <any issues encountered>." \
+--user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
+```
 
-2. **Update Session State:**
-   ```
-   mcp_memory_add_observations({
-     "entityName": "${PROJECT_ID}_session_state",
-     "observations": [
-       "Last work: <brief-description>",
-       "Status: <current-project-status>",
-       "Next focus: <what-comes-next>"
-     ]
-   })
-   ```
-
-3. **Document Patterns (if applicable):**
-   - Successful approaches for similar future tasks
-   - Anti-patterns to avoid
-   - Integration patterns with other agents
-   - Performance optimizations discovered
+Document in storage:
+- Successful approaches for similar future tasks
+- Anti-patterns to avoid
+- Integration patterns with other agents
+- Problems solved and solutions implemented
+- Performance optimizations discovered
 
 **PROHIBITION:**
 - NEVER complete work without storing findings
@@ -118,38 +90,24 @@ Every agent MUST use memory as their external persistent brain for project conte
 **ALL memory operations MUST use project-scoped identifiers:**
 
 ```
-Entity Names: ${PROJECT_ID}_<component>_<description>
-Entity Types: ${PROJECT_ID}_<category>
 Search Queries: ${PROJECT_ID} <context>
+Memory Content: "Project: ${PROJECT_ID}. [Details]"
 ```
 
-**Examples:**
+**Examples of memory content:**
 ```
-myapp_python_testing_config
-myapp_ci_cd_pipeline
-blog_site_deployment_strategy
-api_service_database_schema
+Project: myapp. Python testing configuration...
+Project: myapp. CI/CD pipeline setup...
+Project: blog_site. Deployment strategy...
+Project: api_service. Database schema design...
 ```
 
-### Universal Entity Categories
-
-Available for all agents (with PROJECT_ID prefix):
-
-- `_project_context` - Overall project architecture and state
-- `_session_state` - Current session focus and active work
-- `_architectural_decision` - Design choices and rationale
-- `_integration_pattern` - Cross-component coordination
-- `_lessons_learned` - Problems solved and patterns discovered
-- `_active_tasks` - Current work items and dependencies
-- `_agent_handoff` - Context passed between agents
-- `_quality_gate_result` - Test/lint/review outcomes
-
-### Remory-Specific Capabilities
+### Remory Capabilities
 
 Leverage Remory's advanced features:
 
 1. **Semantic Search:** Find relevant patterns even with different wording
-2. **Knowledge Graph:** Track complex relationships between entities
+2. **Knowledge Graph:** Track complex relationships between memories
 3. **LLM Consolidation:** Automatically organize similar memories
 4. **Conflict Resolution:** Intelligently merge conflicting observations
 5. **Multi-Agent Concurrency:** Safe parallel access across agents
@@ -159,10 +117,10 @@ Leverage Remory's advanced features:
 ### Primary Agent (project-manager)
 
 **SEARCH FOR:**
-- `${PROJECT_ID}_delegation_patterns` - Successful routing decisions
-- `${PROJECT_ID}_coordination_history` - Multi-agent workflows
-- `${PROJECT_ID}_quality_gate_results` - Testing/linting outcomes
-- `${PROJECT_ID}_agent_performance` - Specialist effectiveness
+- Delegation patterns and successful routing decisions
+- Multi-agent coordination history and workflows
+- Quality gate results and testing/linting outcomes
+- Agent performance and specialist effectiveness
 
 **STORE:**
 - Every delegation decision with rationale
@@ -173,10 +131,10 @@ Leverage Remory's advanced features:
 ### Specialist Agents (All Subagents)
 
 **SEARCH FOR:**
-- `${PROJECT_ID}_<domain>_config` - Domain-specific configuration
-- `${PROJECT_ID}_<domain>_patterns` - Proven approaches
-- `${PROJECT_ID}_<domain>_issues` - Known problems and solutions
-- `${PROJECT_ID}_agent_handoff` - Context from previous agents
+- Domain-specific configuration and setup
+- Proven approaches and patterns for your domain
+- Known problems and solutions encountered
+- Context from previous agents working on this project
 
 **STORE:**
 - Domain-specific configurations and decisions

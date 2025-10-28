@@ -2,10 +2,10 @@
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
     "instructions/memory-protocol-mandatory.md",
-    "instructions/commit-all-changes.md",
-    "instructions/no-unsolicited-files.md",
-    "instructions/github-workflow-mandatory.md",
-    "instructions/quality-gates-reference.md"
+    "instructions/workflow-standards.md",
+    "instructions/agent-responsibilities.md",
+    "instructions/quality-standards.md",
+    "instructions/remory-cli-reference.md"
   ],
   "agent": {
     "project-manager": {
@@ -157,11 +157,11 @@
         "mcp_perplexity_ask": true
       }
     },
-    "react-frontend-specialist": {
-      "description": "Minimalist React/TypeScript specialist focused on essential components",
+    "react-native-mobile-specialist": {
+      "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/react-frontend.txt}",
+      "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
       "permission": {
         "bash": {
           "short *": "deny",
@@ -208,11 +208,11 @@
         "mcp_perplexity_ask": true
       }
     },
-    "expo-react-native-architect": {
-      "description": "Expo and React Native expert for iOS/Android cross-platform mobile development with Expo SDK, React Navigation, and native modules",
+    "react-web-specialist": {
+      "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/expo-react-native-architect.txt}",
+      "prompt": "{file:prompts/react-web-specialist.txt}",
       "permission": {
         "bash": {
           "short *": "deny",
@@ -259,11 +259,11 @@
         "mcp_perplexity_ask": true
       }
     },
-    "postgres-database-expert": {
-      "description": "PostgreSQL expert for schema design, query optimization, and migrations",
+    "postgres-specialist": {
+      "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/postgres-database.txt}",
+      "prompt": "{file:prompts/postgres-specialist.txt}",
       "permission": {
         "bash": {
           "short *": "deny",
@@ -305,62 +305,6 @@
         "write": true,
         "edit": true,
         "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true,
-        "mcp_fuzu_metabase_query": true,
-        "mcp_fuzu_production_query": true,
-        "mcp_fuzu_staging_query": true,
-        "mcp_barona_production_query": true
-      }
-    },
-    "aws-rds-postgresql-expert": {
-      "description": "AWS RDS Aurora PostgreSQL expert DBA for cloud-native database architecture, performance tuning, and operations",
-      "mode": "subagent",
-      "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/aws-rds-postgresql.txt}",
-      "permission": {
-        "bash": {
-          "short *": "deny",
-          "git add*": "deny",
-          "git commit*": "deny",
-          "git push*": "deny",
-          "git pull*": "deny",
-          "git merge*": "deny",
-          "git rebase*": "deny",
-          "git reset*": "deny",
-          "git revert*": "deny",
-          "git checkout*": "deny",
-          "git switch*": "deny",
-          "git branch*": "deny",
-          "git tag*": "deny",
-          "git remote*": "deny",
-          "git clone*": "deny",
-          "git cherry-pick*": "deny",
-          "git stash*": "deny",
-          "git apply*": "deny",
-          "git am*": "deny",
-          "gh pr create*": "deny",
-          "gh pr merge*": "deny",
-          "gh pr close*": "deny",
-          "gh pr edit*": "deny",
-          "gh issue create*": "deny",
-          "gh issue close*": "deny",
-          "gh issue edit*": "deny",
-          "pulumi *": "deny",
-          "*": "allow"
-        }
-      },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "webfetch": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true,
         "mcp_fuzu_metabase_query": true,
@@ -473,38 +417,11 @@
         "mcp_perplexity_ask": true
       }
     },
-    "code-review-quality": {
-      "description": "Code review expert for security, performance, and quality analysis",
+    "code-review-specialist": {
+      "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/code-review.txt}",
-      "permission": {
-        "bash": {
-          "short *": "deny",
-          "remory *": "allow",
-          "export PROJECT_ID=*": "allow",
-          "cat .project-id*": "allow",
-          "uuidgen*": "allow",
-          "echo*": "allow",
-          "tee*": "allow",
-          "*": "deny"
-        }
-      },
-      "tools": {
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
-    },
-    "github-pr-reviewer": {
-      "description": "GitHub PR review agent for comprehensive code analysis and automated feedback",
-      "mode": "subagent",
-      "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/github-pr-reviewer.txt}",
+      "prompt": "{file:prompts/code-review-specialist.txt}",
       "permission": {
         "edit": "deny",
         "bash": {
@@ -540,6 +457,14 @@
           "export PROJECT_ID=*": "allow",
           "uuidgen*": "allow",
           "tee*": "allow",
+          "rg*": "allow",
+          "find*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git diff*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -565,57 +490,6 @@
         "write": false,
         "edit": false,
         "multiedit": false,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
-    },
-    "javascript-typescript-architect": {
-      "description": "Minimalist JS/TS architect - builds ABSOLUTE MINIMUM using memory-driven TDD, researches native alternatives via Perplexity",
-      "mode": "subagent",
-      "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/javascript-typescript.txt}",
-      "permission": {
-        "bash": {
-          "short *": "deny",
-          "git add*": "deny",
-          "git commit*": "deny",
-          "git push*": "deny",
-          "git pull*": "deny",
-          "git merge*": "deny",
-          "git rebase*": "deny",
-          "git reset*": "deny",
-          "git revert*": "deny",
-          "git checkout*": "deny",
-          "git switch*": "deny",
-          "git branch*": "deny",
-          "git tag*": "deny",
-          "git remote*": "deny",
-          "git clone*": "deny",
-          "git cherry-pick*": "deny",
-          "git stash*": "deny",
-          "git apply*": "deny",
-          "git am*": "deny",
-          "gh pr create*": "deny",
-          "gh pr merge*": "deny",
-          "gh pr close*": "deny",
-          "gh pr edit*": "deny",
-          "gh issue create*": "deny",
-          "gh issue close*": "deny",
-          "gh issue edit*": "deny",
-          "pulumi *": "deny",
-          "*": "allow"
-        }
-      },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
         "todowrite": true,
         "mcp_perplexity_research": true,
         "mcp_perplexity_ask": true
