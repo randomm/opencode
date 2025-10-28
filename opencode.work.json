@@ -5,7 +5,8 @@
     "instructions/commit-all-changes.md",
     "instructions/no-unsolicited-files.md",
     "instructions/github-workflow-mandatory.md",
-    "instructions/quality-gates-reference.md"
+    "instructions/quality-gates-reference.md",
+    "instructions/shortcut-cli-awareness.md"
   ],
   "agent": {
     "project-manager": {
@@ -21,6 +22,10 @@
           "echo*": "allow",
           "tee*": "allow",
           "short *": "allow",
+          "gh issue view*": "allow",
+          "gh issue list*": "allow",
+          "gh issue create*": "allow",
+          "gh issue edit*": "allow",
           "*": "deny"
         },
         "write": "deny",
