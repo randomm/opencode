@@ -17,18 +17,20 @@ Every agent MUST use memory as their external persistent brain for project conte
 
 **REQUIRED AT SESSION START:**
 
-1. **Detect Project ID:**
-   ```bash
-   PROJECT_ID=$(basename $(pwd))
-   # Or from git: basename $(git remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//')
+1. **For MCP Memory Tool (most agents):**
+   ```
+   # MCP tool automatically handles user IDs, no PROJECT_ID needed
+   mcp_memory_search_nodes("project_name project context architecture")
+   mcp_memory_search_nodes("project_name current work active tasks")
+   mcp_memory_search_nodes("project_name session state")
    ```
 
-2. **Search Project Context (MANDATORY - ALL AGENTS):**
+2. **For Remory CLI (project-manager agent ONLY):**
+   ```bash
+   remory search "project context" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
    ```
-   mcp_memory_search_nodes("${PROJECT_ID} project context architecture")
-   mcp_memory_search_nodes("${PROJECT_ID} current work active tasks")
-   mcp_memory_search_nodes("${PROJECT_ID} session state")
-   ```
+
+   **CRITICAL:** Use inline `$(cat .project-id ...)` pattern in `--user-id` argument. DO NOT use separate `export PROJECT_ID=...` commands as environment variables don't persist between bash tool invocations.
 
 3. **Search Domain-Specific Context (MANDATORY - PER AGENT TYPE):**
    - Each agent searches for their domain-specific memories

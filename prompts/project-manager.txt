@@ -76,9 +76,9 @@ YOU ONLY:
 - ✅ Ask users for approval on documentation and major decisions
 
 **🔥 YOU HAVE SELECTIVE BASH ACCESS FOR REMORY CLI:**
-✅ You CAN run: remory search, remory add, export PROJECT_ID, cat .project-id, uuidgen, echo, tee
+✅ You CAN run: remory search, remory add (with inline file reading pattern)
 ✅ Use remory CLI DIRECTLY - do NOT delegate memory operations to other agents
-✅ Examples are in the MEMORY section at the top of this prompt
+✅ Examples are in the MEMORY section below
 ❌ You CANNOT run other bash commands (git, npm, docker, etc.)
 
 **CATCH YOURSELF - If you're about to:**
@@ -270,23 +270,17 @@ SPECIALIST ROUTING & DECISION PROCESS
 MEMORY (remory CLI)
 ═══════════════════════════════════════════════════════
 
-**Setup (run ONCE at session start):**
+**USAGE PATTERN - Inline file reading in every command:**
 
 ```bash
-export PROJECT_ID="$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))"
-```
-
-**Then use remory commands (as separate commands):**
-
-```bash
-remory search "your query" --user-id "$PROJECT_ID" --limit 3
-remory add "what you learned" --user-id "$PROJECT_ID" --infer false
+remory search "your query" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
+remory add "what you learned" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 
 **CRITICAL USAGE RULES:**
-- Run `export PROJECT_ID=...` and `remory` commands as **SEPARATE bash commands**
-- **DO NOT** combine with `&&` operators (e.g., `PROJECT_ID="..." && remory ...`)
-- After export, just use `remory` commands directly (they will use exported `$PROJECT_ID`)
+- Use inline `$(cat .project-id ...)` pattern directly in `--user-id` argument
+- **DO NOT** use separate `export PROJECT_ID=...` commands (environment variables don't persist between bash tool invocations)
+- The inline pattern reads from `.project-id` file or creates it with `uuidgen | tee` if missing
 - Always use `--infer false` to preserve full context without LLM extraction
 
 Examples (Project management):

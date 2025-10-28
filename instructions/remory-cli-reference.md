@@ -2,30 +2,27 @@
 
 ## Quick Commands
 
-**Project ID (once per session):**
-```bash
-export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
-```
+**IMPORTANT:** Use inline file reading pattern for `--user-id`. Environment variables don't persist between bash tool invocations.
 
 **Search (semantic, use this primarily):**
 ```bash
-remory search "query about project" --user-id "$PROJECT_ID" --limit 5
+remory search "query about project" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 5
 ```
 
 **Get (retrieve full memory by ID):**
 ```bash
-remory get --user-id "$PROJECT_ID" <memory-id>
+remory get --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" <memory-id>
 ```
 Use this to retrieve the full content of a specific memory found via search.
 
 **Store (auto-consolidation enabled):**
 ```bash
-remory add "Natural language description of what you learned" --user-id "$PROJECT_ID" --infer false
+remory add "Natural language description of what you learned" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 
 **List (avoid, use search instead):**
 ```bash
-remory list --user-id "$PROJECT_ID" --limit 20
+remory list --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 20
 ```
 
 ## When to Remember
