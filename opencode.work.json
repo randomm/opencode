@@ -31,17 +31,18 @@
         "write": "deny",
         "edit": "deny"
       },
-      "tools": {
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "webfetch": true,
-        "websearch": true,
-        "todowrite": true
-      }
-    },
-    "python-best-practices-architect": {
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "webfetch": true,
+         "websearch": true,
+         "todowrite": true
+       }
+     },
+     "python-best-practices-architect": {
       "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
