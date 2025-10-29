@@ -60,13 +60,22 @@ remory search "contribution guidelines workflow conventions" --user-id "$PROJECT
 PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
 ═══════════════════════════════════════════════════════
 
-**MANDATORY - Discover and read:**
+**MANDATORY - Discover and read (Priority Order):**
 
-1. **CLAUDE.md** - Project-specific instructions for AI agents
-2. **README.md** - Project overview and setup
-3. **Project workflow and contribution guidelines** - Figure out how this project operates
-   - Common files: CONTRIBUTING.md, CODE_OF_CONDUCT.md, docs/contributing.md, .github/CONTRIBUTING.md
-   - Use Read, Glob, or Grep as needed to discover what exists
+1. **README.md** - Project overview and setup
+   - Pattern: `README.md` (root), `docs/README.md`
+   - This is your primary source of project understanding
+
+2. **Project-specific AI/agent instructions** - If they exist:
+   - Patterns to discover: `CLAUDE.md`, `AGENTS.md`, `.claude/**/*.md`, `.github/AGENT*.md`
+   - These define how AI agents should work with this project
+   - Use Glob: Look for `CLAUDE.md` OR `AGENTS.md` OR patterns in `.claude/` OR `.github/`
+   - Example: `glob: "CLAUDE.md"` or `glob: "AGENTS.md"` or `glob: ".claude/**/*.md"` or `glob: ".github/AGENT*.md"`
+   - **Don't assume these exist** - skip if not found
+
+3. **Project workflow and contribution guidelines:**
+   - Patterns to discover: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/contributing.md`, `.github/CONTRIBUTING.md`
+   - Use Glob: `CONTRIBUTING.md` or `glob: "docs/contributing.md"` or `glob: ".github/CONTRIBUTING.md"`
    - These files define:
      - Commit message conventions
      - PR process and review requirements
@@ -74,20 +83,74 @@ PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
      - Quality gates and testing requirements
      - Branch naming and workflow
    - **CRITICAL**: You must understand the workflow before doing any work
+   - If found: Read in full. If not found: Proceed with assumptions from AGENTS.md
 
-**OPTIONAL - Discover if they exist:**
+**OPTIONAL - Discover if they exist (Priority Order):**
 
-4. **Testing conventions** - Examples: TESTING.md, docs/testing.md, test/README.md
-5. **Architecture documentation** - Examples: ARCHITECTURE.md, docs/architecture.md, docs/design.md
-6. **Coding standards** - Examples: STANDARDS.md, docs/conventions.md, style-guide.md
+4. **Testing conventions:**
+   - Patterns: `TESTING.md`, `docs/testing.md`, `test/README.md`, `tests/README.md`
+   - Use Glob: `TESTING.md` or `glob: "docs/testing.md"` or `glob: "test{s,}/README.md"`
+   - Defines test requirements, coverage targets, testing approach
 
-**Approach:**
-- Be intelligent - use appropriate discovery tools (Read, Glob, Grep)
-- Try common filenames first, then search if needed
-- Read what exists, skip what doesn't
-- Projects structure documentation differently - adapt to what you find
+5. **Architecture and technical documentation:**
+   - Patterns: `ARCHITECTURE.md`, `docs/architecture.md`, `docs/design.md`, `docs/technical-specification.md`
+   - Use Glob: `glob: "docs/{architecture,design,technical-specification}.md"` or `ARCHITECTURE.md`
+   - Explains system design, patterns, technical decisions
 
-**Use Glob/Read/Grep tools only** - No bash commands for reading files
+6. **Coding standards and conventions:**
+   - Patterns: `STANDARDS.md`, `docs/conventions.md`, `style-guide.md`, `.editorconfig`
+   - Use Glob: `glob: "docs/conventions.md"` or `STANDARDS.md`
+   - Defines language-specific standards, naming, formatting
+
+7. **GitHub-specific documentation:**
+   - Patterns: `.github/*.md` (EXCLUDE workflow files in `.github/workflows/`)
+   - Examples: `AGENT_PROTOCOLS.md`, `CI_IMPLEMENTATION_SUMMARY.md`, `CI_MONITORING_PROTOCOLS.md`
+   - Use Glob: `glob: ".github/*.md"` (skip `.github/workflows/`)
+   - Contains agent coordination patterns, CI/CD documentation
+
+8. **Infrastructure patterns** (for DevOps/infrastructure projects):
+   - Check for these directories: `config/`, `lib/`, `scripts/`
+   - Use List: Check if directories exist with `list: "config/"`, `list: "lib/"`, `list: "scripts/"`
+   - If 2+ directories exist: Note "Infrastructure project - review configs"
+   - Pattern examples: `docs/blue-green-deployment.md`, `docs/s3-setup-guide.md`
+
+**Discovery Approach (Use These Tools):**
+
+1. **Start with mandatory files:**
+   ```
+   Read: README.md
+   Glob: "CLAUDE.md" (if missing, try "AGENTS.md")
+   Glob: "CONTRIBUTING.md"
+   ```
+
+2. **Check for agent-specific documentation:**
+   ```
+   Glob: ".claude/**/*.md"
+   Glob: ".github/AGENT*.md" or ".github/CI*.md" (exclude workflows/)
+   ```
+
+3. **Discover documentation directories:**
+   ```
+   List: docs/
+   If exists, Glob: "docs/*.md"
+   Prioritize: docs/contributing.md, docs/testing.md, docs/architecture.md
+   ```
+
+4. **Check for infrastructure patterns:**
+   ```
+   List: config/, lib/, scripts/
+   If 2+ exist: Note "Infrastructure project - review deployment configs"
+   ```
+
+**File Discovery Order:**
+1. README.md (mandatory)
+2. AGENTS.md or CLAUDE.md (try both - if neither exists, continue)
+3. CONTRIBUTING.md (mandatory for workflow)
+4. docs/*.md (prioritize: testing, architecture, technical-specification)
+5. .github/*.md excluding workflows/ (if present)
+6. .claude/**/*.md (if present)
+
+**Use Glob/Read/List tools only** - No bash commands for reading files
 
 ═══════════════════════════════════════════════════════
 PHASE 3: GITHUB CONTEXT (DELEGATION REQUIRED)
@@ -171,7 +234,7 @@ PHASE 5: SUCCESS VERIFICATION & SUMMARY
 **SESSION READY CHECKLIST:**
 - [x] PROJECT_ID established
 - [x] Memory searched with specific queries
-- [x] Documentation reviewed (README, CLAUDE.md, conventions)
+- [x] Documentation reviewed (README, agent instructions if present, conventions)
 - [x] GitHub context gathered via @git-autonomous-agent
 - [x] All context stored in memory with --infer false
 - [x] TodoWrite tracking complete
@@ -229,7 +292,9 @@ CRITICAL RULES
 - Use GitHub API directly (https://api.github.com)
 - Use WebFetch for GitHub data
 - Use Perplexity for local project information
-- Use hardcoded filenames - use Glob patterns to discover files
+- **Use hardcoded filenames** - ALWAYS use Glob patterns to discover files (e.g., don't assume CLAUDE.md exists)
+- Assume documentation structure - adapt to what the project actually has
+- Skip files that don't exist - read what's there, not what you expect
 - Skip memory storage - it's MANDATORY for session continuity
 
 ═══════════════════════════════════════════════════════
