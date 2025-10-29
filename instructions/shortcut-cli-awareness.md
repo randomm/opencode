@@ -75,29 +75,95 @@ ALL version control operations go to @git-autonomous-agent:
 ### Example Commands
 
 ```bash
-# Search for stories by keyword
-short search "authentication"
-short search "bug payment"
+# Search for stories with filters (efficient)
+short search "authentication" --owner "@me" --state "in-progress"
+short search "payment" --type "bug" --project "backend" --state "started"
+
+# Or create workspace for repeated use
+short search "authentication" --owner "@me" -S "my-auth-work"
+short workspace "my-auth-work"  # Then reuse this
 
 # View specific story
 short story sc-45678
 
-# List epics (filtered by state)
-short epics --state started
-short epics --state unstarted
+# List epics with filters (avoid listing all epics)
+short epics --started              # Only active epics
+short epics --title "Authentication" # Specific epic by name
+short epics --completed            # Only completed epics
 
-# List projects
-short projects
+# List projects (usually OK, but can filter)
+short projects --title "backend"   # Specific project
+short projects                     # Projects are typically small list
 
 # View saved workspace query
 short workspace "current sprint"
 short workspace "bugs backlog"
+short workspace -l                 # List all saved workspaces
 
 # Create GitHub issue from Shortcut story
 short story sc-45678 --format="%i: %t" | \
   xargs -I {} gh issue create --title "{}" \
   --body "Shortcut Story: sc-45678"
 ```
+
+## Performance & Context Efficiency
+
+**CRITICAL:** Some Shortcut CLI operations can consume large amounts of context. Follow these patterns:
+
+### ✅ Context-Efficient Patterns
+
+**Direct Lookups (Most Efficient):**
+```bash
+short story sc-45678        # Single story by ID
+short epic epic-123         # Single epic by ID
+```
+
+**Workspaces (Highly Efficient - Reusable):**
+```bash
+# Create once (saves search locally)
+short search -o "@me" -s "in-progress" -S "my-current-work"
+
+# Use repeatedly (no repeated API calls)
+short workspace "my-current-work"
+short workspace -l  # List all saved workspaces
+```
+
+**Filtered Searches:**
+```bash
+short search --owner "@me" --state "in-progress"
+short search --project "backend" --state "review"
+short epics --started
+short projects --title "auth"
+```
+
+### ❌ Context-Consuming Anti-Patterns (AVOID)
+
+**Never do these - they dump large result sets:**
+```bash
+# ❌ AVOID: Broad text searches without filters
+short search "authentication"     # Could return 100+ stories
+short search "bug"                # Way too many results
+
+# ❌ AVOID: Unfiltered listings
+short epics                       # Lists ALL epics (including archived)
+short members                     # Lists ALL team members
+
+# ❌ AVOID: Very broad filter combinations
+short search --state "in-progress"  # All in-progress (could be 50+ stories)
+```
+
+### Search Operator Reference
+
+Use these official Shortcut search operators to narrow results:
+
+- `-o, --owner [name]` - Stories assigned to person (use `@me` for yourself)
+- `-s, --state [name]` - Filter by workflow state
+- `-p, --project [id|name]` - Filter by project
+- `--epic [id|name]` - Filter by epic
+- `-t, --text [name]` - Text search in title
+- `-y, --type [name]` - Filter by type (feature/bug/chore)
+- `-l, --label [name]` - Filter by label
+- `-i, --iteration [name]` - Filter by sprint/iteration
 
 ## Research Specialist Support
 
@@ -180,6 +246,36 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 4. Both systems can track the same work
 ```
 
+### Workspace Best Practices
+
+**Workspaces are the PRIMARY pattern for repeated queries.** They save complex searches locally and avoid repeated API calls.
+
+**Setup Pattern (Do This First):**
+```bash
+# Create workspaces for your common queries
+short search -o "@me" -s "in-progress" -S "my-active-work"
+short search -o "@me" -s "review" -S "needs-my-review"
+short search --epic "authentication" -s "started" -S "auth-work"
+short search -p "backend" --type "bug" -S "backend-bugs"
+
+# List all your workspaces
+short workspace -l
+```
+
+**Daily Usage (Efficient):**
+```bash
+short workspace "my-active-work"
+short workspace "needs-my-review"
+short workspace "auth-work"
+```
+
+**Why Workspaces are Critical:**
+- ✅ Saved locally - no API call needed
+- ✅ Complex filters stored once
+- ✅ Consistent results across sessions
+- ✅ Minimal context consumption
+- ✅ Can be shared in documentation
+
 ## Shortcut ↔ GitHub Integration Best Practices
 
 ### Story Reference Format
@@ -213,22 +309,45 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### Query Optimization
 
-**Use specific search terms:**
+**Best practice: Use filters, not broad text searches**
+
 ```bash
-# Good: Specific keywords
-short search "OAuth authentication bug"
+# 🏆 BEST: Workspaces for frequent searches (most efficient)
+short workspace "my-active-work"     # Pre-filtered, saved locally
 
-# Less effective: Too broad
-short search "authentication"
+# ✅ EXCELLENT: Filters only (no text search)
+short search --owner "@me" --state "in-progress"
+short search --project "backend" --state "review"
 
-# Targeted: Use filters
-short search "payment" --state started --owner "@me"
+# ✅ GOOD: Text search WITH filters
+short search "OAuth" --owner "@me" --state "started"
+short search "payment bug" --project "backend"
+
+# ⚠️ OK but less efficient: Text search with some filters
+short search "authentication bug" --state "started"
+
+# ❌ AVOID: Broad text searches (context-consuming)
+short search "authentication"        # Could return 100+ results
+short search "bug"                   # Way too many results
+short search "feature"               # Extremely broad
+
+# ❌ AVOID: Very broad single filters
+short search --state "in-progress"   # Could be 50+ stories
 ```
 
-**Store frequently used queries as workspaces in Shortcut UI, then:**
+**Workspace Setup (One-Time Cost, Infinite Reuse):**
 ```bash
+# Create workspaces for common queries
+short search -o "@me" -s "in-progress" -S "my-current-work"
+short search --epic "User Management" -s "started" -S "auth-epic"
+short search -p "backend" -s "review" -S "backend-reviews"
+
+# List all saved workspaces
+short workspace -l
+
+# Use workspaces (efficient)
 short workspace "my-current-work"
-short workspace "team-bugs"
+short workspace "auth-epic"
 ```
 
 ### Memory Storage Best Practices
