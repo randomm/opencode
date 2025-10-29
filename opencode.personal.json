@@ -12,15 +12,24 @@
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
-      "permission": {
-        "bash": {
-          "remory *": "allow",
-          "short *": "deny",
-          "*": "deny"
+        "permission": {
+          "bash": {
+            "remory *": "allow",
+            "export PROJECT_ID=*": "allow",
+            "cat .project-id*": "allow",
+            "uuidgen*": "allow",
+            "echo*": "allow",
+            "tee*": "allow",
+            "gh issue view*": "allow",
+            "gh issue list*": "allow",
+            "gh issue create*": "allow",
+            "gh issue edit*": "allow",
+            "short *": "deny",
+            "*": "deny"
+          },
+          "write": "deny",
+          "edit": "deny"
         },
-        "write": "deny",
-        "edit": "deny"
-      },
        "tools": {
          "bash": true,
          "glob": true,
