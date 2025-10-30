@@ -29,7 +29,7 @@ The PM can manage GitHub issues directly for:
 
 ### What PM Still Delegates to Git Agent
 
-ALL version control operations go to @git-autonomous-agent:
+ALL version control operations go to @git-agent:
 - Git operations: commit, push, pull, branch, merge, rebase
 - Pull requests: gh pr create, gh pr merge, gh pr review
 - CI monitoring: gh run watch, gh run view
@@ -66,7 +66,7 @@ ALL version control operations go to @git-autonomous-agent:
 
 8. Specialist implements with tests, following GitHub issue
 
-9. @git-autonomous-agent: Creates commits
+9. @git-agent: Creates commits
    → Includes both references: "feat(#123): add OAuth [sc-45678]"
 
 10. PM: Updates Shortcut manually or notes completion
@@ -204,7 +204,7 @@ Use these official Shortcut search operators to narrow results:
 
 ## Git Autonomous Agent Integration
 
-**@git-autonomous-agent** has `short` CLI access for commit linking.
+**@git-agent** has `short` CLI access for commit linking.
 
 ### When to Use Short CLI
 
@@ -400,7 +400,7 @@ PM: Thank you @research-specialist. Delegating implementation to
 
 PYTHON: [Receives GitHub issue #123]
         [Implements OAuth with tests]
-        [Delegates to @git-autonomous-agent for commit]
+        [Delegates to @git-agent for commit]
 
 GIT: [Receives implementation]
      [Executes: short story sc-45678 to verify]
@@ -504,9 +504,9 @@ Git agent: Adds both references to commit message
 
 ### Project Manager Must Delegate
 
-- All `git` commands → @git-autonomous-agent
-- All `gh pr` commands → @git-autonomous-agent
-- All `gh run` commands → @git-autonomous-agent
+- All `git` commands → @git-agent
+- All `gh pr` commands → @git-agent
+- All `gh run` commands → @git-agent
 - Code implementation → Specialist agents
 
 ### Research Specialist Can Use

@@ -27,7 +27,7 @@ Prefer search over list. See: instructions/remory-cli-reference.md
 - **VALIDATE**: Thorough analysis and comprehensive feedback before completion
 
 **Issue Integration Protocol:**
-1. **START**: Check for existing issue or create new one via @git-autonomous-agent
+1. **START**: Check for existing issue or create new one via @git-agent
 2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
 3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
 4. **COMPLETION**: Close issue with summary of work completed
@@ -60,7 +60,7 @@ The Project Manager invokes you via Task tool and only sees your **final return 
 **Wrong:** Review → `cat << 'EOF' [review1]` → `cat << 'EOF' [review2]` → Multiple redundant reports (PM never sees, tokens wasted)
 
 **🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
+When delegating to @git-agent, specify these requirements:
 - **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
 - **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
 - **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
@@ -101,7 +101,7 @@ You MUST use Perplexity MCP tools when needed:
 - **Delegate fixes** to appropriate specialists: "Route X issue to @python-best-practices-architect"
 - **Schedule follow-up review** after fixes are implemented
 - **Document quality improvements** achieved through iteration
-- Use `@git-autonomous-agent` for creating review comments
+- Use `@git-agent` for creating review comments
 
 **Core Review Responsibilities:**
 
@@ -275,7 +275,7 @@ You MUST use Perplexity MCP tools when needed:
 - For language-specific issues: "Consult @[relevant-agent] for expert opinion"
 - For security concerns: "Critical security issue - immediate attention required"
 - For architectural issues: "Broader refactoring needed - consult team"
-- After review: "Use @git-autonomous-agent to create PR review comments"
+- After review: "Use @git-agent to create PR review comments"
 
 **Communication Style:**
 - Be constructive and specific

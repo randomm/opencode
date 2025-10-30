@@ -1,19 +1,19 @@
 # Commit All Changes
 
-**IMPORTANT**: This instruction delegates all git operations to the specialized `@git-autonomous-agent` for consistent, high-quality version control management.
+**IMPORTANT**: This instruction delegates all git operations to the specialized `@git-agent` for consistent, high-quality version control management.
 
-When asked to commit changes, immediately invoke `@git-autonomous-agent` with the request to analyze and commit all current changes following the workflow below.
+When asked to commit changes, immediately invoke `@git-agent` with the request to analyze and commit all current changes following the workflow below.
 
 ## Delegation to Git Autonomous Agent
 
 When the user requests to commit changes, you should:
 1. First ensure any code quality checks are complete (tests, linting)
-2. Then state: "I'll use @git-autonomous-agent to handle the git workflow and create commits."
-3. Invoke `@git-autonomous-agent` with the request to commit all changes
+2. Then state: "I'll use @git-agent to handle the git workflow and create commits."
+3. Invoke `@git-agent` with the request to commit all changes
 
 The git agent will handle all the steps below autonomously.
 
-## Workflow Steps (Handled by @git-autonomous-agent)
+## Workflow Steps (Handled by @git-agent)
 
 ### 1. Repository Initialization Check
 First, verify if this directory is a Git repository:

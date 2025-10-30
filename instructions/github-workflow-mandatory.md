@@ -4,7 +4,7 @@
 **EXCEPTION: Pure research/analysis tasks can be delegated directly without GitHub issues.**
 
 **GITHUB OPERATIONS: Use `gh` CLI exclusively** (never browser, never API calls)
-**PROJECT MANAGER**: Delegate ALL GitHub operations to @git-autonomous-agent (including read-only checks)
+**PROJECT MANAGER**: Delegate ALL GitHub operations to @git-agent (including read-only checks)
 - `gh issue view/list` - Checking if issues exist
 - `gh issue create` - Creating issues
 - `gh pr view/list/create` - PR operations
@@ -33,13 +33,13 @@
 ### **💻 DEVELOPMENT TASKS (GITHUB ISSUE MANDATORY):**
 
 ### **1. NO DEVELOPMENT WITHOUT GITHUB ISSUE**
-- **BEFORE ANY DEVELOPMENT**: Delegate to @git-autonomous-agent to verify GitHub issue exists
-- **IF NO ISSUE**: @git-autonomous-agent will create issue via gh CLI
+- **BEFORE ANY DEVELOPMENT**: Delegate to @git-agent to verify GitHub issue exists
+- **IF NO ISSUE**: @git-agent will create issue via gh CLI
 - **REFUSE ALL DEVELOPMENT WORK** without proper GitHub issue tracking
 - **INCLUDE ISSUE REFERENCE** in all commits and communications
 
 **PROJECT MANAGER NOTE:** You have NO bash access and cannot run `gh` commands directly.
-Always delegate GitHub verification and operations to @git-autonomous-agent.
+Always delegate GitHub verification and operations to @git-agent.
 
 ### **2. FEATURE BRANCH WORKFLOW MANDATORY**
 - **NEVER work directly in main branch**
@@ -50,13 +50,13 @@ Always delegate GitHub verification and operations to @git-autonomous-agent.
 ### **3. DEVELOPMENT WORKFLOW ENFORCEMENT STEPS**
 
 **PROJECT MANAGER WORKFLOW:**
-1. **DELEGATE ISSUE VERIFICATION**: Ask @git-autonomous-agent to check if GitHub issue exists
-2. **WAIT FOR RESPONSE**: If no issue, @git-autonomous-agent creates one
+1. **DELEGATE ISSUE VERIFICATION**: Ask @git-agent to check if GitHub issue exists
+2. **WAIT FOR RESPONSE**: If no issue, @git-agent creates one
 3. **DELEGATE WORK**: Once issue confirmed, delegate to appropriate specialist
 4. **WAIT FOR COMPLETION**: Specialist implements in feature branch
-5. **DELEGATE PR CREATION**: @git-autonomous-agent creates PR
-6. **DELEGATE CI CHECK**: @git-autonomous-agent monitors CI status
-7. **DECLARE SUCCESS**: Only after CI green and @git-autonomous-agent confirms
+5. **DELEGATE PR CREATION**: @git-agent creates PR
+6. **DELEGATE CI CHECK**: @git-agent monitors CI status
+7. **DECLARE SUCCESS**: Only after CI green and @git-agent confirms
 
 **DEVELOPMENT AGENT WORKFLOW:**
 1. **RECEIVE TASK**: From project manager with issue number
@@ -78,7 +78,7 @@ Development agents MUST check for violations before starting DEVELOPMENT work:
 
 **RESPONSE TO VIOLATIONS:**
 - **STOP ALL WORK** immediately
-- **DELEGATE TO @git-autonomous-agent** to fix workflow
+- **DELEGATE TO @git-agent** to fix workflow
 - **DO NOT PROCEED** until proper workflow established
 
 ### **5. GITHUB ISSUE REQUIREMENTS**
@@ -121,13 +121,13 @@ Every commit MUST:
 
 **For Project Manager:**
 - **YOU HAVE NO BASH ACCESS** - Cannot run `gh` commands directly
-- **DEVELOPMENT tasks**: Delegate to @git-autonomous-agent to verify/create GitHub issue FIRST
+- **DEVELOPMENT tasks**: Delegate to @git-agent to verify/create GitHub issue FIRST
 - **RESEARCH tasks**: Delegate directly to appropriate specialist (no issue needed)
-- **ALL GITHUB OPERATIONS**: Delegate to @git-autonomous-agent (issues, PRs, CI checks)
-- Wait for @git-autonomous-agent confirmation before proceeding with work delegation
+- **ALL GITHUB OPERATIONS**: Delegate to @git-agent (issues, PRs, CI checks)
+- Wait for @git-agent confirmation before proceeding with work delegation
 - Ensure agents follow feature branch workflow for development
-- Delegate CI monitoring to @git-autonomous-agent before declaring completion
-- Coordinate PR creation through @git-autonomous-agent
+- Delegate CI monitoring to @git-agent before declaring completion
+- Coordinate PR creation through @git-agent
 - **ENFORCE SPECIALIST DOMAIN RESTRICTIONS** - redirect cross-domain work to appropriate specialists
 - **COORDINATE MULTI-DOMAIN TASKS** - plan sequential delegation for cross-cutting features
 

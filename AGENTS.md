@@ -90,12 +90,12 @@ Every development issue MUST include these checkboxes:
 ## Agent Delegation Guidelines
 - **Project Manager**: ONLY entity that delegates to specialists - maintains scope control
 - **All Specialists**: Report discoveries to project manager (NO direct specialist-to-specialist delegation)
-- **Exception**: Git operations only - all agents can delegate git work to @git-autonomous-agent
+- **Exception**: Git operations only - all agents can delegate git work to @git-agent
 - **Scope Control**: Project manager decides whether to expand work based on discoveries
 
 ## Quality Enforcement Flow
 1. Project Manager receives user request
-2. Project Manager delegates to @git-autonomous-agent for issue creation with quality template
+2. Project Manager delegates to @git-agent for issue creation with quality template
 3. **🚨 CRITICAL: Git agent enforces main branch protection - blocks all operations on main, auto-creates feature branch**
 4. Project Manager delegates to appropriate specialist with issue number
 5. Specialist reads issue, completes ALL checkboxes exactly

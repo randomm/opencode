@@ -17,7 +17,7 @@ Project Manager:
    ├─ Delegates frontend → @react-web-specialist or @react-native-mobile-specialist
   ├─ Delegates testing → Each specialist (TDD enforced)
    ├─ Delegates code review → @code-review-specialist
-  ├─ Delegates git operations → @git-autonomous-agent
+    ├─ Delegates git operations → @git-agent
   └─ Delivers: Production-ready feature, tested, reviewed, merged
 
 You: Approve and continue with next high-level task
@@ -154,7 +154,7 @@ export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 - **`api-design-architect`** - RESTful design, GraphQL, API security
 
 ### Operations & Quality
-- **`git-autonomous-agent`** - Version control, branching, PR management
+- **`git-agent`** - Version control, branching, PR management
 - **`devops-infrastructure`** - CI/CD, Kubernetes, monitoring
 - **`code-review-specialist`** - Security analysis, performance review, GitHub PR workflows
 
@@ -173,7 +173,7 @@ opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
 │   ├── react-native-mobile-specialist.txt
 │   ├── postgres-specialist.txt
 │   ├── api-design.txt
-│   ├── git-autonomous.txt
+│   ├── git-agent.txt
 │   ├── devops-infrastructure.txt
 │   ├── shell-script-architect.txt
 │   ├── research-specialist.txt
@@ -258,7 +258,7 @@ The frontend development has been consolidated into two platform-specialized age
 - Run ALL linting and type checking
 - Execute complete test suites
 - Fix ALL issues before git operations
-- **Delegate git operations** to @git-autonomous-agent
+   - **Delegate git operations** to @git-agent
 
 ### 4. Agent Boundaries
 - **Project Manager**: Pure orchestration, no execution
@@ -290,14 +290,14 @@ PM:
    2. Delegates to @react-web-specialist
       - Implements component with tests
       - Runs linting and type checking
-      - Achieves 85% test coverage
-   3. Delegates to @git-autonomous-agent
-      - Creates feature branch, commits, pushes
-      - Creates PR
-    4. Delegates to @code-review-specialist
-       - Reviews code quality, checks coverage
-       - Approves PR
-    5. Delegates merge to @git-autonomous-agent
+       - Achieves 85% test coverage
+    3. Delegates to @git-agent
+       - Creates feature branch, commits, pushes
+       - Creates PR
+     4. Delegates to @code-review-specialist
+        - Reviews code quality, checks coverage
+        - Approves PR
+     5. Delegates merge to @git-agent
     6. Reports completion to user
 ```
 
@@ -415,16 +415,16 @@ Project Manager:
    3. Routes backend logic to @python-best-practices-architect
    4. Routes frontend to @react-web-specialist (web) or @react-native-mobile-specialist (mobile)
    5. Routes deployment to @devops-infrastructure
-   6. Coordinates testing across all layers
-   7. Delegates final commit to @git-autonomous-agent
+    6. Coordinates testing across all layers
+    7. Delegates final commit to @git-agent
 ```
 
 ### Bug Investigation
 ```
 User: "Login failing in production"
 Project Manager:
-  1. Routes to @devops-infrastructure for deployment check
-  2. Routes to @git-autonomous-agent for recent changes
+   1. Routes to @devops-infrastructure for deployment check
+   2. Routes to @git-agent for recent changes
   3. Routes to @python-best-practices-architect for backend debug
   4. Routes to @postgres-specialist for query analysis
   5. Coordinates fix across impacted systems

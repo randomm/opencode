@@ -92,11 +92,11 @@
         "mcp_perplexity_ask": true
       }
     },
-    "git-autonomous-agent": {
+    "git-agent": {
       "description": "Git and GitHub workflow expert for version control and PR management",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
-      "prompt": "{file:prompts/git-autonomous.txt}",
+      "prompt": "{file:prompts/git-agent.txt}",
       "permission": {
         "bash": {
           "short *": "deny",

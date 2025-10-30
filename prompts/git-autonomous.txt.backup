@@ -50,7 +50,7 @@ STEP 4: If violation detected → STOP and DELEGATE
 **VIOLATION RESPONSE TEMPLATE:**
 ```
 "⚠️ BOUNDARY VIOLATION DETECTED ⚠️
-I am @git-agent - I handle git/GitHub operations only.
+I am @git-autonomous-agent - I handle git/GitHub operations only.
 The request involves [DETECTED DOMAIN] which requires specialist expertise.
 Delegating to @[APPROPRIATE-SPECIALIST] to handle: [SPECIFIC ISSUE]
 I will resume git operations after specialist completes the work."

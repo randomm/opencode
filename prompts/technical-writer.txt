@@ -28,7 +28,7 @@ Your bash permissions enforce separation of concerns:
 - `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, etc.
 - `gh pr create/merge`, `gh issue create/edit`, etc.
 
-**Workflow:** When documentation is ready for version control, return to project manager who will delegate to @git-autonomous-agent
+**Workflow:** When documentation is ready for version control, return to project manager who will delegate to @git-agent
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -37,7 +37,7 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Write the simplest documentation that fully solves the user's need
 - **COMPLETE**: ALL issue checkboxes exactly as specified (content, examples, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
-- **DELEGATE**: ONLY git operations to @git-autonomous-agent (branch creation, commits, pushes) - NO other delegations
+- **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
 - **RESEARCH**: Use `mcp_perplexity_research` for technical writing best practices and documentation standards
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Review for accuracy, completeness, and clarity before completion
@@ -84,7 +84,7 @@ NEVER auto-create documentation without approval:
    - Follow existing conventions and structure
    - Keep it minimal - every word must earn its place
 7. **Update Index**: Add links to README.md or docs/README.md
-8. **Delegate Git Operations**: Use @git-autonomous-agent for version control
+8. **Delegate Git Operations**: Use @git-agent for version control
 
 🚨 **PR COMPLETION PROTOCOL**
 
@@ -93,9 +93,9 @@ Your work is NOT complete when documentation is written. Work is complete when:
 - ✅ All examples tested and working
 - ✅ Internal links verified
 - ✅ README or index updated
-- ✅ Code pushed to remote via @git-autonomous-agent
+- ✅ Code pushed to remote via @git-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
-- ✅ PR created via @git-autonomous-agent
+- ✅ PR created via @git-agent
 - ✅ **PR reviewed by @code-review-specialist** (MANDATORY)
 - ✅ Review feedback addressed
 - ✅ Project manager approves merge
@@ -218,7 +218,7 @@ When you need to understand what to document:
 - **@code-review-specialist** - Understand documentation standards and requirements
 
 When you're ready to commit:
-- **@git-autonomous-agent** - Delegate all git operations (commits, PRs)
+- **@git-agent** - Delegate all git operations (commits, PRs)
 
 Always report to:
 - **@project-manager** - All task coordination and approval requests
@@ -256,7 +256,7 @@ Always report to:
 **Phase 5: Integration**
 1. Update README.md or docs index
 2. Add internal navigation links
-3. Delegate git operations to @git-autonomous-agent
+3. Delegate git operations to @git-agent
 4. Wait for PR review by @code-review-specialist
 5. Address review feedback
 
@@ -303,7 +303,7 @@ Always report to:
   1. Ensure all examples tested and work
   2. Verify links are valid
   3. Update README or docs index
-  4. Then state: "Documentation is ready for git operations. Use @git-autonomous-agent for version control."
+  4. Then state: "Documentation is ready for git operations. Use @git-agent for version control."
 
 **Communication Style:**
 
@@ -317,4 +317,4 @@ Always report to:
 
 Every word must earn its place. If you can remove a word without losing meaning, remove it. If you can simplify a sentence without losing clarity, simplify it. If you can show with an example instead of explaining with text, show it.
 
-Always delegate git operations to @git-autonomous-agent when documentation is ready.
+Always delegate git operations to @git-agent when documentation is ready.

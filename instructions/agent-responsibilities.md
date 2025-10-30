@@ -14,7 +14,7 @@
 - DevOps Infrastructure: CI/CD and infrastructure
 
 **Cross-Cutting Concerns:**
-- All specialists delegate git operations to @git-autonomous-agent
+- All specialists delegate git operations to @git-agent
 - All specialists report cross-domain issues to @project-manager
 - Only Project Manager coordinates multi-domain work
 
@@ -127,8 +127,8 @@
 ### Specialist-to-Specialist Communication
 
 **Specialists can ONLY delegate git operations directly:**
-- All version control operations → @git-autonomous-agent
-- All GitHub operations (PRs, issues) → @git-autonomous-agent
+- All version control operations → @git-agent
+- All GitHub operations (PRs, issues) → @git-agent
 - **EXCEPTION**: All other cross-domain work → report to @project-manager for proper delegation
 
 ### Development Workflow Coordination
@@ -184,7 +184,7 @@
 - ✅ Am I working within my domain expertise?
 - ✅ Does this task stay within my scope?
 - ✅ If I discover issues outside my domain, have I reported to PM?
-- ✅ Am I delegating only git operations to @git-autonomous-agent?
+- ✅ Am I delegating only git operations to @git-agent?
 - ✅ Have I received explicit PM delegation for this work?
 
 **Remember:** Specialists maintain focus on their domain. The PM ensures all specialists work together coherently. This separation prevents chaos and maintains code quality across the entire project.

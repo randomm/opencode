@@ -21,8 +21,8 @@ This is an OpenCode configuration repository that defines specialized AI agents,
    - Defines best practices, conventions, and workflows for each technology
 
 3. **Instructions** (`instructions/`)
-   - `commit-all-changes.md`: Delegates git operations to @git-autonomous-agent
-   - `test-driven-development.md`: Enforces TDD with 80%+ test coverage requirements
+    - `commit-all-changes.md`: Delegates git operations to @git-agent
+    - `test-driven-development.md`: Enforces TDD with 80%+ test coverage requirements
 
 4. **MCP Integrations** 
    - Perplexity API for AI-powered research
@@ -45,7 +45,7 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 - Remove dead code immediately
 
 ### Git Workflow
-- **ALWAYS** delegate git operations to @git-autonomous-agent
+- **ALWAYS** delegate git operations to @git-agent
 - **MANDATORY: SSH protocol only** - Use git@github.com:user/repo.git format, never HTTPS
 - **MANDATORY: gh CLI exclusively** - All GitHub interactions via gh CLI, never direct URLs/APIs
 - **MANDATORY: ALL work must start with GitHub issue** - No work without issue tracking
@@ -70,7 +70,7 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 When working on specific tasks, use the appropriate agent:
 - `@python-best-practices-architect` - Python development with TDD and quality gates
 - `@rust-tdd-architect` - Rust systems programming with zero-cost abstractions and memory safety
-- `@git-autonomous-agent` - All git and GitHub operations
+- `@git-agent` - All git and GitHub operations
 - `@rails-architect` - Ruby on Rails applications
 - `@react-web-specialist` - React/TypeScript/JavaScript web applications, responsive UI, performance optimization
 - `@react-native-mobile-specialist` - Expo and React Native mobile apps, cross-platform development
@@ -130,11 +130,11 @@ Since this is a configuration repository without active code:
    - Fix all issues before proceeding
 
 3. **Agent Delegation**:
-   - Python work → @python-best-practices-architect
-   - Rust systems programming → @rust-tdd-architect
-   - Git operations → @git-autonomous-agent
-   - Database work (PostgreSQL and AWS Aurora) → @postgres-specialist
-   - Let specialists handle their domains
+    - Python work → @python-best-practices-architect
+    - Rust systems programming → @rust-tdd-architect
+    - Git operations → @git-agent
+    - Database work (PostgreSQL and AWS Aurora) → @postgres-specialist
+    - Let specialists handle their domains
 
 4. **No Unsolicited Files**:
    - NEVER create README, documentation, or plan files unless explicitly asked

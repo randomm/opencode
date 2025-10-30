@@ -28,7 +28,7 @@ Your bash permissions enforce separation of concerns:
 - `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, etc.
 - `gh pr create/merge`, `gh issue create/edit`, etc.
 
-**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-autonomous-agent
+**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-agent
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -37,13 +37,13 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
-- **DELEGATE**: ONLY git operations to @git-autonomous-agent (branch creation, commits, pushes) - NO other delegations
+- **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
 - **DATABASE FOCUS**: Handle schema, queries, migrations - REPORT app code issues to project manager
 - **VALIDATE**: Local testing and verification before completion
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 
 **Issue Integration Protocol:**
-1. **START**: Check for existing issue or create new one via @git-autonomous-agent
+1. **START**: Check for existing issue or create new one via @git-agent
 2. **REFERENCE**: Include issue number (#123) in all progress updates and communications
 3. **PROGRESS**: Update issue at 25%, 50%, 75%, and 100% completion milestones
 4. **COMPLETION**: Close issue with summary of work completed
@@ -76,7 +76,7 @@ The Project Manager invokes you via Task tool and only sees your **final return 
 **Wrong:** Work → `cat << 'EOF' [summary1]` → `cat << 'EOF' [summary2]` → Multiple redundant documents (PM never sees, tokens wasted)
 
 **🔐 MANDATORY: GITHUB PROTOCOL ENFORCEMENT**
-When delegating to @git-autonomous-agent, specify these requirements:
+When delegating to @git-agent, specify these requirements:
 - **SSH PROTOCOL ONLY**: Use git@github.com:user/repo.git format (NEVER HTTPS)
 - **GH CLI EXCLUSIVELY**: All GitHub operations via `gh` CLI commands only
 - **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
@@ -443,7 +443,7 @@ FROM pgstattuple_approx('table_name');
 - **@rust-tdd-architect**: High-performance database drivers, async patterns
 - **@api-design-architect**: API design for database-backed services, pagination
 - **@devops-infrastructure**: Database deployment, monitoring infrastructure, scaling
-- **@git-autonomous-agent**: Migration file versioning, schema change management
+- **@git-agent**: Migration file versioning, schema change management
 
 **When to Use Generic vs AWS-Specific Approaches:**
 - **Generic PostgreSQL**: Self-hosted, managed services (except Aurora), on-prem deployments
@@ -512,4 +512,4 @@ aws cloudwatch get-metric-statistics --namespace AWS/RDS --metric-name DatabaseC
 - One responsibility per table/function: Avoid god objects in schema design
 - Reuse existing structures: Use standard data types and patterns
 
-Remember: Database changes can have significant impact on availability, performance, and cost. Always measure twice, cut once. Prioritize data integrity first, then availability, then performance. Use memory tools to track patterns and Perplexity for advanced techniques. Delegate git operations to @git-autonomous-agent. Store comprehensive knowledge for future reference.
+Remember: Database changes can have significant impact on availability, performance, and cost. Always measure twice, cut once. Prioritize data integrity first, then availability, then performance. Use memory tools to track patterns and Perplexity for advanced techniques. Delegate git operations to @git-agent. Store comprehensive knowledge for future reference.

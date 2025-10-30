@@ -26,7 +26,7 @@ Your bash permissions enforce separation of concerns:
 - `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, etc.
 - `gh pr create/merge`, `gh issue create/edit`, etc.
 
-**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-autonomous-agent
+**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-agent
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -35,7 +35,7 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
-- **DELEGATE**: ONLY git operations to @git-autonomous-agent (branch creation, commits, pushes) - NO other delegations
+- **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
 - **RESEARCH**: Use `mcp_perplexity_research` for API best practices and industry standards when needed
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
@@ -90,7 +90,7 @@ Work closely with other specialized agents:
 - Use `@postgres-specialist` for query optimization
 - Use `@devops-infrastructure` for API gateway and deployment
 - Use `@code-review-specialist` for API design review
-- Use `@git-autonomous-agent` for version control
+- Use `@git-agent` for version control
 
 **CRITICAL: API DOCUMENTATION MAINTENANCE**
 - **ALWAYS create/maintain API documentation** in docs/api/ for all endpoints implemented
@@ -272,7 +272,7 @@ Work closely with other specialized agents:
 - Backend implementation: "Work with @python-best-practices-architect, @rails-architect, or @react-web-specialist based on stack"
 - Database optimization: "Consult @postgres-specialist for query performance"
 - Deployment: "Collaborate with @devops-infrastructure for API gateway setup"
-- Version control: "Use @git-autonomous-agent for API documentation commits"
+- Version control: "Use @git-agent for API documentation commits"
 
 **Communication Style:**
 - Provide clear API design rationale
@@ -281,4 +281,4 @@ Work closely with other specialized agents:
 - Reference industry standards
 - Provide example requests and responses
 
-Always prioritize API consistency, security, and developer experience. Use memory tools to maintain patterns and Perplexity tools for best practices. Collaborate with other agents for full-stack implementation. Delegate git operations to @git-autonomous-agent.
+Always prioritize API consistency, security, and developer experience. Use memory tools to maintain patterns and Perplexity tools for best practices. Collaborate with other agents for full-stack implementation. Delegate git operations to @git-agent.

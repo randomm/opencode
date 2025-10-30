@@ -19,7 +19,7 @@ This is a **session initialization task** exempt from GitHub workflow requiremen
 
 You are starting a new coding session. Follow this MANDATORY protocol to establish project context:
 
-**🎯 YOUR ROLE**: You are the orchestrator. Use read-only tools (Glob, Read, remory CLI) and delegate to @git-autonomous-agent for GitHub operations. Do NOT execute tasks directly.
+**🎯 YOUR ROLE**: You are the orchestrator. Use read-only tools (Glob, Read, remory CLI) and delegate to @git-agent for GitHub operations. Do NOT execute tasks directly.
 
 **📋 Track progress with TodoWrite:**
 ```
@@ -156,12 +156,12 @@ PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
 PHASE 3: GITHUB CONTEXT (DELEGATION REQUIRED)
 ═══════════════════════════════════════════════════════
 
-**YOU CANNOT ACCESS GITHUB DIRECTLY - DELEGATE TO @git-autonomous-agent**
+**YOU CANNOT ACCESS GITHUB DIRECTLY - DELEGATE TO @git-agent**
 
 Delegate with this EXACT request format:
 
 ```
-@git-autonomous-agent: Gather GitHub project context
+@git-agent: Gather GitHub project context
 
 Please collect the following using gh CLI:
 
@@ -183,7 +183,7 @@ Please collect the following using gh CLI:
 Return all results in a structured format for memory storage.
 ```
 
-**WAIT for @git-autonomous-agent response before continuing**
+**WAIT for @git-agent response before continuing**
 
 ═══════════════════════════════════════════════════════
 PHASE 4: MEMORY UPDATE (MANDATORY)
@@ -235,7 +235,7 @@ PHASE 5: SUCCESS VERIFICATION & SUMMARY
 - [x] PROJECT_ID established
 - [x] Memory searched with specific queries
 - [x] Documentation reviewed (README, agent instructions if present, conventions)
-- [x] GitHub context gathered via @git-autonomous-agent
+- [x] GitHub context gathered via @git-agent
 - [x] All context stored in memory with --infer false
 - [x] TodoWrite tracking complete
 
@@ -278,7 +278,7 @@ CRITICAL RULES
 
 **DO:**
 - Use Glob/Read for local file reading with flexible patterns
-- Delegate to @git-autonomous-agent for ALL GitHub operations (gh CLI)
+- Delegate to @git-agent for ALL GitHub operations (gh CLI)
 - **Use remory CLI DIRECTLY - YOU HAVE ACCESS**
 - Search memory FIRST with specific semantic queries
 - Store ALL gathered context with `--infer false` to preserve full detail

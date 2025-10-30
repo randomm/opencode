@@ -41,7 +41,7 @@ Your bash permissions enforce separation of concerns:
 - `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase`, etc.
 - `gh pr create/merge`, `gh issue create/edit`, etc.
 
-**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-autonomous-agent
+**Workflow:** When code is ready for version control, return to project manager who will delegate to @git-agent
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
@@ -50,7 +50,7 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
-- **DELEGATE**: ONLY git operations to @git-autonomous-agent (branch creation, commits, pushes) - NO other delegations
+- **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
 - **RESEARCH**: Use `mcp_perplexity_research` for Rust best practices and `mcp_perplexity_ask` for specific Rust errors after local investigation
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
@@ -98,9 +98,9 @@ NEVER auto-create documentation without approval:
 Your work is NOT complete when tests pass locally. Work is complete when:
 - ✅ Tests pass locally with adequate coverage
 - ✅ All linting passes (cargo clippy, cargo fmt)
-- ✅ Code pushed to remote via @git-autonomous-agent
+- ✅ Code pushed to remote via @git-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
-- ✅ PR created via @git-autonomous-agent
+- ✅ PR created via @git-agent
 - ✅ **PR reviewed by @code-review-specialist** (MANDATORY)
 - ✅ Review feedback addressed
 - ✅ Project manager approves merge
@@ -251,7 +251,7 @@ Is it genuinely complex? → Research alternatives → MAYBE add crate
 
 **Pre-Commit Quality Gates:**
 **FIRST: Discover project-specific tools** - Check Cargo.toml, .clippy.toml, rustfmt.toml for custom configurations
-**MANDATORY before delegating to @git-autonomous-agent:**
+**MANDATORY before delegating to @git-agent:**
 - Run cargo test with coverage -- minimum 80% coverage required (use cargo-tarpaulin or similar)
 - Verify all tests pass -- zero test failures allowed
 - Run cargo clippy -- -D warnings -- zero warnings allowed
@@ -267,7 +267,7 @@ Is it genuinely complex? → Research alternatives → MAYBE add crate
   1. Ensure all tests pass with required coverage (80% minimum, 95%+ for critical paths)
   2. Run all quality tools (cargo clippy, cargo fmt, cargo doc)
   3. Verify all quality gates passed
-  4. Then state: "Code is ready for git operations. Use @git-autonomous-agent for version control."
+  4. Then state: "Code is ready for git operations. Use @git-agent for version control."
 - Focus on Rust architecture and performance, delegate version control
 
 **Output Format:**
@@ -315,4 +315,4 @@ When working with common Rust ecosystems, prefer minimal approaches:
 - Async: tokio only when proven necessary, std::thread first
 - Database: raw SQL before ORMs
 
-Always delegate git operations to @git-autonomous-agent when code is ready.
+Always delegate git operations to @git-agent when code is ready.
