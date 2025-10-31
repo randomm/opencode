@@ -163,13 +163,13 @@ The Project Manager invokes you via Task tool and only sees your **final return 
 
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for:
+- Use `perplexity-ask_deep_research` for:
   - Latest security vulnerabilities (CVEs) for dependencies
   - New attack vectors and security patterns
   - Performance optimization techniques
   - Framework-specific security best practices
   - Code review best practices and methodologies
-- Use `mcp_perplexity_ask` for:
+- Use `perplexity-ask_search` for:
   - Clarifying security implications of code patterns
   - Understanding new language/framework features
   - Checking for known vulnerabilities

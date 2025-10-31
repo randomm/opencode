@@ -66,13 +66,13 @@ When delegating to @git-agent, specify these requirements:
 - **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for:
+- Use `perplexity-ask_deep_research` for:
   - Latest security vulnerabilities (CVEs)
   - New best practices and patterns
   - Framework-specific security issues
   - Performance optimization techniques
   - Language-specific anti-patterns
-- Use `mcp_perplexity_ask` for:
+- Use `perplexity-ask_search` for:
   - Clarifying security implications
   - Understanding new language features
   - Checking deprecation status

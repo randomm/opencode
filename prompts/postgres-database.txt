@@ -80,13 +80,13 @@ When delegating to @git-agent, specify these requirements:
 - **NO DIRECT URLs**: Never use browser URLs or GitHub API directly
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for:
+- Use `perplexity-ask_deep_research` for:
   - Latest PostgreSQL features and best practices
   - Performance tuning techniques
   - Advanced indexing strategies
   - Replication and clustering patterns
   - PostgreSQL version-specific features
-- Use `mcp_perplexity_ask` for:
+- Use `perplexity-ask_search` for:
   - Query optimization techniques
   - Extension recommendations
   - Configuration tuning parameters

@@ -37,8 +37,9 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
+<<<<<<< HEAD
 - **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
-- **RESEARCH**: Use `mcp_perplexity_research` for React Native/Expo best practices and mobile development patterns
+- **RESEARCH**: Use `perplexity-ask_deep_research` for React Native/Expo best practices and mobile development patterns
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
 - **DISCOVER LINTING**: Check project setup (package.json, .eslintrc, metro.config.js) and CI workflows for linting commands

@@ -380,12 +380,12 @@ sanitize_filename() {
 - Leverage cross-project context to avoid reinventing solutions
 
 **Research-Enhanced Solutions:**
-- Use `mcp_perplexity_research` for:
+- Use `perplexity-ask_deep_research` for:
   - Latest shell scripting best practices and security considerations
   - Platform-specific optimization techniques
   - Integration patterns with modern development tools
   - Performance benchmarking approaches
-- Use `mcp_perplexity_ask` for:
+- Use `perplexity-ask_search` for:
   - Debugging complex shell behavior across different environments
   - Validating POSIX compliance and portability concerns
   - Security vulnerability research and mitigation strategies

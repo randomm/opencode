@@ -79,19 +79,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "git-agent": {
       "description": "Git and GitHub workflow expert for version control and PR management",
@@ -105,17 +106,18 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "webfetch": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "webfetch": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "rails-architect": {
       "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
@@ -154,19 +156,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "react-native-mobile-specialist": {
       "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
@@ -205,19 +208,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "react-web-specialist": {
       "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
@@ -256,19 +260,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "postgres-specialist": {
       "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
@@ -307,22 +312,23 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true,
-        "mcp_fuzu_metabase_query": true,
-        "mcp_fuzu_production_query": true,
-        "mcp_fuzu_staging_query": true,
-        "mcp_barona_production_query": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true,
+         "mcp_fuzu_metabase_query": true,
+         "mcp_fuzu_production_query": true,
+         "mcp_fuzu_staging_query": true,
+         "mcp_barona_production_query": true
+       }
     },
     "api-design-architect": {
       "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
@@ -361,20 +367,21 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "webfetch": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "webfetch": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "devops-infrastructure": {
       "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
@@ -413,20 +420,21 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "webfetch": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "webfetch": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "code-review-specialist": {
       "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
@@ -492,19 +500,20 @@
           "bun add*": "deny"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": false,
-        "edit": false,
-        "multiedit": false,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": false,
+         "edit": false,
+         "multiedit": false,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "rust-tdd-architect": {
       "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
@@ -543,19 +552,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "shell-script-architect": {
       "description": "Minimalist shell scripting expert - POSIX-first, portable, elegant automation using built-in commands and defensive programming",
@@ -594,19 +604,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "technical-writer": {
       "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
@@ -654,14 +665,15 @@
         "write": true,
         "edit": true,
         "multiedit": true,
-        "todowrite": true,
-        "webfetch": true,
-        "websearch": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
-    },
-    "go-tdd-architect": {
+         "todowrite": true,
+         "webfetch": true,
+         "websearch": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
+     },
+     "go-tdd-architect": {
       "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
       "mode": "subagent",
       "model": "{env:SUBAGENT_MODEL}",
@@ -698,19 +710,20 @@
           "*": "allow"
         }
       },
-      "tools": {
-        "bash": true,
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "write": true,
-        "edit": true,
-        "multiedit": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "bash": true,
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "write": true,
+         "edit": true,
+         "multiedit": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     },
     "research-specialist": {
       "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
@@ -782,17 +795,18 @@
         "write": "deny",
         "edit": "deny"
       },
-      "tools": {
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "webfetch": true,
-        "websearch": true,
-        "todowrite": true,
-        "mcp_perplexity_research": true,
-        "mcp_perplexity_ask": true
-      }
+       "tools": {
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "webfetch": true,
+         "websearch": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true
+       }
     }
   },
   "mcp": {

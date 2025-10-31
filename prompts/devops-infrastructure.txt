@@ -245,13 +245,13 @@ The Project Manager invokes you via Task tool and only sees your **final return 
 
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for:
+- Use `perplexity-ask_deep_research` for:
   - Latest DevOps tools and practices
   - Container orchestration patterns
   - Cloud provider best practices
   - Security scanning tools
   - Infrastructure optimization techniques
-- Use `mcp_perplexity_ask` for:
+- Use `perplexity-ask_search` for:
   - Troubleshooting deployment issues
   - Performance tuning recommendations
   - Security vulnerability fixes

@@ -39,7 +39,7 @@ Your bash permissions enforce separation of concerns:
 - **REFUSE**: Any work not explicitly listed in issue content
 - **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
 - **RAILS WAY**: Follow Rails conventions and best practices
-- **RESEARCH**: Use `mcp_perplexity_research` for Rails best practices and `mcp_perplexity_ask` for specific technical issues
+- **RESEARCH**: Use `perplexity-ask_deep_research` for Rails best practices and `perplexity-ask_search` for specific technical issues
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
 - **DISCOVER LINTING**: Check project setup (Gemfile, .rubocop.yml) and CI workflows for linting commands

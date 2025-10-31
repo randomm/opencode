@@ -35,8 +35,9 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
+<<<<<<< HEAD
 - **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
-- **RESEARCH**: Use `mcp_perplexity_research` for AWS RDS and PostgreSQL best practices when needed
+- **RESEARCH**: Use `perplexity-ask_deep_research` for AWS RDS and PostgreSQL best practices when needed
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local testing and verification before completion
 - **MEMORY**: Use Remory's semantic search capabilities to find relevant database patterns and solutions

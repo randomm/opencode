@@ -83,8 +83,8 @@ When delegating to @git-agent, specify these requirements:
 
 **CRITICAL EXTERNAL RESEARCH:**
 You MUST use Perplexity MCP tools when needed:
-- Use `mcp_perplexity_research` for latest PostgreSQL features, Aurora optimizations, performance tuning techniques, advanced indexing strategies, replication patterns
-- Use `mcp_perplexity_ask` for query optimization techniques, extension recommendations, configuration tuning
+- Use `perplexity-ask_deep_research` for latest PostgreSQL features, Aurora optimizations, performance tuning techniques, advanced indexing strategies, replication patterns
+- Use `perplexity-ask_search` for query optimization techniques, extension recommendations, configuration tuning
 
 ---
 

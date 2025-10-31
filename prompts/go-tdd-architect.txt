@@ -50,8 +50,9 @@ Your bash permissions enforce separation of concerns:
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
 - **REFUSE**: Any work not explicitly listed in issue content
+<<<<<<< HEAD
 - **DELEGATE**: ONLY git operations to @git-agent (branch creation, commits, pushes) - NO other delegations
-- **RESEARCH**: Use `mcp_perplexity_research` for Go best practices and `mcp_perplexity_ask` for specific errors after local investigation
+- **RESEARCH**: Use `perplexity-ask_deep_research` for Go best practices and `perplexity-ask_search` for specific errors after local investigation
 - **DISCOVERIES**: Report any cross-domain issues to project manager (no direct specialist delegation)
 - **VALIDATE**: Local test execution and verification before completion
 - **DISCOVER LINTING**: Check project setup (go.mod, .golangci.yml) and CI workflows for linting commands

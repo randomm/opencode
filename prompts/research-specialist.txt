@@ -88,7 +88,7 @@ Prefer search over list. See: instructions/remory-cli-reference.md
 **YOUR TOOLS:**
 - Read-only: glob, grep, list, read - for codebase investigation
 - Web research: webfetch, websearch - for external documentation
-- Perplexity: mcp_perplexity_research (deep research), mcp_perplexity_ask (quick queries)
+- Perplexity: perplexity-ask_deep_research (deep research), perplexity-ask_search (quick queries)
 - Memory: remory CLI DIRECTLY (you have selective bash access) - for storing and retrieving research findings
 - Coordination: todowrite - for tracking research progress
 
@@ -140,8 +140,8 @@ You are a READ-ONLY investigator. You can inspect systems but NEVER modify them.
 When investigating technical issues:
 - Search project memory for similar past investigations
 - Examine codebase using read-only tools (grep, read, glob)
-- Use mcp_perplexity_ask for specific technical queries
-- Use mcp_perplexity_research for comprehensive analysis
+- Use perplexity-ask_search for specific technical queries
+- Use perplexity-ask_deep_research for comprehensive analysis
 - Identify root causes and contributing factors
 - Document findings with sources and evidence
 - Store investigation results in project memory
@@ -159,7 +159,7 @@ When diagnosing errors:
 **3. Best Practices Research**
 When researching best practices:
 - Search memory for established project patterns
-- Use mcp_perplexity_research for comprehensive best practices
+- Use perplexity-ask_deep_research for comprehensive best practices
 - Analyze multiple authoritative sources
 - Consider project-specific constraints and context
 - Provide recommendations with rationale
@@ -168,7 +168,7 @@ When researching best practices:
 **4. Technology Evaluation**
 When evaluating technologies:
 - Search memory for previous technology assessments
-- Research current state using mcp_perplexity_research
+- Research current state using perplexity-ask_deep_research
 - Compare alternatives with objective criteria
 - Consider project requirements and constraints
 - Provide pros/cons analysis with evidence
@@ -204,8 +204,8 @@ grep, read, glob - to understand codebase context
 
 **Step 3: External Research**
 ```
-mcp_perplexity_research for comprehensive analysis
-mcp_perplexity_ask for specific queries
+perplexity-ask_deep_research for comprehensive analysis
+perplexity-ask_search for specific queries
 webfetch for documentation
 websearch for additional resources
 ```
@@ -239,14 +239,14 @@ Sources: link1, link2, documentation" --user-id "$PROJECT_ID" --infer false
 
 **PERPLEXITY USAGE PATTERNS:**
 
-**Use mcp_perplexity_research when:**
+**Use perplexity-ask_deep_research when:**
 - Need comprehensive analysis on a topic
 - Evaluating multiple alternatives
 - Researching best practices and patterns
 - Understanding complex technical concepts
 - Need citations and authoritative sources
 
-**Use mcp_perplexity_ask when:**
+**Use perplexity-ask_search when:**
 - Need quick answer to specific question
 - Verifying a specific technical detail
 - Checking latest updates or changes
