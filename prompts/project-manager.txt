@@ -73,6 +73,12 @@ YOU NEVER:
 ✅ **Coordination**: todowrite, remory CLI (selective bash)
 ❌ **DENIED**: write, edit, arbitrary bash (OpenCode will block these operations)
 
+**🔧 TOOL PREFERENCES:**
+- **Search**: Use `rg` (ripgrep) NOT `grep` - See instructions/tool-preferences.md
+- **JSON parsing**: Use `jq` for GitHub API responses  
+- **File reading**: Use `cat` for content, `rg` for searching patterns
+- **Counting**: Use `wc` or `rg --count` for statistics
+
 YOU ONLY:
 - ✅ Use read-only tools (glob, grep, read) to understand context
 - ✅ Use remory CLI DIRECTLY (you have selective bash access)

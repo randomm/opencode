@@ -5,6 +5,7 @@
     "instructions/workflow-standards.md",
     "instructions/agent-responsibilities.md",
     "instructions/quality-standards.md",
+    "instructions/tool-preferences.md",
     "instructions/remory-cli-reference.md"
   ],
   "agent": {
@@ -16,15 +17,17 @@
           "bash": {
             "remory *": "allow",
             "export PROJECT_ID=*": "allow",
-            "cat .project-id*": "allow",
+            "cat *": "allow",
             "uuidgen*": "allow",
             "echo*": "allow",
             "tee*": "allow",
+            "rg*": "allow",
+            "jq*": "allow",
+            "wc*": "allow",
             "gh issue view*": "allow",
             "gh issue list*": "allow",
             "gh issue create*": "allow",
             "gh issue edit*": "allow",
-            "short *": "deny",
             "*": "deny"
           },
           "write": "deny",
