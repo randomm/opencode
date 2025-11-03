@@ -165,25 +165,29 @@ opencode.work.json      # Work machine config (Shortcut CLI enabled)
 opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
 ├── CLAUDE.md              # Project instructions and conventions
 ├── prompts/               # Individual agent prompt files
+│   ├── api-design.txt
+│   ├── code-review-specialist.txt
+│   ├── devops-infrastructure.txt
+│   ├── git-agent.txt
+│   ├── go-tdd-architect.txt
+│   ├── postgres-specialist.txt
 │   ├── project-manager.txt
 │   ├── python-best-practices.txt
-│   ├── rust-tdd-architect.txt
 │   ├── rails-architect.txt
-│   ├── react-web-specialist.txt
 │   ├── react-native-mobile-specialist.txt
-│   ├── postgres-specialist.txt
-│   ├── api-design.txt
-│   ├── git-agent.txt
-│   ├── devops-infrastructure.txt
-│   ├── shell-script-architect.txt
+│   ├── react-web-specialist.txt
 │   ├── research-specialist.txt
-│   └── code-review-specialist.txt
+│   ├── rust-tdd-architect.txt
+│   ├── shell-script-architect.txt
+│   └── technical-writer.txt
 ├── instructions/          # Global development standards
-│   ├── commit-all-changes.md
-│   ├── github-workflow-mandatory.md
+│   ├── agent-responsibilities.md
 │   ├── memory-protocol-mandatory.md
-│   ├── quality-gates-reference.md
-│   └── no-unsolicited-files.md
+│   ├── quality-standards.md
+│   ├── remory-cli-reference.md
+│   ├── shortcut-cli-awareness.md
+│   ├── tool-preferences.md
+│   └── workflow-standards.md
 └── providers/            # MCP provider configurations
 ```
 
@@ -402,7 +406,7 @@ All agents have access to enhanced memory operations:
 
 ### Customizing Quality Gates
 
-Edit `instructions/quality-gates-reference.md` to adjust coverage requirements, linting tools, or testing requirements. All specialists read this instruction file automatically.
+Edit `instructions/quality-standards.md` to adjust coverage requirements, linting tools, or testing requirements. All specialists read this instruction file automatically.
 
 ## 📋 Usage Examples
 
