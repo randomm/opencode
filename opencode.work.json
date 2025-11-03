@@ -1,5 +1,55 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "hooks": [
+    {
+      "name": "onSave",
+      "matcher": "**/*.py",
+      "run": [
+        "ruff check --fix .",
+        "mypy .",
+        "black --quiet ."
+      ]
+    },
+    {
+      "name": "onSave",
+      "matcher": "**/*.{js,ts,jsx,tsx}",
+      "run": [
+        "eslint . --fix",
+        "tsc --noEmit",
+        "prettier --write ."
+      ]
+    },
+    {
+      "name": "onSave",
+      "matcher": "**/*.rs",
+      "run": [
+        "cargo clippy --all-targets",
+        "cargo fmt --all"
+      ]
+    },
+    {
+      "name": "onSave",
+      "matcher": "**/*.sh",
+      "run": [
+        "shellcheck -x $FILE"
+      ]
+    },
+    {
+      "name": "onSave",
+      "matcher": "**/*.rb",
+      "run": [
+        "rubocop --autocorrect"
+      ]
+    },
+    {
+      "name": "onSave",
+      "matcher": "**/*.go",
+      "run": [
+        "go fmt .",
+        "golangci-lint run"
+      ]
+    }
+  ],
   "instructions": [
     "instructions/memory-protocol-mandatory.md",
     "instructions/workflow-standards.md",
