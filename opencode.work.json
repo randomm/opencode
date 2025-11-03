@@ -915,9 +915,71 @@
          "perplexity-ask_reason": true,
          "perplexity-ask_deep_research": true
        }
-    }
-  },
-  "mcp": {
+     }
+   },
+   "experimental": {
+     "hook": {
+       "file_edited": {
+         "python_linter": [
+           {
+             "command": ["ruff", "check", "--fix", "."],
+             "environment": {}
+           },
+           {
+             "command": ["mypy", "."],
+             "environment": {}
+           },
+           {
+             "command": ["black", "--quiet", "."],
+             "environment": {}
+           }
+         ],
+         "javascript_linter": [
+           {
+             "command": ["eslint", ".", "--fix"],
+             "environment": {}
+           },
+           {
+             "command": ["prettier", "--write", "."],
+             "environment": {}
+           }
+         ],
+         "rust_linter": [
+           {
+             "command": ["cargo", "clippy", "--all-targets"],
+             "environment": {}
+           },
+           {
+             "command": ["cargo", "fmt", "--all"],
+             "environment": {}
+           }
+         ],
+         "shell_linter": [
+           {
+             "command": ["shellcheck", "-x", "**/*.sh"],
+             "environment": {}
+           }
+         ],
+         "ruby_linter": [
+           {
+             "command": ["rubocop", "--autocorrect"],
+             "environment": {}
+           }
+         ],
+         "go_linter": [
+           {
+             "command": ["go", "fmt", "."],
+             "environment": {}
+           },
+           {
+             "command": ["golangci-lint", "run"],
+             "environment": {}
+           }
+         ]
+       }
+     }
+   },
+   "mcp": {
     "perplexity-ask": {
       "type": "local",
       "command": [
