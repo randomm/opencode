@@ -7,7 +7,8 @@
     "instructions/quality-standards.md",
     "instructions/tool-preferences.md",
     "instructions/shortcut-cli-awareness.md",
-    "instructions/remory-cli-reference.md"
+    "instructions/remory-cli-reference.md",
+    "instructions/postgres-mcp-databases.md"
   ],
   "agent": {
     "project-manager": {
@@ -992,6 +993,16 @@
         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}",
         "PERPLEXITY_TIMEOUT_MS": "600000"
       }
+    },
+    "fuzu-production-db": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:FUZU_PRODUCTION_DB_RO}"],
+      "enabled": true
+    },
+    "barona-production-db": {
+      "type": "local",
+      "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:BARONA_PRODUCTION_DB_RO}"],
+      "enabled": true
     }
   },
   "lsp": {

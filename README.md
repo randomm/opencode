@@ -342,8 +342,10 @@ PM:
 The system integrates with several Model Context Protocol servers:
 
 - **Perplexity API** - AI-powered research and problem-solving
-- **PostgreSQL Connections** - Multiple database environments
+- **PostgreSQL Connections** - Multiple database environments (Fuzu and Barona production databases via read-only MCP servers)
 - **Memory Service (Remory)** - Enhanced semantic memory with vector embeddings
+
+See `instructions/postgres-mcp-databases.md` for database access details.
 
 ### Memory Service (Remory)
 
