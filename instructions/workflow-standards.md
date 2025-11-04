@@ -8,11 +8,14 @@
 
 **GITHUB OPERATIONS:** Use `gh` CLI exclusively (never browser, never API calls)
 
-**PROJECT MANAGER:** Delegate ALL GitHub operations to @git-agent
-- `gh issue view/list` - Checking if issues exist
-- `gh issue create` - Creating issues
-- `gh pr view/list/create` - PR operations
-- `gh run view/watch` - CI status checks
+**PROJECT MANAGER:** Can run read-only git and GitHub operations, delegates state-changing operations to @git-agent
+- `gh issue view/list` - Can run directly (read-only)
+- `gh issue create/edit` - Delegate to @git-agent (write)
+- `gh pr view/list` - Can run directly (read-only)  
+- `gh pr create/merge` - Delegate to @git-agent (write)
+- `gh run view/watch` - Can run directly (monitoring)
+- `git status/branch/log/show/diff` - Can run directly (read-only)
+- Git write operations (commit, push, merge) - Delegate to @git-agent
 
 ---
 
@@ -48,8 +51,9 @@
 - **REFUSE ALL DEVELOPMENT WORK** without proper GitHub issue tracking
 - **INCLUDE ISSUE REFERENCE** in all commits and communications
 
-**PROJECT MANAGER NOTE:** You have NO bash access and cannot run `gh` commands directly.
-Always delegate GitHub verification and operations to @git-agent.
+**PROJECT MANAGER NOTE:** You have SELECTIVE bash access for read-only git and GitHub operations.
+You can directly check: `git status`, `git log`, `git branch`, `gh issue view/list`, `gh pr view/list`, `gh run view/watch`
+Delegate state-changing operations (commits, pushes, PR creation, issue creation) to @git-agent.
 
 ---
 
@@ -237,15 +241,25 @@ Add comprehensive test suite for token refresh logic including:
 - ✅ Report work complete to PM
 - ✅ Read git status/log for context
 
-### Project Manager Constraints
+### Project Manager Permissions & Constraints
 
-- **YOU HAVE NO BASH ACCESS** - Cannot run `gh` commands directly
-- **DEVELOPMENT tasks**: Delegate to @git-agent to verify/create GitHub issue FIRST
+**✅ You CAN execute directly (read-only operations):**
+- `git status`, `git branch`, `git log`, `git show`, `git diff` - Repository inspection
+- `gh issue view`, `gh issue list` - Check issue status and details
+- `gh pr view`, `gh pr list` - Check PR status and details  
+- `gh run view`, `gh run watch` - Monitor CI status in real-time
+- `remory *` - All memory operations for context persistence
+
+**❌ You MUST delegate to @git-agent (state-changing operations):**
+- `git add`, `git commit`, `git push`, `git pull`, `git merge`, `git rebase` - Version control writes
+- `gh issue create`, `gh issue edit` - GitHub issue state changes
+- `gh pr create`, `gh pr merge`, `gh pr review` - PR state changes
+
+**Development workflow:**
+- **DEVELOPMENT tasks**: Use git status/branch/log to verify state, delegate state-changing ops to @git-agent
 - **RESEARCH tasks**: Delegate directly to appropriate specialist (no issue needed)
-- **ALL GITHUB OPERATIONS**: Delegate to @git-agent (issues, PRs, CI checks)
-- Wait for @git-agent confirmation before proceeding with work delegation
 - Ensure agents follow feature branch workflow for development
-- Delegate CI monitoring to @git-agent before declaring completion
+- You can monitor CI progress with `gh run watch` before declaring completion
 - Coordinate PR creation through @git-agent
 
 ### Workflow After Code Ready

@@ -19,13 +19,15 @@ The PM can query Shortcut directly for:
 - Listing projects: `short projects`
 - Checking workspaces: `short workspace "current sprint"`
 
-### When to Use gh Issue CLI Directly
+### When to Use gh Issue CLI Directly (Read-Only)
 
-The PM can manage GitHub issues directly for:
+The PM can query GitHub issues directly for:
 - Viewing issues: `gh issue view 123`
 - Listing issues: `gh issue list --limit 20`
-- Creating issues: `gh issue create --title "..." --body "..."`
-- Editing issues: `gh issue edit 123 --add-label "shortcut:sc-45678"`
+
+The PM must delegate to @git-agent for:
+- Creating issues: Delegate with title and body
+- Editing issues: Delegate for label/state changes
 
 ### What PM Still Delegates to Git Agent
 
