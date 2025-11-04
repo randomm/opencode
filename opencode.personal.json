@@ -1,55 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "hooks": [
-    {
-      "name": "onSave",
-      "matcher": "**/*.py",
-      "run": [
-        "ruff check --fix .",
-        "mypy .",
-        "black --quiet ."
-      ]
-    },
-    {
-      "name": "onSave",
-      "matcher": "**/*.{js,ts,jsx,tsx}",
-      "run": [
-        "eslint . --fix",
-        "tsc --noEmit",
-        "prettier --write ."
-      ]
-    },
-    {
-      "name": "onSave",
-      "matcher": "**/*.rs",
-      "run": [
-        "cargo clippy --all-targets",
-        "cargo fmt --all"
-      ]
-    },
-    {
-      "name": "onSave",
-      "matcher": "**/*.sh",
-      "run": [
-        "shellcheck -x $FILE"
-      ]
-    },
-    {
-      "name": "onSave",
-      "matcher": "**/*.rb",
-      "run": [
-        "rubocop --autocorrect"
-      ]
-    },
-    {
-      "name": "onSave",
-      "matcher": "**/*.go",
-      "run": [
-        "go fmt .",
-        "golangci-lint run"
-      ]
-    }
-  ],
   "instructions": [
     "instructions/memory-protocol-mandatory.md",
     "instructions/workflow-standards.md",
@@ -63,303 +13,303 @@
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
-        "permission": {
-          "bash": {
-            "remory *": "allow",
-            "export PROJECT_ID=*": "allow",
-            "cat *": "allow",
-            "uuidgen*": "allow",
-            "echo*": "allow",
-            "tee*": "allow",
-            "rg*": "allow",
-            "jq*": "allow",
-            "wc*": "allow",
-            "gh issue view*": "allow",
-            "gh issue list*": "allow",
-            "gh issue create*": "allow",
-            "gh issue edit*": "allow",
-            "*": "deny"
-          },
-          "write": "deny",
-          "edit": "deny"
+      "permission": {
+        "bash": {
+          "remory *": "allow",
+          "export PROJECT_ID=*": "allow",
+          "cat *": "allow",
+          "uuidgen*": "allow",
+          "echo*": "allow",
+          "tee*": "allow",
+          "rg*": "allow",
+          "jq*": "allow",
+          "wc*": "allow",
+          "gh issue view*": "allow",
+          "gh issue list*": "allow",
+          "gh issue create*": "allow",
+          "gh issue edit*": "allow",
+          "*": "deny"
         },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "webfetch": true,
-         "websearch": true,
-         "todowrite": true
-       }
-     },
- "python-best-practices-architect": {
-        "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/python-best-practices.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+        "write": "deny",
+        "edit": "deny"
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "websearch": true,
+        "todowrite": true
+      }
     },
- "git-agent": {
-        "description": "Git and GitHub workflow expert for version control and PR management",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/git-agent.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "webfetch": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "python-best-practices-architect": {
+      "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/python-best-practices.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
- "rails-architect": {
-        "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/rails-architect.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "git-agent": {
+      "description": "Git and GitHub workflow expert for version control and PR management",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/git-agent.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
- "react-native-mobile-specialist": {
-        "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "rails-architect": {
+      "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/rails-architect.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
- "react-web-specialist": {
-        "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/react-web-specialist.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "react-native-mobile-specialist": {
+      "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
-     "postgres-specialist": {
-       "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/postgres-specialist.txt}",
-       "permission": {
-         "bash": {
-           "short *": "allow",
+    "react-web-specialist": {
+      "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/react-web-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    },
+    "postgres-specialist": {
+      "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/postgres-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -389,149 +339,149 @@
           "*": "allow"
         }
       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true,
-         "mcp_fuzu_metabase_query": true,
-         "mcp_fuzu_production_query": true,
-         "mcp_fuzu_staging_query": true,
-         "mcp_barona_production_query": true
-       }
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true,
+        "mcp_fuzu_metabase_query": true,
+        "mcp_fuzu_production_query": true,
+        "mcp_fuzu_staging_query": true,
+        "mcp_barona_production_query": true
+      }
     },
- "api-design-architect": {
-        "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/api-design.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "webfetch": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "api-design-architect": {
+      "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/api-design.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
- "devops-infrastructure": {
-        "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/devops-infrastructure.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "webfetch": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+    "devops-infrastructure": {
+      "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/devops-infrastructure.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
-     "code-review-specialist": {
-       "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/code-review-specialist.txt}",
-       "permission": {
-         "edit": "deny",
-         "bash": {
-           "short *": "allow",
+    "code-review-specialist": {
+      "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/code-review-specialist.txt}",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "short *": "allow",
           "gh *": "allow",
           "echo*": "allow",
           "grep*": "allow",
@@ -587,177 +537,63 @@
           "bun add*": "deny"
         }
       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": false,
-         "edit": false,
-         "multiedit": false,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": false,
+        "edit": false,
+        "multiedit": false,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
- "rust-tdd-architect": {
-        "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/rust-tdd-architect.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
-    },
- "shell-script-architect": {
-        "description": "Minimalist shell scripting expert - POSIX-first, portable, elegant automation using built-in commands and defensive programming",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/shell-script-architect.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
-    },
- "technical-writer": {
-        "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/technical-writer.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
+    "rust-tdd-architect": {
+      "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/rust-tdd-architect.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
       "tools": {
         "bash": true,
         "glob": true,
@@ -767,79 +603,193 @@
         "write": true,
         "edit": true,
         "multiedit": true,
-         "todowrite": true,
-         "webfetch": true,
-         "websearch": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
-     },
- "go-tdd-architect": {
-        "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/go-tdd-architect.txt}",
-        "permission": {
-          "bash": {
-            "short *": "allow",
-           "git add*": "deny",
-           "git commit*": "deny",
-           "git push*": "deny",
-           "git pull*": "deny",
-           "git merge*": "deny",
-           "git rebase*": "deny",
-           "git reset*": "deny",
-           "git revert*": "deny",
-           "git checkout*": "deny",
-           "git switch*": "deny",
-           "git branch*": "deny",
-           "git tag*": "deny",
-           "git remote*": "deny",
-           "git clone*": "deny",
-           "git cherry-pick*": "deny",
-           "git stash*": "deny",
-           "git apply*": "deny",
-           "git am*": "deny",
-           "gh pr create*": "deny",
-           "gh pr merge*": "deny",
-           "gh pr close*": "deny",
-           "gh pr edit*": "deny",
-           "gh issue create*": "deny",
-           "gh issue close*": "deny",
-           "gh issue edit*": "deny",
-           "pulumi *": "deny",
-           "psql*": "deny",
-           "mysql*": "deny",
-           "mongosh*": "deny",
-           "redis-cli*": "deny",
-           "sqlite3*": "deny",
-           "*": "allow"
-         }
-       },
-       "tools": {
-         "bash": true,
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "write": true,
-         "edit": true,
-         "multiedit": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
     },
-     "research-specialist": {
-       "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/research-specialist.txt}",
-       "permission": {
-         "bash": {
-           "short *": "allow",
+    "shell-script-architect": {
+      "description": "Minimalist shell scripting expert - POSIX-first, portable, elegant automation using built-in commands and defensive programming",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/shell-script-architect.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    },
+    "technical-writer": {
+      "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/technical-writer.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "webfetch": true,
+        "websearch": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    },
+    "go-tdd-architect": {
+      "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/go-tdd-architect.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
+          "git add*": "deny",
+          "git commit*": "deny",
+          "git push*": "deny",
+          "git pull*": "deny",
+          "git merge*": "deny",
+          "git rebase*": "deny",
+          "git reset*": "deny",
+          "git revert*": "deny",
+          "git checkout*": "deny",
+          "git switch*": "deny",
+          "git branch*": "deny",
+          "git tag*": "deny",
+          "git remote*": "deny",
+          "git clone*": "deny",
+          "git cherry-pick*": "deny",
+          "git stash*": "deny",
+          "git apply*": "deny",
+          "git am*": "deny",
+          "gh pr create*": "deny",
+          "gh pr merge*": "deny",
+          "gh pr close*": "deny",
+          "gh pr edit*": "deny",
+          "gh issue create*": "deny",
+          "gh issue close*": "deny",
+          "gh issue edit*": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "allow"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "write": true,
+        "edit": true,
+        "multiedit": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    },
+    "research-specialist": {
+      "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/research-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short *": "allow",
           "remory *": "allow",
           "export PROJECT_ID=*": "allow",
           "uuidgen*": "allow",
@@ -864,121 +814,163 @@
           "git push*": "deny",
           "git pull*": "deny",
           "git merge*": "deny",
-           "git rebase*": "deny",
-            "aws * describe*": "allow",
-            "aws * list*": "allow",
-            "aws * get*": "allow",
-            "aws * search*": "allow",
-            "aws * lookup*": "allow",
-            "aws * show*": "allow",
-            "aws * create*": "deny",
-            "aws * delete*": "deny",
-            "aws * put*": "deny",
-            "aws * update*": "deny",
-            "aws * modify*": "deny",
-            "aws * attach*": "deny",
-            "aws * detach*": "deny",
-            "aws * terminate*": "deny",
-            "aws * start*": "deny",
-            "aws * stop*": "deny",
-            "aws * reboot*": "deny",
-            "aws * remove*": "deny",
-            "aws * add*": "deny",
-            "aws * set*": "deny",
-            "aws * tag*": "deny",
-            "aws * untag*": "deny",
-            "aws * associate*": "deny",
-            "aws * disassociate*": "deny",
-            "aws * replace*": "deny",
-            "aws * restore*": "deny",
-            "aws * copy*": "deny",
-            "aws * import*": "deny",
-            "aws * pass*": "deny",
-            "aws * assume*": "deny",
-            "aws * grant*": "deny",
-            "aws * revoke*": "deny",
-           "*": "deny"
+          "git rebase*": "deny",
+          "aws * describe*": "allow",
+          "aws * list*": "allow",
+          "aws * get*": "allow",
+          "aws * search*": "allow",
+          "aws * lookup*": "allow",
+          "aws * show*": "allow",
+          "aws * create*": "deny",
+          "aws * delete*": "deny",
+          "aws * put*": "deny",
+          "aws * update*": "deny",
+          "aws * modify*": "deny",
+          "aws * attach*": "deny",
+          "aws * detach*": "deny",
+          "aws * terminate*": "deny",
+          "aws * start*": "deny",
+          "aws * stop*": "deny",
+          "aws * reboot*": "deny",
+          "aws * remove*": "deny",
+          "aws * add*": "deny",
+          "aws * set*": "deny",
+          "aws * tag*": "deny",
+          "aws * untag*": "deny",
+          "aws * associate*": "deny",
+          "aws * disassociate*": "deny",
+          "aws * replace*": "deny",
+          "aws * restore*": "deny",
+          "aws * copy*": "deny",
+          "aws * import*": "deny",
+          "aws * pass*": "deny",
+          "aws * assume*": "deny",
+          "aws * grant*": "deny",
+          "aws * revoke*": "deny",
+          "*": "deny"
         },
         "write": "deny",
         "edit": "deny"
       },
-       "tools": {
-         "glob": true,
-         "grep": true,
-         "list": true,
-         "read": true,
-         "webfetch": true,
-         "websearch": true,
-         "todowrite": true,
-         "perplexity-ask_search": true,
-         "perplexity-ask_reason": true,
-         "perplexity-ask_deep_research": true
-       }
-     }
-   },
-   "experimental": {
-     "hook": {
-       "file_edited": {
-         "python_linter": [
-           {
-             "command": ["ruff", "check", "--fix", "."],
-             "environment": {}
-           },
-           {
-             "command": ["mypy", "."],
-             "environment": {}
-           },
-           {
-             "command": ["black", "--quiet", "."],
-             "environment": {}
-           }
-         ],
-         "javascript_linter": [
-           {
-             "command": ["eslint", ".", "--fix"],
-             "environment": {}
-           },
-           {
-             "command": ["prettier", "--write", "."],
-             "environment": {}
-           }
-         ],
-         "rust_linter": [
-           {
-             "command": ["cargo", "clippy", "--all-targets"],
-             "environment": {}
-           },
-           {
-             "command": ["cargo", "fmt", "--all"],
-             "environment": {}
-           }
-         ],
-         "shell_linter": [
-           {
-             "command": ["shellcheck", "-x", "**/*.sh"],
-             "environment": {}
-           }
-         ],
-         "ruby_linter": [
-           {
-             "command": ["rubocop", "--autocorrect"],
-             "environment": {}
-           }
-         ],
-         "go_linter": [
-           {
-             "command": ["go", "fmt", "."],
-             "environment": {}
-           },
-           {
-             "command": ["golangci-lint", "run"],
-             "environment": {}
-           }
-         ]
-       }
-     }
-   },
-   "mcp": {
+      "tools": {
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "websearch": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    }
+  },
+  "experimental": {
+    "hook": {
+      "file_edited": {
+        "python_linter": [
+          {
+            "command": [
+              "ruff",
+              "check",
+              "--fix",
+              "."
+            ],
+            "environment": {}
+          },
+          {
+            "command": [
+              "mypy",
+              "."
+            ],
+            "environment": {}
+          },
+          {
+            "command": [
+              "black",
+              "--quiet",
+              "."
+            ],
+            "environment": {}
+          }
+        ],
+        "javascript_linter": [
+          {
+            "command": [
+              "eslint",
+              ".",
+              "--fix"
+            ],
+            "environment": {}
+          },
+          {
+            "command": [
+              "prettier",
+              "--write",
+              "."
+            ],
+            "environment": {}
+          }
+        ],
+        "rust_linter": [
+          {
+            "command": [
+              "cargo",
+              "clippy",
+              "--all-targets"
+            ],
+            "environment": {}
+          },
+          {
+            "command": [
+              "cargo",
+              "fmt",
+              "--all"
+            ],
+            "environment": {}
+          }
+        ],
+        "shell_linter": [
+          {
+            "command": [
+              "shellcheck",
+              "-x",
+              "**/*.sh"
+            ],
+            "environment": {}
+          }
+        ],
+        "ruby_linter": [
+          {
+            "command": [
+              "rubocop",
+              "--autocorrect"
+            ],
+            "environment": {}
+          }
+        ],
+        "go_linter": [
+          {
+            "command": [
+              "go",
+              "fmt",
+              "."
+            ],
+            "environment": {}
+          },
+          {
+            "command": [
+              "golangci-lint",
+              "run"
+            ],
+            "environment": {}
+          }
+        ]
+      }
+    }
+  },
+  "mcp": {
     "perplexity-ask": {
       "type": "local",
       "command": [
