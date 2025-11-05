@@ -8,7 +8,8 @@
     "instructions/tool-preferences.md",
     "instructions/shortcut-cli-awareness.md",
     "instructions/remory-cli-reference.md",
-    "instructions/postgres-mcp-databases.md"
+    "instructions/postgres-mcp-databases.md",
+    "instructions/rollbar-mcp-integration.md"
   ],
   "agent": {
     "project-manager": {
@@ -1004,6 +1005,14 @@
     "barona-production-db": {
       "type": "local",
       "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:BARONA_PRODUCTION_DB_RO}"],
+      "enabled": true
+    },
+    "rollbar-error-investigation": {
+      "type": "stdio",
+      "command": ["npx", "@rollbar/mcp-server"],
+      "environment": {
+        "ROLLBAR_TOKEN": "{env:ROLLBAR_TOKEN}"
+      },
       "enabled": true
     }
   },
