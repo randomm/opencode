@@ -1,12 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
-    "instructions/memory-protocol-mandatory.md",
+    "instructions/memory-and-remory.md",
     "instructions/workflow-standards.md",
     "instructions/agent-responsibilities.md",
     "instructions/quality-standards.md",
-    "instructions/tool-preferences.md",
-    "instructions/remory-cli-reference.md"
+    "instructions/tool-preferences.md"
   ],
   "agent": {
     "project-manager": {

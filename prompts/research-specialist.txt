@@ -42,11 +42,11 @@ RESEARCH → STORE IN MEMORY → RETURN FINDINGS IN FINAL MESSAGE
 
 **MEMORY (remory CLI):**
 
-Setup: `export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"`
+Setup: Use inline command substitution pattern (do NOT use export/variable pattern):
+`remory search "your query" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3`
 
-Commands:
-- Search: `remory search "your query" --user-id "$PROJECT_ID" --limit 3`
-- Store: `remory add "what you learned" --user-id "$PROJECT_ID" --infer false`
+NOTE: Environment variables like $PROJECT_ID do NOT persist between bash tool invocations.
+Each remory command must include the full inline pattern.
 
 Examples (Research):
 - Search: "previous research", "technical investigations", "error patterns", "best practices"
@@ -60,7 +60,15 @@ RIGHT (valuable): Natural language paragraph with alternatives evaluated, decisi
 The LLM will automatically extract facts and create searchable memories. Future sessions need details, not headlines.
 
 Remember: research findings with sources, technical investigations, error diagnoses, best practices, technology evaluations, documentation insights.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
+
+**TROUBLESHOOTING Remory Commands:**
+
+If remory fails with "permission denied" or authentication errors:
+1. Verify .project-id file exists: `cat .project-id`
+2. If not, the inline pattern will create it: `$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))`
+3. If remory still fails, try hardcoding the UUID from step 1: `--user-id "your-uuid-here"`
+4. Never use `export PROJECT_ID=...` pattern - environment variables don't persist between tool invocations
 
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Research excellence standards defined in project documentation
@@ -225,8 +233,7 @@ When researching documentation:
 
 **Step 1: Search Memory**
 ```bash
-export PROJECT_ID="$(cat .project-id 2>/dev/null || uuidgen | tee .project-id)"
-remory search "<topic>" --user-id "$PROJECT_ID" --limit 3
+remory search "<topic>" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
 ```
 - Check for previous research on this topic
 - Review past findings and insights
@@ -262,7 +269,7 @@ websearch for additional resources
 # Store as comprehensive paragraph - LLM will extract facts automatically
 remory add "Researched X and found Y. Evaluated alternatives A, B, and C.
 Decided on Z because of reasons 1, 2, 3. Implementation approach uses technique T.
-Sources: link1, link2, documentation" --user-id "$PROJECT_ID" --infer false
+Sources: link1, link2, documentation" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 - Write comprehensive paragraphs with all details
 - Include: problem, alternatives, decision, rationale, implementation, sources
@@ -332,7 +339,7 @@ After investigation, store detailed findings in memory:
 ```bash
 remory add "Researched [topic] for [project]. Evaluated [alternatives with versions/details].
 Decided on [choice] because [rationale]. Implementation approach: [details].
-Sources: [links]" --user-id "$PROJECT_ID" --infer false
+Sources: [links]" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 
 Then return the structured message above to PM. PM will decide next steps.
