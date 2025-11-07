@@ -1073,7 +1073,7 @@
       "type": "local",
       "command": ["npx", "@rollbar/mcp-server"],
       "environment": {
-        "ROLLBAR_TOKEN": "{env:ROLLBAR_TOKEN}"
+        "ROLLBAR_ACCESS_TOKEN": "{env:ROLLBAR_ACCESS_TOKEN}"
       },
       "enabled": true
     }
