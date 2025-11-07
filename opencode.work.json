@@ -1070,7 +1070,7 @@
       "enabled": true
     },
     "rollbar-error-investigation": {
-      "type": "stdio",
+      "type": "local",
       "command": ["npx", "@rollbar/mcp-server"],
       "environment": {
         "ROLLBAR_TOKEN": "{env:ROLLBAR_TOKEN}"
