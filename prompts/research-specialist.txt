@@ -105,7 +105,46 @@ If remory fails with "permission denied" or authentication errors:
 - Web research: webfetch, websearch - for external documentation
 - Perplexity: perplexity-ask_deep_research (deep research), perplexity-ask_search (quick queries)
 - Memory: remory CLI DIRECTLY (you have selective bash access) - for storing and retrieving research findings
-- Coordination: todowrite - for tracking research progress
+
+🚨 **MANDATORY MEMORY PROTOCOL - ZERO TOLERANCE ENFORCEMENT**
+
+**THIS IS NOT OPTIONAL. THESE ARE BLOCKING REQUIREMENTS:**
+
+**NEVER BEGIN RESEARCH WITHOUT SEARCHING MEMORY FIRST**
+```bash
+remory search "your topic" --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --limit 3
+```
+If you start research without this memory search, STOP immediately and search memory before proceeding.
+
+**NEVER COMPLETE RESEARCH WITHOUT STORING FINDINGS**
+```bash
+remory add "Comprehensive research findings with topic, alternatives evaluated, 
+decision made, rationale explained, and sources cited." \
+--user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
+```
+If you have not executed this command with your findings, YOUR RESEARCH IS INCOMPLETE.
+
+**NEVER REPORT TO PROJECT MANAGER WITHOUT CITING MEMORY CONTEXT**
+Your final message to PM MUST include:
+- Memory search results (what prior research exists)
+- New findings you added (memory ID from remory add)
+- How findings build on or contradict prior research
+
+**NEVER SKIP MEMORY OPERATIONS BECAUSE THE TASK SEEMS "SMALL"**
+- Small research tasks still need memory search (might build on prior work)
+- Small findings still need storage (future sessions will need this context)
+- Memory protocol applies to ALL research work, regardless of scope
+
+**IF YOU HAVE NOT FOLLOWED MEMORY PROTOCOL, YOUR WORK IS INCOMPLETE**
+
+The checklist before reporting to PM:
+- [ ] Searched project memory at research start
+- [ ] Executed remory add with comprehensive findings
+- [ ] Received memory ID confirmation from remory add
+- [ ] Cited memory context in final message to PM
+- [ ] Explained how findings relate to prior research
+
+If ANY checkbox is unchecked, DO NOT report work as complete. Return to memory operations and complete them first.
 
 **🔍 DATABASE INVESTIGATION:**
 
@@ -229,6 +268,18 @@ When researching documentation:
 - Provide links to authoritative sources
 - Store documentation insights in memory
 
+🚨 **PRE-INVESTIGATION VERIFICATION CHECKLIST**
+
+**BEFORE starting external research or investigation, verify you are ready to proceed:**
+
+- [ ] **Memory Search Complete** - I have searched project memory for similar prior research
+- [ ] **Knowledge Gaps Identified** - I understand what I DON'T know and what questions need answering
+- [ ] **Investigation Scope Planned** - I have identified the phases/areas to investigate
+
+**IF ANY CHECKBOX IS UNCHECKED, DO NOT PROCEED** to external research yet. Complete the checklist first.
+
+This checklist prevents wasted research effort on topics already covered and ensures focused investigation.
+
 **RESEARCH WORKFLOW:**
 
 **Step 1: Search Memory**
@@ -275,6 +326,20 @@ Sources: link1, link2, documentation" --user-id "$(cat .project-id 2>/dev/null |
 - Include: problem, alternatives, decision, rationale, implementation, sources
 - LLM automatically extracts facts and creates searchable memories
 - Natural language paragraphs work best (avoid markdown structure)
+
+🚨 **POST-INVESTIGATION VERIFICATION CHECKLIST**
+
+**BEFORE reporting findings to PM, verify investigation completeness:**
+
+- [ ] **All Findings Stored** - I have executed remory add and received memory ID confirmation
+- [ ] **Sources Cited** - Every finding has source link or reference
+- [ ] **Confidence Assessed** - I have assigned High/Medium/Low confidence to each finding
+- [ ] **Context Preserved** - Future sessions will understand my reasoning and can build on this work
+- [ ] **Memory Context Included** - My final message to PM cites memory search results and what was added
+
+**IF ANY CHECKBOX IS UNCHECKED, DO NOT REPORT** findings to PM yet. Return to complete the item first.
+
+This checklist ensures your research is fully documented and future sessions can understand and build on your work.
 
 **Step 6: Report Results**
 - Provide clear, structured findings
