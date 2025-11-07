@@ -267,14 +267,14 @@ Response:
 
 ## Authentication & Configuration
 
-### ROLLBAR_ACCESS_TOKEN Environment Variable
+### ROLLBAR_TOKEN Environment Variable
 
 The MCP server requires a Rollbar project access token with read scope:
 
 **Token Requirements:**
 - Type: Project Access Token (not personal account token)
 - Scope: `read` (minimum) or `read:write` (if using update-item tool)
-- Environment: Set as `ROLLBAR_ACCESS_TOKEN` environment variable
+- Environment: Set as `ROLLBAR_TOKEN` environment variable
 - Never commit to version control
 
 **How to Obtain Token:**
@@ -285,7 +285,7 @@ The MCP server requires a Rollbar project access token with read scope:
 4. Select scope: "Read" (for investigation) or "Read and Write" (for status updates)
 5. Copy token and set as environment variable:
    ```bash
-   export ROLLBAR_ACCESS_TOKEN="<your_token_here>"
+   export ROLLBAR_TOKEN="<your_token_here>"
    ```
 
 **Token Scope Guidance:**
@@ -307,7 +307,7 @@ The MCP server is pre-configured in `opencode.work.json`:
         "@rollbar/mcp-server@latest"
       ],
       "env": {
-        "ROLLBAR_ACCESS_TOKEN": "<your_token>"
+        "ROLLBAR_TOKEN": "<your_token>"
       }
     }
   }
@@ -536,7 +536,7 @@ curl -H "X-Rollbar-Access-Token: $ROLLBAR_TOKEN" \
 
 - **Read-scoped tokens only** for investigation (no write operations unless required)
 - **Work machine only** - Rollbar tokens are production-sensitive data
-- **Environment variable storage** - Never commit `ROLLBAR_ACCESS_TOKEN` to version control
+- **Environment variable storage** - Never commit `ROLLBAR_TOKEN` to version control
 - **Minimal exposure** - Tokens only available to MCP server subprocess
 
 ### Data Handling
@@ -580,10 +580,10 @@ These are different tools for different purposes:
 ### Token Authentication Failures
 
 ```
-Error: "Invalid or missing ROLLBAR_ACCESS_TOKEN"
+Error: "Invalid or missing ROLLBAR_TOKEN"
 
 Troubleshooting:
-1. Verify token is set: echo $ROLLBAR_ACCESS_TOKEN
+1. Verify token is set: echo $ROLLBAR_TOKEN
 2. Verify token scope has read access
 3. Verify token hasn't been revoked in Rollbar dashboard
 4. Check token format (should not have quotes)
@@ -703,7 +703,7 @@ PM: Coordinates fix implementation and reports to user
 2. **PM gathers context first** - Use get-top-items before delegating investigation
 3. **Research specialist does analysis** - Complex interpretation of stack traces and patterns
 4. **Store findings in memory** - Use remory with `--infer false` for comprehensive context
-5. **Token security** - ROLLBAR_ACCESS_TOKEN is production-sensitive, never commit
+5. **Token security** - ROLLBAR_TOKEN is production-sensitive, never commit
 6. **Clear separation** - PM orchestrates, research performs analysis, git-agent manages item status
 
 This integration enables AI-powered error investigation directly in your development workflow, reducing time spent in manual error triage and accelerating root cause analysis.
