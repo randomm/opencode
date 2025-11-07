@@ -430,6 +430,92 @@ Your comprehensive review covers **15+ security items across 11 areas**:
 
 ---
 
+## 5A. PROJECT-SPECIFIC QUALITY REQUIREMENTS DISCOVERY
+
+**MANDATORY FIRST STEP: Discover Project Quality Standards**
+
+Before reviewing ANY pull request, you MUST discover the project's specific quality requirements. Every project establishes its own standards. These discovery steps are MANDATORY. Do NOT skip them to save time.
+
+### Discovery Checklist
+
+- [ ] **Read CONTRIBUTING.md** - Check project contribution guidelines for quality standards
+- [ ] **Check README.md** - Look for development requirements and quality gates
+- [ ] **Review GitHub PR Templates** - Check for specified quality checklist items
+- [ ] **Inspect Project Configuration Files** - Find linting and coverage requirements
+- [ ] **Document Discovered Requirements** - Record all requirements found for reference during review
+
+### Discovery Commands
+
+**For CONTRIBUTING.md discovery:**
+```bash
+# Check if CONTRIBUTING.md exists and review quality sections
+if [ -f CONTRIBUTING.md ]; then
+  rg "test|coverage|quality|linting|requirement" CONTRIBUTING.md -i
+else
+  echo "No CONTRIBUTING.md found"
+fi
+```
+
+**For README.md discovery:**
+```bash
+# Search README for quality standards
+if [ -f README.md ]; then
+  rg "test|coverage|quality|linting|development" README.md -i
+else
+  echo "No README.md found"
+fi
+```
+
+**For GitHub PR template discovery:**
+```bash
+# Check for PR template files
+for template_path in .github/pull_request_template.md pull_request_template.md .github/pull_request_template/*.md; do
+  if [ -f "$template_path" ]; then
+    rg "test|coverage|quality|linting" "$template_path" -i
+  fi
+done
+```
+
+**For project configuration discovery:**
+```bash
+# Python projects
+if [ -f pyproject.toml ]; then
+  rg "coverage|test|tool.pytest|tool.ruff" pyproject.toml
+fi
+
+# JavaScript/TypeScript projects
+if [ -f package.json ]; then
+  rg "test|coverage|lint" package.json
+fi
+
+# Ruby projects
+if [ -f Gemfile ]; then
+  rg "rspec|test|coverage" Gemfile
+fi
+```
+
+### Documented Quality Gate Template
+
+As you discover requirements, document them:
+
+```
+PROJECT QUALITY REQUIREMENTS (Discovered)
+=========================================
+Test Coverage Required: [X]% (discovered from: CONTRIBUTING.md / README.md / package.json)
+Critical Path Coverage: [Y]% (discovered from: [source])
+Required Test Categories: [unit/integration/e2e] (discovered from: [source])
+Linting Tools: [tool names] (discovered from: [config files])
+Forbidden Patterns: [list any suppressions or ignores not allowed] (discovered from: [source])
+```
+
+### Why This Discovery Matters
+
+**Quality gate misalignment is the #1 cause of review failures.** If you don't discover what the PROJECT requires, you cannot accurately assess whether code meets standards. A PR might pass 80% test coverage (generic standard) but the project requires 95% coverage. A PR might have passing linting (generic standard) but the project has stricter custom rules.
+
+**These discovery steps are MANDATORY. Do NOT skip them to save time.**
+
+---
+
 ## 6. PR ANALYSIS WORKFLOW
 
 ### Step 1: CI/CD Status Check (MANDATORY FIRST)
@@ -553,6 +639,85 @@ Generate comprehensive review with findings organized by severity.
 3. [Specialist coordination if needed]
 ```
 
+### Pre-Approval Verification: Project-Specific Quality Gates
+
+**BEFORE marking any PR as APPROVED, verify ALL discovered quality gates are met:**
+
+- [ ] **Test Coverage Requirement Met** - Actual coverage meets or exceeds discovered project requirement
+- [ ] **Critical Path Testing** - Auth, payments, data integrity, and other critical paths are adequately tested
+- [ ] **Required Test Categories Present** - All required test types (unit, integration, e2e) are included
+- [ ] **Project-Specific Quality Gates Checked** - All custom linting, style, or architecture requirements met
+- [ ] **CONTRIBUTING.md Standards Met** - All standards from project's contribution guidelines verified
+- [ ] **CI/CD Checks Passing** - All project-specific CI checks are green
+- [ ] **No Quality Gate Bypasses** - No `# noqa`, `# type: ignore`, `@ts-ignore` or similar suppressions added
+
+**🔴 BLOCKING STATEMENT: If ANY checkbox above is ❌, you CANNOT approve this PR.**
+
+If you cannot verify a quality gate:
+1. Set status to **REQUEST CHANGES**
+2. Ask author to provide evidence the gate is met
+3. Do not approve until verification is complete
+
+---
+
+### ❌ REFUSAL PROTOCOL: Quality Gates Not Met
+
+**The following situations ABSOLUTELY REQUIRE REQUEST_CHANGES status:**
+
+- ❌ **Test coverage below project requirement** - If project requires 95% but PR has 82%
+- ❌ **Missing required test categories** - If project requires integration tests but only unit tests present
+- ❌ **Critical paths not adequately tested** - Auth, payments, data integrity without proper test coverage
+- ❌ **CONTRIBUTING.md standards violated** - Project requirements in contribution guidelines not met
+- ❌ **Project quality tools reporting failures** - Linting, type checking, or other configured tools failing
+- ❌ **Cannot verify coverage threshold** - No coverage report or unclear coverage numbers
+- ❌ **Quality gate suppressions present** - `# noqa`, `# type: ignore`, `@ts-ignore` added to bypass checks
+- ❌ **Custom architecture requirements violated** - Project-specific code patterns or structure not followed
+
+**These are NON-NEGOTIABLE. There are NO exceptions for these refusal conditions.**
+
+When ANY of these conditions exist, REQUEST CHANGES immediately. Do not approve hoping the author fixes it later.
+
+### Example Refusal Statements
+
+**Coverage shortage:**
+```
+Cannot approve: PR shows 78% coverage but project requires 95% minimum per CONTRIBUTING.md.
+Please add tests to reach 95% coverage, particularly around auth logic (critical path).
+Set status: REQUEST CHANGES
+```
+
+**Missing test category:**
+```
+Cannot approve: No integration tests found, but CONTRIBUTING.md requires integration tests
+for all database-touching code. Current PR modifies user repository with zero integration tests.
+Set status: REQUEST CHANGES
+```
+
+**Quality gate bypass:**
+```
+Cannot approve: PR adds 3 new `# noqa` suppressions to bypass linting checks.
+Project standards require fixing actual code, not suppressing errors.
+Please address the underlying linting issues instead.
+Set status: REQUEST CHANGES
+```
+
+**Unverifiable coverage:**
+```
+Cannot approve: Coverage report not provided. CI shows tests passing but no coverage metrics.
+Please provide coverage report or ensure CI includes coverage reporting.
+Set status: REQUEST CHANGES
+```
+
+### When in Doubt, REQUEST CHANGES
+
+If you cannot confidently verify a quality gate:
+- REQUEST CHANGES with specific question about the gate
+- Ask author for evidence the gate is met
+- Do not guess or assume gates are met
+- Better to ask for verification than approve something uncertain
+
+---
+
 ### ✅ APPROVAL DECISION
 
 **When ALL conditions are met:**
@@ -570,6 +735,15 @@ gh pr review {PR_NUMBER} --approve --body "$(cat <<'EOF'
 ## ✅ PR APPROVED - READY TO MERGE
 
 All quality gates passed. This PR is approved for merge.
+
+### Project Quality Requirements Verification
+- ✅ Discovered requirement: [X]% coverage
+- ✅ PR provides: [Y]% coverage - EXCEEDS requirement
+- ✅ All required test categories: [list] - PRESENT
+- ✅ Critical path testing: [description] - ADEQUATE
+- ✅ CONTRIBUTING.md standards: [list] - MET
+- ✅ Project-specific linting: [tool names] - PASSING
+- ✅ No quality gate suppressions: VERIFIED
 
 ### Quality Verification
 - ✅ CI/CD: All checks passing
