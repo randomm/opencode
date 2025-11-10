@@ -94,25 +94,35 @@ Traditional AI coding assistants try to do everything themselves. This configura
 ### Permission Boundaries (Security Through Isolation)
 
 **Project Manager (Primary Agent):**
-- Tools: Read, Glob, Grep, WebFetch, TodoWrite, Memory
-- Bash: Memory CLI only (`remory`, `export PROJECT_ID`, etc.)
-- **CANNOT**: Write files, edit code, execute arbitrary bash, run git
-- **Purpose**: Forces proper delegation, maintains orchestration purity
+- Tools: Read, Glob, Grep, WebFetch, TodoWrite
+- Bash: Read-only operations (`git status/log/show/diff`, `gh issue view/list`, `remory`, basic utilities)
+- **CANNOT**: Write files, edit code, execute arbitrary bash, perform git operations, create/edit issues or PRs
+- **PURPOSE**: Forces proper delegation, maintains orchestration purity
 
 **Specialist Agents (Subagents):**
-- Tools: Full execution (Bash, Read, Write, Edit, etc.)
-- Bash: Everything EXCEPT git write operations
-- **CANNOT**: Git add, commit, push, merge, PR creation
-- **Purpose**: Execute in their domain, delegate git operations
+- Tools: Full execution (Bash, Read, Write, Edit, Perplexity APIs)
+- Bash: Everything in their domain EXCEPT git write operations
+- **CANNOT**: `git add`, `git commit`, `git push`, `git pull`, `git merge`, `gh pr create`, `gh issue create`
+- **CANNOT**: Database clients (psql, mysql, mongosh, redis-cli, sqlite3)
+- **PURPOSE**: Execute in their domain, delegate git operations
 
 **Git Agent:**
-- Tools: Full bash access for all git/gh CLI operations
-- **Purpose**: Single source of truth for version control
+- Tools: Bash (git/gh operations only)
+- Bash: All git and GitHub operations (`git add/commit/push`, `gh pr create/merge`, etc.)
+- **CANNOT**: Application code execution, testing, linting, building
+- **PURPOSE**: Single source of truth for version control
 
 **Code Review Agent:**
+- Tools: Read-only analysis (no Write/Edit/Multiedit)
+- Bash: Testing, linting, and code quality tools only
+- **CANNOT**: Modify files, write code, execute git operations
+- **PURPOSE**: Review code quality without altering code
+
+**Research Specialist:**
 - Tools: Read-only analysis (no Write/Edit)
-- Bash: Testing commands, linting tools only
-- **Purpose**: Review without altering code
+- Bash: Investigation tools only (git read-only, rg, grep, AWS read operations)
+- **CANNOT**: Modify files, execute code, perform git operations, write AWS resources
+- **PURPOSE**: Research and problem analysis without side effects
 
 ### Model Selection Strategy
 
@@ -133,7 +143,7 @@ export SUBAGENT_MODEL="anthropic/claude-haiku-4"
 export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 ```
 
-## 🤖 Agent Roster
+## 🤖 Agent Roster (15 Total: 1 Orchestrator + 14 Specialists)
 
 ### Core Orchestration
 - **`project-manager`** - Pure management, delegates everything, maintains context
@@ -142,8 +152,8 @@ export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 - **`python-best-practices-architect`** - Python with pytest, mypy, black
 - **`rust-tdd-architect`** - Zero-cost abstractions, memory safety, cargo tools
 - **`rails-architect`** - Rails conventions, RSpec, security best practices
+- **`go-tdd-architect`** - Go idiomatic simplicity, stdlib-first, TDD
 - **`shell-script-architect`** - POSIX-first shell scripting, BATS testing, portability
-- **`research-specialist`** - Technical investigation, problem analysis, Perplexity research
 
 ### Frontend Specialists (Platform-Based)
 - **`react-web-specialist`** - React/TypeScript/JavaScript web apps, responsive UI, performance optimization
@@ -158,13 +168,18 @@ export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 - **`devops-infrastructure`** - CI/CD, Kubernetes, monitoring
 - **`code-review-specialist`** - Security analysis, performance review, GitHub PR workflows
 
+### Support & Research
+- **`research-specialist`** - Technical investigation, problem analysis, knowledge discovery
+- **`technical-writer`** - Clear, concise, user-focused documentation
+
 ## 🔧 Configuration Structure
 
 ```
-opencode.work.json      # Work machine config (Shortcut CLI enabled)
-opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
+opencode.work.json         # Work machine config (Shortcut CLI enabled)
+opencode.personal.json     # Personal machine config (Shortcut CLI disabled)
 ├── CLAUDE.md              # Project instructions and conventions
-├── prompts/               # Individual agent prompt files
+├── AGENTS.md              # Complete agent responsibilities and domain restrictions
+├── prompts/               # Individual agent prompt files (15 total)
 │   ├── api-design.txt
 │   ├── code-review-specialist.txt
 │   ├── devops-infrastructure.txt
@@ -182,18 +197,29 @@ opencode.personal.json  # Personal machine config (Shortcut CLI disabled)
 │   └── technical-writer.txt
 ├── instructions/          # Global development standards
 │   ├── agent-responsibilities.md
-│   ├── memory-protocol-mandatory.md
+│   ├── memory-and-remory.md
+│   ├── postgres-mcp-databases.md
 │   ├── quality-standards.md
-│   ├── remory-cli-reference.md
+│   ├── rollbar-mcp-integration.md
 │   ├── shortcut-cli-awareness.md
 │   ├── tool-preferences.md
 │   └── workflow-standards.md
-└── providers/            # MCP provider configurations
+└── command/               # Command-specific instructions
+    └── session-start.md
 ```
 
 ### Machine-Specific Configuration
 
-This configuration uses **machine-specific configs** to handle different permission requirements between work and personal environments.
+This configuration uses **machine-specific configs** to handle different permission requirements between work and personal environments. The primary difference is Shortcut CLI integration.
+
+**Shortcut CLI Access (Work Machine Only):**
+- `opencode.work.json` enables Shortcut CLI for 4 coordination agents:
+  - `project-manager` - `"short*": "allow"`
+  - `git-agent` - `"short*": "allow"`
+  - `research-specialist` - `"short*": "allow"`
+  - `code-review-specialist` - `"short*": "allow"`
+- Implementation specialists (Python, Rust, Rails, React, etc.) do NOT have Shortcut CLI access
+- `opencode.personal.json` disables Shortcut CLI entirely (`"short *": "deny"`)
 
 **REQUIRED Setup (on each machine):**
 
@@ -212,17 +238,16 @@ This configuration uses **machine-specific configs** to handle different permiss
 **Important:** You MUST set `OPENCODE_CONFIG` in your shell profile. Without it, OpenCode won't find a configuration file.
 
 **How It Works:**
-- No base config - each machine uses its specific config file
-- `opencode.work.json` - Complete config with `"short *": "allow"` for Shortcut CLI
-- `opencode.personal.json` - Complete config with `"short *": "deny"` for Shortcut CLI
-- Both configs are identical except for Shortcut CLI permissions
+- No base config - each machine uses its specific config file exclusively
+- Both configs are functionally complete and independent
 - Both files committed and synced via git
 - Environment variable determines which config loads
+- All other permissions are identical between configs
 
 **Why Two Files:**
-- Avoids confusion from having three nearly identical configs
-- Makes machine-specific differences explicit and clear
-- Each config is complete and standalone
+- Makes machine-specific differences (Shortcut CLI access) explicit and clear
+- Prevents confusion from environment-variable-based file overrides
+- Each config is standalone and complete
 
 ## 🌐 Frontend Agent Separation
 
@@ -341,36 +366,35 @@ PM:
 
 The system integrates with several Model Context Protocol servers:
 
-- **Perplexity API** - AI-powered research and problem-solving
+- **Perplexity API** - AI-powered research and problem-solving (semantic search, reasoning, deep research)
 - **PostgreSQL Connections** - Multiple database environments (Fuzu and Barona production databases via read-only MCP servers)
+- **Rollbar Error Investigation** - Production error investigation and analysis
 - **Memory Service (Remory)** - Enhanced semantic memory with vector embeddings
 
-See `instructions/postgres-mcp-databases.md` for database access details.
+See `instructions/postgres-mcp-databases.md` for database access details and `instructions/rollbar-mcp-integration.md` for error investigation setup.
 
 ### Memory Service (Remory)
 
-The system uses **Remory** for advanced memory capabilities, providing significant improvements over basic memory servers:
+The system uses **Remory** for advanced project-scoped memory with semantic search capabilities, providing significant improvements over basic memory servers:
 
 #### Key Features
 - **Semantic Search** - Vector embeddings enable contextual memory retrieval beyond simple text matching
+- **Project-Scoped Memory** - Each project tracked independently via `PROJECT_ID`
 - **LLM-Powered Consolidation** - Intelligent memory organization and conflict resolution
 - **Production-Grade Backend** - PostgreSQL with pgvector extension for scalable vector operations
 - **Performance Improvements** - 5-15x faster memory operations compared to JSON file storage
 - **Multi-Agent Support** - Concurrent access for coordinated agent collaboration
 
+#### How Agents Use Memory
+- **Search**: Load project context before starting work (`remory search "PROJECT_ID <query>"`)
+- **Work**: Track findings and discoveries incrementally during task execution
+- **Store**: Preserve complete outcomes after task completion (`remory add "Project: PROJECT_ID. ..."`)
+
 #### Technical Architecture
 - **Memory Server**: Remory CLI with semantic memory capabilities
-- **Database**: PostgreSQL with pgvector extension for vector operations
-- **Interface**: Bash-based CLI (remory command)
-- **Compatibility**: All existing memory operations work seamlessly via remory CLI
-
-#### Memory Operations
-All agents have access to enhanced memory operations:
-- `memory_create_entities` - Create semantic entities with observations
-- `memory_search_nodes` - Vector-based semantic search
-- `memory_open_nodes` - Retrieve specific memory nodes
-- `memory_add_observations` - Append context to existing entities
-- `memory_read_graph` - Access complete memory structure
+- **Database**: PostgreSQL with pgvector extension for vector operations  
+- **Interface**: Bash-based CLI (`remory search`, `remory add`, `remory get`)
+- **Project Identification**: `$PROJECT_ID` environment variable (auto-created if missing)
 
 #### Performance Benefits
 - **Search Speed**: Vector similarity search vs linear text scanning
@@ -438,13 +462,26 @@ Project Manager:
 
 ## 🔄 Development Workflow
 
+### Environment Variables
 
-Set in `~/.env`:
-- `PERPLEXITY_API_KEY` (required for Perplexity MCP server)
-- `FUZU_METABASE_DB`
-- `FUZU_PRODUCTION_DB_RO`
-- `FUZU_STAGING_DB`
-- `BARONA_PRODUCTION_DB`
+Set in `~/.env` for MCP integrations:
+- **Required:**
+  - `PERPLEXITY_API_KEY` - Perplexity API key for research and analysis
+- **Database Access (optional, work machine only):**
+  - `FUZU_METABASE_DB` - Fuzu Metabase read-only connection
+  - `FUZU_PRODUCTION_DB_RO` - Fuzu production database read-only access
+  - `FUZU_STAGING_DB` - Fuzu staging database access
+  - `BARONA_PRODUCTION_DB` - Barona production database read-only access
+- **Error Investigation (optional):**
+  - `ROLLBAR_ACCESS_TOKEN` - Rollbar API token for error investigation
+
+### Workflow Features
+- **Issue-Driven Development** - All work starts with GitHub issues
+- **Feature Branches** - Work never happens in main branch
+- **TDD Enforcement** - Tests written before implementation
+- **Quality Gates** - All linting, testing, and coverage verified locally
+- **CI Verification** - Real-time monitoring of CI pipeline (gh run watch)
+- **Code Review** - Security and quality analysis before merge
 
 ## 🔒 Security
 
