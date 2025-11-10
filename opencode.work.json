@@ -15,10 +15,15 @@
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
-       "permission": {
-         "bash": {
-           "remory *": "allow",
-           "export PROJECT_ID=*": "allow",
+        "permission": {
+          "bash": {
+            "short*": "allow",
+            "head*": "allow",
+            "tail*": "allow",
+            "sort*": "allow",
+            "uniq*": "allow",
+            "remory *": "allow",
+            "export PROJECT_ID=*": "allow",
            "cat *": "allow",
            "uuidgen*": "allow",
            "echo*": "allow",
@@ -54,15 +59,20 @@
         "todowrite": true
       }
     },
-    "python-best-practices-architect": {
-       "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/python-best-practices.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
-          "git add*": "deny",
+     "python-best-practices-architect": {
+        "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
+        "mode": "subagent",
+        "model": "{env:SUBAGENT_MODEL}",
+        "prompt": "{file:prompts/python-best-practices.txt}",
+        "permission": {
+          "bash": {
+            "short*": "allow",
+            "head*": "allow",
+            "tail*": "allow",
+            "wc*": "allow",
+            "sort*": "allow",
+            "uniq*": "allow",
+           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
           "git pull*": "deny",
@@ -111,15 +121,20 @@
         "perplexity-ask_deep_research": true
       }
     },
-      "git-agent": {
-        "description": "Git and GitHub workflow expert for version control and PR management",
-        "mode": "subagent",
-        "model": "{env:SUBAGENT_MODEL}",
-        "prompt": "{file:prompts/git-agent.txt}",
-        "permission": {
-          "bash": {
-            "short*": "allow",
-           "remory *": "allow",
+       "git-agent": {
+         "description": "Git and GitHub workflow expert for version control and PR management",
+         "mode": "subagent",
+         "model": "{env:SUBAGENT_MODEL}",
+         "prompt": "{file:prompts/git-agent.txt}",
+         "permission": {
+           "bash": {
+             "short*": "allow",
+             "head*": "allow",
+             "tail*": "allow",
+             "wc*": "allow",
+             "sort*": "allow",
+             "uniq*": "allow",
+            "remory *": "allow",
            "export *": "allow",
            "cat *": "allow",
            "echo *": "allow",
@@ -204,14 +219,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "rails-architect": {
-       "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/rails-architect.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "rails-architect": {
+      "description": "Ruby on Rails expert for scalable, secure Rails applications with RSpec testing",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/rails-architect.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -261,14 +281,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "react-native-mobile-specialist": {
-       "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "react-native-mobile-specialist": {
+      "description": "Expo and React Native mobile specialist for iOS/Android cross-platform development",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -318,14 +343,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "react-web-specialist": {
-       "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/react-web-specialist.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "react-web-specialist": {
+      "description": "React/TypeScript/JavaScript web specialist combining React expertise with minimalist philosophy for browser and Node.js applications",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/react-web-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -375,14 +405,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "postgres-specialist": {
-       "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/postgres-specialist.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "postgres-specialist": {
+      "description": "PostgreSQL specialist for schema design, query optimization, performance tuning, with AWS Aurora expertise",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/postgres-specialist.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -430,14 +465,19 @@
         "mcp_barona_production_query": true
       }
     },
-     "api-design-architect": {
-       "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/api-design.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "api-design-architect": {
+      "description": "API design expert for RESTful, GraphQL, and scalable API architecture",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/api-design.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -488,14 +528,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "devops-infrastructure": {
-       "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/devops-infrastructure.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "devops-infrastructure": {
+      "description": "DevOps expert for CI/CD, Docker, Kubernetes, and infrastructure automation",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/devops-infrastructure.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -546,15 +591,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "code-review-specialist": {
-       "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/code-review-specialist.txt}",
-       "permission": {
-         "edit": "deny",
-         "bash": {
-           "short*": "allow",
+    "code-review-specialist": {
+      "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/code-review-specialist.txt}",
+      "permission": {
+        "edit": "deny",
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "gh *": "allow",
           "echo*": "allow",
           "grep*": "allow",
@@ -625,14 +674,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "rust-tdd-architect": {
-       "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/rust-tdd-architect.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "rust-tdd-architect": {
+      "description": "Elite Rust architect - zero-cost abstractions, memory safety, ABSOLUTE MINIMUM code using TDD, std-first philosophy",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/rust-tdd-architect.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -690,7 +744,12 @@
        "permission": {
          "bash": {
            "short*": "allow",
-          "git add*": "deny",
+           "head*": "allow",
+           "tail*": "allow",
+           "wc*": "allow",
+           "sort*": "allow",
+           "uniq*": "allow",
+           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
           "git pull*": "deny",
@@ -739,14 +798,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "technical-writer": {
-       "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/technical-writer.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "technical-writer": {
+      "description": "Lead technical writer creating clear, concise, user-focused documentation with zero bloat",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/technical-writer.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -798,14 +862,19 @@
         "perplexity-ask_deep_research": true
       }
     },
-     "go-tdd-architect": {
-       "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
-       "mode": "subagent",
-       "model": "{env:SUBAGENT_MODEL}",
-       "prompt": "{file:prompts/go-tdd-architect.txt}",
-       "permission": {
-         "bash": {
-           "short*": "allow",
+    "go-tdd-architect": {
+      "description": "Elite Go architect - idiomatic simplicity, stdlib-first, ABSOLUTE MINIMUM code using TDD, following Go proverbs and 2025 best practices",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/go-tdd-architect.txt}",
+      "permission": {
+        "bash": {
+          "short*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
