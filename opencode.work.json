@@ -935,21 +935,25 @@
         "write": "deny",
         "edit": "deny"
       },
-      "tools": {
-        "glob": true,
-        "grep": true,
-        "list": true,
-        "read": true,
-        "webfetch": true,
-        "websearch": true,
-        "todowrite": true,
-        "perplexity-ask_search": true,
-        "perplexity-ask_reason": true,
-        "perplexity-ask_deep_research": true
-      }
-    }
-  },
-  "experimental": {
+       "tools": {
+         "glob": true,
+         "grep": true,
+         "list": true,
+         "read": true,
+         "webfetch": true,
+         "websearch": true,
+         "todowrite": true,
+         "perplexity-ask_search": true,
+         "perplexity-ask_reason": true,
+         "perplexity-ask_deep_research": true,
+         "mcp_fuzu_metabase_query": true,
+         "mcp_fuzu_production_query": true,
+         "mcp_fuzu_staging_query": true,
+         "mcp_barona_production_query": true
+       }
+     }
+   },
+   "experimental": {
     "hook": {
       "file_edited": {
         "python_linter": [
