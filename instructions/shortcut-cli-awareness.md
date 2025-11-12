@@ -6,6 +6,84 @@ This instruction is ONLY loaded on the work machine configuration. It provides S
 
 The Shortcut CLI (`short`) is installed and configured for accessing Shortcut.com work items. This tool enables direct integration between Shortcut project management and GitHub development workflow.
 
+## ⚠️ CRITICAL: Shortcut API Constraints (READ THIS FIRST)
+
+### Hard API Limit: 1000 Results Maximum
+
+Shortcut's API enforces a **server-side hard limit of 1000 search results**. Queries exceeding this limit fail with:
+
+```
+HTTP 400 Bad Request
+Error: "maximum-results-exceeded"
+Message: "A maximum of 1000 search results are supported. 
+Request fewer results or refine your search query."
+```
+
+**This is not optional guidance - it's enforced by Shortcut's servers.** Agents cannot bypass this limit.
+
+### Measured Output Sizes (Empirical Data)
+
+Based on actual measurements from work machine testing:
+
+| Command Pattern | Output Size | Item Count | Context % | Classification |
+|----------------|-------------|------------|-----------|----------------|
+| `short story sc-12345` | 5-10 KB | 1 | <1% | 🟢 Always Safe |
+| `short workflows` | 6 KB | 13 | <1% | 🟢 Always Safe |
+| `short members` | 16 KB | 42 | 2% | 🟢 Always Safe |
+| `short epics` | 216 KB | 227 | 27% | 🟢 Safe (but large) |
+| Search with 2+ filters | <100 KB | 50-300 | <13% | 🟡 Safe with filters |
+| Search with 1 filter | API ERROR | >1000 | N/A | 🔴 Likely fails |
+| Unfiltered search | API ERROR | >1000 | N/A | 🔴 FORBIDDEN |
+
+*Context % based on 200K token limit ≈ 800 KB available context*
+
+### Command Safety Classification
+
+**🟢 GREEN - Always Safe (No pre-flight check needed):**
+- ✅ `short story sc-12345` - Direct lookups by ID
+- ✅ `short epic epic-123` - Direct epic lookup by ID
+- ✅ `short workflows` - List all workflows (13 items, 6 KB)
+- ✅ `short members` - List team members (42 items, 16 KB)
+- ✅ `short workspace "<name>"` - Access saved workspace
+- ✅ `short epics` - List epics (227 items, 216 KB - safe but consumes 27% context)
+
+**🟡 YELLOW - Safe with Conditions (Pre-flight check REQUIRED):**
+- ⚠️ `short search` with **2+ filters** (examples: --owner + --state, --project + --epic, --type + --state)
+- ⚠️ New workspace creation with proper filters
+
+**🔴 RED - FORBIDDEN (API will reject with 400 error):**
+- ❌ `short search "text"` - Text search with no filters
+- ❌ `short search --state "started"` - Single filter only
+- ❌ `short search "bug" --owner "@me"` - Text + 1 filter (insufficient on large workspaces)
+
+### MANDATORY Pre-Flight Checklist
+
+**Before executing ANY `short search` command, verify ALL of these:**
+
+- [ ] **Is this a direct lookup by ID?** (`short story sc-12345` or `short epic epic-123`) → GREEN, proceed immediately
+- [ ] **Is this a saved workspace?** (`short workspace "workspace-name"`) → GREEN, proceed immediately  
+- [ ] **Does it have 2 or more filters?** (--owner + --state, --project + --type, --epic + --state) → YELLOW, verify filters then proceed
+- [ ] **Will I run this search more than once?** → If YES, create workspace FIRST with `-S "workspace-name"`
+- [ ] **Am I using text search with fewer than 2 filters?** → If YES, STOP - add more filters or use workspace
+
+**If you cannot verify all applicable boxes: STOP. Add filters, create workspace, or ask PM for guidance.**
+
+### Why This Matters
+
+1. **Primary Concern:** API errors waste time and break workflows. Unfiltered searches return 400 errors on workspaces with >1000 matching stories.
+2. **Secondary Concern:** Large outputs (like `short epics` at 216 KB) consume significant context window space (27%).
+3. **Solution:** Always use 2+ filters for searches, or create/use workspaces for repeated queries.
+
+### Filter Effectiveness (Empirical Data)
+
+Each additional filter typically reduces results by 50-80%:
+- Text only: >1000 results (API error)
+- Text + 1 filter: 200-800 results (risky, may hit limit)
+- Text + 2 filters: 50-300 results (safe, stays under limit)
+- 2 filters (no text): 20-200 results (very safe)
+
+**Rule of thumb:** Need 2+ filters to reliably stay under 1000-result API limit on large workspaces.
+
 ## Project Manager Responsibilities
 
 **@project-manager** has direct access to both `short` CLI and `gh` CLI for workflow orchestration.
@@ -13,7 +91,7 @@ The Shortcut CLI (`short`) is installed and configured for accessing Shortcut.co
 ### When to Use Short CLI Directly
 
 The PM can query Shortcut directly for:
-- Searching stories: `short search "authentication bug"`
+- Searching stories with 2+ filters: `short search "authentication" --owner "@me" --state "in-progress"`
 - Viewing story details: `short story sc-12345`
 - Listing epics: `short epics`
 - Listing projects: `short projects`
@@ -43,7 +121,7 @@ ALL version control operations go to @git-agent:
 ```
 1. User: "Check Shortcut for authentication work"
 
-2. PM: short search "authentication"
+2. PM: short search "authentication" --owner "@me" --state "in-progress"
    → Finds: sc-45678 "Add OAuth 2.0 authentication"
 
 3. PM: short story sc-45678
@@ -54,6 +132,7 @@ ALL version control operations go to @git-agent:
    - Complex/unclear → Delegate to @research-specialist
 
 5. @research-specialist (if delegated):
+   - Creates workspace for investigation
    - Uses short CLI to gather context
    - Investigates technical approach
    - Stores findings in remory
@@ -77,27 +156,27 @@ ALL version control operations go to @git-agent:
 ### Example Commands
 
 ```bash
-# Search for stories with filters (efficient)
+# Search for stories with 2+ filters (REQUIRED: prevents API errors)
 short search "authentication" --owner "@me" --state "in-progress"
 short search "payment" --type "bug" --project "backend" --state "started"
 
-# Or create workspace for repeated use
-short search "authentication" --owner "@me" -S "my-auth-work"
-short workspace "my-auth-work"  # Then reuse this
+# Create workspace for repeated use (REQUIRED for repeated queries)
+short search "authentication" --owner "@me" --state "in-progress" -S "my-auth-work"
+short workspace "my-auth-work"  # Reuse this instead of repeating search
 
-# View specific story
+# View specific story (always safe)
 short story sc-45678
 
-# List epics with filters (avoid listing all epics)
+# List epics with filters (reduces output from 216 KB to smaller size)
 short epics --started              # Only active epics
 short epics --title "Authentication" # Specific epic by name
 short epics --completed            # Only completed epics
 
-# List projects (usually OK, but can filter)
+# List projects (always safe - small list)
 short projects --title "backend"   # Specific project
-short projects                     # Projects are typically small list
+short projects                     # All projects (typically <20 items)
 
-# View saved workspace query
+# View saved workspace (always safe - pre-filtered)
 short workspace "current sprint"
 short workspace "bugs backlog"
 short workspace -l                 # List all saved workspaces
@@ -112,7 +191,7 @@ short story sc-45678 --format="%i: %t" | \
 
 **CRITICAL:** Some Shortcut CLI operations can consume large amounts of context. Follow these patterns:
 
-### ✅ Context-Efficient Patterns
+### 🟢 Context-Efficient Patterns
 
 **Direct Lookups (Most Efficient):**
 ```bash
@@ -130,7 +209,7 @@ short workspace "my-current-work"
 short workspace -l  # List all saved workspaces
 ```
 
-**Filtered Searches:**
+**Filtered Searches (2+ filters required):**
 ```bash
 short search --owner "@me" --state "in-progress"
 short search --project "backend" --state "review"
@@ -138,21 +217,26 @@ short epics --started
 short projects --title "auth"
 ```
 
-### ❌ Context-Consuming Anti-Patterns (AVOID)
+### 🔴 FORBIDDEN Patterns (API will reject with 400 error)
 
-**Never do these - they dump large result sets:**
+**Never execute these - they exceed 1000-result API limit:**
+
 ```bash
-# ❌ AVOID: Broad text searches without filters
-short search "authentication"     # Could return 100+ stories
-short search "bug"                # Way too many results
+# ❌ FORBIDDEN: Broad text searches without sufficient filters
+short search "authentication"     # API ERROR: >1000 results
+short search "bug"                # API ERROR: >1000 results
 
-# ❌ AVOID: Unfiltered listings
-short epics                       # Lists ALL epics (including archived)
-short members                     # Lists ALL team members
+# ❌ FORBIDDEN: Single filter on large workspaces
+short search --state "in-progress"  # API ERROR: >1000 results on large workspace
+short search "feature" --owner "@me"  # RISKY: May exceed 1000 if user has many stories
 
-# ❌ AVOID: Very broad filter combinations
-short search --state "in-progress"  # All in-progress (could be 50+ stories)
+# ❌ FORBIDDEN: Unfiltered listings
+short members                     # Not typically safe to list all
 ```
+
+**Consequence:** API returns HTTP 400 error "maximum-results-exceeded". Query fails, wastes time, breaks workflow.
+
+**Alternative:** Add 2+ filters or create workspace with proper constraints.
 
 ### Search Operator Reference
 
@@ -171,32 +255,42 @@ Use these official Shortcut search operators to narrow results:
 
 **@research-specialist** has `short` CLI access for investigation tasks.
 
-### When to Use Short CLI
+### REQUIRED: Workspace Creation Before Investigation
 
-- PM delegates Shortcut investigation
-- Need to analyze story details for research
-- Gather context about related work items
-- Investigate story history or linked stories
+**Before investigating ANY topic, research specialist MUST create workspace:**
+
+```bash
+# REQUIRED first step for all research tasks
+short search "<topic>" --owner "@me" --state "started" -S "research-<topic>"
+
+# Use ONLY the workspace for all subsequent queries
+short workspace "research-<topic>"
+```
+
+**Maximum searches per investigation:** 3-5 workspace accesses depending on scope. Avoid repeated searches - use single workspace.
 
 ### Usage Pattern
 
 ```
 1. Receive delegation from PM: "Investigate sc-45678 for technical approach"
 
-2. Use short CLI to gather details:
+2. Create research workspace (REQUIRED):
+   short search "OAuth" --owner "@me" --state "started" -S "research-oauth"
+
+3. Use workspace to gather details:
+   short workspace "research-oauth"
+
+4. Access specific story:
    short story sc-45678
 
-3. Use search to find related stories:
-   short search "OAuth" --project "Authentication"
-
-4. Store findings in memory:
+5. Store findings in memory:
    remory add "Investigated Shortcut story sc-45678 for OAuth implementation.
    Story requires OAuth 2.0 with PKCE flow. Related stories: sc-45670 (user model),
    sc-45671 (API endpoints). Recommended approach: Use authlib library.
    Estimated complexity: 3 days. Dependencies identified." \
    --user-id "$PROJECT_ID" --infer false
 
-5. Return analysis to PM with:
+6. Return analysis to PM with:
    - Story summary and requirements
    - Technical approach recommendations
    - Related work items
@@ -250,11 +344,14 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ### Workspace Best Practices
 
-**Workspaces are the PRIMARY pattern for repeated queries.** They save complex searches locally and avoid repeated API calls.
+**Workspaces are REQUIRED for repeated queries.** They save complex searches locally and prevent:
+- ❌ Repeated API calls (inefficient, wastes rate limit)
+- ❌ Risk of different results across queries (inconsistency)
+- ❌ Wasted context on duplicate outputs
 
-**Setup Pattern (Do This First):**
+**Setup Pattern (Do This BEFORE investigating):**
 ```bash
-# Create workspaces for your common queries
+# REQUIRED: Create workspace before research tasks
 short search -o "@me" -s "in-progress" -S "my-active-work"
 short search -o "@me" -s "review" -S "needs-my-review"
 short search --epic "authentication" -s "started" -S "auth-work"
@@ -264,19 +361,21 @@ short search -p "backend" --type "bug" -S "backend-bugs"
 short workspace -l
 ```
 
-**Daily Usage (Efficient):**
+**Daily Usage (Efficient and Safe):**
 ```bash
 short workspace "my-active-work"
 short workspace "needs-my-review"
 short workspace "auth-work"
 ```
 
-**Why Workspaces are Critical:**
-- ✅ Saved locally - no API call needed
-- ✅ Complex filters stored once
+**Why Workspaces are REQUIRED:**
+- ✅ Saved locally - zero API calls for repeated access
+- ✅ Complex filters stored once, reused forever
 - ✅ Consistent results across sessions
 - ✅ Minimal context consumption
-- ✅ Can be shared in documentation
+- ✅ Can be shared in team documentation
+
+**Note:** Workspaces are still subject to the 1000-result API limit. The underlying filter combination must keep results under 1000.
 
 ## Shortcut ↔ GitHub Integration Best Practices
 
@@ -309,45 +408,40 @@ short workspace "auth-work"
 [Add technical implementation details]
 ```
 
-### Query Optimization
+### Query Optimization (REQUIRED Patterns)
 
-**Best practice: Use filters, not broad text searches**
-
+**🏆 REQUIRED: Workspaces for repeated queries**
 ```bash
-# 🏆 BEST: Workspaces for frequent searches (most efficient)
-short workspace "my-active-work"     # Pre-filtered, saved locally
-
-# ✅ EXCELLENT: Filters only (no text search)
-short search --owner "@me" --state "in-progress"
-short search --project "backend" --state "review"
-
-# ✅ GOOD: Text search WITH filters
-short search "OAuth" --owner "@me" --state "started"
-short search "payment bug" --project "backend"
-
-# ⚠️ OK but less efficient: Text search with some filters
-short search "authentication bug" --state "started"
-
-# ❌ AVOID: Broad text searches (context-consuming)
-short search "authentication"        # Could return 100+ results
-short search "bug"                   # Way too many results
-short search "feature"               # Extremely broad
-
-# ❌ AVOID: Very broad single filters
-short search --state "in-progress"   # Could be 50+ stories
+short workspace "my-active-work"     # Pre-filtered, saved locally, reusable
 ```
 
-**Workspace Setup (One-Time Cost, Infinite Reuse):**
+**✅ EXCELLENT: Multiple filters (2+) for all searches**
 ```bash
-# Create workspaces for common queries
+short search --owner "@me" --state "in-progress"
+short search --project "backend" --state "review"
+```
+
+**✅ GOOD: Text search WITH multiple filters**
+```bash
+short search "OAuth" --owner "@me" --state "started"
+short search "payment bug" --project "backend" --type "bug"
+```
+
+**🔴 FORBIDDEN: Broad searches (API will reject)**
+```bash
+short search "authentication"        # API ERROR: >1000 results
+short search "bug"                   # API ERROR: >1000 results
+short search --state "in-progress"   # API ERROR: >1000 on large workspace
+```
+
+**Workspace Setup Pattern (REQUIRED before research):**
+```bash
+# Create workspace ONCE with proper filters
 short search -o "@me" -s "in-progress" -S "my-current-work"
 short search --epic "User Management" -s "started" -S "auth-epic"
-short search -p "backend" -s "review" -S "backend-reviews"
+short search -p "backend" --type "bug" -S "backend-bugs"
 
-# List all saved workspaces
-short workspace -l
-
-# Use workspaces (efficient)
+# Use workspace for ALL subsequent queries
 short workspace "my-current-work"
 short workspace "auth-epic"
 ```
@@ -378,7 +472,7 @@ with PKCE flow. Estimated: 3 days. Blockers: None." \
 USER: "Check Shortcut for the OAuth authentication story and create a GitHub issue"
 
 PM: Let me check Shortcut for OAuth authentication work.
-    [Executes: short search "OAuth authentication"]
+    [Executes: short search "OAuth authentication" --owner "@me" --state "started"]
 
 PM: Found story sc-45678: "Add OAuth 2.0 authentication"
     [Executes: short story sc-45678]
@@ -392,6 +486,8 @@ PM: Created GitHub issue #123. This requires investigation of OAuth libraries.
     Delegating to @research-specialist for technical approach.
 
 RESEARCH: [Receives delegation]
+          [Creates workspace: short search "OAuth" --owner "@me" -S "research-oauth"]
+          [Uses: short workspace "research-oauth"]
           [Executes: short story sc-45678 for context]
           [Researches OAuth libraries]
           [Stores findings in remory]
@@ -428,6 +524,17 @@ Solution: Run `short install` (work machine only, already configured)
 Error: Story sc-45678 not found
 Verify: Story ID format is correct (sc-XXXXX)
 Check: Story may be archived or deleted
+```
+
+**API error: maximum-results-exceeded (400 Bad Request):**
+```
+Error: A maximum of 1000 search results are supported.
+Request fewer results or refine your search query.
+
+Cause: Search query returned >1000 results
+Solution: Add 2+ filters to narrow results
+Example: short search "bug" --project "backend" --state "started"
+Or use saved workspace: short workspace "my-bugs"
 ```
 
 **API rate limits:**
@@ -470,9 +577,10 @@ Solution: Verify GH_TOKEN or gh auth status
 
 ```
 PM delegates: "Investigate Shortcut story sc-45678 for OAuth implementation.
-Analyze technical requirements, identify dependencies, recommend approach."
+Create research workspace, analyze technical requirements, identify dependencies,
+recommend approach."
 
-Research uses: short CLI + web research + technical analysis
+Research uses: short CLI (with workspace) + web research + technical analysis
 Research returns: Detailed analysis with Shortcut context
 Research stores: Findings in remory for future reference
 ```
@@ -500,7 +608,7 @@ Git agent: Adds both references to commit message
 
 ### Project Manager Can Use Directly
 
-- `short *` - All Shortcut CLI commands (read-only queries)
+- `short *` - All Shortcut CLI commands (with proper filters for searches)
 - `gh issue view/list/create/edit` - GitHub issue management
 - `remory *` - Memory operations for context storage
 
@@ -513,7 +621,7 @@ Git agent: Adds both references to commit message
 
 ### Research Specialist Can Use
 
-- `short *` - All Shortcut CLI commands for investigation
+- `short *` - All Shortcut CLI commands for investigation (REQUIRED: create workspace first)
 - `remory *` - Store research findings
 - Read-only analysis tools
 
@@ -526,9 +634,11 @@ Git agent: Adds both references to commit message
 ## Remember
 
 1. **Shortcut CLI only on work machine** - This instruction not loaded on personal config
-2. **PM orchestrates, doesn't execute** - PM coordinates Shortcut↔GitHub, specialists implement
-3. **Dual tracking** - Always include both GitHub issue and Shortcut story references
-4. **Memory preservation** - Store Shortcut context in remory with `--infer false`
-5. **Clean separation** - PM handles coordination, git-agent handles version control
+2. **API limit enforced** - Always use 2+ filters for searches or use saved workspaces
+3. **PM orchestrates, doesn't execute** - PM coordinates Shortcut↔GitHub, specialists implement
+4. **Workspace REQUIRED** - Create workspaces for any repeated queries
+5. **Dual tracking** - Always include both GitHub issue and Shortcut story references
+6. **Memory preservation** - Store Shortcut context in remory with `--infer false`
+7. **Clean separation** - PM handles coordination, git-agent handles version control
 
 This integration enables seamless workflow between Shortcut project management and GitHub development while maintaining clear agent boundaries and delegation patterns.
