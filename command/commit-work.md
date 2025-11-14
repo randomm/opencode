@@ -1,5 +1,5 @@
 ---
-description: Commit all work completed in the current session with proper commit messages
+description: Quick commit and push all work completed in the current session - lightweight workflow without quality gates
 agent: project-manager
 ---
 
@@ -28,25 +28,25 @@ PHASE 1: DELEGATION TO GIT-AGENT
 **DELEGATE WITH THIS EXACT REQUEST:**
 
 ```
-@git-agent: Commit all work completed in this session
+@git-agent: Commit and push all work completed in this session
 
-Please commit all current work with proper commit messages:
+Please commit all current work and push to remote (lightweight workflow - skip tests and quality gates):
 
 1. Review all uncommitted changes (git status, git diff)
 2. Group changes into logical, atomic commits
 3. Create commits with:
    - Conventional commit format (feat, fix, docs, etc.)
-   - GitHub issue references (#123)
+   - GitHub issue references (#123) if applicable
    - Clear, concise descriptions
    - Detailed explanations in commit bodies if needed
-4. Verify all quality gates pass before committing
-5. Push commits to remote feature branch
-6. Report completion with:
+4. Push commits to remote feature branch
+5. Report completion with:
    - List of commits created (with SHAs)
    - Branch name and status
    - Any blockers encountered
 
-Use all standard commit conventions from your system prompt and AGENTS.md.
+This is a quick iteration workflow. Skip tests, linting, and quality gates - just create meaningful commits and push.
+Use standard commit conventions from your system prompt and AGENTS.md.
 ```
 
 **WAIT for @git-agent response before continuing**
@@ -71,17 +71,10 @@ PHASE 2: GIT-AGENT RESPONSIBILITIES (REFERENCE ONLY)
 ✅ **Conventional Commits**
 - Use proper type (feat, fix, docs, style, test, refactor, chore, ci, perf, build)
 - Include scope if applicable (e.g., feat(auth): ...)
-- Reference GitHub issue number in commit message
+- Reference GitHub issue number in commit message if applicable
 - Use imperative mood ("add" not "added")
 - Keep first line under 50 characters
 - Add detailed explanation in commit body if needed
-
-✅ **Quality Gate Verification**
-- Verify tests pass before committing
-- Check linting rules pass before committing
-- Ensure type checking passes before committing
-- Confirm coverage requirements met before committing
-- Block commits if quality gates fail
 
 ✅ **Feature Branch Workflow**
 - Create feature branch if not already created
@@ -109,19 +102,16 @@ PHASE 3: YOUR ROLE AFTER DELEGATION
    - Any issues or warnings
 
 2. **Verify completion** - Check that:
-   - [ ] All work changes are committed
-   - [ ] Commits follow conventional format
-   - [ ] GitHub issue references included
-   - [ ] Quality gates passed before commits
-   - [ ] Commits pushed to remote
+    - [ ] All work changes are committed
+    - [ ] Commits follow conventional format
+    - [ ] Commits pushed to remote
 
 3. **Report to user** - Provide summary:
-   ```
-   ✅ Work committed and pushed
-   📋 Commits: {count} commits created
-   🔗 Branch: {feature-branch-name}
-   📊 Status: All quality gates passed
-   ```
+    ```
+    ✅ Work committed and pushed
+    📋 Commits: {count} commits created
+    🔗 Branch: {feature-branch-name}
+    ```
 
 ═══════════════════════════════════════════════════════
 CRITICAL RULES
@@ -137,8 +127,9 @@ CRITICAL RULES
 - Run git commands yourself (`git add`, `git commit`, `git push`)
 - Create commits directly
 - Modify git configuration
-- Bypass quality gates
 - Skip git-agent delegation for any reason
+
+**NOTE:** This is a lightweight commit workflow optimized for quick iteration. Quality gates (tests, linting, type checking) are skipped. For final PR commits that merge to main, use the full quality-gated workflow.
 
 ═══════════════════════════════════════════════════════
 
