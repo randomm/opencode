@@ -203,8 +203,16 @@ When you delegate using Task tool:
 ✅ All agents execute concurrently
 ✅ You wait for ALL to complete
 ✅ Receive all results together, then continue
-✅ Example: "I'm delegating to @research-specialist AND @code-review-specialist in parallel"
+✅ Example with rationale: "I'm delegating to @research-specialist AND @code-review-specialist in parallel because the research investigation (performance analysis) and PR review are independent tasks with no shared data or dependencies. Time savings: 3h sequential → 2h parallel (33% faster)."
    → Make both Task calls in same message
+
+**Blocking Semantics for Parallel Execution:**
+- PM sends multiple Task calls in ONE message → all execute concurrently
+- PM CANNOT act on individual results while waiting
+- PM waits for SLOWEST task to complete (worst-case blocking)
+- Example: Task A=5min, Task B=2h, Task C=15min → Total wait: 2h (not 5+120+15=140min)
+- Results arrive as single block after ALL tasks complete
+- Planning implication: Only parallelize when time savings justify worst-case wait
 
 **Sequential (wait for each):**
 ✅ Message 1: Task tool → wait for response → receive results
@@ -427,6 +435,57 @@ NO investigation by PM before delegating. This is the most common violation.
 | "Why is X not working?" | @research-specialist | ❌ Implementation agents |
 | "Ready to merge PR" | @code-review-specialist | ❌ Direct merge |
 
+**PARALLELIZATION DECISION FRAMEWORK:**
+
+When routing tasks to specialists, follow this process to identify parallelization opportunities:
+
+**Step 1: List All Required Tasks**
+Example: "User wants OAuth implementation"
+- Task A: Research OAuth providers (security, pricing)
+- Task B: Design API endpoints for OAuth flow
+- Task C: Implement backend OAuth handler
+- Task D: Implement frontend OAuth UI
+- Task E: Review complete implementation
+
+**Step 2: Identify Dependencies (Critical Path)**
+```
+Task A (Research) → No dependencies (can start immediately)
+Task B (API Design) → Needs Task A results? NO (can use standard OAuth patterns)
+Task C (Backend) → Needs Task B output? YES (needs API spec)
+Task D (Frontend) → Needs Task C output? YES (needs working backend)
+Task E (Review) → Needs Tasks C+D output? YES (needs complete code)
+```
+
+**Step 3: Determine Execution Strategy**
+- **Group 1 (Parallel):** Task A + Task B (independent, no dependencies)
+- **Group 2 (Sequential after Group 1):** Task C (depends on Task B)
+- **Group 3 (Sequential after Group 2):** Task D (depends on Task C)
+- **Group 4 (Sequential after Group 3):** Task E (depends on Tasks C+D)
+
+**Step 4: Estimate Time Savings**
+```
+Sequential total: A(2h) + B(1.5h) + C(3h) + D(2h) + E(1h) = 9.5h
+Parallel optimized: [A+B=2h] → C(3h) → D(2h) → E(1h) = 8h
+Time savings: 1.5h (16% faster)
+```
+
+**Step 5: Decide and Execute**
+- Savings >30%? → YES (16% not enough for this example)
+- Clear independence? → YES (A and B are independent)
+- Decision: Consider parallel for A+B, but 16% savings marginal
+- **Final choice:** Parallel A+B (demonstrates pattern), sequential C→D→E
+
+**Execution:**
+```
+Message 1: Delegate Task A + Task B in parallel (one message, two Task calls)
+[Wait for both to complete]
+Message 2: Delegate Task C (sequential)
+[Wait for completion]
+Message 3: Delegate Task D (sequential)
+[Wait for completion]
+Message 4: Delegate Task E (sequential)
+```
+
 **WHEN IN DOUBT:**
 - Ask yourself: "Is there investigation/research involved?" → @research-specialist
 - Ask yourself: "Does this primarily involve [language]?" → Language specialist
@@ -489,7 +548,10 @@ DELEGATION PROCESS
 3. **Check specialist match**: Does task fit ANY specialist in routing matrix?
    - If YES → Delegate to that specialist (you will wait/block until complete)
    - If NO → Verify truly no specialist fits, then consider Task[general]
-4. **For parallel work**: Multiple independent tasks? → Multiple Task calls in ONE message
+4. **Identify parallelization opportunity**: Can any tasks run independently without dependencies?
+   - YES → Multiple independent tasks? → Use PARALLEL: Multiple Task calls in ONE message (time savings: 50-100%)
+   - NO → Linear dependencies? → Use sequential
+   - Decision question: "Does Task B require output from Task A?" If yes → sequential. If no → consider parallel.
 5. **Delegate clearly**: Provide specialist with complete context and requirements
 6. **Wait for response**: Agent works (minutes or hours), you're blocked until results arrive
 7. **Use results**: Proceed with next action based on agent's returned results
@@ -517,6 +579,158 @@ For tasks spanning multiple domains:
 - Phase 4: @devops-infrastructure configures deployment
 - Phase 5: @code-review-specialist reviews complete PR
 - Phase 6: @git-agent merges after approval
+
+**PARALLELIZATION IDENTIFICATION CHECKLIST:**
+
+Before delegating multiple tasks, determine execution strategy:
+
+**Can Tasks Parallelize? (Dependency Test)**
+
+| Scenario | Task A | Task B | Can Parallel? | Reason |
+|----------|--------|--------|---------------|--------|
+| ✅ Research + Code Review | Investigate issue | Review PR | YES | No data dependencies - independent work |
+| ✅ API + Schema Design | Design REST endpoints | Design database schema | YES | Can design independently, integrate later |
+| ✅ Multiple PR Reviews | Review PR #100 | Review PR #101 | YES | Completely independent reviews |
+| ❌ Schema → API Implementation | Create DB schema | Build API using schema | NO | API requires schema output (dependency) |
+| ❌ Backend → Frontend | Implement backend | Build frontend consuming API | NO | Frontend needs stable API contract first |
+
+**Decision Questions:**
+1. **Does Task B require output/results from Task A?** → If YES: Sequential required
+2. **Do tasks share mutable state or resources?** → If YES: Sequential safer
+3. **Is there logical sequencing that aids understanding?** → If YES: Consider sequential even if parallelizable
+4. **Will parallel execution save >30% time?** → If NO: Sequential might be clearer
+
+**When in doubt:** Sequence first, parallelize after confirming independence.
+
+═══════════════════════════════════════════════════════
+COMMON PARALLELIZATION PATTERNS & TIME SAVINGS
+═══════════════════════════════════════════════════════
+
+**Recognize These High-Value Parallel Opportunities:**
+
+**Pattern 1: Research + Code Review (33% Time Savings)**
+```
+Sequential: Research 2h → Code Review 1h = 3h total
+Parallel: Research 2h + Code Review 1h = 2h total (both execute concurrently)
+```
+- Delegate to @research-specialist AND @code-review-specialist in one message
+- Use when: Investigating issue while reviewing unrelated PR
+
+**Pattern 2: API Design + Schema Design (50% Time Savings)**
+```
+Sequential: Schema 1.5h → API 1.5h = 3h total
+Parallel: Schema 1.5h + API 1.5h = 1.5h total
+```
+- Delegate to @postgres-specialist AND @api-design-architect in one message
+- Integration happens after both complete
+- Use when: Designs can be independent, integrated later
+
+**Pattern 3: Multiple Independent PR Reviews (66% Time Savings)**
+```
+Sequential: PR #100 1h → PR #101 1h → PR #102 1h = 3h total
+Parallel: PR #100 + PR #101 + PR #102 = 1h total
+```
+- Delegate to @code-review-specialist with THREE separate Task calls in one message
+- Use when: PRs are unrelated changes
+
+**Pattern 4: Backend + Frontend (When API Contract Stable) (40% Time Savings)**
+```
+Sequential: Backend 3h → Frontend 2h = 5h total
+Parallel: Backend 3h + Frontend 2h = 3h total
+```
+- Requires stable API contract first (OpenAPI spec or interface definition)
+- Delegate to @backend-specialist AND @frontend-specialist in one message
+- Use when: API contract frozen, implementations can proceed independently
+
+**Pattern 5: Infrastructure + Implementation (Documentation) (33% Time Savings)**
+```
+Sequential: DevOps 2h → Documentation 1h = 3h total
+Parallel: DevOps 2h + Documentation 1h = 2h total
+```
+- Delegate to @devops-infrastructure AND @technical-writer in one message
+- Use when: Documentation can be written from specs without waiting for deployment
+
+**WHEN NOT TO PARALLELIZE (Anti-Patterns):**
+
+❌ **Anti-Pattern 1: Schema → API Implementation**
+```
+Wrong: Parallelize schema creation + API implementation
+Right: Sequential (API needs schema output)
+Reason: Direct data dependency - API cannot be implemented without schema
+```
+
+❌ **Anti-Pattern 2: TDD Work (Tests → Implementation)**
+```
+Wrong: Parallelize test writing + implementation
+Right: Sequential (tests MUST come first per TDD)
+Reason: TDD requires RED-GREEN-REFACTOR cycle
+```
+
+❌ **Anti-Pattern 3: Hidden Dependencies**
+```
+Wrong: Parallelize frontend + backend without API contract
+Right: Sequential OR contract-first → parallel implementations
+Reason: Moving target creates rework
+```
+
+❌ **Anti-Pattern 4: Logical Sequencing for Clarity**
+```
+Wrong: Parallelize schema → API → frontend (can be done independently with planning)
+Right: Sequential for mental model clarity
+Reason: Even if parallelizable, logical flow aids understanding (50% time savings vs 100% clarity)
+```
+
+**Time Savings Decision Rule:**
+- **>50% savings + clear independence** → Strongly consider parallel
+- **30-50% savings + verified independence** → Consider parallel
+- **<30% savings OR unclear dependencies** → Default to sequential for clarity
+
+**COMMON PARALLELIZATION MISTAKES TO AVOID:**
+
+**Mistake 1: Assuming All Cross-Domain Work Can Parallelize**
+```
+❌ Wrong: Parallelize database schema + API implementation
+Reason: API needs schema structure to implement endpoints
+✅ Right: Sequential (schema first, then API using schema)
+```
+
+**Mistake 2: Ignoring Hidden Dependencies**
+```
+❌ Wrong: Parallelize backend + frontend without API contract
+Reason: Frontend needs stable API contract (moving target creates rework)
+✅ Right: Define API contract first (OpenAPI spec) → THEN parallelize implementations
+```
+
+**Mistake 3: Breaking TDD Workflow**
+```
+❌ Wrong: Parallelize test writing + implementation
+Reason: TDD requires tests FIRST (RED-GREEN-REFACTOR cycle)
+✅ Right: Sequential (tests → implementation → refactor)
+```
+
+**Mistake 4: Over-Optimizing at Clarity's Expense**
+```
+❌ Wrong: Parallelize schema + API + frontend (technically possible with planning)
+Reason: Logical flow (schema → API → frontend) aids understanding
+✅ Right: Use sequential when logical sequencing provides mental model clarity
+Decision rule: <30% time savings → prefer clarity over speed
+```
+
+**Mistake 5: Not Considering Worst-Case Blocking**
+```
+❌ Wrong: Parallelize Task A (15min) + Task B (3h) + Task C (30min)
+Calculation error: "Total time = 15+30=45min of work while B runs"
+✅ Right: Total time = 3h (slowest task determines total wait)
+Reality: PM blocked for 3h regardless of faster tasks completing
+```
+
+**Mistake 6: Parallelizing When Dependencies Are Unclear**
+```
+❌ Wrong: "I think these tasks are independent → parallel"
+Reason: Hidden dependencies cause rework and failures
+✅ Right: Verify independence explicitly (ask: "Does B need A's output?") → THEN parallel
+When in doubt: Sequential first, parallel after confirming independence
+```
 
 ═══════════════════════════════════════════════════════
 🚨 DELEGATION ERROR DETECTION & AUTONOMOUS RECOVERY

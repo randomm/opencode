@@ -188,6 +188,30 @@ Return all results in a structured format for memory storage.
 **WAIT for @git-agent response before continuing**
 
 ═══════════════════════════════════════════════════════
+⚠️  CRITICAL: REMORY TOKEN LIMITS
+═══════════════════════════════════════════════════════
+
+**Embedding Model Constraints:**
+- Model: sentence-transformers/all-MiniLM-L6-v2
+- Default max: 256 tokens (~1,000 characters)
+- Hard limit: 512 tokens (~2,000 characters)
+- Token ratio: ~1 token per 4 characters (English)
+
+**Safe Memory Size:**
+- Target: 1,200-1,500 characters per memory entry
+- Token equivalent: 300-375 tokens (safely under limit)
+- Each memory must be semantically complete and independently searchable
+
+**Chunking Strategy:**
+Store multiple focused memories instead of one large memory. Split naturally by topic:
+- Commit conventions
+- GitHub workflow
+- PR process
+- Quality gates
+- Testing requirements
+- Memory protocol
+
+═══════════════════════════════════════════════════════
 PHASE 4: MEMORY UPDATE (MANDATORY)
 ═══════════════════════════════════════════════════════
 
@@ -195,39 +219,63 @@ PHASE 4: MEMORY UPDATE (MANDATORY)
 
 **Store project context using remory CLI with --infer false to preserve full detail:**
 
+**Use multi-memory chunking strategy:** Store 5-7 focused memories (1,200-1,500 chars each) instead of single large memory. This prevents "Failed to generate embedding" errors from exceeding token limits.
+
 ```bash
-# Store project overview (DETAILED - preserve everything from README)
-remory add "Project: {name} - {full description from README including all key features}. Stack: {complete technology stack with versions}. Purpose: {main purpose and goals}. Key features: {list main features}" --user-id "$PROJECT_ID" --infer false
-```
-```bash
-# Store architecture insights (DETAILED - preserve all patterns and decisions)
-remory add "Architecture: {detailed architectural patterns from docs}. Design decisions: {all key decisions with rationale}. Components: {component structure and interactions}. Data flow: {how data flows through system}" --user-id "$PROJECT_ID" --infer false
-```
-```bash
-# Store current status (DETAILED - preserve activity context)
-remory add "Status: {X} open issues, {Y} open PRs. Recent commits: {detailed recent activity from git log including commit messages}. CI/CD: {current CI state and any issues}" --user-id "$PROJECT_ID" --infer false
-```
-```bash
-# Store workflow and conventions (DETAILED - preserve COMPLETE workflow information)
-remory add "Project workflow: {commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md OR AGENTS.md - whichever exists}. Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Contribution guidelines: {all contribution rules and conventions}" --user-id "$PROJECT_ID" --infer false
+# Memory 1: Project Overview (Keep project basics together, ~1,200 chars max)
+remory add "Project: {name} - {concise description}. Stack: {technology stack with versions}. Purpose: {main purpose}. Key features: {main features list}. Architecture: {high-level patterns}. Components: {main components}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 2: Current Status (Project activity snapshot, ~1,000 chars max)
+remory add "Status: {X} open issues, {Y} open PRs. Recent commits: {recent activity from git log with commit messages}. CI/CD: {current CI state}. Active work: {current focus areas}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 3: Commit Conventions (If found in CONTRIBUTING.md or AGENTS.md, ~1,200-1,300 chars)
+remory add "Commit standards and conventions. Use Conventional Commits format: type(scope): description. Types: feat, fix, docs, style, refactor, test, chore, build, ci, perf. Include GitHub issue reference: 'feat: add auth (#123)'. Always atomic changes. Clear descriptions. Present tense, imperative mood. First line <50 chars. Examples from project docs: {examples from CONTRIBUTING/AGENTS}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 4: GitHub Issue Workflow (If found in CONTRIBUTING.md or AGENTS.md, ~1,200-1,300 chars)
+remory add "GitHub issue workflow and quality template. Every development issue requirements: {list checkboxes from docs - TDD, coverage, linting, etc.}. Validate issue content with 'gh issue view'. All work matches issue exactly. Refuse work not listed. Update issue before expanding scope. Complete only when all checkboxes done. {Additional workflow details from docs}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 5: PR & Review Process (If found in CONTRIBUTING.md or AGENTS.md, ~1,200-1,300 chars)
+remory add "Pull request and CI verification process. Feature branch workflow: {branch naming conventions from docs}. PR requirements: {title format, description requirements}. Review process: {approval requirements, self-merge policy}. CI verification: {commands used - gh run watch, monitoring requirements}. Merge strategy: {squash/merge/rebase from docs}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 6: Quality Gates & Testing (If found in CONTRIBUTING.md or AGENTS.md, ~1,200-1,300 chars)
+remory add "Quality gates and testing requirements. Zero-tolerance policy: {suppression rules from docs}. Coverage requirements: {thresholds - 80%+, per-file vs overall}. Linting: {commands and requirements}. Type checking: {requirements}. Testing approach: {TDD requirements, test patterns, mocking strategies from docs}. Local verification: {what must pass before completion}." --user-id "$PROJECT_ID" --infer false
+
+# Memory 7: Communication & Philosophy (If found in CONTRIBUTING.md or AGENTS.md, ~1,200-1,300 chars)
+remory add "Communication style and development philosophy. Tone: {professional, concise, etc. from docs}. Minimalist principles: {LESS IS MORE, challenge necessity, etc. from docs}. Code quality: {standards from docs}. Documentation: {when to create, approval requirements}." --user-id "$PROJECT_ID" --infer false
 ```
 
 **CRITICAL:** Use `--infer false` to preserve FULL TEXT without LLM extraction/shortening.
 
-**What to store (be COMPREHENSIVE):**
-- Project overview: name, complete description, full technology stack with versions, purpose, key features
-- **Workflow (CRITICAL)**: commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md or AGENTS.md (whichever exists)
-- Architecture: all patterns, all design decisions with rationale, component structure, data flow
-- Current status: open issues, PRs, detailed recent commits, CI/CD state
-- Conventions: complete coding standards, all testing requirements, all quality gates
-- Recent learnings: detailed solutions found, patterns discovered, decisions made with context
-- **Everything important for future sessions** - be thorough, not summary!
+**Store comprehensive context using MULTIPLE focused memories (1,200-1,500 chars each):**
+
+**Core Project Info (2 memories):**
+- Memory 1: Project overview - name, description, stack, purpose, architecture, components
+- Memory 2: Current status - open issues, PRs, recent commits, CI/CD state, active work
+
+**Workflow Documentation (5-6 memories from CONTRIBUTING.md or AGENTS.md):**
+- Memory 3: Commit conventions - format, types, examples, issue references
+- Memory 4: GitHub issue workflow - quality template, checkboxes, scope control
+- Memory 5: PR & review process - branch naming, PR requirements, CI verification
+- Memory 6: Quality gates & testing - coverage, linting, TDD, local verification
+- Memory 7: Communication & philosophy - tone, minimalist principles, standards
+
+**Chunking Guidelines:**
+- Each memory: 1,200-1,500 characters (safely under 256-token embedding limit)
+- Semantically complete: Each memory understandable independently
+- Topic-focused: One coherent concept per memory
+- Searchable: Use clear topic names for future retrieval
+- Natural boundaries: Split at logical sections, not mid-paragraph
+
+**Why Chunking:**
+Remory's embedding model (sentence-transformers/all-MiniLM-L6-v2) has 256-token default limit (~1,000 chars). Long texts (2,500+ chars) fail with "Failed to generate embedding" errors. Multiple focused memories succeed where single large memory fails.
 
 **Why this matters:**
-- Future sessions get FULL context immediately, not extracted facts
-- Prevents repeating research and discovery
-- Builds institutional knowledge across sessions with full detail
-- Enables continuity and consistency
+- ✅ Each memory successfully embeds (under token limits)
+- ✅ Semantically searchable across separate memories
+- ✅ Future agents find relevant concepts easily
+- ✅ Easier to update individual topics
+- ✅ Reduces cognitive load (focused topics vs sprawling docs)
+- ✅ Prevents embedding failures that block session initialization
 
 ═══════════════════════════════════════════════════════
 PHASE 5: SUCCESS VERIFICATION & SUMMARY
@@ -285,6 +333,9 @@ CRITICAL RULES
 - Search memory FIRST with specific semantic queries
 - Store ALL gathered context with `--infer false` to preserve full detail
 - Use detailed, comprehensive descriptions (not summaries)
+- Split large memories into focused chunks (1,200-1,500 chars each)
+- Verify each memory is semantically complete and independently searchable
+- Use natural topic boundaries (commit conventions, PR process, quality gates)
 - Update TodoWrite after each phase
 - Keep user summary brief and actionable
 
@@ -298,6 +349,9 @@ CRITICAL RULES
 - Assume documentation structure - adapt to what the project actually has
 - Skip files that don't exist - read what's there, not what you expect
 - Skip memory storage - it's MANDATORY for session continuity
+- Store memories exceeding 1,500 characters (risk embedding failure)
+- Create single large "Project workflow" memory (will fail at 2,500+ chars)
+- Split mid-paragraph or mid-sentence (breaks semantic coherence)
 
 ═══════════════════════════════════════════════════════
 
