@@ -73,8 +73,8 @@ PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
    - Example: `glob: "CLAUDE.md"` or `glob: "AGENTS.md"` or `glob: ".claude/**/*.md"` or `glob: ".github/AGENT*.md"`
    - **Don't assume these exist** - skip if not found
 
-3. **Project workflow and contribution guidelines:**
-   - Patterns to discover: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/contributing.md`, `.github/CONTRIBUTING.md`
+3. **Project workflow and contribution guidelines (optional - fallback to AGENTS.md):**
+    - Patterns to discover: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `docs/contributing.md`, `.github/CONTRIBUTING.md`
    - Use Glob: `CONTRIBUTING.md` or `glob: "docs/contributing.md"` or `glob: ".github/CONTRIBUTING.md"`
    - These files define:
      - Commit message conventions
@@ -82,8 +82,10 @@ PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
      - Communication style and tone
      - Quality gates and testing requirements
      - Branch naming and workflow
-   - **CRITICAL**: You must understand the workflow before doing any work
-   - If found: Read in full. If not found: Proceed with assumptions from AGENTS.md
+    - **CRITICAL**: You must understand the workflow before doing any work
+    - If found: Read in full. If not found: Extract workflow from AGENTS.md instead
+
+**IMPORTANT:** Many projects use AGENTS.md as comprehensive workflow documentation instead of CONTRIBUTING.md. If CONTRIBUTING.md doesn't exist, extract all workflow information (commit formats, PR process, branch naming, communication style) from AGENTS.md for memory storage in Phase 4.
 
 **OPTIONAL - Discover if they exist (Priority Order):**
 
@@ -145,7 +147,7 @@ PHASE 2: DOCUMENTATION REVIEW (READ-ONLY TOOLS)
 **File Discovery Order:**
 1. README.md (mandatory)
 2. AGENTS.md or CLAUDE.md (try both - if neither exists, continue)
-3. CONTRIBUTING.md (mandatory for workflow)
+3. CONTRIBUTING.md (optional - use AGENTS.md if missing)
 4. docs/*.md (prioritize: testing, architecture, technical-specification)
 5. .github/*.md excluding workflows/ (if present)
 6. .claude/**/*.md (if present)
@@ -207,14 +209,14 @@ remory add "Status: {X} open issues, {Y} open PRs. Recent commits: {detailed rec
 ```
 ```bash
 # Store workflow and conventions (DETAILED - preserve COMPLETE workflow information)
-remory add "Project workflow: {commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING}. Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Contribution guidelines: {all contribution rules and conventions}" --user-id "$PROJECT_ID" --infer false
+remory add "Project workflow: {commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md OR AGENTS.md - whichever exists}. Coding standards: {complete coding standards from docs}. Testing requirements: {all testing requirements including coverage targets}. Quality gates: {all quality gates that must pass}. Contribution guidelines: {all contribution rules and conventions}" --user-id "$PROJECT_ID" --infer false
 ```
 
 **CRITICAL:** Use `--infer false` to preserve FULL TEXT without LLM extraction/shortening.
 
 **What to store (be COMPREHENSIVE):**
 - Project overview: name, complete description, full technology stack with versions, purpose, key features
-- **Workflow (CRITICAL)**: commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md
+- **Workflow (CRITICAL)**: commit message format, PR process, review requirements, branch naming, communication style from CONTRIBUTING.md or AGENTS.md (whichever exists)
 - Architecture: all patterns, all design decisions with rationale, component structure, data flow
 - Current status: open issues, PRs, detailed recent commits, CI/CD state
 - Conventions: complete coding standards, all testing requirements, all quality gates
