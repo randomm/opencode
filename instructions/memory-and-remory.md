@@ -102,7 +102,7 @@ remory list --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-
 - Integration patterns with other components
 
 **Length Considerations:**
-If your memory content exceeds 1,500 characters, split into multiple focused memories:
+If your memory content exceeds 1,000 characters, split into multiple focused memories:
 - One memory for architecture decisions
 - One memory for solutions to specific problem types
 - One memory for testing/linting configuration
@@ -136,9 +136,9 @@ The `--infer false` flag disables auto-consolidation. When enabled, Remory's LLM
 - **Token-to-character ratio:** Approximately 1 token per 4 characters (English)
 
 **Safe Memory Size Guidelines:**
-- **Target:** 1,200-1,500 characters per `remory add` command
-- **Token equivalent:** 300-375 tokens (safely under 256-token default with margin)
-- **Maximum:** Do NOT exceed 1,500 characters in a single memory entry
+- **Target:** 800-1,000 characters per `remory add` command
+- **Token equivalent:** 200-250 tokens (safely under 256-token limit with margin)
+- **Maximum:** Do NOT exceed 1,000 characters in a single memory entry
 - **Consequence of violation:** "Failed to generate embedding" error
 
 **Why `--infer false` Doesn't Help:**
@@ -146,7 +146,7 @@ The `--infer false` flag disables LLM-powered consolidation (happens AFTER embed
 
 **Chunking Strategy (Required for Long Content):**
 
-When storing comprehensive information that exceeds 1,500 characters:
+When storing comprehensive information that exceeds 1,000 characters:
 
 1. **Split into focused topic-based memories** instead of one large memory
 2. **Each memory must be semantically complete** (independently understandable)
@@ -161,13 +161,13 @@ remory add "Project workflow: commit conventions, PR process, quality gates, tes
 
 **Example - CORRECT (Will Succeed):**
 ```bash
-# Memory 1: Commit conventions (~1,200 chars)
+# Memory 1: Commit conventions (~800-900 chars)
 remory add "Commit standards and conventions. Use Conventional Commits format: type(scope): description. Types: feat, fix, docs, refactor, test. Include issue reference. Examples: 'feat: add auth (#123)'. Present tense, imperative mood. First line <50 chars." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 
-# Memory 2: PR process (~1,300 chars)
+# Memory 2: PR process (~800-900 chars)
 remory add "Pull request workflow. Feature branch naming: feature/123-description. PR requirements: title format, description, CI green. Review process: mandatory approval, no self-merge. Merge strategy: squash. CI monitoring: gh run watch for real-time." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 
-# Memory 3: Quality gates (~1,200 chars)
+# Memory 3: Quality gates (~800-900 chars)
 remory add "Zero-tolerance quality enforcement. Never suppress linting (no # noqa, # type: ignore). Coverage: 80%+ per file, CI enforces. Testing: TDD required, tests before implementation. Local verification: run all tests, all linting, type checking before completion." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 
@@ -227,10 +227,10 @@ Leverage Remory's advanced features:
 
 **⚠️ Length Management:**
 When storing delegation history or multi-agent coordination patterns:
-- If content exceeds 1,500 characters, split into multiple memories
+- If content exceeds 1,000 characters, split into multiple memories
 - Example: One memory for Phase 1 delegation patterns, another for Phase 2
 - Each memory should cover a coherent delegation scenario or pattern
-- Never create single memory exceeding 1,500 characters
+- Never create single memory exceeding 1,000 characters
 
 ### Specialist Agents (All Subagents)
 
@@ -292,13 +292,13 @@ remory add "..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .pro
 **Solution: Chunk Your Memory**
 
 1. **Measure your content:** Count characters (not words)
-2. **If > 1,500 characters:** Split into multiple memories
+2. **If > 1,000 characters:** Split into multiple memories
 3. **Use topic-based splitting:**
    - Commit conventions
    - PR workflow
    - Quality gates
    - Testing requirements
-4. **Each chunk:** 1,200-1,500 characters, semantically complete
+4. **Each chunk:** 800-1,000 characters, semantically complete
 5. **Test:** Run `remory add` for each chunk separately
 
 **Example Split:**
@@ -306,10 +306,10 @@ remory add "..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .pro
 # BEFORE (fails at 2,500 chars)
 remory add "Huge text block..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 
-# AFTER (succeeds - 3 chunks at ~1,200 chars each)
-remory add "Commit conventions: [1,200 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
-remory add "PR workflow: [1,200 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
-remory add "Quality gates: [1,100 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
+# AFTER (succeeds - 3 chunks at ~800-900 chars each)
+remory add "Commit conventions: [800-900 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
+remory add "PR workflow: [800-900 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
+remory add "Quality gates: [800-900 chars]..." --user-id "$(cat .project-id 2>/dev/null || (uuidgen | tee .project-id))" --infer false
 ```
 
 **Verification:**
