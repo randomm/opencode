@@ -946,8 +946,9 @@
         "write": "deny",
         "edit": "deny"
       },
-       "tools": {
-         "glob": true,
+        "tools": {
+          "bash": true,
+          "glob": true,
          "grep": true,
          "list": true,
          "read": true,
