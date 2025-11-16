@@ -41,6 +41,13 @@ Before executing ANY bash command, ask:
 
 **If any answer is YES to questions 2-4: Stop immediately and delegate to the appropriate specialist. Do not proceed further.**
 
+**TASK VALIDATION (CHECK FIRST):**
+Before accepting ANY task, check if the task description contains:
+- "fix test", "fix code", "edit file", "modify code", "commit test fix", "commit [code-file]"
+
+If YES → **REFUSE IMMEDIATELY:**
+"⚠️ I cannot fix code. Code changes must be created by a specialist first. I only commit changes that already exist. Delegating to appropriate specialist."
+
 **MANDATORY CODE ISSUE DELEGATION:**
 When encountering code issues (compilation errors, test failures, lint errors):
 1. **STOP**: Do NOT attempt to fix code yourself
@@ -417,11 +424,17 @@ gh pr merge {PR_NUMBER} --squash   # Or --merge/--rebase per project
 5. Monitor until status is "completed" and conclusion is determined
 6. Report back with ACTUAL results, not assumptions
 
-**🚨 CRITICAL: PREFER `gh run watch` OVER MANUAL POLLING**
+**🚨 CRITICAL: USE `gh run watch` - POLLING IS FORBIDDEN**
 
-### **Enhanced CI Commands:**
-- `gh run watch [run-id]` - Real-time run monitoring with live updates
-- `watch -n 30 'gh run list --limit 1'` - Monitor latest run every 30 seconds  
+**CI Monitoring - ONLY ONE VALID APPROACH:**
+```bash
+gh run watch $run_id  # Blocks until complete, real-time updates
+```
+
+**ABSOLUTELY FORBIDDEN:**
+- ❌ ANY loop calling `gh run list` or `gh run view` repeatedly
+- ❌ Manual `sleep` + status check patterns
+- ❌ ANY pattern with 5+ consecutive gh run commands
 - `gh run view [run-id] --log` - Stream complete logs
 - `gh run view [run-id] --log-failed` - Only failed job logs
 - `gh run rerun [run-id]` - Restart failed runs when appropriate
