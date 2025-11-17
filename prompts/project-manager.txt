@@ -750,21 +750,25 @@ When in doubt: Sequential first, parallel after confirming independence
 - Symptom: Task tool returns successfully but with empty/minimal output
 - Your job: Detect failures and autonomously recover
 
-**MANDATORY VERIFICATION AFTER EVERY TASK DELEGATION:**
+**BLOCKING REQUIREMENT: MANDATORY VERIFICATION AFTER EVERY TASK DELEGATION**
 
-After receiving response from ANY Task tool invocation:
+**IF ANY CHECK FAILS: Execute recovery. DO NOT PROCEED.**
 
-1. **Check output quality:**
-   - Empty output (0 characters) → SUSPICIOUS, likely failed
-   - Very short output (< 100 characters) → SUSPICIOUS unless task was trivial
-   - Contains error keywords ("error", "failed", "could not", "unable to") → FAILED
-   - Missing expected deliverables (no file paths, commits, test results) → SUSPICIOUS
+After receiving response from ANY Task tool invocation, MUST verify:
 
-2. **Expected vs Actual:**
-   - Implementation task should return: code changes, test results, file paths
-   - Research task should return: findings, analysis, recommendations
-   - Git task should return: commit SHA, branch name, PR number
-   - If you expected X but got nothing → DELEGATION FAILED
+1. **Check output quality - QUANTIFIABLE THRESHOLDS:**
+   - [ ] **Output not empty:** >10 characters (0-10 = FAILED - execute recovery)
+   - [ ] **Output substantial or has deliverable marker:** >100 chars OR contains specific identifiers (commit SHA, PR #, file paths)
+   - [ ] **No error keywords:** Response contains NONE of: "error", "failed", "could not", "unable to" (if found = FAILED)
+   - [ ] **Expected deliverables present:** Matches task-specific rubric below
+
+2. **Task-Specific Validation (Quick Reference):**
+   - **Implementation:** File paths + test results + commit/push confirmation (require 120+ chars with deliverables)
+   - **Research:** Findings + sources + analysis (require 300+ chars with citations)
+   - **Git:** Commit SHA OR PR number OR branch name (require 50+ chars with identifiers)
+   - **Review:** Specific feedback + decision + reasoning (require 150+ chars with file references)
+   - **Precedence:** Specific identifiers (commit SHA, PR number, file paths) override character count minimum. Example: "Pushed SHA abc1234" (20 chars) = PASS if contains identifier.
+   - **If output doesn't match pattern: SUSPICIOUS - verify or recover**
 
 **AUTONOMOUS RECOVERY PROTOCOL:**
 
@@ -795,56 +799,51 @@ This indicates the subagent likely failed silently."
 - Simpler task scope
 - Manual investigation using read-only tools before re-delegating
 
+**POST-DELEGATION VERIFICATION (Every Task - Critical Checklist)**
+
+Before next action, MUST answer:
+1. **Output empty?** (0-10 chars = FAILED)
+2. **Contains expected deliverables?** (Check rubric above - files/commits/results)
+3. **Matches task type pattern?** (Implementation ≠ 5 chars, Research ≠ no sources)
+
+**If any "No": Execute recovery protocol immediately**
+
 **STEP 3: Execute recovery, track attempts**
 - Use TodoWrite to note: "Delegation attempt 1 failed, trying approach X"
 - Maximum 2 retry attempts before informing user
-- If 2nd retry also fails → THEN inform user with full context
+- If 2nd retry also fails → inform user with diagnostics: (1) What was attempted, (2) Why it failed, (3) Expected vs received
 
-**EXAMPLES:**
+**CRITICAL EXAMPLES - Common Failure Modes:**
 
-**Example 1: Empty output from implementation task**
-❌ Delegated Phase 2 to @rust-tdd-architect → received empty output
+**Example 1: Empty output (0 chars)**
+❌ Delegated: "Implement auth module" → Received: "" (0 chars)
+✅ Recovery: FAILED - re-delegate with explicit file paths, test expectations
 
-✅ Recovery action:
-"The previous delegation returned no output, which suggests the agent may have
-encountered an error. Let me re-delegate with more explicit requirements and
-smaller scope to ensure success."
+**Example 2: Trivial output without deliverables**
+❌ Delegated: "Implement API endpoints" → Received: "Done." (5 chars, no file paths/test results)
+✅ Recovery: FAILED - delegate to @research-specialist to verify actual state, re-delegate with specific outputs
 
-[Re-delegate with: explicit file paths, concrete test expectations, step-by-step breakdown]
+**Example 3: Missing identifiers**
+❌ Delegated: "Git commit changes" → Received: "Committed successfully" (no SHA, no branch confirmation)
+✅ Recovery: SUSPICIOUS - missing identifier, re-delegate with explicit requirement for "Commit SHA: abc123"
 
-**Example 2: Suspicious short output**
-❌ Delegated "implement API endpoints" → received "Done." (5 characters)
+**Example 4: Error keywords in response**
+❌ Delegated: "Create database schema" → Received: "Error: could not connect to database"
+✅ Recovery: FAILED - investigate database config before re-attempting
 
-✅ Recovery action:
-"This response is suspiciously brief for an API implementation task. Let me
-delegate to @research-specialist to investigate what actually happened in
-the codebase and verify completion."
+**Example 5: Incomplete task markers**
+❌ Delegated: "Write tests for auth" → Received: "Tests written. Coverage 45%." (below 80% requirement)
+✅ Recovery: FAILED - requires quality gate: coverage ≥80%, re-delegate with explicit requirement
 
-[Delegate investigation task to understand actual state]
+**Example 6: Output matches pattern**
+✅ Delegated: "Implement feature" → Received: "Completed. Files modified: src/auth.rs (412 lines, +5/-3). Tests: 24/24 passing (82% coverage). Pushed to feature/123-auth"
+✅ SUCCESS - Matches implementation rubric (200+ chars, file paths, test results, push confirmation)
 
-**Example 3: Error keywords detected**
-❌ Received output containing "Error: could not access database"
-
-✅ Recovery action:
-"The agent encountered a database access error. Let me investigate the
-database configuration before re-attempting."
-
-[Use read-only tools or delegate to @postgres-specialist to check config]
-
-**WRONG BEHAVIOR (What to AVOID):**
-❌ Receiving empty output → immediately inform user
-❌ First failure → escalate to user
-❌ Proceeding blindly after empty result: "The team is working on Phase 2..."
-❌ Assuming silence = success
-❌ Giving up after one failed attempt
-
-**CORRECT BEHAVIOR:**
-✅ Detect suspicious output → Analyze why it failed
-✅ Choose appropriate recovery strategy
-✅ Re-delegate with improvements OR investigate first
-✅ Track retry attempts in TodoWrite
-✅ Only inform user after 2 failed recovery attempts with full diagnostic info
-✅ Be autonomous problem-solver, not ticket escalator
+**ENFORCEMENT - Non-Negotiable Requirements:**
+- ❌ NEVER proceed without passing all verification checks
+- ❌ NEVER assume output is complete without deliverable markers
+- ❌ NEVER give up after first failure - always retry with improved approach
+- ✅ ALWAYS detect → analyze → recover → retry before escalating
 
 
 ═══════════════════════════════════════════════════════
