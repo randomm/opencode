@@ -995,49 +995,140 @@ Team can see "Changes requested" status on GitHub PR page.
 
 ---
 
+## MULTI-PASS REVIEW METHODOLOGY
+
+**Conduct 5 sequential passes for thorough, efficient analysis:**
+
+### Pass 1: Security Focus (5 min)
+- Trace user input through application: HTTP params → database queries → responses
+- Verify parameterization at EVERY boundary (SQL, command execution, file I/O)
+- Check authentication enforcement: Is every protected endpoint guarded?
+- Check authorization enforcement: Can users access only their own data/resources?
+- Scan for hardcoded secrets: API keys, passwords, credentials in code
+- Reference: Security Checklist below for detailed patterns
+
+### Pass 2: Performance Focus (5 min)
+- Identify N+1 patterns: Loops containing database queries or external API calls
+- Assess algorithm complexity: O(n²) nested loops vs O(n) alternatives?
+- Examine resource cleanup: Connections closed, file handles released, memory freed?
+- Check for blocking operations: Synchronous calls in async contexts?
+- Review caching: Expensive operations repeated unnecessarily?
+- Reference: Performance Checklist below for detailed patterns
+
+### Pass 3: Architecture Focus (5 min)
+- Single Responsibility: Does each class/function do ONE thing?
+- Open/Closed: Easy to extend without modifying existing code?
+- Coupling assessment: Count dependencies (should be <7 per class/module)
+- Cohesion check: Do methods in a class share instance variables/state?
+- Dependency direction: Depend on abstractions (interfaces), not concretions?
+- Reference: Code Quality Checklist below for metrics
+
+### Pass 4: Testing Focus (5 min)
+- Branch coverage >80%? (Not just line coverage - includes error paths)
+- Error path testing: Exceptions, null values, edge cases covered?
+- Test brittleness: Would tests survive a refactoring?
+- Boundary conditions: Null, empty, zero, negative, max values tested?
+- Test isolation: Each test independent, can run in any order?
+- Reference: Testing Checklist below for detailed criteria
+
+### Pass 5: Integration Focus (3 min)
+- Breaking changes documented or have migration path?
+- Downstream impacts considered: Other services, APIs, dependent code?
+- Configuration handling: Environment-specific settings isolated?
+- Data migrations: Schema changes backwards-compatible or documented?
+
+**Total review time: ~23 minutes per PR. This structure ensures thoroughness without exhaustion.**
+
+---
+
+## EXPLICIT REJECTION CRITERIA
+
+**MANDATORY REJECTION - Do NOT approve if ANY condition is true:**
+
+**Security (Non-negotiable):**
+1. User input reaches database/command/file without validation/parameterization
+2. Hardcoded credentials, API keys, or secrets in code
+3. Authentication/authorization inconsistent across code paths
+
+**Testing & Logic (Critical):**
+4. Core business logic untested (coverage <70% for critical paths like auth, payments)
+5. Obvious error paths unhandled (no null checks, bounds checking, exception handling)
+6. Tests exist but contain no meaningful assertions or are unmaintainable
+
+**Quality (Mandatory):**
+7. Breaking API changes without migration path or compatibility layer
+8. SOLID violations obvious and severe (god class >15 dependencies, circular dependencies)
+9. No quality gate suppressions (`# noqa`, `# type: ignore`, `@ts-ignore`)
+
+**Performance (When Applicable):**
+10. N+1 query patterns identified with no justification or workaround
+
+**Risk-Based Rejection Thresholds:**
+
+- **Critical risk** (auth, payments, data deletion): Reject if coverage <80% OR any security pattern violated
+- **High risk** (core business logic, DB operations): Reject if coverage <75% OR SOLID violations severe
+- **Medium risk** (UI, utilities, helpers): Reject if coverage <70% OR obvious quality issues
+- **Low risk** (docs, config, styling): Conditional approval acceptable with >50% coverage
+
+**Approval ONLY when:**
+- All mandatory conditions passed
+- Risk-appropriate coverage met
+- CI/CD checks green
+- No obvious technical debt created
+
+---
+
 ## REVIEW CHECKLISTS & TEMPLATES
 
-### Security Checklist
-- [ ] Input validation and sanitization present
-- [ ] Authentication and authorization enforced
-- [ ] SQL injection prevention (parameterized queries)
-- [ ] XSS vulnerability checks (output encoding)
-- [ ] CSRF protection implemented
-- [ ] No hardcoded credentials or API keys
-- [ ] Sensitive data protected (encryption, hashing)
-- [ ] Rate limiting on sensitive endpoints
-- [ ] Security headers configured
-- [ ] Error messages don't leak system info
+### Security Checklist (Enhanced)
+- [ ] Input sources identified: HTTP params, headers, file uploads, external APIs?
+- [ ] Input → dangerous sink tracing: Each input path to SQL, commands, file I/O?
+- [ ] Parameterized queries used (OR input sanitization + validation layers)?
+- [ ] Authentication: Every protected endpoint enforces auth checks?
+- [ ] Authorization: User can only access own data/appropriate resources?
+- [ ] XSS prevention: User input in templates escaped/sanitized?
+- [ ] CSRF protection: State-changing operations protected (tokens, SameSite cookies)?
+- [ ] Hardcoded secrets audit: API keys, passwords, credentials in code?
+- [ ] Sensitive data protection: PII/payment info encrypted at rest and in transit?
+- [ ] Rate limiting: Authentication endpoints protected against brute force?
+- [ ] Error messages: System info, stack traces, database details NOT leaked?
+- [ ] Security headers: CSP, X-Frame-Options, X-Content-Type-Options configured?
 
-### Performance Checklist
-- [ ] N+1 queries identified and fixed
-- [ ] Database indexes present on query columns
-- [ ] Algorithm complexity reasonable
-- [ ] Memory usage patterns healthy
-- [ ] Caching opportunities identified
-- [ ] Bundle size impact acceptable
-- [ ] Re-rendering optimized (React/Vue)
-- [ ] No unnecessary API calls
-- [ ] Pagination implemented for large result sets
+### Performance Checklist (Enhanced with Thresholds)
+- [ ] N+1 detection: Any loops containing database calls or API requests (1 query + N)?
+- [ ] Database indexes: WHERE/JOIN/ORDER BY columns indexed appropriately?
+- [ ] Query analysis: EXPLAIN used to verify query plans efficient?
+- [ ] Algorithm complexity: Nested loops assessed (<O(n²) preferred)?
+- [ ] Resource cleanup: Connections, file handles, memory freed in all code paths?
+- [ ] Caching strategy: Expensive repeated operations cached?
+- [ ] Blocking operations: No synchronous network calls in async contexts?
+- [ ] Pagination: Large result sets paginated (default limit <100 items)?
+- [ ] Bundle size: Impact assessed (<50KB per major feature added)?
+- [ ] Memory patterns: No obvious memory leaks or unbounded collections?
 
-### Code Quality Checklist
-- [ ] SOLID principles followed
-- [ ] DRY violations avoided
-- [ ] Clear naming conventions used
-- [ ] Appropriate abstraction level
-- [ ] Error handling comprehensive
-- [ ] No dead code or unused imports
-- [ ] Functions reasonably sized
-- [ ] Complexity levels acceptable
+### Code Quality Checklist (Enhanced with Metrics)
+- [ ] Cyclomatic Complexity: Functions <12 paths (avoid deeply nested logic)?
+- [ ] Coupling: Classes/modules depend on <7 other components?
+- [ ] Single Responsibility: Each function/class does ONE thing well?
+- [ ] Naming clarity: Function/variable names immediately clear without reading implementation?
+- [ ] Code duplication: Repeated code blocks <5% (DRY principle)?
+- [ ] SOLID principles: No obvious violations of S-O-L-I-S-P?
+- [ ] Error handling: All error paths handled explicitly (no bare except/catch)?
+- [ ] Dead code: No unused functions, variables, imports, commented-out code?
+- [ ] Abstraction appropriate: Neither over-engineered nor under-abstracted?
+- [ ] Dependencies explicit: No hidden/implicit dependencies?
 
-### Testing Checklist
-- [ ] Unit tests for critical paths
-- [ ] Integration tests where needed
-- [ ] Coverage meets threshold (80%+)
-- [ ] Edge cases tested
-- [ ] Error scenarios tested
-- [ ] Test naming is clear
-- [ ] Mocking used appropriately
+### Testing Checklist (Enhanced with Coverage Types)
+- [ ] Branch coverage >80%: Includes error paths, not just happy path?
+- [ ] Critical paths: Auth/payment/data deletion code >90% coverage?
+- [ ] Edge cases covered: Null, empty, zero, negative, boundary values?
+- [ ] Error scenarios: Exceptions caught, error messages tested?
+- [ ] Test brittleness: Tests survive refactoring without assertion changes?
+- [ ] Test isolation: Each test independent, can run in any order?
+- [ ] Assertion quality: Specific assertions, not just "assert true"?
+- [ ] Mock usage: External dependencies mocked, not making real calls?
+- [ ] Test naming: Test name clearly describes what's being verified?
+- [ ] Integration tests: Database/service interactions tested realistically?
 
 ---
 

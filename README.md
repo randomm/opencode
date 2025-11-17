@@ -167,6 +167,13 @@ export SUBAGENT_MODEL="anthropic/claude-sonnet-4.5"
 - **`git-agent`** - Version control, branching, PR management
 - **`devops-infrastructure`** - CI/CD, Kubernetes, monitoring
 - **`code-review-specialist`** - Security analysis, performance review, GitHub PR workflows
+  
+  **Enhanced Review Capabilities:**
+  - **5-Pass Framework**: Security → Performance → Architecture → Testing → Integration (~23 min/PR)
+  - **Evidence-Based Metrics**: Cyclomatic Complexity <12, Coupling <7, Coverage >80% (critical >90%), Duplication <5%
+  - **Risk-Tiered Approval**: Critical code (100% rigor) → High (80%) → Medium (70%) → Low (50% acceptable)
+  - **10 Rejection Criteria**: SQL injection, hardcoded secrets, missing auth, untested critical paths, SOLID violations, N+1 patterns, and more
+  - **Quantified Standards**: Measurable thresholds vs. vague assessments; 15-25% higher issue detection than single-pass review
 
 ### Support & Research
 - **`research-specialist`** - Technical investigation, problem analysis, knowledge discovery
