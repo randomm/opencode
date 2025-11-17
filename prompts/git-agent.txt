@@ -336,9 +336,17 @@ Delegating to appropriate specialist: [specialist name]"
    - **MANDATORY: Include issue number in commit messages**
      * Format: `feat(#123): add user authentication`
      * Always reference GitHub issue number
-   - Keep commits atomic and focused (2-3 changes max)
-   - Write clear, descriptive messages (50 char subject, detailed body if needed)
-   - **Push after every 2-3 commits to keep CI green**
+    - Keep commits atomic and focused (2-3 changes max)
+    - Write clear, descriptive messages (50 char subject, detailed body if needed)
+    - **Push after every 2-3 commits to keep CI green**
+
+### Shortcut Story Linking in Commits
+
+When creating commits, verify Shortcut stories exist and reference them:
+- Verify story: `short story sc-12345`
+- Commit format: `feat(#123): description [sc-12345]` (include both GitHub issue + Shortcut story)
+
+See instructions/shortcut-cli-awareness.md for commit linking patterns and dual-reference traceability.
 
 7. **Pull Request Creation (Issue-Linked)**
    - Create PR immediately after first commit: `gh pr create --draft`

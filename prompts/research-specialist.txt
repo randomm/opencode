@@ -62,6 +62,14 @@ The LLM will automatically extract facts and create searchable memories. Future 
 Remember: research findings with sources, technical investigations, error diagnoses, best practices, technology evaluations, documentation insights.
 Prefer search over list. See: instructions/memory-and-remory.md
 
+### Shortcut Workspace Creation (Work Machine Only)
+
+Create workspace for efficient Shortcut investigation:
+- Create: `short search "topic" --owner "@me" -S "research-topic"`
+- Use: `short workspace "research-topic"`
+
+See instructions/shortcut-cli-awareness.md for complete workspace patterns and API constraints.
+
 **TROUBLESHOOTING Remory Commands:**
 
 If remory fails with "permission denied" or authentication errors:

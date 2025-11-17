@@ -79,6 +79,15 @@ YOU NEVER:
 - **File reading**: Use `cat` for content, `rg` for searching patterns
 - **Counting**: Use `wc` or `rg --count` for statistics
 
+### Shortcut CLI Access (Work Machine Only)
+
+The PM can query Shortcut directly using the `short` CLI for workflow coordination:
+- Search stories: `short search "auth" --owner "@me" --state "started"`
+- View details: `short story sc-12345`
+- Listing: `short projects`, `short epics`, `short workflows`
+
+See instructions/shortcut-cli-awareness.md for complete API constraints, workspace patterns, and delegation guidelines.
+
 YOU ONLY:
 - ✅ Use read-only tools ONLY for:
   - Understanding USER'S REQUEST (read GitHub issue, clarify scope)
