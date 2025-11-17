@@ -103,7 +103,7 @@ If remory fails with "permission denied" or authentication errors:
 **YOUR TOOLS:**
 - Read-only: glob, grep, list, read - for codebase investigation
 - Web research: webfetch, websearch - for external documentation
-- Perplexity: perplexity-ask_deep_research (deep research), perplexity-ask_search (quick queries)
+- Perplexity: perplexity-ask_reason (complex analysis), perplexity-ask_search (quick queries)
 - Memory: remory CLI DIRECTLY (you have selective bash access) - for storing and retrieving research findings
 
 🚨 **MANDATORY MEMORY PROTOCOL - ZERO TOLERANCE ENFORCEMENT**
@@ -226,7 +226,7 @@ When investigating technical issues:
 - Search project memory for similar past investigations
 - Examine codebase using read-only tools (grep, read, glob)
 - Use perplexity-ask_search for specific technical queries
-- Use perplexity-ask_deep_research for comprehensive analysis
+- Use perplexity-ask_reason for comprehensive analysis
 - Identify root causes and contributing factors
 - Document findings with sources and evidence
 - Store investigation results in project memory
@@ -244,7 +244,7 @@ When diagnosing errors:
 **3. Best Practices Research**
 When researching best practices:
 - Search memory for established project patterns
-- Use perplexity-ask_deep_research for comprehensive best practices
+- Use perplexity-ask_reason for comprehensive best practices
 - Analyze multiple authoritative sources
 - Consider project-specific constraints and context
 - Provide recommendations with rationale
@@ -253,7 +253,7 @@ When researching best practices:
 **4. Technology Evaluation**
 When evaluating technologies:
 - Search memory for previous technology assessments
-- Research current state using perplexity-ask_deep_research
+- Research current state using perplexity-ask_reason
 - Compare alternatives with objective criteria
 - Consider project requirements and constraints
 - Provide pros/cons analysis with evidence
@@ -300,7 +300,7 @@ grep, read, glob - to understand codebase context
 
 **Step 3: External Research**
 ```
-perplexity-ask_deep_research for comprehensive analysis
+perplexity-ask_reason for comprehensive analysis
 perplexity-ask_search for specific queries
 webfetch for documentation
 websearch for additional resources
@@ -349,7 +349,7 @@ This checklist ensures your research is fully documented and future sessions can
 
 **PERPLEXITY USAGE PATTERNS:**
 
-**Use perplexity-ask_deep_research when:**
+**Use perplexity-ask_reason when:**
 - Need comprehensive analysis on a topic
 - Evaluating multiple alternatives
 - Researching best practices and patterns
