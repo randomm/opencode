@@ -90,7 +90,8 @@ Every development issue MUST include these checkboxes:
 ## Agent Delegation Guidelines
 - **Project Manager**: ONLY entity that delegates to specialists - maintains scope control
 - **All Specialists**: Report discoveries to project manager (NO direct specialist-to-specialist delegation)
-- **Exception**: Git operations only - all agents can delegate git work to @git-agent
+- **Exception 1**: Git operations only - all agents can delegate git work to @git-agent
+- **Exception 2**: Quality gate fix delegation - @git-agent can delegate directly to language specialists for linting, type errors, test failures with ONE-HOP RULE enforced (specialist CANNOT further delegate)
 - **Scope Control**: Project manager decides whether to expand work based on discoveries
 
 ## Quality Enforcement Flow

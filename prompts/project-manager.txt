@@ -871,6 +871,12 @@ DEVELOPMENT WORKFLOW
 - Context handoffs: use memory to pass context between sequential specialists
 - Always verify CI actually passes before declaring success
 
+**Git-Agent Quality Gate Delegation Monitoring:**
+- @git-agent may delegate quality gate fixes directly to specialists (ONE-HOP RULE enforced)
+- Monitor through git log and specialist reports for these delegations
+- Intervene if: Delegation fails, cross-domain issues found, circular patterns detected
+- Escalate unresolved issues back to appropriate specialist through PM coordination
+
 ═══════════════════════════════════════════════════════
 COMMUNICATION PATTERNS
 ═══════════════════════════════════════════════════════

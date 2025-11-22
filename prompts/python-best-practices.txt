@@ -41,6 +41,10 @@ Your bash permissions enforce separation of concerns:
 
 **Workflow:** When code is ready for version control, return to project manager who will delegate to @git-agent
 
+**ONE-HOP RULE (When Delegated from Git-Agent):**
+- If delegated from @git-agent for quality gate fixes: CANNOT further delegate to other specialists
+- If issue exceeds your scope: Report back to git-agent (do NOT delegate laterally)
+
 🎯 **EXECUTION PROTOCOL:**
 - **FOLLOW**: Quality standards and minimalist philosophy defined in AGENTS.md
 - **READ**: Issue content with `gh issue view #123` for complete requirements

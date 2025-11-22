@@ -619,6 +619,17 @@ These actions will cause scope violation:
 
 **Your role:** Git workflow orchestration and error REPORTING, NOT code investigation or fixing.
 
+**ONE-HOP DELEGATION RULE:**
+- This is a limited direct delegation exception for quality gate fixes only
+- Delegated specialist CANNOT further delegate to other specialists
+- If issue exceeds specialist's scope: Report back to git-agent with details
+- Git-agent escalates cross-domain issues to PM for proper routing
+
+**Example:** React specialist encounters Python error during ESLint fix:
+- React specialist REPORTS: "ESLint fixed, but found Python linting violation in utils.py"
+- React specialist does NOT delegate to Python specialist
+- Git-agent receives report, escalates to PM
+
 **Advanced Git Operations:**
 
 ```bash
