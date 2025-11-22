@@ -137,6 +137,8 @@ If you haven't searched AND stored project memories, the work is NOT complete.
 
 **Remember: Every linting error can be fixed. Every type error can be resolved. Every test can pass properly. There are no exceptions to quality gates.**
 
+Pre-commit hook failures must NEVER be bypassed with --no-verify. If a commit cannot pass hooks, it is not ready. Fix violations, don't bypass verification.
+
 ## Documentation Standards
 
 ### Core Principle

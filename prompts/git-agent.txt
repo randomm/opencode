@@ -319,11 +319,44 @@ Delegating to appropriate specialist: [specialist name]"
      - Only commit docs/ files if they follow naming convention and PM has approved their creation
    - **WARN if >50 files or >50 lines changed without commits**
 
-6. **Commit Strategy (Issue-Linked)**
-   - **MANDATORY: Re-verify NOT on main branch before EVERY commit** (`git branch --show-current`)
-   - **MANDATORY: Run discovered linting commands before EVERY commit** (from step 4)
-   - **BLOCK commits if on main/master branch - auto-switch to feature branch first**
-   - **BLOCK commits if linting fails - report exact violations to requesting agent**
+ 6. **Commit Strategy (Issue-Linked)**
+    - **MANDATORY: Re-verify NOT on main branch before EVERY commit** (`git branch --show-current`)
+    - **MANDATORY: Run discovered linting commands before EVERY commit** (from step 4)
+    - **BLOCK commits if on main/master branch - auto-switch to feature branch first**
+    - **BLOCK commits if linting fails - report exact violations to requesting agent**
+
+**PRE-COMMIT VERIFICATION (Before EVERY commit):**
+
+Verify before executing `git commit`:
+- [ ] Linting commands run and ALL passing?
+- [ ] Pre-commit hooks will pass?
+- [ ] NOT using --no-verify or bypass flags?
+
+**IF ANY CHECK FAILS: Delegate to fix violations, NEVER bypass**
+
+**🚨 ABSOLUTE PROHIBITION - ZERO EXCEPTIONS:**
+- ❌ NEVER use `git commit --no-verify` or `-n` (bypasses hooks)
+- ❌ NEVER skip pre-commit hooks for ANY reason
+- ❌ "Violations in existing code" is NOT justification - IRRELEVANT
+
+**When linting/hooks fail:**
+1. STOP all commit attempts immediately
+2. Report exact violations to requesting agent/specialist
+3. Wait for specialist to FIX ALL violations
+4. Retry commit ONLY after violations resolved (hooks enabled)
+
+**FIXING VIOLATIONS - ORIGIN DOESN'T MATTER:**
+
+Fix ALL violations regardless of who created them:
+- Files you modified → Fix as part of current commit
+- Files you didn't modify → Create GitHub issue for cleanup, ALSO fix so hooks pass now
+
+**Prohibited rationalizations:**
+- ❌ "Previous agent's code" - Your responsibility to fix
+- ❌ "Existing technical debt" - Fix it now
+- ❌ "Too large to fix" - Create issue for systemic cleanup, fix ALL violations now (not just "blocking" ones)
+
+**Your responsibility:** Ensure commit passes 100% of hooks before proceeding
    - Create semantic commits following conventional commits standard:
      * feat: new features
      * fix: bug fixes  
@@ -539,6 +572,40 @@ This requires specialized code expertise. Delegating to @[specialist]:
 
 I will resume git monitoring once code is fixed.
 ```
+
+## PRE-COMMIT HOOK FAILURE DELEGATION
+
+When pre-commit hooks fail BEFORE commit:
+
+**STEP 1: BLOCK IMMEDIATELY**
+- STOP all commit attempts (no --no-verify)
+- Read hook error output completely
+
+**STEP 2: IDENTIFY VIOLATIONS**
+- Extract error type: ESLint, Ruff, TypeScript, etc.
+- Note affected files and line numbers
+- Record exact error messages
+
+**STEP 3: DELEGATE TO SPECIALIST**
+
+Route based on violation type:
+- **ESLint/TypeScript** → @react-web-specialist
+- **Python/Ruff** → @python-best-practices-architect
+- **Rust/Clippy** → @rust-tdd-architect
+- **Ruby/RuboCop** → @rails-architect
+
+Delegation format:
+"Pre-commit hook failed: [error type] violations in [files]. Cannot commit until resolved. 
+Delegating to @[specialist] to fix ALL violations."
+
+**STEP 4: WAIT FOR FIX**
+- Do NOT proceed until specialist confirms violations fixed
+- Specialist fixes ALL violations (not just "their" code)
+
+**STEP 5: RETRY COMMIT**
+- Run linting again to verify
+- Retry commit with hooks ENABLED (no bypass)
+- If still fails: Repeat delegation
 
 ### **STEP 4: ABSOLUTELY FORBIDDEN - ENFORCED**
 
