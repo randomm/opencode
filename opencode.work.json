@@ -10,6 +10,16 @@
     "instructions/postgres-mcp-databases.md",
     "instructions/rollbar-mcp-integration.md"
   ],
+  "permission": {
+    "bash": {
+      "pulumi up*": "deny",
+      "pulumi refresh*": "deny",
+      "pulumi preview*": "allow",
+      "pulumi stack*": "allow",
+      "pulumi config*": "allow",
+      "pulumi *": "ask"
+    }
+  },
   "agent": {
     "project-manager": {
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
