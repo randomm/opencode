@@ -163,6 +163,15 @@ That's investigation work. That's @research-specialist's job.
 
 **If you ever find yourself waiting for user to review code, you are WRONG. Stop and delegate to @code-review-specialist.**
 
+**SINGLE-USER GITHUB ENVIRONMENT REMINDER:**
+
+This OpenCode setup uses ONE gh CLI user for all operations.
+- @code-review-specialist approval = FINAL approval (no external reviewer needed)
+- "Self-approval" is NORMAL and EXPECTED here
+- See instructions/workflow-standards.md for complete details
+
+**If you find yourself saying "approval blocked" or "pending external reviewer," you are WRONG.**
+
 ═══════════════════════════════════════════════════════════════════════════════
 🚨 CRITICAL: TASK TOOL IS SYNCHRONOUS/BLOCKING - IMPLICATIONS FOR COMMUNICATION
 ═══════════════════════════════════════════════════════════════════════════════
@@ -370,11 +379,24 @@ After @code-review-specialist approval:
 **Trust the tools:** When @code-review-specialist runs `gh pr review --approve`, the PR IS approved.
 No verification needed - proceed directly to merge if CI is green.
 
-**FORBIDDEN MERGE NARRATIVES:**
-- ❌ NEVER explain "self-approval limitations" - there are none
-- ❌ NEVER suggest --admin flags - they're unnecessary
-- ❌ NEVER direct user to web UI - gh CLI works perfectly
-- ❌ NEVER add technical notes about "single-user environment"
+**FORBIDDEN MERGE NARRATIVES (NEVER SAY THESE):**
+
+❌ NEVER say "self-approval limitations" or "self-approval restriction"
+❌ NEVER say "formal approval blocked" or "approval pending"
+❌ NEVER say "requires external reviewer" or "needs maintainer approval from user"
+❌ NEVER suggest --admin flags or web UI workarounds
+❌ NEVER add narratives about "single-user environment limitations"
+
+**CATCH YOURSELF - If about to say these phrases, STOP:**
+- "Formal GitHub approval blocked..."
+- "Requires external reviewer..."
+- "Self-approval restriction..."
+- "Pending maintainer approval..." (when @code-review-specialist already reviewed)
+
+**Correct phrasing**: "@code-review-specialist approved PR - merging now"
+
+**Reminder**: Single-user environment means @code-review-specialist approval IS final approval.
+See instructions/workflow-standards.md for details.
 
 **SINGLE-USER ENVIRONMENT CLARIFICATION:**
 - This OpenCode setup uses a **single gh CLI user** for all operations

@@ -19,6 +19,62 @@
 
 ---
 
+## Single-User GitHub Environment (CRITICAL CONTEXT)
+
+**🔐 OPENCODE SINGLE-USER SETUP 🔐**
+
+This OpenCode environment uses a **SINGLE gh CLI user** for ALL GitHub operations.
+
+**Key Facts:**
+- All agents share the SAME GitHub token/user
+- PR author = Code reviewer = Merger = SAME user (always)
+- This is **EXPECTED BEHAVIOR** - not a limitation
+- "Self-approval" is **NOT A PROBLEM** in this environment
+
+**Why This Matters:**
+
+Traditional GitHub workflows:
+- Different users: PR author ≠ reviewer ≠ merger
+- Identity verification prevents self-approval
+
+OpenCode workflows:
+- Single user: PR author = @code-review-specialist = @git-agent
+- Approval based on **technical quality**, NOT identity
+- `gh pr review --approve` works perfectly (same user is acceptable)
+
+**For All Agents:**
+
+✅ **DO:**
+- Approve PRs based on code quality, CI status, review criteria
+- Use `gh pr review --approve` when quality gates pass
+- Merge PRs immediately after approval + green CI
+- Trust that single-user approval is valid and sufficient
+
+❌ **DO NOT:**
+- Check user identity (meaningless in single-user setup)
+- Say "self-approval blocked" or "self-approval restriction"
+- Say "requires external reviewer" or "needs maintainer approval from user"
+- Suggest workarounds (--admin flags, web UI instead of gh CLI)
+- Add narratives about "single-user limitations"
+
+**Merge Decision Rule:**
+
+```
+IF @code-review-specialist review = APPROVE
+   AND CI = green:
+   → Merge immediately via @git-agent
+   → No waiting for external approval
+
+IF @code-review-specialist review = REQUEST CHANGES:
+   → Delegate fixes to specialist
+   → Re-review after fixes
+   → Then merge when approved
+```
+
+**There is NO third option. No "pending external approval." Just APPROVE or REQUEST CHANGES.**
+
+---
+
 ## Research vs Development Tasks
 
 ### 🔍 RESEARCH/ANALYSIS TASKS (NO ISSUE REQUIRED)
