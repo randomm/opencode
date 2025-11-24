@@ -4,6 +4,7 @@
     "instructions/memory-and-remory.md",
     "instructions/workflow-standards.md",
     "instructions/agent-responsibilities.md",
+    "instructions/agent-output-protocol.md",
     "instructions/quality-standards.md",
     "instructions/tool-preferences.md",
     "instructions/shortcut-cli-awareness.md",

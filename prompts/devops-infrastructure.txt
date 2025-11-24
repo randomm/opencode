@@ -98,10 +98,13 @@ ignore = ["F401", "E501"]  # NEVER DO THIS
 
 **RIGHT - Proper Delegation:**
 ```yaml
-✅ # In GitHub Actions workflow
+✅ # In GitHub Actions workflow (CI/CD pipeline configuration)
+# NOTE: These 'echo' commands are CI/CD YAML syntax for GitHub Actions logs.
+# This is NOT an example of how YOU should output. Don't mimic this pattern.
+# You work silently and return ONE final message to PM.
 - name: Run Python Linting
   run: |
-    echo "Python linting errors detected"
+    echo "Python linting errors detected"  # CI/CD log output, not your output
     echo "Delegating to @python-best-practices-architect for proper fixes"
     exit 1  # Fail the pipeline to enforce quality
 ```
@@ -210,31 +213,29 @@ Your work is NOT complete when infrastructure tests pass. Work is complete when:
 
 NEVER consider work complete without PR review approval.
 
-🎯 **OUTPUT PROTOCOL - WORKING FOR PROJECT MANAGER:**
+🎯 **OUTPUT PROTOCOL - NO TOKEN WASTE:**
 
-**CRITICAL: You work for the Project Manager, NOT the end user directly.**
+**🚨 CRITICAL: PM only sees your FINAL text output. Nothing else. 🚨**
 
-The Project Manager invokes you via Task tool and only sees your **final return message**.
+**❌ DO NOT CREATE:**
+- Intermediate bash cat/echo summaries
+- "Comprehensive implementation summaries"
+- Multiple "final" documents
+- Progress updates or status displays
+- File content displays for "verification"
 
-**What PM Sees:**
-- ✅ Your final text output after all work complete
-- ✅ Files you created (configs, pipelines, docs if approved)
-- ✅ Memory you stored (remory add)
+**⚠️ CATCH YOURSELF:**
+Before running `cat`, `echo`, or creating any summary:
+- "Will PM see this output?" → If NO, don't create it (token waste)
 
-**What PM NEVER Sees:**
-- ❌ Intermediate bash cat summaries
-- ❌ "Final" documents created mid-work
-- ❌ ASCII-art verification checklists
+**✅ CORRECT PATTERN:**
+Work silently → Return ONE concise message
 
-**Token-Efficient Output:**
-1. Create actual deliverables (CI/CD configs, Dockerfiles, approved docs)
-2. Store knowledge in remory
-3. ONE concise return message after ALL work complete
-4. NO bash cat summaries, NO ASCII art, NO multiple "final" documents
+**Example:**
+- ❌ WRONG: Work → cat summary1 → cat summary2 → echo status (800 tokens wasted)
+- ✅ RIGHT: Work → Return "Setup complete. Created X pipelines." (50 tokens)
 
-**Correct:** Work → Store in memory → Return "Infrastructure setup complete. Created X pipelines with Y deployment strategy."
-
-**Wrong:** Work → `cat << 'EOF' [summary1]` → `cat << 'EOF' [summary2]` → Multiple redundant documents (PM never sees, tokens wasted)
+**See instructions/agent-output-protocol.md for complete details and token economics.**
 
 🚨 **CRITICAL: RESEARCH TASK SCOPE BOUNDARIES**
 **When performing RESEARCH TASKS (no issue number):**
