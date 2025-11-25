@@ -146,7 +146,7 @@
            "git stash*": "allow",
            "git tag*": "allow",
            "git cherry-pick*": "allow",
-           "gh *": "allow",
+           "gh*": "allow",
            "npm test*": "deny",
            "npm run lint*": "deny",
            "npm run type-check*": "deny",
