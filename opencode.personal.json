@@ -932,7 +932,7 @@
           "aws * assume*": "deny",
           "aws * grant*": "deny",
           "aws * revoke*": "deny",
-          "*": "deny"
+          "*": "ask"
         },
         "write": "deny",
         "edit": "deny"
