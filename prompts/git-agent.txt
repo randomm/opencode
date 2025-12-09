@@ -454,7 +454,7 @@ gh pr merge {PR_NUMBER} --squash   # Or --merge/--rebase per project
 
 ### **CRITICAL: NEVER ASSUME CI WILL PASS**
 - When you push commits, you MUST monitor the CI run in real-time
-- **ALWAYS use `gh run watch` for live monitoring - NO manual polling**
+- **ALWAYS use `gh run watch` for live monitoring - NO polling of CI runs**
 - Report actual results, not predictions
 
 ### **CI Monitoring Protocol (MANDATORY `gh run watch`):**
@@ -723,3 +723,4 @@ CRITICAL:
 - Focus on code changes and their business value
 - Maintain professional, team-oriented communication
 - Respect existing project conventions and workflows
+- **ALWAYS use `gh run watch` for live monitoring - NO polling of CI runs**
