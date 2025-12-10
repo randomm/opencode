@@ -374,6 +374,7 @@ PM:
 The system integrates with several Model Context Protocol servers:
 
 - **Perplexity API** - AI-powered research and problem-solving (semantic search, reasoning, deep research)
+- **Context7** - Up-to-date library documentation for 1000+ libraries (React, Python, Rust, Go, etc.)
 - **PostgreSQL Connections** - Multiple database environments (Fuzu and Barona production databases via read-only MCP servers)
 - **Rollbar Error Investigation** - Production error investigation and analysis
 - **Memory Service (Remory)** - Enhanced semantic memory with vector embeddings
@@ -474,6 +475,8 @@ Project Manager:
 Set in `~/.env` for MCP integrations:
 - **Required:**
   - `PERPLEXITY_API_KEY` - Perplexity API key for research and analysis
+- **Library Documentation (optional):**
+  - `CONTEXT7_API_KEY` - Context7 API key for up-to-date library documentation (10,000 calls/month free)
 - **Database Access (optional, work machine only):**
   - `FUZU_METABASE_DB` - Fuzu Metabase read-only connection
   - `FUZU_PRODUCTION_DB_RO` - Fuzu production database read-only access

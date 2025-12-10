@@ -1104,15 +1104,23 @@
       "command": ["docker", "run", "-i", "--rm", "mcp/postgres", "{env:BARONA_PRODUCTION_DB_RO}"],
       "enabled": true
     },
-    "rollbar-error-investigation": {
-      "type": "local",
-      "command": ["npx", "@rollbar/mcp-server"],
-      "environment": {
-        "ROLLBAR_ACCESS_TOKEN": "{env:ROLLBAR_ACCESS_TOKEN}"
-      },
-      "enabled": true
-    }
-  },
+     "rollbar-error-investigation": {
+       "type": "local",
+       "command": ["npx", "@rollbar/mcp-server"],
+       "environment": {
+         "ROLLBAR_ACCESS_TOKEN": "{env:ROLLBAR_ACCESS_TOKEN}"
+       },
+       "enabled": true
+     },
+     "context7": {
+       "type": "remote",
+       "url": "https://mcp.context7.com/mcp",
+       "enabled": true,
+       "headers": {
+         "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+       }
+     }
+   },
   "lsp": {
     "clangd": {
       "disabled": true

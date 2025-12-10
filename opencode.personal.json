@@ -1060,20 +1060,28 @@
     }
   },
   "mcp": {
-    "perplexity-ask": {
-      "type": "local",
-      "command": [
-        "npx",
-        "-y",
-        "perplexity-mcp"
-      ],
-      "enabled": true,
-      "environment": {
-        "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}",
-        "PERPLEXITY_TIMEOUT_MS": "600000"
-      }
-    }
-  },
+     "perplexity-ask": {
+       "type": "local",
+       "command": [
+         "npx",
+         "-y",
+         "perplexity-mcp"
+       ],
+       "enabled": true,
+       "environment": {
+         "PERPLEXITY_API_KEY": "{env:PERPLEXITY_API_KEY}",
+         "PERPLEXITY_TIMEOUT_MS": "600000"
+       }
+     },
+     "context7": {
+       "type": "remote",
+       "url": "https://mcp.context7.com/mcp",
+       "enabled": true,
+       "headers": {
+         "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+       }
+     }
+   },
   "lsp": {
     "clangd": {
       "disabled": true
