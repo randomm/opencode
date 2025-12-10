@@ -374,7 +374,7 @@ PM:
 The system integrates with several Model Context Protocol servers:
 
 - **Perplexity API** - AI-powered research and problem-solving (semantic search, reasoning, deep research)
-- **Context7** - Up-to-date library documentation for 1000+ libraries (React, Python, Rust, Go, etc.)
+- **Context7** - Up-to-date library documentation for 1000+ libraries (React, Python, Rust, Go, etc.) - See: instructions/context7-library-documentation.md
 - **PostgreSQL Connections** - Multiple database environments (Fuzu and Barona production databases via read-only MCP servers)
 - **Rollbar Error Investigation** - Production error investigation and analysis
 - **Memory Service (Remory)** - Enhanced semantic memory with vector embeddings

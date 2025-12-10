@@ -8,14 +8,22 @@ Context7 is a Model Context Protocol (MCP) server that provides up-to-date docum
 - **Libraries**: Pandas, NumPy, Jest, Vitest, pytest, cargo, and thousands more
 - **Tools**: Build systems, package managers, testing frameworks, and utilities
 
-## When to Use Context7
+## When to Use Context7 (Explicit Triggers)
 
-**Use Context7 BEFORE implementing any code** when working with:
-- Any third-party library or framework
-- New versions of familiar tools
-- API design with current best practices
-- Performance optimization patterns
-- Library selection decisions
+**MANDATORY in these situations:**
+
+1. **Library Name Encountered**: Issue or codebase mentions ANY library/framework
+   - Trigger: BEFORE reading existing code using that library
+   - Example: "Create Maestro test" → resolve-library-id for Maestro BEFORE reading .yaml files
+
+2. **Implementation Starting**: Beginning code that imports/uses a third-party tool
+   - Even if familiar with the library
+   - Your training data may be 1+ years old
+
+3. **Version Uncertainty**: When library version is unclear
+   - Check package.json → Get docs for that exact version
+
+**Workflow:** Encounter library name → resolve-library-id → get-library-docs → Read docs → THEN read existing code → THEN implement
 
 ## How to Use Context7
 
@@ -51,6 +59,14 @@ get-library-docs: "<context7-id>" → Returns latest official docs
 | **Perplexity** | General research, comparisons, explanations | Understanding concepts, tool comparisons, debugging |
 
 **Example**: Need React docs? → Context7. Need "why use React vs Vue?" → Perplexity.
+
+## Anti-Pattern (What NOT to Do)
+
+❌ **WRONG**: Read existing Maestro YAML → Create test based on pattern → Miss current API
+❌ **WRONG**: "I know [library]" → Skip Context7 → Use outdated API  
+❌ **WRONG**: grep codebase → Replicate pattern → Pattern uses deprecated API
+
+✅ **RIGHT**: See "Maestro" in issue → resolve-library-id → get-library-docs → Read current API → THEN read existing patterns → Implement with confidence
 
 ## Quick Start
 
