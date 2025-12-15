@@ -141,6 +141,11 @@ Use semantic search to find similar patterns across projects.
 **MANDATORY QUALITY STANDARDS:**
 - **Follow** quality standards and minimalist philosophy defined in AGENTS.md
 - **Read** issue content with `gh issue view #123` for complete context
+- **CONTEXT7 FIRST**: When reviewing code using ANY library/framework:
+  1. `resolve-library-id` to find the library
+  2. `get-library-docs` to fetch current documentation
+  3. Check for deprecated APIs, security advisories, version-specific best practices
+  4. Your training data may be outdated - Context7 has current library docs
 - **Challenge** before creating recommendations - "Is this truly necessary?"
 - **Minimal** - Suggest the simplest solution that solves the problem
 - **Complete** - Provide ALL necessary feedback before completing
@@ -393,14 +398,55 @@ Your comprehensive review covers **15+ security items across 11 areas**:
 - Interface{} overuse - Use concrete types
 - Missing defer cleanup - Resource cleanup guaranteed
 
-### 8️⃣ DEPENDENCY ANALYSIS
+### 8️⃣ DEPENDENCY ANALYSIS & CONTEXT7 LIBRARY VERIFICATION
 
+**Dependency Security & Version Review:**
 - Security vulnerabilities in dependencies - Check CVE databases
 - Outdated packages with patches available
 - Unnecessary dependencies - Increase attack surface unnecessarily
 - License compatibility - Licensing conflicts
 - Bundle size impact - Large dependencies affecting performance
 - Transitive dependency issues - Hidden risks in dependencies
+
+**CONTEXT7 LIBRARY-AWARE CHECKS (MANDATORY):**
+
+When reviewing code that imports or uses ANY third-party library/framework:
+
+1. **Identify library usage**: Look for imports, require statements, or version specifications in:
+   - `package.json`, `pyproject.toml`, `Gemfile`, `Cargo.toml` files
+   - New imports in reviewed code
+   - Framework-specific patterns (React hooks, Rails models, etc.)
+
+2. **Fetch current documentation**:
+   ```
+   resolve-library-id "library-name"  # Find the library ID
+   get-library-docs "<library-id>"    # Get current API docs
+   ```
+
+3. **Check for deprecated APIs**:
+   - Old React lifecycle methods (componentWillMount, etc.)
+   - Deprecated library functions or deprecated parameters
+   - Version-specific API changes
+   - Example: React 18 hooks best practices vs older patterns
+
+4. **Verify security best practices**:
+   - Library-specific security configurations
+   - Known vulnerabilities in specific versions
+   - Security advisories for that library version
+   - Example: Express.js version-specific header security
+
+5. **Validate against library recommendations**:
+   - Anti-patterns the documentation warns against
+   - Performance best practices from official docs
+   - Proper usage patterns for the library version
+   - Example: Proper error handling patterns, caching strategies
+
+**What Context7 helps you catch:**
+- ❌ Using deprecated React lifecycle methods when modern hooks should be used
+- ❌ Calling functions that were removed in the library version specified
+- ❌ Missing security configurations recommended by the library docs
+- ❌ Performance anti-patterns documented by the library maintainers
+- ❌ Version mismatches between feature usage and declared library version
 
 ### 9️⃣ ERROR HANDLING REVIEW
 
@@ -1007,6 +1053,10 @@ Team can see "Changes requested" status on GitHub PR page.
 - Check authentication enforcement: Is every protected endpoint guarded?
 - Check authorization enforcement: Can users access only their own data/resources?
 - Scan for hardcoded secrets: API keys, passwords, credentials in code
+- **Context7 Security Checks**: Verify library usage follows security best practices:
+  - Check for known vulnerabilities in dependency versions
+  - Verify security-related configurations match library recommendations
+  - Example: Are security headers configured as the framework docs recommend?
 - Reference: Security Checklist below for detailed patterns
 
 ### Pass 2: Performance Focus (5 min)
@@ -1023,6 +1073,11 @@ Team can see "Changes requested" status on GitHub PR page.
 - Coupling assessment: Count dependencies (should be <7 per class/module)
 - Cohesion check: Do methods in a class share instance variables/state?
 - Dependency direction: Depend on abstractions (interfaces), not concretions?
+- **Context7 Best Practices**: Verify code patterns follow library recommendations:
+  - Check for deprecated API usage that should be modernized
+  - Verify code follows documented best practices for the framework version
+  - Example: Are React components using recommended hooks patterns or outdated lifecycle methods?
+  - Example: Is PostgreSQL usage following current best practices from official docs?
 - Reference: Code Quality Checklist below for metrics
 
 ### Pass 4: Testing Focus (5 min)
