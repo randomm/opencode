@@ -138,7 +138,7 @@ Every development issue MUST include these checkboxes:
 
 ## Context7 - Library Documentation (Mandatory)
 
-All programming agents MUST use Context7 for current library/framework documentation before implementing code. Provides up-to-date docs for 1000+ libraries including React, Python, Rust, Go, Ruby, Rails, and more. Tools: `resolve-library-id` (search library), `get-library-docs` (fetch docs). Rate limit: 10,000 calls/month. See: instructions/context7-library-documentation.md
+All programming agents MUST use Context7 for current library/framework documentation before implementing code. When ANY library name is encountered → Context7 FIRST → then implement. Training data may be outdated for library APIs. Tools: `resolve-library-id` (search library), `get-library-docs` (fetch docs). See: instructions/context7-library-documentation.md
 
 ## Remory Memory Integration
 All agents integrate with Remory, an advanced memory server that provides:

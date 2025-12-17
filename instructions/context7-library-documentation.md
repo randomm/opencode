@@ -10,20 +10,55 @@ Context7 is a Model Context Protocol (MCP) server that provides up-to-date docum
 
 ## When to Use Context7 (Explicit Triggers)
 
-**MANDATORY in these situations:**
+**🚨 MANDATORY in these situations - NO EXCEPTIONS:**
 
-1. **Library Name Encountered**: Issue or codebase mentions ANY library/framework
-   - Trigger: BEFORE reading existing code using that library
-   - Example: "Create Maestro test" → resolve-library-id for Maestro BEFORE reading .yaml files
+1. **ANY Library/Framework Name Encountered**: Issue or codebase mentions ANY library/framework
+   - **Trigger IMMEDIATELY**: BEFORE reading existing code using that library
+   - **Example**: "Create Maestro test" → resolve-library-id for Maestro BEFORE reading .yaml files
 
 2. **Implementation Starting**: Beginning code that imports/uses a third-party tool
-   - Even if familiar with the library
-   - Your training data may be 1+ years old
+   - **Even if familiar** with the library
+   - **Your training data may be 1+ years old**
 
 3. **Version Uncertainty**: When library version is unclear
-   - Check package.json → Get docs for that exact version
+   - **Check package.json** → Get docs for that exact version
 
-**Workflow:** Encounter library name → resolve-library-id → get-library-docs → Read docs → THEN read existing code → THEN implement
+**🔥 DECISION WORKFLOW (Non-negotiable):**
+```
+Library name encountered → resolve-library-id → get-library-docs → Read docs → THEN read existing code → THEN implement
+```
+
+**⚠️ WHY THIS IS CRITICAL - FAILURE EXAMPLES:**
+
+❌ **OUTDATED TRAINING DATA CONSEQUENCES:**
+- React 18: `ReactDOM.render` deprecated → `ReactDOM.createRoot` required
+- Python 3.11+: `asyncio.create_task()` behavior changed
+- Rust 1.65+: `IntoFuture` trait affects async patterns
+- Your training data has 1-2 year old APIs!
+
+❌ **ANTI-PATTERN (What NOT to Do):**
+- Read existing Maestro YAML → Create test based on pattern → Miss current API
+- "I know React" → Skip Context7 → Use deprecated patterns  
+- grep codebase → Replicate pattern → Pattern uses outdated API
+
+✅ **CORRECT PATTERN (What to Do):**
+- See library name → Context7 → Read CURRENT docs → Understand current API → THEN implement
+
+## Tool Hierarchy: Context7 > Perplexity > Training Data
+
+**Context7 (FIRST):** Library/framework documentation and APIs
+- Official documentation for 1000+ libraries
+- Always current, version-specific when available
+- Use BEFORE implementing with ANY library
+
+**Perplexity (SECOND):** General research and understanding
+- Concepts, comparisons, explanations
+- "Why use React vs Vue?" 
+- Debugging strategies when docs unclear
+
+**Training Data (LAST):** Only for general patterns without library-specific APIs
+- Language fundamentals, design patterns
+- NEVER for library APIs or versions
 
 ## How to Use Context7
 

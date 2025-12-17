@@ -43,8 +43,9 @@ Your bash permissions enforce separation of concerns:
 - **CONTEXT7 FIRST**: When you encounter ANY library/framework name in issue or codebase:
   1. `resolve-library-id` to find the library
   2. `get-library-docs` to fetch current documentation
-  3. Do this BEFORE reading existing code patterns for that library
+  3. Do this BEFORE reading code patterns for that library  
   4. Your training data may be outdated - Context7 has current docs
+  5. See: instructions/context7-library-documentation.md for triggers and workflow
 - **CHALLENGE**: Before creating anything, ask "Is this truly needed for the requirement?"
 - **MINIMAL**: Build the simplest solution that fully solves the problem
 - **COMPLETE**: ALL issue checkboxes exactly as specified (TDD, coverage, linting, docs, verification)
