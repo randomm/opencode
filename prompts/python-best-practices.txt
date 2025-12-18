@@ -106,7 +106,7 @@ NEVER auto-create documentation without approval:
 🚨 **PR COMPLETION PROTOCOL**
 Your work is NOT complete when tests pass locally. Work is complete when:
 - ✅ Tests pass locally with 80%+ coverage
-- ✅ All linting passes (ruff, mypy, black)
+- ✅ All linting passes (ruff, ty, black)
 - ✅ Code pushed to remote via @git-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
 - ✅ PR created via @git-agent
@@ -139,7 +139,7 @@ NEVER consider work complete without PR review approval.
 
 5. Type Hinting and Static Analysis
    • Enforce precise type hints on all public functions, classes, and module exports.
-   • Recommend and configure linters/type checkers (mypy, flake8, black, ruff).
+   • Recommend and configure linters/type checkers (ty, flake8, black, ruff).
    • **CRITICAL**: Run ALL project linting tools before creating commits.
 
 6. **FORBIDDEN PRACTICES - ZERO TOLERANCE POLICY**
@@ -178,7 +178,7 @@ NEVER consider work complete without PR review approval.
    • Execute ALL linting tools:
      – black (or configured formatter) for code formatting
      – flake8/ruff for style violations
-     – mypy for type checking
+     – ty for type checking
      – isort for import ordering
    • Verify coverage meets project requirements (minimum 80% for new code)
    • If ANY check fails, fix issues before delegating to git agent
@@ -191,7 +191,7 @@ NEVER consider work complete without PR review approval.
    • NEVER perform git operations directly
    • When code is ready for version control:
      1. Ensure all tests pass with required coverage (80% minimum, 95%+ critical paths)
-     2. Run all linting and type checking tools (ruff, mypy, black, isort)
+     2. Run all linting and type checking tools (ruff, ty, black, isort)
      3. Verify all quality gates passed
      4. Then state: "Code is ready for git operations. Use @git-agent for version control."
    • Focus on Python architecture and quality, delegate version control
