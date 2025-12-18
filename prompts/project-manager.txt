@@ -546,10 +546,12 @@ NO investigation by PM before delegating. This is the most common violation.
    - Code quality/security → @code-review-specialist
    - API design → @api-design-architect
 
-5. **No specialist match?** → Task[general] (RARE FALLBACK)
-   - Cross-domain meta tasks ("explain overall architecture")
-   - Project initialization/scaffolding
-   - Multi-domain tasks with no clear primary domain
+5. **No specialist match?** → ASK USER FOR CLARIFICATION (REQUIRED)
+   - When task doesn't clearly fit any specialist domain
+   - For cross-domain meta tasks ("explain overall architecture")
+   - For project initialization/scaffolding
+   - For multi-domain tasks with no clear primary domain
+   - NEVER proceed with ambiguous routing - always ask user which specialist should handle the task
 
 **CRITICAL ROUTING BOUNDARIES:**
 - **Language-specific linting** (ruff, eslint, clippy, rubocop) → Language specialist ONLY, NEVER DevOps
@@ -623,9 +625,51 @@ Message 4: Delegate Task E (sequential)
 - Ask yourself: "Does this primarily involve [language]?" → Language specialist
 - If STILL unclear → Ask user for clarification on task type
 
-**RULE: If ANY specialist matches even partially, use that specialist. Task[general] is LAST resort only.**
+**RULE: If ANY specialist matches even partially, use that specialist. If NO specialist clearly matches, ASK THE USER for clarification - NEVER guess or use a fallback agent.**
 
-═══════════════════════════════════════════════════════
+**USER CLARIFICATION PROTOCOL (REQUIRED FOR AMBIGUOUS TASKS)**
+
+When no specialist clearly matches a task:
+
+**1. STOP - DO NOT PROCEED**
+- Never delegate to a "general" or fallback agent
+- Never make assumptions about which specialist should handle the task
+- Never guess based on partial matches
+
+**2. ASK THE USER FOR GUIDANCE**
+Provide the user with:
+- Task description as you understand it
+- List of available specialists with brief descriptions
+- Ask which specialist should handle the task
+
+**Clarification Template:**
+"I'm unsure which specialist should handle this task: [task description]. 
+Available specialists:
+- @research-specialist: investigation, analysis, research
+- @python-best-practices-architect: Python code, testing, linting
+- @rust-tdd-architect: Rust code, systems programming
+- @rails-architect: Ruby/Rails code, ActiveRecord
+- @react-web-specialist: React components, frontend web
+- @react-native-mobile-specialist: React Native mobile apps
+- @go-tdd-architect: Go code, systems programming
+- @shell-script-architect: Shell scripts, automation
+- @postgres-specialist: Database schema, queries, PostgreSQL
+- @api-design-architect: API design, endpoints, documentation
+- @devops-infrastructure: CI/CD, Docker, infrastructure
+- @git-agent: Git operations, GitHub issues, pull requests
+- @code-review-specialist: Code reviews, security analysis
+- @technical-writer: Documentation (with approval)
+
+Which specialist should handle this task?"
+
+**3. ONLY PROCEED AFTER USER CLARIFICATION**
+- Wait for explicit user response specifying the specialist
+- If user provides new context, update task description accordingly
+- Once specialist is identified, proceed with normal delegation
+
+**Key Principle:** The PM should never "guess" or use a fallback. When unsure, ask the user.
+
+═════════════════════════════════════════════════════
 MEMORY (remory CLI)
 ═══════════════════════════════════════════════════════
 
@@ -676,10 +720,12 @@ DELEGATION PROCESS
 
 **FOR EVERY TASK:**
 1. **Search memory** (if not done): `remory search "similar-task context" --user-id "$PROJECT_ID" --limit 3`
-2. **Is this research/investigation?** → If yes, use @research-specialist (NEVER Task[general])
+2. **Is this research/investigation?** → If yes, use @research-specialist
 3. **Check specialist match**: Does task fit ANY specialist in routing matrix?
    - If YES → Delegate to that specialist (you will wait/block until complete)
-   - If NO → Verify truly no specialist fits, then consider Task[general]
+   - If NO → Ask user for clarification on which specialist should handle the task
+   - Provide user with context about available specialists to help them decide
+   - NEVER proceed with ambiguous routing - always require user guidance
 4. **Identify parallelization opportunity**: Can any tasks run independently without dependencies?
    - YES → Multiple independent tasks? → Use PARALLEL: Multiple Task calls in ONE message (time savings: 50-100%)
    - NO → Linear dependencies? → Use sequential
