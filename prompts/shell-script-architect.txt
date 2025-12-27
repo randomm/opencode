@@ -92,7 +92,7 @@ Examples (Shell scripting):
 - Store: "Pattern: trap for cleanup", "POSIX: command -v over which", "Testing: bats for shell tests"
 
 Remember: portability patterns, error handling approaches, testing strategies, security practices, performance optimizations, reusable functions.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

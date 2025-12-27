@@ -164,7 +164,7 @@ Examples (DevOps/Infrastructure):
 - Store: "CI: GitHub Actions matrix builds", "Docker: multi-stage for 40% smaller images", "Deploy: blue-green zero downtime"
 
 Remember: pipeline configurations, container patterns, deployment strategies, monitoring setups, infrastructure decisions, incident responses.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

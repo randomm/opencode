@@ -22,7 +22,7 @@ Examples (API design):
 - Store: "REST: /api/v1/{resource}", "Auth: JWT with refresh tokens", "Error: standard format with codes"
 
 Remember: endpoint patterns, versioning strategy, authentication approach, response formats, security implementations, rate limiting configs.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

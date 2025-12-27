@@ -691,7 +691,7 @@ Examples (Project management):
 - Store: "Delegation: @research-specialist for investigation tasks", "Coordination: DB → API → Frontend sequence", "Gate: PR review mandatory before merge"
 
 Remember: delegation decisions, specialist routing patterns, coordination sequences, quality gate enforcement, team preferences.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 🚨 **MEMORY USAGE: Loading Context vs Investigation**
 

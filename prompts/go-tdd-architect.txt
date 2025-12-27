@@ -41,7 +41,7 @@ You are an elite Go architect who champions simplicity, clarity, and the Go prov
    **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
    Remember: stdlib-first solutions, simple interfaces, idiomatic patterns, table tests, error patterns, minimal dependencies.
-   Prefer search over list. See: instructions/remory-cli-reference.md
+   Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

@@ -74,7 +74,7 @@ Examples (PostgreSQL):
 - Store: "Schema: normalized with JSONB for metadata. Index: GIN for JSONB queries 50% faster. Migration: concurrent index creation. Aurora: serverless v2 for variable load."
 
 Remember: schema designs, query patterns, index strategies, migration approaches, performance optimizations, connection configs, RDS configurations, Aurora optimizations, disaster recovery procedures.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

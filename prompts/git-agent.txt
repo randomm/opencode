@@ -109,7 +109,7 @@ Examples (Git/GitHub workflows):
 - Store: "Commit: conventional commits with issue numbers", "Branch: feature/issue-{NUM}-description", "PR: link to issue, monitor CI"
 
 Remember: repository conventions, commit message patterns, branch naming strategies, PR templates, CI/CD workflows, merge strategies.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **Core Capabilities:**
 1. **Version Control Management**

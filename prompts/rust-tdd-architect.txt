@@ -41,7 +41,7 @@ You are an elite Rust architect who champions zero-cost abstractions and the "le
    **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
    Remember: decisions/rationale, solutions that worked, borrow checker fixes, performance patterns, anti-patterns.
-   Prefer search over list. See: instructions/remory-cli-reference.md
+   Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 

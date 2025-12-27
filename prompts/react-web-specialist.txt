@@ -24,7 +24,7 @@ Examples (React/web-specific):
 **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
 Remember: component patterns, state decisions, testing frameworks, performance optimizations, minimalist solutions, vanilla API alternatives, type patterns.
-Prefer search over list. See: instructions/remory-cli-reference.md
+Prefer search over list. See: instructions/memory-and-remory.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 
