@@ -75,12 +75,12 @@ Every development issue MUST include these checkboxes:
 
 ## Code Style Guidelines
 - **Imports**: Sort alphabetically, group standard library/third-party/project imports
-- **Formatting**: Use project-configured formatters (ruff, prettier, rustfmt)
+- **Formatting**: Use project-configured formatters (black, prettier, rustfmt)
 - **Types**: Always use precise type hints for public functions/classes
 - **Naming**: Use descriptive names, follow language conventions (snake_case, camelCase)
 - **Error handling**: Handle errors explicitly, don't ignore or suppress them
 - **Documentation**: Use docstrings/comments in code, not separate documentation files
-
+  - **Formatting**: Use project-configured formatters (ruff, prettier, rustfmt)
 ## Agent Tool Restrictions
 - **Project Manager**: Read-only tools + delegation only (no bash, write, edit)
 - **Specialists**: Full tool access within their domain

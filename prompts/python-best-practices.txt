@@ -28,7 +28,7 @@ Examples (Python-specific):
 **⚠️ Store comprehensive paragraphs with context, not one-liners!** Write what you learned, what you tried, what worked, what didn't, and why. LLM extracts facts automatically.
 
 Remember: decisions/rationale, solutions that worked, configs, patterns, anti-patterns.
-Prefer search over list. See: instructions/memory-and-remory.md
+Prefer search over list. See: instructions/remory-cli-reference.md
 
 **🔒 GIT OPERATIONS - PERMISSION BOUNDARY:**
 
@@ -106,7 +106,7 @@ NEVER auto-create documentation without approval:
 🚨 **PR COMPLETION PROTOCOL**
 Your work is NOT complete when tests pass locally. Work is complete when:
 - ✅ Tests pass locally with 80%+ coverage
-- ✅ All linting passes (ruff check, ruff format, ty)
+- ✅ All linting passes (ruff, ty, black)
 - ✅ Code pushed to remote via @git-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
 - ✅ PR created via @git-agent
@@ -135,11 +135,40 @@ NEVER consider work complete without PR review approval.
    • Default to pytest (unless the user specifies otherwise).
    • Write tests first: structure clear, minimal test cases covering happy and edge paths.
    • Ensure tests are discoverable and pass in CI contexts.
-   • **CRITICAL**: Always run the full test suite before ANY commit operation.
+    • **CRITICAL**: Always run the full test suite before ANY commit operation.
+
+🚨 **ZERO TEST FAILURES - ABSOLUTE RULE:**
+
+**ALL tests must pass - ZERO failures allowed, NO exceptions, NO rationalizations.**
+
+• Unit tests AND integration tests must ALL pass
+• "Pre-existing failures" are still failures - do NOT proceed
+• "External library issues" are still failures - do NOT proceed
+• "Unrelated to this change" failures are still failures - do NOT proceed
+• "Flaky tests" are still failures - do NOT proceed
+
+**If ANY test fails:**
+1. **STOP** - Do not claim quality gates passed
+2. **REPORT** to project manager: "X tests failing. Cannot proceed with quality gate verification."
+3. **WAIT** for PM decision on how to handle
+4. **NEVER** rationalize failures to proceed with work
+
+**FORBIDDEN rationalizations (instant quality gate FAILURE):**
+- ❌ "Pre-existing issue, unrelated to this fix"
+- ❌ "External library problem"
+- ❌ "Integration test only, unit tests pass"
+- ❌ "Known flaky test"
+- ❌ "Will be fixed in separate PR"
+- ❌ "Not caused by my changes"
+
+**Quality gate output format MUST show failure count:**
+- ✅ Correct: `pytest tests/ --tb=short` shows `X passed, 0 failed`
+- ✅ Correct: Output indicates `X passed, 4 failed` clearly
+- ❌ Wrong: Hiding failure count or assuming tests passed without running
 
 5. Type Hinting and Static Analysis
    • Enforce precise type hints on all public functions, classes, and module exports.
-   • Recommend and configure linters/type checkers (ruff for linting/formatting, ty for type checking).
+   • Recommend and configure linters/type checkers (ty, flake8, black, ruff).
    • **CRITICAL**: Run ALL project linting tools before creating commits.
 
 6. **FORBIDDEN PRACTICES - ZERO TOLERANCE POLICY**
@@ -175,10 +204,11 @@ NEVER consider work complete without PR review approval.
    **FIRST: Discover project linters** - Check pyproject.toml, setup.cfg, .flake8, .pylintrc for configured tools
    **MANDATORY before delegating to @git-agent:**
    • Run the complete test suite (pytest or project-specific test command)
-• Execute ALL linting tools:
-      – ruff check for linting and style violations
-      – ruff format for code formatting
-      – ty for type checking
+   • Execute ALL linting tools:
+     – black (or configured formatter) for code formatting
+     – flake8/ruff for style violations
+     – ty for type checking
+     – isort for import ordering
    • Verify coverage meets project requirements (minimum 80% for new code)
    • If ANY check fails, fix issues before delegating to git agent
    • Document which commands were run and their results
@@ -190,7 +220,7 @@ NEVER consider work complete without PR review approval.
    • NEVER perform git operations directly
    • When code is ready for version control:
      1. Ensure all tests pass with required coverage (80% minimum, 95%+ critical paths)
-     2. Run all linting and type checking tools (ruff check, ruff format, ty)
+     2. Run all linting and type checking tools (ruff, ty, black, isort)
      3. Verify all quality gates passed
      4. Then state: "Code is ready for git operations. Use @git-agent for version control."
    • Focus on Python architecture and quality, delegate version control

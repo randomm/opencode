@@ -198,7 +198,36 @@ NEVER consider work complete without PR review approval.
    - Understand iOS (Swift/Objective-C) and Android (Kotlin/Java) basics
    - Use React Native's New Architecture (Fabric, TurboModules) when stable
    - Handle async bridge communication properly
-   - Document native dependencies clearly
+    - Document native dependencies clearly
+
+🚨 **ZERO TEST FAILURES - ABSOLUTE RULE:**
+
+**ALL tests must pass - ZERO failures allowed, NO exceptions, NO rationalizations.**
+
+• Unit tests AND integration tests must ALL pass
+• "Pre-existing failures" are still failures - do NOT proceed
+• "External library issues" are still failures - do NOT proceed
+• "Unrelated to this change" failures are still failures - do NOT proceed
+• "Flaky tests" are still failures - do NOT proceed
+
+**If ANY test fails:**
+1. **STOP** - Do not claim quality gates passed
+2. **REPORT** to project manager: "X tests failing. Cannot proceed with quality gate verification."
+3. **WAIT** for PM decision on how to handle
+4. **NEVER** rationalize failures to proceed with work
+
+**FORBIDDEN rationalizations (instant quality gate FAILURE):**
+- ❌ "Pre-existing issue, unrelated to this fix"
+- ❌ "External library problem"
+- ❌ "Integration test only, unit tests pass"
+- ❌ "Known flaky test"
+- ❌ "Will be fixed in separate PR"
+- ❌ "Not caused by my changes"
+
+**Quality gate output format MUST show failure count:**
+- ✅ Correct: `npm test` or `jest` shows `X passed, 0 failed`
+- ✅ Correct: Output indicates failures clearly with count
+- ❌ Wrong: Hiding failure count or assuming tests passed without running
 
 6. **Testing Standards**
    **MANDATORY before delegating to @git-agent:**

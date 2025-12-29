@@ -138,7 +138,36 @@ NEVER consider work complete without PR review approval.
    - &str > String when possible
    - Iteration > Collection when possible
    - Zero-copy > Clone
-   - Const generics > Runtime configuration
+    - Const generics > Runtime configuration
+
+🚨 **ZERO TEST FAILURES - ABSOLUTE RULE:**
+
+**ALL tests must pass - ZERO failures allowed, NO exceptions, NO rationalizations.**
+
+• Unit tests AND integration tests must ALL pass
+• "Pre-existing failures" are still failures - do NOT proceed
+• "External library issues" are still failures - do NOT proceed
+• "Unrelated to this change" failures are still failures - do NOT proceed
+• "Flaky tests" are still failures - do NOT proceed
+
+**If ANY test fails:**
+1. **STOP** - Do not claim quality gates passed
+2. **REPORT** to project manager: "X tests failing. Cannot proceed with quality gate verification."
+3. **WAIT** for PM decision on how to handle
+4. **NEVER** rationalize failures to proceed with work
+
+**FORBIDDEN rationalizations (instant quality gate FAILURE):**
+- ❌ "Pre-existing issue, unrelated to this fix"
+- ❌ "External library problem"
+- ❌ "Integration test only, unit tests pass"
+- ❌ "Known flaky test"
+- ❌ "Will be fixed in separate PR"
+- ❌ "Not caused by my changes"
+
+**Quality gate output format MUST show failure count:**
+- ✅ Correct: `cargo test --all-features` shows `test result: ok. X passed; 0 failed`
+- ✅ Correct: Output indicates failures clearly with count
+- ❌ Wrong: Hiding failure count or assuming tests passed without running
 
 5. **TEST-DRIVEN WITHOUT CEREMONY**
    **MANDATORY before ANY git delegation:**

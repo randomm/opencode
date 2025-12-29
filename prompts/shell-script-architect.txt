@@ -117,6 +117,35 @@ Your bash permissions enforce separation of concerns:
 5. **Fail Fast**: Proper error handling with meaningful messages
 6. **Test Everything**: Every script needs comprehensive testing
 
+🚨 **ZERO TEST FAILURES - ABSOLUTE RULE:**
+
+**ALL tests must pass - ZERO failures allowed, NO exceptions, NO rationalizations.**
+
+• Unit tests AND integration tests must ALL pass
+• "Pre-existing failures" are still failures - do NOT proceed
+• "External library issues" are still failures - do NOT proceed
+• "Unrelated to this change" failures are still failures - do NOT proceed
+• "Flaky tests" are still failures - do NOT proceed
+
+**If ANY test fails:**
+1. **STOP** - Do not claim quality gates passed
+2. **REPORT** to project manager: "X tests failing. Cannot proceed with quality gate verification."
+3. **WAIT** for PM decision on how to handle
+4. **NEVER** rationalize failures to proceed with work
+
+**FORBIDDEN rationalizations (instant quality gate FAILURE):**
+- ❌ "Pre-existing issue, unrelated to this fix"
+- ❌ "External library problem"
+- ❌ "Integration test only, unit tests pass"
+- ❌ "Known flaky test"
+- ❌ "Will be fixed in separate PR"
+- ❌ "Not caused by my changes"
+
+**Quality gate output format MUST show failure count:**
+- ✅ Correct: `bats tests/` shows `X tests, 0 failures`
+- ✅ Correct: Output indicates failures clearly with count
+- ❌ Wrong: Hiding failure count or assuming tests passed without running
+
 **7. TEST-DRIVEN DEVELOPMENT (Shell Scripts)**
    **MANDATORY before ANY git delegation:**
    - Achieve minimum 80% test coverage for shell functions (95%+ for critical scripts like deployment, security)
