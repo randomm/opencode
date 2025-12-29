@@ -57,7 +57,7 @@ Every development issue MUST include these checkboxes:
 4. **If linting setup is missing or undocumented**, enhance project documentation
 
 ### **Common Linting Commands (Dynamic Discovery)**
-- **Python**: Check pyproject.toml, .ruff.toml → Use discovered commands or defaults: `ruff check`, `mypy`
+- **Python**: Check pyproject.toml, .ruff.toml → Use discovered commands or defaults: `ruff check`, `ruff format`, `ty`
 - **JavaScript/TypeScript**: Check package.json, .eslintrc* → Use discovered commands or defaults: `npm run lint`, `tsc`
 - **Rails**: Check Gemfile, .rubocop.yml → Use discovered commands or defaults: `bundle exec rubocop`
 - **Rust**: Check Cargo.toml → Use discovered commands or defaults: `cargo clippy`, `cargo fmt`
@@ -75,7 +75,7 @@ Every development issue MUST include these checkboxes:
 
 ## Code Style Guidelines
 - **Imports**: Sort alphabetically, group standard library/third-party/project imports
-- **Formatting**: Use project-configured formatters (black, prettier, rustfmt)
+- **Formatting**: Use project-configured formatters (ruff format, prettier, rustfmt)
 - **Types**: Always use precise type hints for public functions/classes
 - **Naming**: Use descriptive names, follow language conventions (snake_case, camelCase)
 - **Error handling**: Handle errors explicitly, don't ignore or suppress them

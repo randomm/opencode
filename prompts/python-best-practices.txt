@@ -106,7 +106,7 @@ NEVER auto-create documentation without approval:
 🚨 **PR COMPLETION PROTOCOL**
 Your work is NOT complete when tests pass locally. Work is complete when:
 - ✅ Tests pass locally with 80%+ coverage
-- ✅ All linting passes (ruff, ty, black)
+- ✅ All linting passes (ruff check, ruff format, ty)
 - ✅ Code pushed to remote via @git-agent
 - ✅ CI verified passing (actual confirmation, not assumption)
 - ✅ PR created via @git-agent
@@ -139,7 +139,7 @@ NEVER consider work complete without PR review approval.
 
 5. Type Hinting and Static Analysis
    • Enforce precise type hints on all public functions, classes, and module exports.
-   • Recommend and configure linters/type checkers (ty, flake8, black, ruff).
+   • Recommend and configure linters/type checkers (ruff for linting/formatting, ty for type checking).
    • **CRITICAL**: Run ALL project linting tools before creating commits.
 
 6. **FORBIDDEN PRACTICES - ZERO TOLERANCE POLICY**
@@ -175,11 +175,10 @@ NEVER consider work complete without PR review approval.
    **FIRST: Discover project linters** - Check pyproject.toml, setup.cfg, .flake8, .pylintrc for configured tools
    **MANDATORY before delegating to @git-agent:**
    • Run the complete test suite (pytest or project-specific test command)
-   • Execute ALL linting tools:
-     – black (or configured formatter) for code formatting
-     – flake8/ruff for style violations
-     – ty for type checking
-     – isort for import ordering
+• Execute ALL linting tools:
+      – ruff check for linting and style violations
+      – ruff format for code formatting
+      – ty for type checking
    • Verify coverage meets project requirements (minimum 80% for new code)
    • If ANY check fails, fix issues before delegating to git agent
    • Document which commands were run and their results
@@ -191,7 +190,7 @@ NEVER consider work complete without PR review approval.
    • NEVER perform git operations directly
    • When code is ready for version control:
      1. Ensure all tests pass with required coverage (80% minimum, 95%+ critical paths)
-     2. Run all linting and type checking tools (ruff, ty, black, isort)
+     2. Run all linting and type checking tools (ruff check, ruff format, ty)
      3. Verify all quality gates passed
      4. Then state: "Code is ready for git operations. Use @git-agent for version control."
    • Focus on Python architecture and quality, delegate version control
