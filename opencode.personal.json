@@ -7,10 +7,7 @@
     "instructions/agent-output-protocol.md",
     "instructions/quality-standards.md",
     "instructions/tool-preferences.md",
-    "instructions/context7-library-documentation.md",
-    "instructions/shortcut-cli-awareness.md",
-    "instructions/postgres-mcp-databases.md",
-    "instructions/rollbar-mcp-integration.md"
+    "instructions/context7-library-documentation.md"
   ],
   "agent": {
     "project-manager": {
@@ -18,8 +15,9 @@
       "mode": "primary",
       "prompt": "{file:prompts/project-manager.txt}",
        "permission": {
-         "bash": {
-           "remory *": "allow",
+"bash": {
+            "which*": "allow",
+            "remory *": "allow",
            "export PROJECT_ID=*": "allow",
            "cat *": "allow",
            "uuidgen*": "allow",
@@ -56,6 +54,106 @@
         "todowrite": true
       }
     },
+    "git-agent": {
+      "description": "Git and GitHub workflow expert for version control and PR management",
+      "mode": "subagent",
+      "model": "{env:SUBAGENT_MODEL}",
+      "prompt": "{file:prompts/git-agent.txt}",
+      "permission": {
+        "bash": {
+          "which*": "allow",
+          "head*": "allow",
+          "tail*": "allow",
+          "wc*": "allow",
+          "sort*": "allow",
+          "uniq*": "allow",
+          "remory *": "allow",
+          "export *": "allow",
+          "cat *": "allow",
+          "echo *": "allow",
+          "tee *": "allow",
+          "grep *": "allow",
+          "rg *": "allow",
+          "wc *": "allow",
+          "ls *": "allow",
+          "find *": "allow",
+          "git status*": "allow",
+          "git log*": "allow",
+          "git show*": "allow",
+          "git diff*": "allow",
+          "git branch*": "allow",
+          "git remote*": "allow",
+          "git add*": "allow",
+          "git commit*": "allow",
+          "git push*": "allow",
+          "git fetch*": "allow",
+          "git pull*": "allow",
+          "git merge*": "allow",
+          "git rebase*": "allow",
+          "git reset*": "allow",
+          "git revert*": "allow",
+          "git checkout*": "allow",
+          "git stash*": "allow",
+          "git tag*": "allow",
+          "git cherry-pick*": "allow",
+          "gh*": "allow",
+          "npm test*": "deny",
+          "npm run lint*": "deny",
+          "npm run type-check*": "deny",
+          "npm run format*": "deny",
+          "npm run build*": "deny",
+          "npm run dev*": "deny",
+          "npm install*": "deny",
+          "npm ci*": "deny",
+          "yarn test*": "deny",
+          "yarn install*": "deny",
+          "yarn add*": "deny",
+          "pnpm test*": "deny",
+          "pnpm install*": "deny",
+          "pnpm add*": "deny",
+          "bun test*": "deny",
+          "bun install*": "deny",
+          "jest*": "deny",
+          "npx jest*": "deny",
+          "pytest*": "deny",
+          "cargo test*": "deny",
+          "cargo clippy*": "deny",
+          "cargo build*": "deny",
+          "go test*": "deny",
+          "bundle exec*": "deny",
+          "npx tsc*": "deny",
+          "npx eslint*": "deny",
+          "npx prettier*": "deny",
+          "eslint*": "deny",
+          "prettier*": "deny",
+          "ruff check*": "deny",
+          "mypy*": "deny",
+          "rubocop*": "deny",
+          "sed *": "deny",
+          "awk *": "deny",
+          "perl *": "deny",
+          "pulumi *": "deny",
+          "psql*": "deny",
+          "mysql*": "deny",
+          "mongosh*": "deny",
+          "redis-cli*": "deny",
+          "sqlite3*": "deny",
+          "*": "deny"
+        }
+      },
+      "tools": {
+        "bash": true,
+        "glob": true,
+        "grep": true,
+        "list": true,
+        "read": true,
+        "webfetch": true,
+        "todowrite": true,
+        "perplexity-ask_search": true,
+        "perplexity-ask_reason": true,
+        "perplexity-ask_deep_research": true
+      }
+    },
     "python-best-practices-architect": {
       "description": "Minimalist Python architect enforcing TDD, 80%+ coverage, and quality gates",
       "mode": "subagent",
@@ -63,7 +161,7 @@
       "prompt": "{file:prompts/python-best-practices.txt}",
       "permission": {
 "bash": {
-            "short *": "allow",
+            
             "which*": "allow",
             "remory *": "allow",
            "export *": "allow",
@@ -159,7 +257,7 @@
        "prompt": "{file:prompts/rails-architect.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -217,7 +315,7 @@
        "prompt": "{file:prompts/react-native-mobile-specialist.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -275,7 +373,7 @@
        "prompt": "{file:prompts/react-web-specialist.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -333,7 +431,7 @@
        "prompt": "{file:prompts/postgres-specialist.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -389,7 +487,7 @@
        "prompt": "{file:prompts/api-design.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -448,7 +546,7 @@
       "prompt": "{file:prompts/devops-infrastructure.txt}",
       "permission": {
         "bash": {
-          "short *": "allow",
+          
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -507,7 +605,7 @@
        "permission": {
          "edit": "deny",
          "bash": {
-           "short *": "allow",
+           
            "gh *": "allow",
            "echo*": "allow",
            "grep*": "allow",
@@ -586,7 +684,7 @@
        "prompt": "{file:prompts/rust-tdd-architect.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -644,7 +742,7 @@
        "prompt": "{file:prompts/shell-script-architect.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -702,7 +800,7 @@
       "prompt": "{file:prompts/technical-writer.txt}",
       "permission": {
         "bash": {
-          "short *": "allow",
+          
           "git add*": "deny",
           "git commit*": "deny",
           "git push*": "deny",
@@ -761,7 +859,7 @@
        "prompt": "{file:prompts/go-tdd-architect.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+           
            "git add*": "deny",
            "git commit*": "deny",
            "git push*": "deny",
@@ -819,7 +917,7 @@
        "prompt": "{file:prompts/research-specialist.txt}",
        "permission": {
          "bash": {
-           "short *": "allow",
+            "which*": "allow",
            "remory *": "allow",
            "export PROJECT_ID=*": "allow",
            "uuidgen*": "allow",
