@@ -962,8 +962,11 @@
            "aws * pass*": "deny",
            "aws * assume*": "deny",
            "aws * grant*": "deny",
-           "aws * revoke*": "deny",
-           "*": "ask"
+"aws * revoke*": "deny",
+            "pytest*": "allow",
+            "uv*": "allow",
+            "xargs*": "allow",
+            "*": "ask"
          },
          "write": "deny",
          "edit": "deny"
