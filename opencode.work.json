@@ -10,8 +10,7 @@
     "instructions/context7-library-documentation.md",
     "instructions/shortcut-cli-awareness.md",
     "instructions/postgres-mcp-databases.md",
-    "instructions/rollbar-mcp-integration.md",
-    ".opencode/rules/*-*.md"
+    "instructions/rollbar-mcp-integration.md"
   ],
   "plugin": [
     "file://.opencode/plugin/python-linter.ts"

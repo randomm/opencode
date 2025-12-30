@@ -7,8 +7,7 @@
     "instructions/agent-output-protocol.md",
     "instructions/quality-standards.md",
     "instructions/tool-preferences.md",
-    "instructions/context7-library-documentation.md",
-    ".opencode/rules/*-*.md"
+    "instructions/context7-library-documentation.md"
   ],
   "plugin": [
     "file://.opencode/plugin/python-linter.ts"

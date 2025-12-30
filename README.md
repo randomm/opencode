@@ -204,7 +204,6 @@ opencode.personal.json     # Personal machine config (Shortcut CLI disabled)
 │   └── technical-writer.txt
 ├── instructions/          # Global development standards
 │   ├── agent-responsibilities.md
-│   ├── conditional-rules.md
 │   ├── memory-and-remory.md
 │   ├── postgres-mcp-databases.md
 │   ├── quality-standards.md
@@ -212,14 +211,6 @@ opencode.personal.json     # Personal machine config (Shortcut CLI disabled)
 │   ├── shortcut-cli-awareness.md
 │   ├── tool-preferences.md
 │   └── workflow-standards.md
-├── .opencode/rules/       # Language-specific quality rules (auto-loaded)
-│   ├── python-quality.md
-│   ├── rust-safety.md
-│   ├── rails-conventions.md
-│   ├── go-idioms.md
-│   ├── react-patterns.md
-│   ├── shell-portability.md
-│   └── README.md
 └── command/               # Command-specific instructions
     └── session-start.md
 ```
@@ -447,27 +438,9 @@ The system uses **Remory** for advanced project-scoped memory with semantic sear
 3. Update `project-manager.txt` specialist routing section
 4. Test with PM delegation
 
-### Conditional Rules System
-
-Language-specific quality rules are loaded automatically from `.opencode/rules/` directory. See `instructions/conditional-rules.md` for details on:
-- How rules are loaded via glob patterns
-- Adding new language-specific rules
-- Rule file guidelines and structure
-- Integration with quality gates
-
-**Current Rules:**
-- `python-quality.md` - Python linting, typing, testing standards
-- `rust-safety.md` - Rust memory safety and clippy rules
-- `rails-conventions.md` - Rails Way and RSpec conventions
-- `go-idioms.md` - Go proverbs and interface design
-- `react-patterns.md` - React hooks and TypeScript strict mode
-- `shell-portability.md` - POSIX compliance and ShellCheck
-
 ### Customizing Quality Gates
 
 Edit `instructions/quality-standards.md` to adjust coverage requirements, linting tools, or testing requirements. All specialists read this instruction file automatically.
-
-Edit `.opencode/rules/{language}-{focus}.md` files to customize language-specific quality standards. Changes apply immediately to all agents.
 
 ## 📋 Usage Examples
 
