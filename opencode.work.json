@@ -12,9 +12,6 @@
     "instructions/postgres-mcp-databases.md",
     "instructions/rollbar-mcp-integration.md"
   ],
-  "plugin": [
-    "file://.opencode/plugin/python-linter.ts"
-  ],
   "permission": {
     "bash": {
       "pulumi up*": "deny",

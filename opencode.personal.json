@@ -9,9 +9,6 @@
     "instructions/tool-preferences.md",
     "instructions/context7-library-documentation.md"
   ],
-  "plugin": [
-    "file://.opencode/plugin/python-linter.ts"
-  ],
   "agent": {
     "project-manager": {
       "description": "Pure orchestrator that coordinates specialists but never executes code - read-only tools and delegation only",
