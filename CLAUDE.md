@@ -11,20 +11,24 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 ### Core Components
 
 1. **Agent Definitions** (`opencode.work.json` / `opencode.personal.json`)
-   - Machine-specific configs with specialized subagents for different development domains
-    - Each agent has specific tools and prompts tailored to their expertise
-    - Agents include: Python, Rust, Git, Rails, React Web, React Native Mobile, PostgreSQL, API Design, DevOps, Code Review, Shell, and Research specialists
-    - Use `OPENCODE_CONFIG` environment variable to select which config loads
+   - Machine-specific configs with 5 specialized agents
+   - Agents: Project Manager, Developer, Git, Code Review, Research
+   - Use `OPENCODE_CONFIG` environment variable to select which config loads
 
-2. **Prompts** (`prompts/`)
-   - Domain-specific instruction sets for each agent
-   - Defines best practices, conventions, and workflows for each technology
+2. **Skills** (`skill/`)
+   - 11 loadable skills for language/framework expertise
+   - Developer agent loads skills dynamically based on task context
+   - Dual compatible with Claude Code (`~/.claude/skills/` symlink)
 
-3. **Instructions** (`instructions/`)
+3. **Prompts** (`prompts/`)
+   - Core instruction sets for each agent
+   - Developer prompt with skill loading table
+
+4. **Instructions** (`instructions/`)
     - `commit-all-changes.md`: Delegates git operations to @git-agent
     - `test-driven-development.md`: Enforces TDD with 80%+ test coverage requirements
 
-4. **MCP Integrations** 
+5. **MCP Integrations** 
    - Perplexity API for AI-powered research
    - PostgreSQL connections for multiple database environments
    - Memory service for persistent context storage
@@ -66,20 +70,26 @@ This is an OpenCode configuration repository that defines specialized AI agents,
 
 ## Agent Usage
 
-### Invoking Specialized Agents
-When working on specific tasks, use the appropriate agent:
-- `@python-best-practices-architect` - Python development with TDD and quality gates
-- `@rust-tdd-architect` - Rust systems programming with zero-cost abstractions and memory safety
+### Available Agents
+- `@developer` - All development work (loads skills dynamically)
 - `@git-agent` - All git and GitHub operations
-- `@rails-architect` - Ruby on Rails applications
-- `@react-web-specialist` - React/TypeScript/JavaScript web applications, responsive UI, performance optimization
-- `@react-native-mobile-specialist` - Expo and React Native mobile apps, cross-platform development
-- `@postgres-specialist` - PostgreSQL schema design, query optimization, migrations, AWS Aurora expertise
-- `@api-design-architect` - REST/GraphQL API design
-- `@devops-infrastructure` - CI/CD, Kubernetes
 - `@code-review-specialist` - Security, performance, and GitHub PR review
-- `@shell-script-architect` - POSIX-compliant shell scripting and automation
 - `@research-specialist` - Technical investigation and problem analysis
+
+### Available Skills (loaded by @developer)
+| Skill | Use For |
+|-------|---------|
+| `python-tdd` | Python development with TDD |
+| `rust-systems` | Rust systems programming |
+| `go-idiomatic` | Go development |
+| `rails-conventions` | Ruby on Rails applications |
+| `react-web` | React/TypeScript web apps |
+| `react-native-mobile` | Expo and React Native mobile |
+| `postgres-database` | PostgreSQL and AWS Aurora |
+| `api-design` | REST/GraphQL API design |
+| `devops-infrastructure` | CI/CD, Docker, Kubernetes |
+| `shell-scripting` | POSIX shell scripts |
+| `technical-writing` | Documentation |
 
 ### Memory Management
 Agents with memory capabilities use the official Anthropic MCP memory server with knowledge graph architecture:
@@ -130,11 +140,10 @@ Since this is a configuration repository without active code:
    - Fix all issues before proceeding
 
 3. **Agent Delegation**:
-    - Python work → @python-best-practices-architect
-    - Rust systems programming → @rust-tdd-architect
+    - All development work → @developer (loads appropriate skill)
     - Git operations → @git-agent
-    - Database work (PostgreSQL and AWS Aurora) → @postgres-specialist
-    - Let specialists handle their domains
+    - Code review → @code-review-specialist
+    - Investigation/research → @research-specialist
 
 4. **No Unsolicited Files**:
    - NEVER create README, documentation, or plan files unless explicitly asked

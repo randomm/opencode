@@ -2,11 +2,37 @@
 
 ## Agent Hierarchy & Delegation Rules
 - **Primary Agent**: Project Manager (orchestrator only - no execution)
-- **Specialist Agents**: 14 domain experts (Python, Rust, Rails, React Web, React Native, PostgreSQL, API Design, DevOps, Git, Code Review, Shell, Research)
-- **Support Agents**: Git, Code Review, DevOps (cross-cutting concerns)
+- **Specialist Agents**: 5 agents with 11 loadable skills
+  - `@developer` - Unified developer that loads skills dynamically based on task
+  - `@git-agent` - Version control and GitHub operations
+  - `@code-review-specialist` - PR review, security, and quality analysis
+  - `@research-specialist` - Technical investigation and problem analysis
+- **Skills System**: Developer loads language/framework skills on-demand (~50% token savings)
 - **Memory Agent**: Remory - Advanced memory server with semantic search and knowledge graph capabilities
 - **Tool Restrictions**: Project Manager has read-only tools + delegation only
 - **Execution Rule**: Specialists execute, Project Manager coordinates
+
+## Skills Architecture
+
+The `@developer` agent dynamically loads skills based on task context:
+
+| Skill | Loaded When | Key Focus |
+|-------|-------------|-----------|
+| `python-tdd` | Python files/projects | TDD, pytest, mypy, ruff |
+| `rust-systems` | Rust files/projects | Memory safety, cargo, zero-cost abstractions |
+| `go-idiomatic` | Go files/projects | Go proverbs, stdlib-first, small interfaces |
+| `rails-conventions` | Rails projects | Rails Way, RSpec, Rubocop, Brakeman |
+| `react-web` | React/TypeScript web | Hooks, composition, Vitest |
+| `react-native-mobile` | Mobile apps | Expo SDK, React Navigation, FlatList |
+| `shell-scripting` | Shell scripts | POSIX, set -euo pipefail, BATS |
+| `postgres-database` | Database work | EXPLAIN ANALYZE, indexing, Aurora |
+| `api-design` | API design | REST/GraphQL, HTTP semantics, JWT |
+| `devops-infrastructure` | CI/CD, infra | GitHub Actions, Docker, Kubernetes |
+| `technical-writing` | Documentation | Writing guidelines, templates |
+
+**Skill Loading**: Skills are loaded on-demand when Claude determines task relevance.
+**Dual Compatibility**: Skills work in both OpenCode (`~/.config/opencode/skill/`) and Claude Code (`~/.claude/skills/`).
+**Reference Files**: Detailed patterns in `references/` subdirectories, loaded when needed.
 
 ## Universal Quality Standards
 - **Issue-Driven Development**: All work must match GitHub issue content exactly
@@ -103,38 +129,22 @@ Every development issue MUST include these checkboxes:
 6. Specialist refuses any work not listed in issue
 7. Work complete only when all quality gates passed
 
-## PostgreSQL Agent Consolidation (Step 3)
+## Database Work Delegation
 
-**Single unified agent replaces previous two-agent model:**
+**All database work delegates to `@developer` which loads the `postgres-database` skill.**
 
-### `@postgres-specialist` - Consolidated PostgreSQL Expertise
+The skill provides unified PostgreSQL and AWS Aurora expertise:
+- Schema design, query optimization, migrations
+- Aurora PostgreSQL cluster configuration
+- Performance tuning and scaling strategies
+- Disaster recovery and high-availability setups
 
-**Scope:** Handles all PostgreSQL and AWS Aurora work in a single agent
+**When PM delegates database work:**
+```
+PM → @developer (loads postgres-database skill automatically)
+```
 
-**Layered Expertise:**
-- **Foundation**: PostgreSQL schema design, query optimization, migrations, data integrity
-- **AWS Specialization**: Aurora PostgreSQL, RDS operations, performance tuning, scaling strategies
-
-**When to Delegate:**
-- Any PostgreSQL schema design or database modeling
-- Query optimization and performance analysis
-- Migration planning and execution
-- AWS Aurora cluster configuration and management
-- Database backups, replication, and disaster recovery
-- Multi-region and high-availability setups
-- Cost optimization for database resources
-
-**Why Consolidation:**
-- Unified expertise eliminates context switching
-- Generic PostgreSQL knowledge directly applies to Aurora
-- Single source of truth for database decisions
-- Clearer delegation path for database work
-- Reduced context loss between related tasks
-
-**Migration from Previous Agents:**
-- Old `@postgres-database-expert` → `@postgres-specialist`
-- Old `@aws-rds-postgresql-expert` → `@postgres-specialist`
-- All existing database work delegates to the single new agent
+Reference files available: `aurora-aws.md`, `sql-commands.md`
 
 ## Context7 - Library Documentation (Mandatory)
 
