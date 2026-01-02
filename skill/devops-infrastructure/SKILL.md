@@ -150,3 +150,9 @@ resource "aws_ecs_service" "app" {
 - "Fail fast, fail loudly"
 - "Delegate code issues to specialists"
 - "Security scan, specialists fix"
+
+## File Hygiene
+
+- Docs → `docs/`, Infra → `infra/` or `.github/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug files, temp scripts, root-level markdown summaries

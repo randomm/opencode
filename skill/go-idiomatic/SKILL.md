@@ -93,3 +93,9 @@ Genuinely complex? → Research → MAYBE add package
 - "Accept interfaces, return structs"
 - "A little copying is better than a little dependency"
 - "Gofmt is law"
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `tests/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.go, temp scripts, root-level markdown summaries

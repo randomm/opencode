@@ -135,3 +135,9 @@ setup() {
 - "Stderr for errors"
 - "POSIX unless bash helps"
 - "Test with BATS"
+
+## File Hygiene
+
+- Docs → `docs/`, Scripts → `scripts/` or `bin/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.sh, temp scripts, root-level markdown summaries

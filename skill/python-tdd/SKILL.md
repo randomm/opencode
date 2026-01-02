@@ -113,3 +113,9 @@ Use Perplexity for Python-specific questions:
 For detailed patterns, see:
 - references/pytest-patterns.md
 - references/linting-config.md
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `tests/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.py, temp scripts, root-level markdown summaries

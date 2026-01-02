@@ -112,3 +112,9 @@ bundle exec brakeman        # Security scan
 rails db:migrate            # Run migrations
 rails console               # Interactive console
 ```
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `spec/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.rb, temp scripts, root-level markdown summaries

@@ -96,3 +96,9 @@ describe('Button', () => {
 - "Measure before memoizing"
 - "Types are documentation"
 - "Test behavior, not implementation"
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `__tests__/` or `*.test.tsx`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.tsx, temp scripts, root-level markdown summaries

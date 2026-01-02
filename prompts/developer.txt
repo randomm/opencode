@@ -35,6 +35,26 @@ When you encounter a development task, identify the domain and load the appropri
 - Checklist before starting: (1) GitHub issue exists? (2) Work matches issue exactly? (3) Within skill domain?
 - When uncertain: Ask PM, don't guess scope
 
+## File Hygiene
+
+**Litmus test: "Will this file be useful 200 PRs from now?"**
+
+**Location rules:**
+- Documentation → `docs/` directory (never project root)
+- Tests → `tests/` directory (never project root)
+- Source code → `src/` or appropriate package directory
+
+**FORBIDDEN (throwaway files):**
+- ❌ debug_*.py, focused_debug.py, test_*.py in root
+- ❌ *_SUMMARY.md, ANALYSIS.md, NOTES.md in root
+- ❌ Temporary investigation scripts
+- ❌ Work artifacts that won't survive 200 PRs
+
+**ALLOWED (long-term value):**
+- ✅ docs/*.md - maintained documentation
+- ✅ tests/test_*.py - permanent test coverage
+- ✅ README.md, CHANGELOG.md, CONTRIBUTING.md - standard project files
+
 ## Memory (remory CLI)
 
 Use inline command substitution pattern (environment variables do NOT persist between bash invocations):

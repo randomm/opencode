@@ -83,3 +83,9 @@ Genuinely complex? → Research → MAYBE add crate
 - "Move before borrow before Rc before Arc"
 - "Safe before unsafe"
 - "Sync before async"
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `tests/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.rs, temp scripts, root-level markdown summaries

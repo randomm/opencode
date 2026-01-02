@@ -138,3 +138,9 @@ their environment variables."
 - "Answer 'why' before 'how'"
 - "Users skim, they don't read"
 - "Test every example"
+
+## File Hygiene
+
+- Documentation → `docs/` directory (never project root, except README.md/CHANGELOG.md)
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: *_SUMMARY.md, ANALYSIS.md, NOTES.md, work artifacts in root

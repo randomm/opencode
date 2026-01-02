@@ -106,3 +106,9 @@ ALTER TABLE users ADD COLUMN phone VARCHAR(20);
 - "Normalize first, denormalize when measured"
 - "Concurrent for production migrations"
 - "Reader endpoint for read scaling"
+
+## File Hygiene
+
+- Docs → `docs/`, Migrations → proper migration directory, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.sql, temp scripts, root-level markdown summaries

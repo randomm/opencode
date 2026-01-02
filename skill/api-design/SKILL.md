@@ -132,3 +132,9 @@ type Mutation {
 - "Consistent error formats"
 - "Version from day one"
 - "Document with OpenAPI"
+
+## File Hygiene
+
+- Docs → `docs/`, API specs → `api/` or `openapi/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug files, temp scripts, root-level markdown summaries

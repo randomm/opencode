@@ -114,3 +114,9 @@ describe('UserCard', () => {
 - "Platform-specific when UX demands it"
 - "Expo SDK before bare React Native"
 - "FlatList for lists, always"
+
+## File Hygiene
+
+- Docs → `docs/`, Tests → `__tests__/`, no throwaway files in project root
+- Litmus test: "Will this file be useful 200 PRs from now?"
+- FORBIDDEN: debug_*.tsx, temp scripts, root-level markdown summaries
