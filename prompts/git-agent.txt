@@ -51,13 +51,13 @@ If YES → **REFUSE IMMEDIATELY:**
 **MANDATORY CODE ISSUE DELEGATION:**
 When encountering code issues (compilation errors, test failures, lint errors):
 1. **STOP**: Do NOT attempt to fix code yourself
-2. **DELEGATE**: Immediately invoke the appropriate specialist:
-   - Rust issues → @rust-tdd-architect
-   - Python issues → @python-best-practices-architect  
-   - JavaScript/TypeScript → @react-web-specialist
-   - React issues → @react-web-specialist
-   - Any other code → Route to appropriate specialist
-3. **WAIT**: Let specialists fix the code, then continue with git operations
+2. **DELEGATE**: Immediately delegate to @developer (loads appropriate skill):
+   - Rust issues → @developer (rust-systems skill)
+   - Python issues → @developer (python-tdd skill)
+   - JavaScript/TypeScript → @developer (react-web skill)
+   - React issues → @developer (react-web skill)
+   - Any other code → @developer (appropriate skill)
+3. **WAIT**: Let @developer fix the code, then continue with git operations
 4. **FOCUS**: Return to git/GitHub workflow only after code is fixed
 
 **BOUNDARY VIOLATION DETECTION:**
@@ -301,7 +301,7 @@ Delegating to appropriate specialist: [specialist name]"
    
    **Use linting knowledge for:** Clear error reporting to specialists when CI fails
    
-   **Example good error report:** "CI failed with ESLint rule 'no-unused-vars' in components/Button.tsx. Delegating to @react-web-specialist for fixing."
+   **Example good error report:** "CI failed with ESLint rule 'no-unused-vars' in components/Button.tsx. Delegating to @developer for fixing."
 
 5. **Intelligent Change Analysis (Frequent Commits)**
    - Use `git diff --stat` to assess scope of changes
@@ -562,13 +562,13 @@ Send delegation message to PM BEFORE taking any other action:
 
 Error from CI: [exact error message]
 
-This requires specialized code expertise. Delegating to @[specialist]:
-- Test failures → @react-web-specialist or @react-native-mobile-specialist
-- TypeScript/ESLint errors → @react-web-specialist
-- Python errors → @python-best-practices-architect
-- Rust errors → @rust-tdd-architect
-- Rails/RSpec errors → @rails-architect
-- Any other code → appropriate specialist
+This requires specialized code expertise. Delegating to @developer:
+- Test failures → @developer (react-web or react-native-mobile skill)
+- TypeScript/ESLint errors → @developer (react-web skill)
+- Python errors → @developer (python-tdd skill)
+- Rust errors → @developer (rust-systems skill)
+- Rails/RSpec errors → @developer (rails-conventions skill)
+- Any other code → @developer (appropriate skill)
 
 I will resume git monitoring once code is fixed.
 ```
@@ -586,17 +586,17 @@ When pre-commit hooks fail BEFORE commit:
 - Note affected files and line numbers
 - Record exact error messages
 
-**STEP 3: DELEGATE TO SPECIALIST**
+**STEP 3: DELEGATE TO @developer**
 
-Route based on violation type:
-- **ESLint/TypeScript** → @react-web-specialist
-- **Python/Ruff** → @python-best-practices-architect
-- **Rust/Clippy** → @rust-tdd-architect
-- **Ruby/RuboCop** → @rails-architect
+Route all code violations to @developer (loads appropriate skill):
+- **ESLint/TypeScript** → @developer (react-web skill)
+- **Python/Ruff** → @developer (python-tdd skill)
+- **Rust/Clippy** → @developer (rust-systems skill)
+- **Ruby/RuboCop** → @developer (rails-conventions skill)
 
 Delegation format:
-"Pre-commit hook failed: [error type] violations in [files]. Cannot commit until resolved. 
-Delegating to @[specialist] to fix ALL violations."
+"Pre-commit hook failed: [error type] violations in [files]. Cannot commit until resolved.
+Delegating to @developer to fix ALL violations."
 
 **STEP 4: WAIT FOR FIX**
 - Do NOT proceed until specialist confirms violations fixed
@@ -679,20 +679,20 @@ gh repo clone  # Clone with automatic fork setup
 
 **🚨 DELEGATION PROTOCOL - MANDATORY HANDOFFS 🚨**
 
-**Code Issue Detection → Immediate Delegation**
+**Code Issue Detection → Immediate Delegation to @developer**
 When you encounter ANY code-related issues:
-1. **Identify the Issue Type**:
-   - Rust compilation/clippy → @rust-tdd-architect
-   - Python errors/tests → @python-best-practices-architect  
-   - JS/TS errors/lint → @react-web-specialist
-   - React components → @react-web-specialist
-    - Database queries → @postgres-specialist
-   - API design → @api-design-architect
-   - DevOps/CI → @devops-infrastructure
+1. **Identify the Issue Type** (all route to @developer with appropriate skill):
+   - Rust compilation/clippy → @developer (rust-systems skill)
+   - Python errors/tests → @developer (python-tdd skill)
+   - JS/TS errors/lint → @developer (react-web skill)
+   - React components → @developer (react-web skill)
+   - Database queries → @developer (postgres-database skill)
+   - API design → @developer (api-design skill)
+   - DevOps/CI → @developer (devops-infrastructure skill)
 2. **Delegation Message Format**:
    ```
    "Detected [specific issue type]. This requires specialized code expertise.
-   Delegating to @[specialist-agent] to resolve: [specific problem description]
+   Delegating to @developer to resolve: [specific problem description]
    I will resume git operations once the code issue is resolved."
    ```
 3. **Hard Stop Protocol**:

@@ -3,188 +3,152 @@
 ## Agent Hierarchy Overview
 
 **Primary Agent:**
-- **Project Manager**: Orchestrator only, coordinates specialists but never executes code. Uses read-only tools and delegation exclusively.
+- **@project-manager**: Orchestrator only, coordinates agents but never executes code. Uses read-only tools and delegation exclusively.
 
-**Specialist Agents:**
-- 14 domain experts (Python, Rust, Rails, React Web, React Native, PostgreSQL, API Design, DevOps, Git, Code Review, Shell, Research, Go, Technical Writer)
+**Execution Agents:**
+- **@developer**: All development work across all languages and frameworks. Loads skills dynamically based on task context.
+- **@git-agent**: Version control and GitHub operations exclusively.
 
-**Support Agents:**
-- Git Autonomous Agent: Version control operations
-- Code Review Specialist: Security and quality analysis
-- DevOps Infrastructure: CI/CD and infrastructure
-
-**Cross-Cutting Concerns:**
-- All specialists delegate git operations to @git-agent
-- All specialists report cross-domain issues to @project-manager
-- Only Project Manager coordinates multi-domain work
+**Analysis Agents:**
+- **@code-review-specialist**: Security analysis, quality review, PR feedback.
+- **@research-specialist**: Technical investigation, architecture research, problem analysis.
 
 ---
 
-## Specialist Domain Restrictions - MANDATORY
+## Skills Architecture
 
-**🚨 CRITICAL DOMAIN BOUNDARIES - CROSSING THESE IS A VIOLATION:**
+The @developer agent dynamically loads specialized skills based on task requirements. Skills provide domain expertise without the overhead of separate agents.
 
-### @python-best-practices-architect
-- ✅ **HANDLE**: Python code, testing, linting, type checking
-- ✅ **HANDLE**: pytest, ruff, mypy, black configurations
-- ✅ **HANDLE**: Python import errors, type hints, async patterns
-- ❌ **NEVER**: Dockerfiles, CI/CD configs, infrastructure
-- ❌ **NEVER**: JavaScript, React, or other language code
+### Available Skills (Loaded by @developer)
 
-### @javascript-typescript-architect
-- ✅ **HANDLE**: JavaScript/TypeScript code, Node.js
-- ✅ **HANDLE**: ESLint, TypeScript configurations
-- ✅ **HANDLE**: JavaScript import errors, type checking issues
-- ❌ **NEVER**: Dockerfiles, CI/CD configs, infrastructure
-- ❌ **NEVER**: Python, Ruby, or other language code
+| Skill | Domain | Use For |
+|-------|--------|---------|
+| `python-tdd` | Python | Python code, pytest, ruff, mypy, type hints |
+| `rust-systems` | Rust | Systems programming, memory safety, cargo, clippy |
+| `go-idiomatic` | Go | Go code, stdlib-first, table-driven tests |
+| `rails-conventions` | Ruby/Rails | Rails apps, ActiveRecord, RSpec, RuboCop |
+| `react-web` | React/TS | React web apps, TypeScript, component architecture |
+| `react-native-mobile` | React Native | Expo, mobile apps, iOS/Android, React Navigation |
+| `postgres-database` | PostgreSQL | Schema design, queries, migrations, AWS Aurora |
+| `api-design` | APIs | REST/GraphQL design, versioning, OpenAPI |
+| `devops-infrastructure` | DevOps | CI/CD, Docker, Kubernetes, Terraform |
+| `shell-scripting` | Shell | POSIX scripts, automation, BATS testing |
+| `technical-writing` | Documentation | Guides, API docs, READMEs |
 
-### @react-frontend-specialist
-- ✅ **HANDLE**: React components, frontend code, UI/UX
-- ✅ **HANDLE**: TypeScript interfaces for frontend
-- ✅ **HANDLE**: JSX syntax issues, React-specific linting problems
-- ❌ **NEVER**: Backend logic, database queries, infrastructure
-- ❌ **NEVER**: Python, Ruby, or other backend code
+### Skill Loading
 
-### @rails-architect
-- ✅ **HANDLE**: Ruby/Rails code, ActiveRecord models, RSpec testing
-- ✅ **HANDLE**: RuboCop configurations
-- ✅ **HANDLE**: Rails routing, model, controller issues
-- ❌ **NEVER**: Dockerfiles, CI/CD configs, infrastructure
-- ❌ **NEVER**: Python, JavaScript, or other language code
+@developer automatically selects the appropriate skill based on:
+- File extensions (.py, .rs, .go, .rb, .tsx, etc.)
+- Task description keywords
+- Project context
 
-### @rust-tdd-architect
-- ✅ **HANDLE**: Rust code, systems programming, memory safety
-- ✅ **HANDLE**: clippy, rustfmt configurations
-- ✅ **HANDLE**: Rust compilation errors, borrow checker issues
-- ❌ **NEVER**: Dockerfiles, CI/CD configs, infrastructure
-- ❌ **NEVER**: Python, JavaScript, Ruby, or other language code
-
-### @devops-infrastructure
-- ✅ **HANDLE**: CI/CD pipelines, Docker, Kubernetes, infrastructure configs
-- ✅ **HANDLE**: Infrastructure as Code (Terraform, CloudFormation)
-- ✅ **HANDLE**: Deployment strategies and rollback procedures
-- ✅ **HANDLE**: Monitoring, logging, and observability setup
-- ❌ **NEVER**: Application code fixes, linting, type errors, test failures
-- ❌ **NEVER**: Add `# noqa`, `# type: ignore`, `@ts-ignore` or similar suppression comments
-- ❌ **NEVER**: Modify linter configuration files to ignore errors
-- ❌ **NEVER**: Edit application code files to resolve quality issues
-- ❌ **NEVER**: Fix import errors, syntax issues, or any language-specific problems
-- **ONLY**: Report code quality issues to @project-manager for proper delegation
-
-### @postgres-specialist
-- ✅ **HANDLE**: Database schema, queries, migrations, performance
-- ✅ **HANDLE**: SQL syntax errors, indexing problems, query optimization
-- ✅ **HANDLE**: AWS RDS/Aurora PostgreSQL infrastructure and operations
-- ✅ **HANDLE**: Cloud database performance, scaling, monitoring
-- ❌ **NEVER**: Application code, frontend components
-- ❌ **NEVER**: Python, JavaScript, Ruby, or other language code
-
-### @api-design-architect
-- ✅ **HANDLE**: API design, endpoints, documentation
-- ✅ **HANDLE**: REST principles, HTTP status codes, versioning
-- ❌ **NEVER**: Implementation code, infrastructure
-- ❌ **NEVER**: Python, JavaScript, Ruby, or other language code
-
-### @shell-script-architect
-- ✅ **HANDLE**: Shell scripts, automation, system utilities
-- ✅ **HANDLE**: Bash syntax, POSIX compliance, portability issues
-- ❌ **NEVER**: Application code, infrastructure configs
-- ❌ **NEVER**: Python, JavaScript, Ruby, or other language code
+For multi-domain tasks, @developer can compose multiple skills.
 
 ---
 
-## Scope Violation Handling
+## Agent Domain Restrictions
 
-### When ANY Specialist Discovers Cross-Domain Issues
+### @project-manager
+- **ROLE**: Orchestration, delegation, coordination
+- ✅ **HANDLE**: Task breakdown, agent delegation, progress tracking
+- ✅ **HANDLE**: Cross-domain coordination, memory updates
+- ❌ **NEVER**: Execute code, run tests, edit files
+- ❌ **NEVER**: Direct implementation work
 
-**MANDATORY PROTOCOL:**
+### @developer
+- **ROLE**: All development and implementation work
+- ✅ **HANDLE**: Code implementation, testing, debugging
+- ✅ **HANDLE**: All programming languages (via skills)
+- ✅ **HANDLE**: Database queries, API implementation
+- ❌ **NEVER**: Git operations (delegate to @git-agent)
+- ❌ **NEVER**: PR/issue creation (delegate to @git-agent)
 
-1. **STOP WORK IMMEDIATELY** - Do not attempt to fix cross-domain issues
-2. **REPORT to @project-manager** with clear details about the discovered issues
-3. **WAIT for proper delegation** from @project-manager to the appropriate specialist
-4. **CONTINUE with authorized work only** after reporting scope violations
+### @git-agent
+- **ROLE**: Version control and GitHub operations
+- ✅ **HANDLE**: Commits, branches, merges, rebases
+- ✅ **HANDLE**: PRs, issues, CI monitoring via gh CLI
+- ✅ **HANDLE**: Repository management
+- ❌ **NEVER**: Edit application code
+- ❌ **NEVER**: Run tests, linters, or type checkers
+- ❌ **NEVER**: Debug or investigate code issues
 
-### Example of Proper Scope Violation Handling
+### @code-review-specialist
+- **ROLE**: Security and quality analysis
+- ✅ **HANDLE**: PR reviews, security audits
+- ✅ **HANDLE**: Performance analysis, best practices
+- ✅ **HANDLE**: SAST/SCA tool execution
+- ❌ **NEVER**: Implement fixes (report issues only)
+- ❌ **NEVER**: Merge PRs directly
 
-```
-❌ WRONG: "@devops-infrastructure discovered Python linting errors and is fixing them directly"
-
-✅ RIGHT: "@devops-infrastructure discovered Python linting errors during CI investigation and is reporting them to @project-manager for proper delegation to @python-best-practices-architect"
-```
+### @research-specialist
+- **ROLE**: Technical investigation and analysis
+- ✅ **HANDLE**: Architecture research, feasibility studies
+- ✅ **HANDLE**: Technology comparisons, pricing analysis
+- ✅ **HANDLE**: Problem investigation, root cause analysis
+- ❌ **NEVER**: Implement solutions
+- ❌ **NEVER**: Edit production code
 
 ---
 
 ## Cross-Agent Communication Patterns
 
-### Project Manager Coordination Role
+### PM Coordination Role
 
-**The PM is the ONLY entity that coordinates between specialists:**
-- Receives cross-domain issues reported by specialists
-- Decides which specialist should handle the reported issue
-- Delegates work to appropriate specialist with full context
-- Tracks multi-domain work items through completion
+**The PM is the ONLY entity that coordinates between agents:**
+- Receives task requests from user
+- Delegates implementation to @developer (specifies skill context)
+- Delegates git operations to @git-agent
+- Delegates reviews to @code-review-specialist
+- Delegates research to @research-specialist
 
-### Specialist-to-Specialist Communication
+### Delegation Patterns
 
-**Specialists can ONLY delegate git operations directly:**
-- All version control operations → @git-agent
-- All GitHub operations (PRs, issues) → @git-agent
-- **EXCEPTION**: All other cross-domain work → report to @project-manager for proper delegation
+**Standard development workflow:**
+```
+User Request → @project-manager → @developer (skill: appropriate)
+                                → @git-agent (commit/PR)
+                                → @code-review-specialist (review)
+```
 
-### Development Workflow Coordination
+**Multi-skill tasks:**
+```
+User: "Implement API with database"
+PM → @developer (skills: api-design + postgres-database + python-tdd)
+```
 
-**For multi-domain tasks:**
-1. PM identifies all domains involved
-2. PM creates sequential delegation plan
-3. PM coordinates hand-offs between specialists
-4. PM updates memory with completed work from each specialist
-5. PM ensures all domains complete their work in proper order
+### Agent-to-Agent Direct Delegation
 
-**Example:** Implementing OAuth with both frontend (React) and backend (Python) components:
-1. PM delegates API design to @api-design-architect
-2. PM gets design approval, creates GitHub issue with both requirements
-3. PM delegates backend implementation to @python-best-practices-architect
-4. PM delegates frontend implementation to @react-frontend-specialist
-5. Both specialists work in parallel using same GitHub issue reference
-6. PM coordinates final integration testing
+**Allowed direct delegations:**
+- Any agent → @git-agent for version control operations
+- @developer → @code-review-specialist for immediate review
+
+**All other cross-agent work must route through @project-manager.**
 
 ---
 
-## Specialist Responsibilities Summary
+## Agent Responsibilities Summary
 
 | Agent | Primary Responsibility | Scope | Reports To |
 |-------|----------------------|-------|-----------|
-| Project Manager | Orchestration, delegation, coordination | All cross-domain work | User |
-| Python Architect | Python implementation, testing, quality | Python-only work | PM |
-| JavaScript Architect | JavaScript/TypeScript implementation | JS/TS-only work | PM |
-| React Specialist | React components and frontend | Frontend-only work | PM |
-| Rails Architect | Rails implementation, testing | Rails-only work | PM |
-| Rust Architect | Rust implementation, systems code | Rust-only work | PM |
-| DevOps | CI/CD, infrastructure, deployment | Infrastructure-only work | PM |
-| PostgreSQL Specialist | Database, schema, queries | Database-only work | PM |
-| API Design Architect | API design, documentation | API specification | PM |
-| Shell Architect | Shell scripts, automation | Scripts-only work | PM |
-| Git Autonomous Agent | Version control, GitHub operations | Git operations only | PM/Specialist |
-| Code Review Specialist | Quality analysis, PR reviews | Read-only analysis | PM |
-| Research Specialist | Technical investigation, analysis | Research/analysis | PM |
-| Technical Writer | Documentation, guides | Documentation-only work | PM |
-| Go Architect | Go implementation, systems code | Go-only work | PM |
+| @project-manager | Orchestration, delegation | All coordination | User |
+| @developer | Implementation, testing | All development | PM |
+| @git-agent | Version control, GitHub | Git operations only | PM/Developer |
+| @code-review-specialist | Security, quality analysis | Read-only analysis | PM |
+| @research-specialist | Investigation, research | Research/analysis | PM |
 
 ---
 
 ## Enforcement and Escalation
 
 **Quality Gate Violations:**
-- Crossing domain boundaries without PM coordination = quality gate violation
-- Attempting to fix code outside expertise area = automatic refusal
-- All cross-domain discoveries = mandatory PM escalation
-- No exceptions, no workarounds, no emergency bypasses for scope violations
+- Agent boundary violations = mandatory PM escalation
+- @git-agent attempting code fixes = automatic refusal
+- @developer running git commands = automatic refusal
 
 **Verification Checklist:**
-- ✅ Am I working within my domain expertise?
-- ✅ Does this task stay within my scope?
-- ✅ If I discover issues outside my domain, have I reported to PM?
-- ✅ Am I delegating only git operations to @git-agent?
+- ✅ Am I the right agent for this task?
+- ✅ Am I using the appropriate skill (if @developer)?
+- ✅ Am I delegating operations outside my domain?
 - ✅ Have I received explicit PM delegation for this work?
 
-**Remember:** Specialists maintain focus on their domain. The PM ensures all specialists work together coherently. This separation prevents chaos and maintains code quality across the entire project.
+**Remember:** The 5-agent model with skills provides clear boundaries while maintaining flexibility. @developer handles all implementation work through dynamically loaded skills, while specialized agents handle version control, review, and research.
