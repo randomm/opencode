@@ -58,6 +58,7 @@
        "description": "Full-stack developer that loads language/framework skills dynamically based on task context",
        "mode": "subagent",
        "model": "{env:SUBAGENT_MODEL}",
+       "max_tokens": 8000,
        "prompt": "{file:prompts/developer.txt}",
        "permission": {
          "bash": {
@@ -116,6 +117,7 @@
        "description": "Git and GitHub workflow expert for version control and PR management",
        "mode": "subagent",
        "model": "{env:SUBAGENT_MODEL}",
+       "max_tokens": 2000,
        "prompt": "{file:prompts/git-agent.txt}",
        "permission": {
          "bash": {
@@ -216,6 +218,7 @@
         "description": "Code review expert for security, performance, quality analysis, and GitHub PR reviews",
         "mode": "subagent",
         "model": "{env:SUBAGENT_MODEL}",
+        "max_tokens": 4000,
         "prompt": "{file:prompts/code-review-specialist.txt}",
         "permission": {
           "edit": "deny",
@@ -296,6 +299,7 @@
         "description": "Pure research specialist for technical investigation, problem analysis, and knowledge discovery using Perplexity and memory - read-only, no execution",
         "mode": "subagent",
         "model": "{env:SUBAGENT_MODEL}",
+        "max_tokens": 6000,
         "prompt": "{file:prompts/research-specialist.txt}",
         "permission": {
           "bash": {
