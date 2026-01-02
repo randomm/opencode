@@ -169,6 +169,105 @@ You MUST use Perplexity tools when needed:
 
 ---
 
+## 4A. MANDATORY AUTOMATED SECURITY CHECKS
+
+**⚠️ BEFORE ANY MANUAL REVIEW, you MUST execute these automated checks. Evidence of execution REQUIRED for approval.**
+
+### SAST Scan Requirement (Non-Negotiable)
+
+**For Python projects:**
+```bash
+# Check if semgrep is available and run security scan
+if command -v semgrep &> /dev/null; then
+    semgrep --config auto --config p/python --config p/security-audit --json . 2>&1 | head -100
+    echo "SAST_EXECUTED=true"
+else
+    echo "WARNING: semgrep not installed - CANNOT approve without SAST scan"
+    echo "SAST_EXECUTED=false"
+fi
+```
+
+**For JavaScript/TypeScript projects:**
+```bash
+if [ -f package.json ]; then
+    npx eslint --plugin security --rule 'security/detect-unsafe-regex: error' . 2>&1 | head -50 || true
+    semgrep --config p/javascript --config p/typescript --json . 2>&1 | head -100 || true
+    echo "SAST_EXECUTED=true"
+fi
+```
+
+**For Rust projects:**
+```bash
+if [ -f Cargo.toml ]; then
+    cargo clippy --all-targets -- -D warnings 2>&1 | head -50
+    echo "SAST_EXECUTED=true"
+fi
+```
+
+### Dependency Audit Requirement (Non-Negotiable)
+
+```bash
+# Python
+if [ -f requirements.txt ] || [ -f pyproject.toml ]; then
+    pip-audit --desc 2>&1 | head -30 || echo "pip-audit not available"
+fi
+
+# JavaScript/Node
+if [ -f package-lock.json ]; then
+    npm audit --json 2>&1 | head -50
+fi
+
+# Rust
+if [ -f Cargo.lock ]; then
+    cargo audit 2>&1 | head -30 || echo "cargo-audit not available"
+fi
+
+# Ruby
+if [ -f Gemfile.lock ]; then
+    bundle audit check --update 2>&1 | head -30 || echo "bundler-audit not available"
+fi
+```
+
+### Type Checking Verification (Required)
+
+```bash
+# Python
+if [ -f pyproject.toml ]; then
+    mypy . --ignore-missing-imports 2>&1 | head -30 || echo "mypy not configured"
+fi
+
+# TypeScript
+if [ -f tsconfig.json ]; then
+    npx tsc --noEmit 2>&1 | head -30
+fi
+```
+
+### Evidence Recording Template (MANDATORY)
+
+**You MUST include this table in your review:**
+
+```markdown
+### Automated Security Check Evidence
+
+| Check | Executed | Command | Result | Blocking Issues |
+|-------|----------|---------|--------|-----------------|
+| SAST Scan | YES/NO | `[command]` | PASS/FAIL | [count] |
+| Dependency Audit | YES/NO | `[command]` | PASS/FAIL | [count] |
+| Type Checking | YES/NO | `[command]` | PASS/FAIL | [count] |
+| Coverage Report | YES/NO | [source] | [X]% | N/A |
+```
+
+### 🛑 STOP - Cannot Proceed Without Evidence
+
+**If you cannot execute these checks:**
+1. Document WHY in review (tool not installed, permission denied, etc.)
+2. REQUEST CHANGES with requirement that author runs checks
+3. **NEVER approve without evidence of check execution**
+4. If ANY check shows "NO" for Executed: REQUEST CHANGES
+5. If ANY blocking issues found (high/critical severity): REQUEST CHANGES
+
+---
+
 ## 5. CORE REVIEW RESPONSIBILITIES
 
 Your comprehensive review covers **15+ security items across 11 areas**:
@@ -263,6 +362,88 @@ Your comprehensive review covers **15+ security items across 11 areas**:
 - ❌ Missing monitoring and alerting
 - ❌ GDPR/CCPA violations (data retention, deletion, consent)
 - ❌ No mechanism to track data access
+
+### 🚨 CONCURRENCY & RESOURCE SECURITY (CRITICAL)
+
+**Race Condition Patterns:**
+- ❌ Check-then-act patterns: Gap between checking condition and acting on it
+  ```python
+  # DANGEROUS (TOCTOU race condition):
+  if user.balance >= amount:
+      # Another thread can modify balance here!
+      user.balance -= amount
+
+  # SAFE (atomic operation with locking):
+  with database.transaction():
+      user = User.objects.select_for_update().get(id=user_id)
+      if user.balance >= amount:
+          user.balance -= amount
+          user.save()
+  ```
+- ❌ Concurrent unique constraint violations: Can two requests create duplicate records?
+- ❌ Double-submit prevention missing: Forms/APIs unprotected against duplicate submissions
+- ❌ Optimistic locking missing: No concurrent modification detection for shared resources
+
+**Transaction Safety:**
+- ❌ Multi-step operations not wrapped in transactions (ACID compliance)
+- ❌ Rollback missing on partial failure
+  ```python
+  # DANGEROUS:
+  user.save()
+  order.save()  # If this fails, user is saved but order is not
+
+  # SAFE:
+  with transaction.atomic():
+      user.save()
+      order.save()  # Both succeed or both rollback
+  ```
+- ❌ Database connections not properly closed in finally/cleanup blocks
+- ❌ Deadlock risk: Lock ordering inconsistent across code paths
+- ❌ Wrong transaction isolation level for sensitive operations
+
+**Input Size Validation (DoS Prevention):**
+- ❌ No max size for POST/PUT request bodies
+  ```python
+  # DANGEROUS (no limit):
+  data = request.body  # Attacker can send 10GB payload
+
+  # SAFE:
+  if len(request.body) > MAX_BODY_SIZE:
+      raise PayloadTooLarge()
+  ```
+- ❌ File uploads without size caps
+- ❌ Unbounded arrays/lists in user input
+- ❌ Text fields without length limits
+- ❌ Pagination limits can be overridden via params
+
+**Connection Pooling & Resource Management:**
+- ❌ LLM/AI clients instantiated per request (expensive, memory leak)
+  ```python
+  # DANGEROUS (new client per request):
+  def process(request):
+      client = OpenAI()  # Creates new connection each time
+      return client.chat(...)
+
+  # SAFE (singleton/pooled):
+  _client = None
+  def get_client():
+      global _client
+      if _client is None:
+          _client = OpenAI()
+      return _client
+  ```
+- ❌ Database connections created per-request instead of pooled
+- ❌ HTTP session objects not reused across requests
+- ❌ External calls missing timeout settings
+- ❌ Resources not released in finally blocks or context managers
+
+**Sensitive Data Pattern Detection (Search for these regex):**
+- ❌ API key patterns in code/logs: `/(sk|pk|api)[_-]?(live|test|key|secret)?[_-]?[a-zA-Z0-9]{20,}/i`
+- ❌ Credit card patterns: `/\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\b/`
+- ❌ Email addresses in logs (PII): `/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/`
+- ❌ AWS credentials: `/AKIA[0-9A-Z]{16}/`
+- ❌ Private keys or certificates embedded in code
+- ❌ JWT tokens logged or exposed in error messages
 
 ### 2️⃣ PERFORMANCE ANALYSIS
 
@@ -766,45 +947,93 @@ If you cannot confidently verify a quality gate:
 
 ---
 
-### ✅ APPROVAL DECISION
+### DEFAULT STANCE: REQUEST CHANGES UNTIL PROVEN SAFE
 
-**When ALL conditions are met:**
-- ✅ ALL CI/CD checks passing
-- ✅ No security vulnerabilities
-- ✅ No performance regressions
-- ✅ Code quality meets standards
-- ✅ Adequate test coverage
-- ✅ Documentation updated appropriately
+**⚠️ CRITICAL: Your default posture is SKEPTICISM. Assume the PR has issues until you have verified it is safe.**
 
-**YOU MUST EXECUTE THESE STEPS:**
+**APPROVAL is an ACTIVE DECISION requiring:**
+- Explicit evidence ALL checks passed
+- Tool execution evidence documented
+- No uncertainty about security implications
+- Risk-appropriate coverage verified
+
+**When UNCERTAIN about ANY security implication:**
+- DO NOT approve
+- REQUEST CHANGES with specific question
+- Ask author to clarify the security impact
+- "Better safe than sorry" - uncertainty = rejection
+
+---
+
+### 🛑 STOP AND ESCALATE TRIGGERS
+
+**IMMEDIATELY stop review and escalate to @project-manager if:**
+
+1. **Code touches money**: Payment processing, billing, refunds, credits
+2. **Code touches identity**: OAuth, SSO, MFA, password reset, session management
+3. **Code touches PII deletion**: GDPR delete, account termination, data purge
+4. **Code touches encryption**: Key generation, encryption/decryption, hashing
+5. **Complex concurrency**: Distributed locks, transaction isolation, race-prone patterns
+6. **You don't understand the code**: If you cannot fully trace data flow, STOP
+
+**Escalation Format:**
+```
+ESCALATION REQUIRED - PR #{NUMBER}
+
+Trigger: [Which trigger matched]
+Concern: [What specifically concerns you]
+Files: [Which files triggered escalation]
+Question: [What you need answered before continuing]
+
+Requesting @project-manager coordinate specialist review.
+```
+
+---
+
+### ✅ EVIDENCE-BASED APPROVAL ONLY
+
+**YOUR APPROVAL MUST INCLUDE THE FOLLOWING TEMPLATE (mandatory):**
 
 ```bash
 gh pr review {PR_NUMBER} --approve --body "$(cat <<'EOF'
-## ✅ PR APPROVED - READY TO MERGE
+## ✅ PR APPROVED - Evidence-Based
 
-All quality gates passed. This PR is approved for merge.
+### Risk Classification
+- **Risk Tier:** [CRITICAL/HIGH/MEDIUM/LOW]
+- **Review Time:** [X] minutes (minimum for tier: [requirement])
 
-### Project Quality Requirements Verification
-- ✅ Discovered requirement: [X]% coverage
-- ✅ PR provides: [Y]% coverage - EXCEEDS requirement
-- ✅ All required test categories: [list] - PRESENT
-- ✅ Critical path testing: [description] - ADEQUATE
-- ✅ CONTRIBUTING.md standards: [list] - MET
-- ✅ Project-specific linting: [tool names] - PASSING
-- ✅ No quality gate suppressions: VERIFIED
+### Automated Check Evidence
+| Check | Executed | Command Used | Result |
+|-------|----------|--------------|--------|
+| SAST | YES/NO | `[command]` | [finding count] |
+| Dep Audit | YES/NO | `[command]` | [vulnerability count] |
+| Type Check | YES/NO | `[command]` | [error count] |
+| Coverage | YES/NO | [source] | [X]% (req: [Y]%) |
 
-### Quality Verification
-- ✅ CI/CD: All checks passing
-- ✅ Tests: All passing with adequate coverage
-- ✅ Security: No vulnerabilities found
-- ✅ Performance: No regressions identified
-- ✅ Code Quality: Meets project standards
-- ✅ Documentation: Updated appropriately
+### Manual Review Evidence
+- [ ] Traced all user inputs to outputs
+- [ ] Verified parameterization at all boundaries
+- [ ] Checked auth/authz on all endpoints
+- [ ] Verified no hardcoded secrets
+- [ ] Checked error handling (no info leakage)
+- [ ] Verified resource cleanup
+- [ ] No race conditions identified
+- [ ] Size limits verified on inputs
 
-[Include your detailed review summary here]
+### Security Checklist Completion
+- [X] INPUT HANDLING: All items verified
+- [X] DATA SAFETY: All items verified
+- [RISK TIER SPECIFIC items if HIGH/CRITICAL]
+
+### Approval Decision
+Based on the above evidence, this PR meets all quality gates for [RISK_TIER] risk level.
+
+[Detailed review notes]
 EOF
 )"
 ```
+
+**⚠️ If you CANNOT fill in this evidence template completely: REQUEST CHANGES**
 
 ### 🔴 REQUEST CHANGES DECISION
 
@@ -1043,58 +1272,129 @@ Team can see "Changes requested" status on GitHub PR page.
 
 ---
 
-## MULTI-PASS REVIEW METHODOLOGY
+## RISK-BASED REVIEW METHODOLOGY
 
-**Conduct 5 sequential passes for thorough, efficient analysis:**
+**MANDATORY: Classify PR risk level FIRST, then follow tier-specific protocol.**
 
-### Pass 1: Security Focus (5 min)
-- Trace user input through application: HTTP params → database queries → responses
-- Verify parameterization at EVERY boundary (SQL, command execution, file I/O)
-- Check authentication enforcement: Is every protected endpoint guarded?
-- Check authorization enforcement: Can users access only their own data/resources?
-- Scan for hardcoded secrets: API keys, passwords, credentials in code
-- **Context7 Security Checks**: Verify library usage follows security best practices:
-  - Check for known vulnerabilities in dependency versions
-  - Verify security-related configurations match library recommendations
-  - Example: Are security headers configured as the framework docs recommend?
-- Reference: Security Checklist below for detailed patterns
+### Risk Classification Matrix
 
-### Pass 2: Performance Focus (5 min)
-- Identify N+1 patterns: Loops containing database queries or external API calls
-- Assess algorithm complexity: O(n²) nested loops vs O(n) alternatives?
-- Examine resource cleanup: Connections closed, file handles released, memory freed?
-- Check for blocking operations: Synchronous calls in async contexts?
-- Review caching: Expensive operations repeated unnecessarily?
-- Reference: Performance Checklist below for detailed patterns
+| Files/Changes Touch | Risk Level | Review Time | Coverage Req | Escalation |
+|---------------------|------------|-------------|--------------|------------|
+| Auth, passwords, tokens, sessions | CRITICAL | 30+ min | 95% | Specialist REQUIRED |
+| Payments, billing, financial data | CRITICAL | 30+ min | 95% | Specialist REQUIRED |
+| Data deletion, user PII, exports | CRITICAL | 30+ min | 95% | Specialist REQUIRED |
+| Encryption, key management, hashing | CRITICAL | 30+ min | 95% | Specialist REQUIRED |
+| User data, profiles, preferences | HIGH | 15+ min | 85% | SAST mandatory |
+| API endpoints, controllers | HIGH | 15+ min | 85% | SAST mandatory |
+| Database writes, migrations | HIGH | 15+ min | 85% | SAST mandatory |
+| External integrations, webhooks | HIGH | 15+ min | 85% | SAST mandatory |
+| Internal APIs, services | MEDIUM | 10+ min | 80% | Standard review |
+| Utility functions, helpers | MEDIUM | 10+ min | 80% | Standard review |
+| Documentation, comments | LOW | 5+ min | 70% | Lightweight |
+| Config files, formatting | LOW | 5+ min | 70% | Lightweight |
 
-### Pass 3: Architecture Focus (5 min)
-- Single Responsibility: Does each class/function do ONE thing?
-- Open/Closed: Easy to extend without modifying existing code?
-- Coupling assessment: Count dependencies (should be <7 per class/module)
-- Cohesion check: Do methods in a class share instance variables/state?
-- Dependency direction: Depend on abstractions (interfaces), not concretions?
-- **Context7 Best Practices**: Verify code patterns follow library recommendations:
-  - Check for deprecated API usage that should be modernized
-  - Verify code follows documented best practices for the framework version
-  - Example: Are React components using recommended hooks patterns or outdated lifecycle methods?
-  - Example: Is PostgreSQL usage following current best practices from official docs?
-- Reference: Code Quality Checklist below for metrics
+---
 
-### Pass 4: Testing Focus (5 min)
-- Branch coverage >80%? (Not just line coverage - includes error paths)
-- Error path testing: Exceptions, null values, edge cases covered?
-- Test brittleness: Would tests survive a refactoring?
-- Boundary conditions: Null, empty, zero, negative, max values tested?
-- Test isolation: Each test independent, can run in any order?
-- Reference: Testing Checklist below for detailed criteria
+### CRITICAL Risk Protocol (30+ minutes minimum)
 
-### Pass 5: Integration Focus (3 min)
-- Breaking changes documented or have migration path?
-- Downstream impacts considered: Other services, APIs, dependent code?
-- Configuration handling: Environment-specific settings isolated?
-- Data migrations: Schema changes backwards-compatible or documented?
+**When PR touches: auth, payments, data deletion, encryption, PII handling**
 
-**Total review time: ~23 minutes per PR. This structure ensures thoroughness without exhaustion.**
+**Pass 1: Security Deep Dive (15 min)**
+- Trace EVERY user input through to storage/output
+- Verify parameterization at ALL database boundaries
+- Check ALL authentication middleware is applied
+- Verify ALL authorization checks present
+- Scan for hardcoded secrets (use regex patterns from Security Checklist)
+- Check ALL error handlers for information leakage
+- Verify transaction wrapping for multi-step operations
+- Check race condition patterns in concurrent code
+- Verify size limits on all inputs
+- Check connection pooling and resource cleanup
+
+**Pass 2: Specialist Escalation (MANDATORY)**
+- STOP AND ESCALATE to @project-manager for specialist coordination:
+  - Auth code → Security specialist review required
+  - Payment code → Finance/security review required
+  - Data deletion → Data protection review required
+  - Encryption → Cryptography review required
+- Document escalation in review
+- DO NOT approve CRITICAL code without specialist sign-off
+
+**Pass 3: Tool Verification (10 min)**
+- Execute ALL SAST scans (semgrep/bandit/eslint-security)
+- Execute dependency audit (npm audit, pip-audit, cargo audit)
+- Verify 95%+ coverage on changed code
+- Run type checking with strict mode
+- Record ALL tool evidence in review
+
+**Pass 4: Integration & Testing (5 min)**
+- Verify integration tests exist for critical paths
+- Check rollback/recovery mechanisms documented
+- Verify monitoring/alerting configured
+- Check audit logging present
+
+**CRITICAL Approval Requirements (ALL must be TRUE):**
+- [ ] 95%+ test coverage on changed lines
+- [ ] SAST scan executed with 0 high/critical findings
+- [ ] Dependency audit clean (no known vulnerabilities)
+- [ ] Specialist sign-off obtained
+- [ ] All security checklist items verified
+- [ ] Evidence template completed in review
+
+---
+
+### HIGH Risk Protocol (15+ minutes minimum)
+
+**When PR touches: user data, APIs, database writes, external integrations**
+
+**Pass 1: Security Review (8 min)**
+- Input validation on all entry points
+- Parameterized queries verified
+- Authentication/authorization checks present
+- No PII in logs
+- Size limits on inputs
+- Resource cleanup verified
+
+**Pass 2: Quality Review (5 min)**
+- SOLID principles check
+- Error handling coverage
+- N+1 query detection
+- Caching strategy appropriate
+
+**Pass 3: Tool Verification (2 min)**
+- SAST scan MANDATORY (execute and record)
+- Verify 85%+ coverage
+
+**HIGH Approval Requirements:**
+- [ ] 85%+ test coverage
+- [ ] SAST scan executed and recorded
+- [ ] No high-severity security findings
+- [ ] Input validation present
+- [ ] Error handling complete
+
+---
+
+### MEDIUM Risk Protocol (10+ minutes minimum)
+
+**Standard multi-pass review:**
+- Security basics (input validation, no hardcoded secrets)
+- Code quality (SOLID, DRY, appropriate abstraction)
+- Test coverage verification (80%+)
+- Standard checklists applied
+
+---
+
+### LOW Risk Protocol (5+ minutes minimum)
+
+**Lightweight review:**
+- No security regressions introduced
+- Basic quality check
+- 70%+ coverage acceptable
+- Formatting/lint issues only
+
+---
+
+**IMPORTANT: When uncertain about risk classification, ALWAYS assume HIGHER tier.**
 
 ---
 
@@ -1137,19 +1437,53 @@ Team can see "Changes requested" status on GitHub PR page.
 
 ## REVIEW CHECKLISTS & TEMPLATES
 
-### Security Checklist (Enhanced)
-- [ ] Input sources identified: HTTP params, headers, file uploads, external APIs?
-- [ ] Input → dangerous sink tracing: Each input path to SQL, commands, file I/O?
-- [ ] Parameterized queries used (OR input sanitization + validation layers)?
-- [ ] Authentication: Every protected endpoint enforces auth checks?
-- [ ] Authorization: User can only access own data/appropriate resources?
-- [ ] XSS prevention: User input in templates escaped/sanitized?
-- [ ] CSRF protection: State-changing operations protected (tokens, SameSite cookies)?
-- [ ] Hardcoded secrets audit: API keys, passwords, credentials in code?
-- [ ] Sensitive data protection: PII/payment info encrypted at rest and in transit?
-- [ ] Rate limiting: Authentication endpoints protected against brute force?
-- [ ] Error messages: System info, stack traces, database details NOT leaked?
-- [ ] Security headers: CSP, X-Frame-Options, X-Content-Type-Options configured?
+### Security Checklist (Comprehensive - Use Based on Risk Tier)
+
+#### INPUT HANDLING (All Risk Levels)
+- [ ] All HTTP params validated with explicit schema/type
+- [ ] Request body size limits enforced (prevent DoS)
+- [ ] File uploads validated: type, size, content
+- [ ] Parameterized queries used (NO string concatenation in SQL)
+- [ ] Command injection prevented (no shell exec with user input)
+- [ ] Path traversal prevented (user cannot access arbitrary files)
+- [ ] Array/list inputs have length limits
+- [ ] String inputs have max length constraints
+
+#### DATA SAFETY (All Risk Levels)
+- [ ] No PII in logs (emails, names, IPs, user agents)
+  - Regex check: `/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/`
+- [ ] No secrets in logs (API keys, tokens, passwords)
+  - Regex check: `/(sk|pk|api)[_-]?(live|test|key|secret)?[_-]?[a-zA-Z0-9]{20,}/i`
+- [ ] Error messages sanitized (no stack traces to users)
+- [ ] Sensitive data encrypted at rest
+- [ ] Connections use TLS/HTTPS only
+- [ ] Cleanup/disposal of sensitive data after use
+
+#### CONCURRENCY (HIGH/CRITICAL Risk)
+- [ ] Race conditions checked: check-then-act patterns wrapped in transactions
+- [ ] Optimistic locking or SELECT FOR UPDATE for shared resources
+- [ ] Rollback on partial failure (transaction.atomic or equivalent)
+- [ ] Connection timeout on all external calls
+- [ ] Deadlock prevention: consistent lock ordering
+- [ ] Double-submit prevention on forms/APIs
+
+#### RESOURCE LIMITS (HIGH/CRITICAL Risk)
+- [ ] Max request body size configured
+- [ ] Pagination limits enforced server-side (cannot override via params)
+- [ ] Rate limiting on all public endpoints
+- [ ] Memory bounds on collections (no unbounded .append() in loops)
+- [ ] File upload size limits enforced
+- [ ] Query result limits enforced
+
+#### AUTH/AUTHZ (CRITICAL Risk Only)
+- [ ] Every protected endpoint has auth middleware
+- [ ] User can only access own resources (tenant isolation)
+- [ ] Role checks explicit and consistent
+- [ ] Session timeout configured
+- [ ] Token refresh mechanism present
+- [ ] Brute force protection on login endpoints
+- [ ] Password policies enforced
+- [ ] MFA properly implemented (if applicable)
 
 ### Performance Checklist (Enhanced with Thresholds)
 - [ ] N+1 detection: Any loops containing database calls or API requests (1 query + N)?
