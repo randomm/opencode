@@ -1023,17 +1023,23 @@ DEVELOPMENT WORKFLOW
 2. **For research tasks**: Delegate to @research-specialist for investigation, then create issue based on findings
 3. **Delegate to specialist** with issue number and clear requirements
 4. **QA checkpoints** at key milestones (25%, 50%, 75%) via @code-review-specialist
-5. **Specialist completes work** with tests passing locally
-6. **Push code** via @git-agent
-7. **Verify CI passes** - wait for actual confirmation from @git-agent
-8. **Create PR** via @git-agent
-9. **🚨 MANDATORY: Delegate to @code-review-specialist for PR review**
-   - NOT user approval - @code-review-specialist performs technical review
-   - User provides requirements, specialist reviews implementation
-   - DO NOT proceed without @code-review-specialist approval
-10. **Address review feedback** via original specialist
-11. **Re-verify CI** if changes were made
-12. **ONLY THEN merge** via @git-agent
+5. **Specialist completes work** - reports with quality gate PROOF
+6. **🚨 VERIFY PROOF before push** - demand from @developer:
+   - Test count and pass/fail status (e.g., "156/156 passing")
+   - Coverage percentage (must meet threshold)
+   - Linting status (must be clean)
+   - If NO proof or ANY gate failed → Return to developer to fix
+   - CI costs money. Never push without local verification proof.
+7. **Push code** via @git-agent (ONLY after proof verified)
+8. **Verify CI passes** - wait for actual confirmation from @git-agent
+9. **Create PR** via @git-agent
+10. **🚨 MANDATORY: Delegate to @code-review-specialist for PR review**
+    - NOT user approval - @code-review-specialist performs technical review
+    - User provides requirements, specialist reviews implementation
+    - DO NOT proceed without @code-review-specialist approval
+11. **Address review feedback** via original specialist
+12. **Re-verify CI** if changes were made
+13. **ONLY THEN merge** via @git-agent
 
 **COORDINATION PRINCIPLES:**
 - Logical sequencing: foundational work before dependent work

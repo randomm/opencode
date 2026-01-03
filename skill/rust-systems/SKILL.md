@@ -84,6 +84,20 @@ Genuinely complex? → Research → MAYBE add crate
 - "Safe before unsafe"
 - "Sync before async"
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- cargo test: X/X passing (0 failures)
+- cargo clippy: 0 warnings
+- cargo fmt: all formatted
+- cargo doc: builds successfully
+```
+
+❌ NEVER: "tests should pass" or "clippy looks clean"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Tests → `tests/`, no throwaway files in project root

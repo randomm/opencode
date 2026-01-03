@@ -136,6 +136,19 @@ setup() {
 - "POSIX unless bash helps"
 - "Test with BATS"
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- bats: X/X passing (0 failures)
+- shellcheck: 0 warnings
+- bash 3.2 compatible: ✓
+```
+
+❌ NEVER: "tests should pass" or "shellcheck looks clean"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Scripts → `scripts/` or `bin/`, no throwaway files in project root

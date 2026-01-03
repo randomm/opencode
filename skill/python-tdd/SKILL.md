@@ -114,6 +114,21 @@ For detailed patterns, see:
 - references/pytest-patterns.md
 - references/linting-config.md
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- pytest: X/X passing (0 failures)
+- coverage: X% (≥80% ✓)
+- mypy --strict: 0 errors
+- ruff check: 0 violations
+- ruff format: all formatted
+```
+
+❌ NEVER: "tests should pass" or "linting looks good"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Tests → `tests/`, no throwaway files in project root

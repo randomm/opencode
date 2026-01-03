@@ -113,6 +113,21 @@ rails db:migrate            # Run migrations
 rails console               # Interactive console
 ```
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- rspec: X/X passing (0 failures)
+- coverage: X% (≥85% ✓)
+- rubocop: 0 offenses
+- brakeman: 0 warnings
+- bundle-audit: 0 vulnerabilities
+```
+
+❌ NEVER: "tests should pass" or "rubocop looks clean"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Tests → `spec/`, no throwaway files in project root

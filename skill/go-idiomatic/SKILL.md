@@ -94,6 +94,21 @@ Genuinely complex? → Research → MAYBE add package
 - "A little copying is better than a little dependency"
 - "Gofmt is law"
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- go test: X/X passing (0 failures)
+- coverage: X% (≥80% ✓)
+- go vet: 0 issues
+- gofmt: all formatted
+- golangci-lint: 0 issues (if used)
+```
+
+❌ NEVER: "tests should pass" or "vet looks clean"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Tests → `tests/`, no throwaway files in project root

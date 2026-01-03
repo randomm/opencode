@@ -115,6 +115,22 @@ describe('UserCard', () => {
 - "Expo SDK before bare React Native"
 - "FlatList for lists, always"
 
+## Completion Report Format
+
+When reporting to PM, include EXACT output:
+```
+QUALITY GATES PASSED:
+- jest: X/X passing (0 failures)
+- eslint: 0 errors, 0 warnings
+- tsc --noEmit: 0 errors
+- expo doctor: no issues
+- runs on iOS simulator: ✓
+- runs on Android emulator: ✓
+```
+
+❌ NEVER: "tests should pass" or "eslint looks clean"
+✅ ALWAYS: exact counts from terminal output
+
 ## File Hygiene
 
 - Docs → `docs/`, Tests → `__tests__/`, no throwaway files in project root
