@@ -802,14 +802,14 @@ For each changed file:
 
 ### Step 4: Specialized Reviews
 
-Consult domain specialists:
-- `@rust-tdd-architect` - Rust memory safety, performance
-- `@python-best-practices-architect` - Python patterns
-- `@rails-architect` - Rails security, patterns
-- `@react-web-specialist` - JS/TS type safety, React components, performance
-- `@postgres-specialist` - Query optimization, safety
-- `@api-design-architect` - REST/GraphQL patterns
-- `@devops-infrastructure` - Deployment, infrastructure
+Request @developer with appropriate skill for domain-specific review:
+- `@developer (rust-systems skill)` - Rust memory safety, performance
+- `@developer (python-tdd skill)` - Python patterns
+- `@developer (rails-conventions skill)` - Rails security, patterns
+- `@developer (react-web skill)` - JS/TS type safety, React components, performance
+- `@developer (postgres-database skill)` - Query optimization, safety
+- `@developer (api-design skill)` - REST/GraphQL patterns
+- `@developer (devops-infrastructure skill)` - Deployment, infrastructure
 
 ### Step 5: Review Output & Decision
 
@@ -1155,17 +1155,17 @@ Before EVERY action, ask these 5 questions:
 
 ### Specialist Consultation Patterns
 
-**Coordinate reviews with specialized agents:**
+**Coordinate reviews via @developer with appropriate skill:**
 
-When issues require domain expertise, engage appropriate specialists:
-- **Rust concerns**: "Consulting @rust-tdd-architect for memory safety analysis..."
-- **Python concerns**: "Consulting @python-best-practices-architect for pattern review..."
-- **Rails concerns**: "Consulting @rails-architect for Rails-specific security..."
-- **JavaScript/TypeScript**: "Consulting @react-web-specialist for type safety..."
-- **React concerns**: "Consulting @react-web-specialist for component performance..."
-- **Database concerns**: "Consulting @postgres-specialist for query optimization..."
-- **API design**: "Consulting @api-design-architect for REST/GraphQL patterns..."
-- **Infrastructure**: "Consulting @devops-infrastructure for deployment concerns..."
+When issues require domain expertise, request @developer with skill:
+- **Rust concerns**: "Requesting @developer (rust-systems skill) for memory safety analysis..."
+- **Python concerns**: "Requesting @developer (python-tdd skill) for pattern review..."
+- **Rails concerns**: "Requesting @developer (rails-conventions skill) for Rails-specific security..."
+- **JavaScript/TypeScript**: "Requesting @developer (react-web skill) for type safety..."
+- **React concerns**: "Requesting @developer (react-web skill) for component performance..."
+- **Database concerns**: "Requesting @developer (postgres-database skill) for query optimization..."
+- **API design**: "Requesting @developer (api-design skill) for REST/GraphQL patterns..."
+- **Infrastructure**: "Requesting @developer (devops-infrastructure skill) for deployment concerns..."
 
 ### Research-Driven Review
 
@@ -1250,8 +1250,8 @@ PR #123 review complete.
 - N+1 query performance issue in dashboard (line 73)
 
 **Specialist Delegation Needed**:
-- @rails-architect for security vulnerabilities (SQL injection, auth)
-- @postgres-specialist for N+1 query optimization
+- @developer (rails-conventions skill) for security vulnerabilities (SQL injection, auth)
+- @developer (postgres-database skill) for N+1 query optimization
 
 **Next Steps**:
 1. Fix failing CI/CD checks first (tests + lint)
