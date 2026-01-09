@@ -185,6 +185,21 @@ export namespace Session {
     directory: string
     permission?: PermissionNext.Ruleset
   }) {
+    // Inherit permissions from parent session if parentID is provided
+    let mergedPermissions = input.permission
+    if (input.parentID) {
+      try {
+        const parentSession = await Storage.read<Info>(["session", Instance.project.id, input.parentID])
+        if (parentSession?.permission) {
+          const parentPermissions = parentSession.permission
+          const childPermissions = input.permission ?? []
+          mergedPermissions = PermissionNext.merge(parentPermissions, childPermissions)
+        }
+      } catch (error) {
+        log.warn("Failed to load parent session for permission inheritance", { parentID: input.parentID, error })
+      }
+    }
+
     const result: Info = {
       id: Identifier.descending("session", input.id),
       version: Installation.VERSION,
@@ -192,7 +207,7 @@ export namespace Session {
       directory: input.directory,
       parentID: input.parentID,
       title: input.title ?? createDefaultTitle(!!input.parentID),
-      permission: input.permission,
+      permission: mergedPermissions,
       time: {
         created: Date.now(),
         updated: Date.now(),

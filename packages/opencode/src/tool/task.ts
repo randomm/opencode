@@ -7,40 +7,42 @@ import { MessageV2 } from "../session/message-v2"
 import { Identifier } from "../id/id"
 import { Agent } from "../agent/agent"
 import { SessionPrompt } from "../session/prompt"
-import { iife } from "@/util/iife"
+
 import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
 
-export { DESCRIPTION as TASK_DESCRIPTION }
+const parameters = z.object({
+  description: z.string().describe("A short (3-5 words) description of the task"),
+  prompt: z.string().describe("The task for the agent to perform"),
+  subagent_type: z.string().describe("The type of specialized agent to use for this task"),
+  session_id: z.string().describe("Existing Task session to continue").optional(),
+  command: z.string().describe("The command that triggered this task").optional(),
+})
 
-export function filterSubagents(agents: Agent.Info[], ruleset: PermissionNext.Ruleset) {
-  return agents.filter((a) => PermissionNext.evaluate("task", a.name, ruleset).action !== "deny")
-}
-
-export const TaskTool = Tool.define("task", async () => {
+export const TaskTool = Tool.define("task", async (ctx) => {
   const agents = await Agent.list().then((x) => x.filter((a) => a.mode !== "primary"))
+
+  // Filter agents by permissions if agent provided
+  const caller = ctx?.agent
+  const accessibleAgents = caller
+    ? agents.filter((a) => PermissionNext.evaluate("task", a.name, caller.permission).action !== "deny")
+    : agents
+
   const description = DESCRIPTION.replace(
     "{agents}",
-    agents
+    accessibleAgents
       .map((a) => `- ${a.name}: ${a.description ?? "This subagent should only be called manually by the user."}`)
       .join("\n"),
   )
   return {
     description,
-    parameters: z.object({
-      description: z.string().describe("A short (3-5 words) description of the task"),
-      prompt: z.string().describe("The task for the agent to perform"),
-      subagent_type: z.string().describe("The type of specialized agent to use for this task"),
-      session_id: z.string().describe("Existing Task session to continue").optional(),
-      command: z.string().describe("The command that triggered this task").optional(),
-    }),
-    async execute(params, ctx) {
+    parameters,
+    async execute(params: z.infer<typeof parameters>, ctx) {
       const config = await Config.get()
 
-      const userInvokedAgents = (ctx.extra?.userInvokedAgents ?? []) as string[]
-      // Skip permission check when invoked from a command subtask (user already approved by invoking the command)
-      if (!ctx.extra?.bypassAgentCheck && !userInvokedAgents.includes(params.subagent_type)) {
+      // Skip permission check when user explicitly invoked via @ or command subtask
+      if (!ctx.extra?.bypassAgentCheck) {
         await ctx.ask({
           permission: "task",
           patterns: [params.subagent_type],
@@ -52,41 +54,50 @@ export const TaskTool = Tool.define("task", async () => {
         })
       }
 
+      // Find the agent by subagent_type
       const agent = await Agent.get(params.subagent_type)
-      if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
-      const session = await iife(async () => {
-        if (params.session_id) {
-          const found = await Session.get(params.session_id).catch(() => {})
-          if (found) return found
-        }
 
-        return await Session.create({
-          parentID: ctx.sessionID,
-          title: params.description + ` (@${agent.name} subagent)`,
-          permission: [
-            {
-              permission: "todowrite",
-              pattern: "*",
-              action: "deny",
-            },
-            {
-              permission: "todoread",
-              pattern: "*",
-              action: "deny",
-            },
-            {
-              permission: "task",
-              pattern: "*",
-              action: "deny",
-            },
-            ...(config.experimental?.primary_tools?.map((t) => ({
-              pattern: "*",
-              action: "allow" as const,
-              permission: t,
-            })) ?? []),
-          ],
-        })
+      // Create session for the subagent task with proper security restrictions
+      // IMPORTANT: Task restrictions must come AFTER agent permissions to override "*": "allow"
+      const taskPermissions = PermissionNext.merge(
+        agent.permission ?? [],
+        [
+          {
+            permission: "task",
+            pattern: "*",
+            action: "deny",
+          },
+          {
+            permission: "todowrite",
+            pattern: "*",
+            action: "deny",
+          },
+          {
+            permission: "todoread",
+            pattern: "*",
+            action: "deny",
+          },
+        ],
+        // Git-agent restrictions must be LAST to override agent defaults
+        [
+          {
+            permission: "git",
+            pattern: "*",
+            action: "deny",
+          },
+          ...(config.experimental?.primary_tools?.map((t) => ({
+            pattern: "*",
+            action: "allow" as const,
+            permission: t,
+          })) ?? []),
+        ],
+      )
+
+      const session = await Session.create({
+        parentID: ctx.sessionID,
+        permission: taskPermissions,
       })
+
       const msg = await MessageV2.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
       if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
 
@@ -141,12 +152,6 @@ export const TaskTool = Tool.define("task", async () => {
           providerID: model.providerID,
         },
         agent: agent.name,
-        tools: {
-          todowrite: false,
-          todoread: false,
-          task: false,
-          ...Object.fromEntries((config.experimental?.primary_tools ?? []).map((t) => [t, false])),
-        },
         parts: promptParts,
       })
       unsub()
@@ -177,3 +182,10 @@ export const TaskTool = Tool.define("task", async () => {
     },
   }
 })
+
+export function filterSubagents(agents: Agent.Info[], ruleset: PermissionNext.Ruleset): Agent.Info[] {
+  return agents.filter((agent) => {
+    const permission = PermissionNext.evaluate("task", agent.name, ruleset)
+    return permission.action !== "deny"
+  })
+}
