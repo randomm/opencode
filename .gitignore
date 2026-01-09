@@ -24,3 +24,7 @@ target
 # Local dev files
 opencode-dev
 logs/
+
+# Build artifacts
+packages/opencode/opencode-*-arm64
+packages/opencode/opencode-*-x64
