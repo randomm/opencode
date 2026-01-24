@@ -15,6 +15,7 @@ import { Config } from "@/config/config"
 import { SessionCompaction } from "./compaction"
 import { PermissionNext } from "@/permission/next"
 import { Question } from "@/question"
+import { BackgroundTasks } from "@/util/tasks"
 
 export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
@@ -267,10 +268,12 @@ export namespace SessionProcessor {
                     }
                     snapshot = undefined
                   }
-                  SessionSummary.summarize({
-                    sessionID: input.sessionID,
-                    messageID: input.assistantMessage.parentID,
-                  })
+                  BackgroundTasks.spawn(
+                    SessionSummary.summarize({
+                      sessionID: input.sessionID,
+                      messageID: input.assistantMessage.parentID,
+                    }),
+                  )
                   if (await SessionCompaction.isOverflow({ tokens: usage.tokens, model: input.model })) {
                     needsCompaction = true
                   }
@@ -361,39 +364,62 @@ export namespace SessionProcessor {
               error: input.assistantMessage.error,
             })
           }
-          if (snapshot) {
-            const patch = await Snapshot.patch(snapshot)
-            if (patch.files.length) {
-              await Session.updatePart({
-                id: Identifier.ascending("part"),
-                messageID: input.assistantMessage.id,
-                sessionID: input.sessionID,
-                type: "patch",
-                hash: patch.hash,
-                files: patch.files,
+
+          // Cleanup: Check abort signal before proceeding with cleanup operations
+          // and wrap in catch to prevent unhandled promise rejections
+          const aborted = input.abort.aborted
+          if (snapshot && !aborted) {
+            await Snapshot.patch(snapshot)
+              .then(async (patch) => {
+                if (patch.files.length) {
+                  await Session.updatePart({
+                    id: Identifier.ascending("part"),
+                    messageID: input.assistantMessage.id,
+                    sessionID: input.sessionID,
+                    type: "patch",
+                    hash: patch.hash,
+                    files: patch.files,
+                  })
+                }
               })
-            }
+              .catch((err) => {
+                log.error("cleanup patch failed", { error: err })
+              })
             snapshot = undefined
           }
-          const p = await MessageV2.parts(input.assistantMessage.id)
-          for (const part of p) {
-            if (part.type === "tool" && part.state.status !== "completed" && part.state.status !== "error") {
-              await Session.updatePart({
-                ...part,
-                state: {
-                  ...part.state,
-                  status: "error",
-                  error: "Tool execution aborted",
-                  time: {
-                    start: Date.now(),
-                    end: Date.now(),
-                  },
-                },
+
+          // Transition pending/running tools to error state
+          if (!aborted) {
+            await MessageV2.parts(input.assistantMessage.id)
+              .then(async (parts) => {
+                for (const part of parts) {
+                  if (part.type === "tool" && part.state.status !== "completed" && part.state.status !== "error") {
+                    await Session.updatePart({
+                      ...part,
+                      state: {
+                        ...part.state,
+                        status: "error",
+                        error: "Tool execution aborted",
+                        time: {
+                          start: Date.now(),
+                          end: Date.now(),
+                        },
+                      },
+                    }).catch((err) => {
+                      log.error("cleanup tool part failed", { error: err })
+                    })
+                  }
+                }
               })
-            }
+              .catch((err) => {
+                log.error("cleanup parts fetch failed", { error: err })
+              })
           }
+
           input.assistantMessage.time.completed = Date.now()
-          await Session.updateMessage(input.assistantMessage)
+          await Session.updateMessage(input.assistantMessage).catch((err) => {
+            log.error("cleanup message update failed", { error: err })
+          })
           if (needsCompaction) return "compact"
           if (blocked) return "stop"
           if (input.assistantMessage.error) return "stop"

@@ -9,11 +9,9 @@ import { SessionRevert } from "./revert"
 import { Session } from "."
 import { Agent } from "../agent/agent"
 import { Provider } from "../provider/provider"
-import { type Tool as AITool, tool, jsonSchema, type ToolCallOptions } from "ai"
 import { SessionCompaction } from "./compaction"
 import { Instance } from "../project/instance"
 import { Bus } from "../bus"
-import { ProviderTransform } from "../provider/transform"
 import { SystemPrompt } from "./system"
 import { Plugin } from "../plugin"
 import PROMPT_PLAN from "../session/prompt/plan.txt"
@@ -21,7 +19,6 @@ import BUILD_SWITCH from "../session/prompt/build-switch.txt"
 import MAX_STEPS from "../session/prompt/max-steps.txt"
 import { defer } from "../util/defer"
 import { clone } from "remeda"
-import { ToolRegistry } from "../tool/registry"
 import { MCP } from "../mcp"
 import { LSP } from "../lsp"
 import { ReadTool } from "../tool/read"
@@ -44,7 +41,8 @@ import { SessionStatus } from "./status"
 import { LLM } from "./llm"
 import { iife } from "@/util/iife"
 import { Shell } from "@/shell/shell"
-import { Truncate } from "@/tool/truncation"
+import { resolveTools } from "./tools"
+import { BackgroundTasks } from "@/util/tasks"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -303,12 +301,14 @@ export namespace SessionPrompt {
 
       step++
       if (step === 1)
-        ensureTitle({
-          session,
-          modelID: lastUser.model.modelID,
-          providerID: lastUser.model.providerID,
-          history: msgs,
-        })
+        BackgroundTasks.spawn(
+          ensureTitle({
+            session,
+            modelID: lastUser.model.modelID,
+            providerID: lastUser.model.providerID,
+            history: msgs,
+          }),
+        )
 
       const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID)
       const task = tasks.pop()
@@ -405,8 +405,12 @@ export namespace SessionPrompt {
           },
         }
         const result = await taskTool.execute(taskArgs, taskCtx).catch((error) => {
-          executionError = error
-          log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
+          executionError = error instanceof Error ? error : new Error(String(error))
+          log.error("subtask execution failed", {
+            error: executionError,
+            agent: task.agent,
+            description: task.description,
+          })
           return undefined
         })
         await Plugin.trigger(
@@ -439,11 +443,12 @@ export namespace SessionPrompt {
           } satisfies MessageV2.ToolPart)
         }
         if (!result) {
+          const errorMessage = executionError ? `${executionError.message}` : "Tool execution failed"
           await Session.updatePart({
             ...part,
             state: {
               status: "error",
-              error: executionError ? `Tool execution failed: ${executionError.message}` : "Tool execution failed",
+              error: errorMessage,
               time: {
                 start: part.state.status === "running" ? part.state.time.start : Date.now(),
                 end: Date.now(),
@@ -452,6 +457,16 @@ export namespace SessionPrompt {
               input: part.state.input,
             },
           } satisfies MessageV2.ToolPart)
+          if (executionError) {
+            Bus.publish(Session.Event.Error, {
+              sessionID,
+              error: {
+                message: errorMessage,
+                stack: executionError.stack,
+                data: {},
+              },
+            })
+          }
         }
 
         if (task.command) {
@@ -564,10 +579,12 @@ export namespace SessionPrompt {
       })
 
       if (step === 1) {
-        SessionSummary.summarize({
-          sessionID: sessionID,
-          messageID: lastUser.id,
-        })
+        BackgroundTasks.spawn(
+          SessionSummary.summarize({
+            sessionID: sessionID,
+            messageID: lastUser.id,
+          }),
+        )
       }
 
       const sessionMessages = clone(msgs)
@@ -624,7 +641,7 @@ export namespace SessionPrompt {
       }
       continue
     }
-    SessionCompaction.prune({ sessionID })
+    BackgroundTasks.spawn(SessionCompaction.prune({ sessionID }))
     for await (const item of MessageV2.stream(sessionID)) {
       if (item.info.role === "user") continue
       const queued = state()[sessionID]?.callbacks ?? []
@@ -641,182 +658,6 @@ export namespace SessionPrompt {
       if (item.info.role === "user" && item.info.model) return item.info.model
     }
     return Provider.defaultModel()
-  }
-
-  async function resolveTools(input: {
-    agent: Agent.Info
-    model: Provider.Model
-    session: Session.Info
-    tools?: Record<string, boolean>
-    processor: SessionProcessor.Info
-    bypassAgentCheck: boolean
-  }) {
-    using _ = log.time("resolveTools")
-    const tools: Record<string, AITool> = {}
-
-    const context = (args: any, options: ToolCallOptions): Tool.Context => ({
-      sessionID: input.session.id,
-      abort: options.abortSignal!,
-      messageID: input.processor.message.id,
-      callID: options.toolCallId,
-      extra: { model: input.model, bypassAgentCheck: input.bypassAgentCheck },
-      agent: input.agent.name,
-      metadata: async (val: { title?: string; metadata?: any }) => {
-        const match = input.processor.partFromToolCall(options.toolCallId)
-        if (match && match.state.status === "running") {
-          await Session.updatePart({
-            ...match,
-            state: {
-              title: val.title,
-              metadata: val.metadata,
-              status: "running",
-              input: args,
-              time: {
-                start: Date.now(),
-              },
-            },
-          })
-        }
-      },
-      async ask(req) {
-        await PermissionNext.ask({
-          ...req,
-          sessionID: input.session.id,
-          tool: { messageID: input.processor.message.id, callID: options.toolCallId },
-          ruleset: PermissionNext.merge(input.agent.permission, input.session.permission ?? []),
-        })
-      },
-    })
-
-    for (const item of await ToolRegistry.tools(
-      { modelID: input.model.api.id, providerID: input.model.providerID },
-      input.agent,
-    )) {
-      const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))
-      tools[item.id] = tool({
-        id: item.id as any,
-        description: item.description,
-        inputSchema: jsonSchema(schema as any),
-        async execute(args, options) {
-          const ctx = context(args, options)
-          await Plugin.trigger(
-            "tool.execute.before",
-            {
-              tool: item.id,
-              sessionID: ctx.sessionID,
-              callID: ctx.callID,
-            },
-            {
-              args,
-            },
-          )
-          const result = await item.execute(args, ctx)
-          await Plugin.trigger(
-            "tool.execute.after",
-            {
-              tool: item.id,
-              sessionID: ctx.sessionID,
-              callID: ctx.callID,
-            },
-            result,
-          )
-          return result
-        },
-      })
-    }
-
-    for (const [key, item] of Object.entries(await MCP.tools())) {
-      const execute = item.execute
-      if (!execute) continue
-
-      // Wrap execute to add plugin hooks and format output
-      item.execute = async (args, opts) => {
-        const ctx = context(args, opts)
-
-        await Plugin.trigger(
-          "tool.execute.before",
-          {
-            tool: key,
-            sessionID: ctx.sessionID,
-            callID: opts.toolCallId,
-          },
-          {
-            args,
-          },
-        )
-
-        await ctx.ask({
-          permission: key,
-          metadata: {},
-          patterns: ["*"],
-          always: ["*"],
-        })
-
-        const result = await execute(args, opts)
-
-        await Plugin.trigger(
-          "tool.execute.after",
-          {
-            tool: key,
-            sessionID: ctx.sessionID,
-            callID: opts.toolCallId,
-          },
-          result,
-        )
-
-        const textParts: string[] = []
-        const attachments: MessageV2.FilePart[] = []
-
-        for (const contentItem of result.content) {
-          if (contentItem.type === "text") {
-            textParts.push(contentItem.text)
-          } else if (contentItem.type === "image") {
-            attachments.push({
-              id: Identifier.ascending("part"),
-              sessionID: input.session.id,
-              messageID: input.processor.message.id,
-              type: "file",
-              mime: contentItem.mimeType,
-              url: `data:${contentItem.mimeType};base64,${contentItem.data}`,
-            })
-          } else if (contentItem.type === "resource") {
-            const { resource } = contentItem
-            if (resource.text) {
-              textParts.push(resource.text)
-            }
-            if (resource.blob) {
-              attachments.push({
-                id: Identifier.ascending("part"),
-                sessionID: input.session.id,
-                messageID: input.processor.message.id,
-                type: "file",
-                mime: resource.mimeType ?? "application/octet-stream",
-                url: `data:${resource.mimeType ?? "application/octet-stream"};base64,${resource.blob}`,
-                filename: resource.uri,
-              })
-            }
-          }
-        }
-
-        const truncated = await Truncate.output(textParts.join("\n\n"), {}, input.agent)
-        const metadata = {
-          ...(result.metadata ?? {}),
-          truncated: truncated.truncated,
-          ...(truncated.truncated && { outputPath: truncated.outputPath }),
-        }
-
-        return {
-          title: "",
-          metadata,
-          output: truncated.content,
-          attachments,
-          content: result.content, // directly return content to preserve ordering when outputting to model
-        }
-      }
-      tools[key] = item
-    }
-
-    return tools
   }
 
   async function createUserMessage(input: PromptInput) {
@@ -1030,14 +871,14 @@ export namespace SessionPrompt {
                           sessionID: input.sessionID,
                         })),
                       )
-                    } else {
-                      pieces.push({
-                        ...part,
-                        id: part.id ?? Identifier.ascending("part"),
-                        messageID: info.id,
-                        sessionID: input.sessionID,
-                      })
+                      return
                     }
+                    pieces.push({
+                      ...part,
+                      id: part.id ?? Identifier.ascending("part"),
+                      messageID: info.id,
+                      sessionID: input.sessionID,
+                    })
                   })
                   .catch((error) => {
                     log.error("failed to read file", { error })
@@ -1637,8 +1478,8 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           }
         }),
       )
-      let index = 0
-      template = template.replace(bashRegex, () => results[index++])
+      const remaining = [...results]
+      template = template.replace(bashRegex, () => remaining.shift() ?? "")
     }
     template = template.trim()
 
@@ -1794,22 +1635,25 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           : MessageV2.toModelMessages(contextMessages, model)),
       ],
     })
-    const text = await result.text.catch((err) => log.error("failed to generate title", { error: err }))
-    if (text)
-      return Session.update(
-        input.session.id,
-        (draft) => {
-          const cleaned = text
-            .replace(/<think>[\s\S]*?<\/think>\s*/g, "")
-            .split("\n")
-            .map((line) => line.trim())
-            .find((line) => line.length > 0)
-          if (!cleaned) return
+    const text = await result.text.catch((err) => {
+      log.error("failed to generate title", { error: err })
+      return undefined
+    })
+    if (!text) return
+    return Session.update(
+      input.session.id,
+      (draft) => {
+        const cleaned = text
+          .replace(/<think>[\s\S]*?<\/think>\s*/g, "")
+          .split("\n")
+          .map((line) => line.trim())
+          .find((line) => line.length > 0)
+        if (!cleaned) return
 
-          const title = cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned
-          draft.title = title
-        },
-        { touch: false },
-      )
+        const title = cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned
+        draft.title = title
+      },
+      { touch: false },
+    )
   }
 }

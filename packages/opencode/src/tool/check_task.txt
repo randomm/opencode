@@ -1,0 +1,5 @@
+- Query the status of a background task by its ID
+- Status returns: "running", "completed", "failed", or "not_found"
+- For completed tasks, includes the result from the agent's final text output
+- For failed tasks, includes error information
+- Use this tool to poll the status of tasks created by the task tool

@@ -23,11 +23,87 @@ import type { Provider } from "@/provider/provider"
 import { PermissionNext } from "@/permission/next"
 import { Global } from "@/global"
 
+interface BackgroundTaskResult {
+  id: string
+  status: "completed" | "failed"
+  error?: string
+  time: {
+    started: number
+    completed: number
+  }
+}
+
+const pendingBackgroundTasks = new Map<string, Promise<void>>()
+const backgroundTaskResults = new Map<string, BackgroundTaskResult>()
+
 export namespace Session {
   const log = Log.create({ service: "session" })
 
   const parentTitlePrefix = "New session - "
   const childTitlePrefix = "Child session - "
+
+  export const BackgroundTaskEvent = {
+    Failed: BusEvent.define(
+      "session.background_task.failed",
+      z.object({
+        taskID: z.string(),
+        sessionID: z.string().optional(),
+        error: z.string(),
+      }),
+    ),
+    Completed: BusEvent.define(
+      "session.background_task.completed",
+      z.object({
+        taskID: z.string(),
+        sessionID: z.string().optional(),
+      }),
+    ),
+  }
+
+  async function trackBackgroundTask(id: string, task: Promise<void>, sessionID?: string): Promise<void> {
+    const started = Date.now()
+    pendingBackgroundTasks.set(id, task)
+    try {
+      await task
+      const result: BackgroundTaskResult = {
+        id,
+        status: "completed",
+        time: { started, completed: Date.now() },
+      }
+      backgroundTaskResults.set(id, result)
+      Bus.publish(BackgroundTaskEvent.Completed, { taskID: id, sessionID })
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e)
+      log.error("background task failed", { id, error: e })
+      const result: BackgroundTaskResult = {
+        id,
+        status: "failed",
+        error,
+        time: { started, completed: Date.now() },
+      }
+      backgroundTaskResults.set(id, result)
+      Bus.publish(BackgroundTaskEvent.Failed, { taskID: id, sessionID, error })
+    } finally {
+      pendingBackgroundTasks.delete(id)
+    }
+  }
+
+  export function getBackgroundTaskResult(id: string): BackgroundTaskResult | undefined {
+    return backgroundTaskResults.get(id)
+  }
+
+  export function listBackgroundTasks() {
+    return {
+      pending: Array.from(pendingBackgroundTasks.keys()),
+      results: Object.fromEntries(backgroundTaskResults),
+    }
+  }
+
+  async function waitForBackgroundTasks(): Promise<void> {
+    const tasks = Array.from(pendingBackgroundTasks.values())
+    if (tasks.length === 0) return
+    await Promise.all(tasks)
+  }
 
   function createDefaultTitle(isChild = false) {
     return (isChild ? childTitlePrefix : parentTitlePrefix) + new Date().toISOString()
@@ -216,16 +292,17 @@ export namespace Session {
       info: result,
     })
     const cfg = await Config.get()
-    if (!result.parentID && (Flag.OPENCODE_AUTO_SHARE || cfg.share === "auto"))
-      share(result.id)
-        .then((share) => {
+    if (!result.parentID && (Flag.OPENCODE_AUTO_SHARE || cfg.share === "auto")) {
+      trackBackgroundTask(
+        `share-${result.id}`,
+        share(result.id).then((shareValue) => {
           update(result.id, (draft) => {
-            draft.share = share
+            draft.share = shareValue
           })
-        })
-        .catch(() => {
-          // Silently ignore sharing errors during session creation
-        })
+        }),
+        result.id,
+      )
+    }
     Bus.publish(Event.Updated, {
       info: result,
     })
