@@ -6,7 +6,7 @@ import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
 
-type TaskStatus = "running" | "completed" | "failed" | "not_found"
+type TaskStatus = "running" | "completed" | "failed" | "not_found" | "cancelled"
 
 interface TaskResult {
   task_id: string
