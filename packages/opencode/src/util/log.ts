@@ -3,6 +3,11 @@ import fs from "fs/promises"
 import { Global } from "../global"
 import z from "zod"
 
+// Strip null bytes from paths (defensive fix for CI environment issues)
+function sanitizePath(p: string): string {
+  return p.replace(/\0/g, "")
+}
+
 export namespace Log {
   export const Level = z.enum(["DEBUG", "INFO", "WARN", "ERROR"]).meta({ ref: "LogLevel", description: "Log level" })
   export type Level = z.infer<typeof Level>
@@ -57,11 +62,13 @@ export namespace Log {
 
   export async function init(options: Options) {
     if (options.level) level = options.level
-    cleanup(Global.Path.log)
+    cleanup(sanitizePath(Global.Path.log))
     if (options.print) return
-    logpath = path.join(
-      Global.Path.log,
-      options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
+    logpath = sanitizePath(
+      path.join(
+        sanitizePath(Global.Path.log),
+        options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
+      ),
     )
     const logfile = Bun.file(logpath)
     await fs.truncate(logpath).catch(() => {})
