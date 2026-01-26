@@ -48,8 +48,11 @@ import { BackgroundTasks } from "@/util/tasks"
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
 
+// Maximum length for sanitized strings (prevents oversized content in prompts)
+const MAX_SANITIZE_LENGTH = 200
+
 function sanitize(s: string): string {
-  return s.replace(/[<>\[\]{}]/g, "").slice(0, 200)
+  return s.replace(/[<>\[\]{}]/g, "").slice(0, MAX_SANITIZE_LENGTH)
 }
 
 export namespace SessionPrompt {

@@ -19,8 +19,10 @@ export namespace BackgroundTasks {
    */
   export function spawn<T>(task: Promise<T>): void {
     const wrapped = task
-      .catch((err) => {
-        log.error("background task failed", { error: err })
+      .catch((err: any) => {
+        if (err?.name !== "AbortError" && !(err instanceof DOMException && err.name === "AbortError")) {
+          log.error("background task failed", { error: err })
+        }
       })
       .finally(() => {
         pending.delete(wrapped)

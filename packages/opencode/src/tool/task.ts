@@ -29,7 +29,6 @@ interface LockState {
 }
 
 const sessionLocks = new Map<string, LockState>()
-const releaseCallbacks = new Map<string, Array<() => void>>()
 
 async function acquireLock(sessionID: string): Promise<() => void> {
   let lock = sessionLocks.get(sessionID)
@@ -65,42 +64,24 @@ function releaseLock(sessionID: string): void {
   }
 }
 
-export async function tryIncrementSessionCount(sessionID: string): Promise<boolean> {
+export async function tryIncrementSessionCount(
+  sessionID: string,
+): Promise<{ allowed: boolean; releaseSlot?: () => void }> {
   const release = await acquireLock(sessionID)
 
   try {
     const current = getSessionTaskCount(sessionID)
-    if (current >= MAX_CONCURRENT_TASKS_PER_SESSION) return false
+    if (current >= MAX_CONCURRENT_TASKS_PER_SESSION) return { allowed: false }
 
     const releaseSlot = reserveTaskSlot(sessionID)
 
     const afterReserve = getSessionTaskCount(sessionID)
     if (afterReserve > MAX_CONCURRENT_TASKS_PER_SESSION) {
       releaseSlot()
-      return false
+      return { allowed: false }
     }
 
-    const callbacks = releaseCallbacks.get(sessionID) ?? []
-    callbacks.push(releaseSlot)
-    releaseCallbacks.set(sessionID, callbacks)
-
-    return true
-  } finally {
-    release()
-  }
-}
-
-export async function decrementSessionCount(sessionID: string): Promise<void> {
-  const release = await acquireLock(sessionID)
-
-  try {
-    const callbacks = releaseCallbacks.get(sessionID)
-    if (!callbacks || callbacks.length === 0) return
-
-    const releaseSlot = callbacks.shift()
-    if (releaseSlot) releaseSlot()
-
-    if (callbacks.length === 0) releaseCallbacks.delete(sessionID)
+    return { allowed: true, releaseSlot }
   } finally {
     release()
   }
@@ -108,13 +89,6 @@ export async function decrementSessionCount(sessionID: string): Promise<void> {
 
 export async function cleanupSessionTaskMaps(sessionID: string): Promise<void> {
   const lock = sessionLocks.get(sessionID)
-  const callbacks = releaseCallbacks.get(sessionID)
-
-  if (callbacks) {
-    for (const callback of callbacks) callback()
-  }
-
-  releaseCallbacks.delete(sessionID)
 
   if (lock) {
     for (const waiter of lock.queue) {
@@ -152,8 +126,8 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
     async execute(params: z.infer<typeof parameters>, ctx) {
       const config = await Config.get()
 
-      const allowed = await tryIncrementSessionCount(ctx.sessionID)
-      if (!allowed) {
+      const result = await tryIncrementSessionCount(ctx.sessionID)
+      if (!result.allowed) {
         return {
           title: params.description,
           output: JSON.stringify({
@@ -184,6 +158,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
 
       const taskId = Identifier.ascending("task")
       const startTime = Date.now()
+      let slotReleased = false
 
       const session = await iife(async () => {
         if (params.session_id) {
@@ -221,6 +196,12 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
             })) ?? []),
           ],
         })
+      }).catch((error) => {
+        if (!slotReleased && result.releaseSlot) {
+          result.releaseSlot()
+          slotReleased = true
+        }
+        throw error
       })
 
       const msg = await MessageV2.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
@@ -270,7 +251,10 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
 
       if (ctx.abort.aborted) {
         unsub()
-        await decrementSessionCount(ctx.sessionID)
+        if (!slotReleased && result.releaseSlot) {
+          result.releaseSlot()
+          slotReleased = true
+        }
         return {
           title: params.description,
           output: JSON.stringify({
@@ -294,6 +278,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         description: params.description,
         session_id: ctx.sessionID,
         start_time: startTime,
+        release_slot: result.releaseSlot,
       }
 
       Session.enableAutoWakeup(ctx.sessionID)
@@ -323,7 +308,6 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
               return textPart && "text" in textPart ? textPart.text : undefined
             } finally {
               unsub()
-              await decrementSessionCount(ctx.sessionID)
             }
           })(),
           session.id,

@@ -320,8 +320,15 @@ export namespace Agent {
         }),
         onError: () => {},
       })
-      for await (const part of result.fullStream) {
-        if (part.type === "error") throw part.error
+      try {
+        for await (const part of result.fullStream) {
+          if (part.type === "error") throw part.error
+        }
+      } catch (e: any) {
+        if (e?.name === "AbortError" || (e instanceof DOMException && e.name === "AbortError")) {
+          throw e
+        }
+        throw e
       }
       return result.object
     }

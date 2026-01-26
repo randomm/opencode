@@ -69,12 +69,15 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
     input.agent,
   )) {
     const schema = ProviderTransform.schema(input.model, z.toJSONSchema(item.parameters))
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK tool() requires flexible types
+
+    // Type assertion required for AI SDK compatibility
+    // The AI SDK has stricter type requirements than our Zod schemas support
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     tools[item.id] = tool({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK id type is overly restrictive
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       id: item.id as any,
       description: item.description,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AI SDK jsonSchema type mismatch
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       inputSchema: jsonSchema(schema as any),
       async execute(args, options) {
         const ctx = context(args as Record<string, unknown>, options)
@@ -89,24 +92,34 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
             args,
           },
         )
-        const result = await item.execute(args, ctx)
-        await Plugin.trigger(
-          "tool.execute.after",
-          {
-            tool: item.id,
-            sessionID: ctx.sessionID,
-            callID: ctx.callID,
-          },
-          result,
-        )
-        return result
+        try {
+          const result = await item.execute(args, ctx)
+          await Plugin.trigger(
+            "tool.execute.after",
+            {
+              tool: item.id,
+              sessionID: ctx.sessionID,
+              callID: ctx.callID,
+            },
+            result,
+          )
+          return result
+        } catch (e: any) {
+          if (e?.name === "AbortError" || (e instanceof DOMException && e.name === "AbortError")) {
+            throw e
+          }
+          throw e
+        }
       },
     })
   }
 
   for (const [key, item] of Object.entries(await MCP.tools())) {
     const execute = item.execute
-    if (!execute) continue
+    if (!execute) {
+      log.warn("MCP tool skipped: no execute function", { tool: key })
+      continue
+    }
 
     // Wrap execute to add plugin hooks and format output
     item.execute = async (args, opts) => {
@@ -131,7 +144,7 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
         always: ["*"],
       })
 
-      const result = await execute(args, opts)
+      let result = await execute(args, opts)
 
       await Plugin.trigger(
         "tool.execute.after",

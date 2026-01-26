@@ -32,6 +32,7 @@ export interface TaskMetadata {
   description: string
   session_id: string
   start_time: number
+  release_slot?: () => void
 }
 
 export interface BackgroundTaskResult {
@@ -78,7 +79,7 @@ function sanitizeError(error: string): string {
 
   const MAX_ERROR_LENGTH = 2000
   if (sanitized.length > MAX_ERROR_LENGTH) {
-    const prefix = sanitized.slice(0, Math.max(0, MAX_ERROR_LENGTH - 50))
+    const prefix = sanitized.slice(0, Math.max(0, MAX_ERROR_LENGTH - ERROR_TRUNCATION_SUFFIX_LENGTH))
     const suffix = "...truncated"
     sanitized = prefix + suffix
   }
@@ -100,20 +101,26 @@ const deliveredTaskResults = new Set<string>()
 const DEFAULT_TASK_TIMEOUT = 5 * 60 * 1000
 const closingSessions = new Set<string>()
 
+// Constants for metadata and result truncation
+const MAX_AGENT_DESCRIPTION_LENGTH = 200
+const MAX_TASK_RESULT_LENGTH = 5000
+const SECONDS_TO_MS_MULTIPLIER = 1000
+const ERROR_TRUNCATION_SUFFIX_LENGTH = 50
+
 export function getSessionTaskCount(sessionID: string): number {
-  const reserved = reservedTaskSlots.get(sessionID)?.size ?? 0
-  let tracked = 0
-  for (const metadata of pendingTaskMetadata.values()) {
-    if (metadata.session_id === sessionID) tracked++
-  }
-  return reserved + tracked
+  return reservedTaskSlots.get(sessionID)?.size ?? 0
 }
 
 export function reserveTaskSlot(sessionID: string): () => void {
   const slotId = `reserved_${Date.now()}_${crypto.randomUUID()}`
-  const slots = reservedTaskSlots.get(sessionID) ?? new Set<string>()
+
+  let slots = reservedTaskSlots.get(sessionID)
+  if (!slots) {
+    slots = new Set<string>()
+    reservedTaskSlots.set(sessionID, slots)
+  }
+
   slots.add(slotId)
-  reservedTaskSlots.set(sessionID, slots)
 
   const release = () => {
     const currentSlots = reservedTaskSlots.get(sessionID)
@@ -278,6 +285,14 @@ export namespace Session {
     } finally {
       pendingBackgroundTasks.delete(id)
       pendingTaskMetadata.delete(id)
+
+      if (metadata?.release_slot) {
+        try {
+          metadata.release_slot()
+        } catch (e) {
+          log.warn("failed to release task slot", { error: e instanceof Error ? e.message : String(e) })
+        }
+      }
     }
   }
 
@@ -342,17 +357,21 @@ export namespace Session {
     const lines: string[] = ["[System: Background tasks completed]", ""]
 
     for (const task of tasks) {
-      const agent = (task.metadata?.agent_type ?? "unknown-agent").replace(/[<>\[\]{}]/g, "").slice(0, 200)
-      const description = (task.metadata?.description ?? "No description").replace(/[<>\[\]{}]/g, "").slice(0, 200)
+      const agent = (task.metadata?.agent_type ?? "unknown-agent")
+        .replace(/[<>\[\]{}]/g, "")
+        .slice(0, MAX_AGENT_DESCRIPTION_LENGTH)
+      const description = (task.metadata?.description ?? "No description")
+        .replace(/[<>\[\]{}]/g, "")
+        .slice(0, MAX_AGENT_DESCRIPTION_LENGTH)
 
       lines.push(`Task ${task.id} (@${agent})`)
 
       if (task.status === "completed") {
-        const duration = Math.round((task.time.completed - task.time.started) / 1000)
+        const duration = Math.round((task.time.completed - task.time.started) / SECONDS_TO_MS_MULTIPLIER)
         lines.push(`  Status: Completed (${duration}s)`)
 
         if (task.result) {
-          const cleanedResult = task.result.replace(/[<>\[\]{}]/g, "").slice(0, 5000)
+          const cleanedResult = task.result.replace(/[<>\[\]{}]/g, "").slice(0, MAX_TASK_RESULT_LENGTH)
           lines.push(`  Result: ${cleanedResult}`)
         }
       }
@@ -483,6 +502,15 @@ export namespace Session {
 
     const metadata = pendingTaskMetadata.get(id)
     const startTime = metadata?.start_time ?? Date.now()
+
+    // Release slot BEFORE deleting metadata to prevent permanent slot leak
+    if (metadata?.release_slot) {
+      try {
+        metadata.release_slot()
+      } catch (e) {
+        log.warn("failed to release slot during cancellation", { error: e instanceof Error ? e.message : String(e) })
+      }
+    }
 
     cancelledTasks.add(id)
     pendingBackgroundTasks.delete(id)
@@ -840,14 +868,6 @@ export namespace Session {
     const pendingEntries = Array.from(pendingTaskMetadata.entries())
     const cancelNeeded = pendingEntries.some(([_, metadata]) => metadata.session_id === sessionID)
 
-    for (const [id, metadata] of pendingEntries) {
-      if (metadata.session_id === sessionID) {
-        cancelledTasks.add(id)
-        pendingBackgroundTasks.delete(id)
-        pendingTaskMetadata.delete(id)
-      }
-    }
-
     if (cancelNeeded) {
       SessionPrompt.cancel(sessionID)
     }
@@ -859,6 +879,13 @@ export namespace Session {
         deliveredTaskResults.delete(id)
         cancelledTasks.delete(id)
       }
+    }
+  }
+
+  export function cleanupAllTaskSlots(): void {
+    for (const [sessionID] of reservedTaskSlots.entries()) {
+      reservedTaskSlots.delete(sessionID)
+      autoWakeupSubscribers.delete(sessionID)
     }
   }
 
