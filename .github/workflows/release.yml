@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.settings.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - os: macos-latest
+            target: darwin-arm64
+          - os: macos-13
+            target: darwin-x64
+          - os: ubuntu-latest
+            target: linux-x64
+          - os: ubuntu-latest
+            target: linux-arm64
+          - os: windows-latest
+            target: windows-x64
+    runs-on: ${{ matrix.settings.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: ./.github/actions/setup-bun
+
+      - name: Build binaries
+        working-directory: packages/opencode
+        run: bun run build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-${{ matrix.settings.target }}
+          path: packages/opencode/dist/opencode-${{ matrix.settings.target }}/bin/
+          retention-days: 1
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-binaries
+          for dir in release-artifacts/opencode-*/; do
+            target=$(basename "$dir")
+            platform=$(echo "$target" | sed 's/^opencode-//')
+            if [ -f "$dir/opencode" ]; then
+              # For Unix-like systems
+              cp "$dir/opencode" "release-binaries/opencode-$platform"
+              chmod +x "release-binaries/opencode-$platform"
+            elif [ -f "$dir/opencode.exe" ]; then
+              # For Windows
+              cp "$dir/opencode.exe" "release-binaries/opencode-$platform.exe"
+            fi
+          done
+          ls -lah release-binaries/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-binaries/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
