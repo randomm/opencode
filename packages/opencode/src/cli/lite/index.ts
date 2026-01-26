@@ -8,6 +8,7 @@ import { Icons } from "../cmd/tui/util/icons"
 import { renderTaskPanel, type Task, type AgentStatus } from "./taskpanel"
 import { renderStatusLine, type StatusLineState } from "./statusline"
 import { renderBottomBar, renderPrompt, type BottomBarState } from "./bottombar"
+import { bootstrap } from "../bootstrap"
 
 // UI State
 let tasksVisible = false
@@ -35,68 +36,71 @@ async function main() {
     process.exit(1)
   }
 
-  // Setup
-  write(screen.alt)
-  write(clear.screen)
-  write(cursor.home)
+  // Bootstrap with Instance context for current directory
+  await bootstrap(process.cwd(), async () => {
+    // Setup
+    write(screen.alt)
+    write(clear.screen)
+    write(cursor.home)
 
-  // Header
-  write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
-  write(`${fg.gray}Type /help for commands, Ctrl+C to exit${style.reset}\n\n`)
+    // Header
+    write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
+    write(`${fg.gray}Type /help for commands, Ctrl+C to exit${style.reset}\n\n`)
 
-  // Input setup
-  const editor = new LineEditor()
-  process.stdin.setRawMode(true)
-  process.stdin.resume()
+    // Input setup
+    const editor = new LineEditor()
+    process.stdin.setRawMode(true)
+    process.stdin.resume()
 
-  // Render prompt
-  editor.render(renderPrompt())
+    // Render prompt
+    editor.render(renderPrompt())
 
-  // Handle input
-  process.stdin.on("data", async (data: Buffer) => {
-    const key = parseKey(data)
+    // Handle input
+    process.stdin.on("data", async (data: Buffer) => {
+      const key = parseKey(data)
 
-    // Ctrl+C to exit
-    if (key.ctrl && key.name === "c") {
-      cleanup()
-      process.exit(0)
-    }
-
-    // Ctrl+T to toggle task panel
-    if (key.ctrl && key.name === "t") {
-      tasksVisible = !tasksVisible
-      statusLine.tasksVisible = tasksVisible
-      editor.render(renderPrompt())
-    }
-
-    const result = editor.handle(key)
-
-    if (result !== null) {
-      write("\n")
-
-      if (result.startsWith("/")) {
-        handleCommand(result)
-      } else if (result.trim()) {
-        await handleMessage(result)
+      // Ctrl+C to exit
+      if (key.ctrl && key.name === "c") {
+        cleanup()
+        process.exit(0)
       }
 
-      editor.render(renderPrompt())
-    } else {
-      editor.render(renderPrompt())
+      // Ctrl+T to toggle task panel
+      if (key.ctrl && key.name === "t") {
+        tasksVisible = !tasksVisible
+        statusLine.tasksVisible = tasksVisible
+        editor.render(renderPrompt())
+      }
+
+      const result = editor.handle(key)
+
+      if (result !== null) {
+        write("\n")
+
+        if (result.startsWith("/")) {
+          handleCommand(result)
+        } else if (result.trim()) {
+          await handleMessage(result)
+        }
+
+        editor.render(renderPrompt())
+      } else {
+        editor.render(renderPrompt())
+      }
+    })
+
+    // Cleanup on exit
+    function cleanup() {
+      write(cursor.show)
+      write(screen.main)
+      process.stdin.setRawMode(false)
     }
-  })
 
-  // Cleanup on exit
-  function cleanup() {
-    write(cursor.show)
-    write(screen.main)
-    process.stdin.setRawMode(false)
-  }
-
-  process.on("exit", cleanup)
-  process.on("SIGINT", () => {
-    cleanup()
-    process.exit(0)
+    process.on("exit", cleanup)
+    process.on("SIGINT", () => {
+      cleanup()
+      process.exit(0)
+    })
   })
 }
 

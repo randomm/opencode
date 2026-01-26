@@ -8,11 +8,18 @@ export interface StatusLineState {
   tasksVisible: boolean
 }
 
-const sanitize = (s: string): string => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+const sanitize = (s: string): string =>
+  s
+    .replace(/\x1b[\[\]()#;?]*[0-9;]*[A-Za-z]/g, "") // All CSI sequences
+    .replace(/\x1b\][^\x07]*\x07/g, "") // OSC sequences (hyperlinks, title)
+    .replace(/[\x00-\x1f\x7f]/g, "") // Control characters
 
 const safeNum = (n: number): number => (Number.isFinite(n) ? Math.max(0, n) : 0)
 
-const truncate = (s: string, max: number): string => (s.length > max ? s.slice(0, max) + "…" : s)
+const truncate = (s: string, max: number): string => {
+  const arr = Array.from(s)
+  return arr.length > max ? arr.slice(0, max - 1).join("") + "…" : s
+}
 
 export function renderStatusLine(state: StatusLineState): string {
   const symbol = `${fg.brightCyan}◆${style.reset}`

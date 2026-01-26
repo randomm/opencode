@@ -11,9 +11,13 @@ export interface BottomBarState {
   host?: string
 }
 
-const sanitize = (s: string): string => s.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+const sanitize = (s: string): string =>
+  s
+    .replace(/\x1b[\[\]()#;?]*[0-9;]*[A-Za-z]/g, "") // All CSI sequences
+    .replace(/\x1b\][^\x07]*\x07/g, "") // OSC sequences (hyperlinks, title)
+    .replace(/[\x00-\x1f\x7f]/g, "") // Control characters
 
-const safeNum = (n: number): number => (Number.isFinite(n) ? n : 0)
+const safeNum = (n: number): number => (Number.isFinite(n) ? Math.max(0, n) : 0)
 
 const formatCount = (n: number): string => (n > 9999 ? `${(n / 1000).toFixed(1)}k` : String(n))
 
