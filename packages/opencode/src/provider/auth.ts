@@ -54,11 +54,14 @@ export namespace ProviderAuth {
   export const authorize = fn(
     z.object({
       providerID: z.string(),
-      method: z.number(),
+      method: z.number().int().nonnegative(),
     }),
     async (input): Promise<Authorization | undefined> => {
       const auth = await state().then((s) => s.methods[input.providerID])
+      if (!auth) return undefined
+      if (input.method < 0 || input.method >= auth.methods.length) return undefined
       const method = auth.methods[input.method]
+      if (!method) return undefined
       if (method.type === "oauth") {
         const result = await method.authorize()
         await state().then((s) => (s.pending[input.providerID] = result))
@@ -92,13 +95,13 @@ export namespace ProviderAuth {
       }
 
       if (result?.type === "success") {
-        if ("key" in result) {
+        if ("key" in result && result.key) {
           await Auth.set(input.providerID, {
             type: "api",
             key: result.key,
           })
         }
-        if ("refresh" in result) {
+        if ("refresh" in result && result.refresh) {
           const info: Auth.Info = {
             type: "oauth",
             access: result.access,
