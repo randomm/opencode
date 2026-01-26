@@ -140,7 +140,11 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
       .join("\n"),
   )
 
-  type TaskResultMetadata = { sessionId?: string }
+  type TaskResultMetadata = {
+    sessionId?: string
+    model?: { modelID: string; providerID: string }
+    summary?: Array<{ id: string; tool: string; state: { status: string; title?: string } }>
+  }
 
   return {
     description,

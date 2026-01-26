@@ -180,6 +180,7 @@ for (const item of targets) {
     tsconfig: "./tsconfig.json",
     plugins: [dedupePlugin, solidPlugin],
     sourcemap: "external",
+    minify: true,
     compile: {
       autoloadBunfig: false,
       autoloadDotenv: false,
