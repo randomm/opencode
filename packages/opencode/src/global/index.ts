@@ -1,13 +1,9 @@
 import fs from "fs/promises"
-import { xdgData, xdgCache, xdgConfig, xdgState } from "xdg-basedir"
 import path from "path"
 import os from "os"
+import { xdgData, xdgCache, xdgConfig, xdgState } from "xdg-basedir"
 
 const app = "opencode"
-
-const data = path.join(xdgData!, app)
-const cache = path.join(xdgCache!, app)
-const state = path.join(xdgState!, app)
 
 let initialized = false
 
@@ -53,17 +49,27 @@ export const Global = {
     get home() {
       return process.env.OPENCODE_TEST_HOME || os.homedir()
     },
-    data,
-    bin: path.join(data, "bin"),
-    log: path.join(data, "log"),
-    cache,
+    get data() {
+      return path.join(xdgData!, app)
+    },
+    get bin() {
+      return path.join(this.data, "bin")
+    },
+    get log() {
+      return path.join(this.data, "log")
+    },
+    get cache() {
+      return path.join(xdgCache!, app)
+    },
     // Resolve config relative to OPENCODE_TEST_HOME when set
     get config() {
       return process.env.OPENCODE_TEST_HOME
         ? path.join(process.env.OPENCODE_TEST_HOME, ".config", app)
         : path.join(xdgConfig!, app)
     },
-    state,
+    get state() {
+      return path.join(xdgState!, app)
+    },
     // Allow overriding models.dev URL for offline deployments
     get modelsDevUrl() {
       return process.env.OPENCODE_MODELS_URL || "https://models.dev"
