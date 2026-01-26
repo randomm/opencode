@@ -10,7 +10,7 @@ import { MessageV2 } from "../../session/message-v2"
 const log = Log.create({ service: "lite.session" })
 
 export interface ChatChunk {
-  type: "text" | "tool_start" | "tool_end" | "error" | "done"
+  type: "text" | "tool_start" | "tool_end" | "error" | "done" | "start"
   content?: string
   tool?: string
   input?: Record<string, unknown>
@@ -88,8 +88,8 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
   try {
     const parts = [{ type: "text" as const, text: message }]
 
-    // Yield sessionID for cancellation tracking
-    yield { type: "done" as const, sessionID }
+    // Yield sessionID for cancellation tracking (NOT done type!)
+    yield { type: "start" as const, sessionID }
 
     // Start prompt
     const promptPromise = SessionPrompt.prompt({

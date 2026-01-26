@@ -85,6 +85,8 @@ async function main() {
         isOperationInProgress = false
         currentSessionID = null
         write("\n")
+        editor.line = ""
+        editor.cursor = 0
         editor.render(renderPrompt())
         return
       }
@@ -165,12 +167,12 @@ async function handleMessage(message: string) {
 
   try {
     for await (const chunk of chat(message)) {
-      // Capture sessionID from first chunk for cancellation
-      if (chunk.sessionID && !currentSessionID) {
+      // Capture sessionID from start chunk for cancellation
+      if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
         currentSessionID = chunk.sessionID
       }
 
-      if (first && chunk.type !== "done") {
+      if (first && chunk.type !== "done" && chunk.type !== "start") {
         spinner.stop(true)
         first = false
         write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
