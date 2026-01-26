@@ -14,7 +14,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           const status = SessionStatus.get(session.id)
           expect(status.type).toBe("idle")
           await Session.remove(session.id)
@@ -27,7 +27,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           const status = SessionStatus.get(session.id)
@@ -44,7 +44,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           expect(SessionStatus.get(session.id).type).toBe("busy")
@@ -62,7 +62,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           expect(SessionStatus.get(session.id).type).toBe("busy")
@@ -94,7 +94,7 @@ describe("BackgroundTasks", () => {
         directory: tmp.path,
         fn: async () => {
           const events: SessionStatus.Info[] = []
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           const unsub = Bus.subscribe(SessionStatus.Event.Status, (evt) => {
             if (evt.properties.sessionID === session.id) {
@@ -122,7 +122,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           let received = false
 
           const unsub = Bus.subscribe(SessionStatus.Event.Idle, (evt) => {
@@ -148,7 +148,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           const states: string[] = []
 
           states.push(SessionStatus.get(session.id).type)
@@ -184,9 +184,9 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session1 = await Session.create()
-          const session2 = await Session.create()
-          const session3 = await Session.create()
+          const session1 = await Session.create(undefined)
+          const session2 = await Session.create(undefined)
+          const session3 = await Session.create(undefined)
 
           SessionStatus.set(session1.id, { type: "busy" })
           SessionStatus.set(session2.id, {
@@ -214,8 +214,8 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session1 = await Session.create()
-          const session2 = await Session.create()
+          const session1 = await Session.create(undefined)
+          const session2 = await Session.create(undefined)
 
           SessionStatus.set(session1.id, { type: "busy" })
           SessionStatus.set(session2.id, {
@@ -243,7 +243,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           expect(SessionStatus.list()[session.id]).toBeDefined()
@@ -262,11 +262,11 @@ describe("BackgroundTasks", () => {
         directory: tmp.path,
         fn: async () => {
           const sessions = await Promise.all([
-            Session.create(),
-            Session.create(),
-            Session.create(),
-            Session.create(),
-            Session.create(),
+            Session.create(undefined),
+            Session.create(undefined),
+            Session.create(undefined),
+            Session.create(undefined),
+            Session.create(undefined),
           ])
 
           await Promise.all(sessions.map((s) => SessionStatus.set(s.id, { type: "busy" })))
@@ -287,7 +287,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, {
             type: "retry",
@@ -315,7 +315,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           for (let i = 1; i <= 5; i++) {
             SessionStatus.set(session.id, {
@@ -352,7 +352,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           const events: SessionStatus.Info[] = []
 
           const unsub = Bus.subscribe(SessionStatus.Event.Status, (evt) => {
@@ -390,7 +390,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           SessionStatus.set(session.id, { type: "busy" })
@@ -408,7 +408,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
           await Session.update(session.id, (draft) => {
@@ -428,7 +428,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           const events: string[] = []
 
           const unsub = Bus.subscribe(SessionStatus.Event.Status, (evt) => {
@@ -457,7 +457,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const parent = await Session.create()
+          const parent = await Session.create(undefined)
           const child = await Session.create({ parentID: parent.id })
 
           SessionStatus.set(parent.id, { type: "busy" })
@@ -511,7 +511,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
 
@@ -561,7 +561,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
           let failedEvent: { taskID: string; sessionID?: string; error: string } | undefined
 
           const unsub = Bus.subscribe(Session.BackgroundTaskEvent.Failed, (evt) => {
@@ -590,7 +590,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           // Verify the completed event type exists
           expect(Session.BackgroundTaskEvent.Completed).toBeDefined()
@@ -605,7 +605,7 @@ describe("BackgroundTasks", () => {
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const session = await Session.create()
+          const session = await Session.create(undefined)
 
           // Test the getBackgroundTaskResult function exists
           const result = Session.getBackgroundTaskResult("nonexistent-task")
