@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import solidPlugin from "../node_modules/@opentui/solid/scripts/solid-plugin"
+import type { BunPlugin } from "bun"
 import path from "path"
 import fs from "fs"
 import { $ } from "bun"
@@ -9,8 +9,56 @@ import { fileURLToPath } from "url"
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const dir = path.resolve(__dirname, "..")
+const rootDir = path.resolve(__dirname, "../../..")
+
+// Load solidPlugin from root's node_modules (monorepo layout)
+import solidPlugin from "../../../node_modules/@opentui/solid/scripts/solid-plugin"
 
 process.chdir(dir)
+
+const dedupePlugin: BunPlugin = {
+  name: "dedupe-opentui",
+  setup(build) {
+    // Use root's node_modules (monorepo layout)
+    const rootNodeModules = path.resolve(rootDir, "node_modules")
+    const solidPath = path.resolve(rootNodeModules, "@opentui/solid/index.js")
+    const corePath = path.resolve(rootNodeModules, "@opentui/core/index.js")
+    const coreDir = path.resolve(rootNodeModules, "@opentui/core")
+
+    // Verify paths exist before using them
+    if (!fs.existsSync(solidPath)) {
+      console.warn(`Warning: @opentui/solid not found at ${solidPath}`)
+    }
+    if (!fs.existsSync(corePath)) {
+      console.warn(`Warning: @opentui/core not found at ${corePath}`)
+    }
+
+    // Dedupe @opentui/solid and @opentui/core to use the same instance
+    build.onResolve({ filter: /^@opentui\/solid$/ }, () => ({ path: solidPath }))
+    build.onResolve({ filter: /^@opentui\/core$/ }, () => ({ path: corePath }))
+
+    // Handle subpath exports for @opentui/core (e.g., @opentui/core/testing)
+    build.onResolve({ filter: /^@opentui\/core\/.*/ }, (args) => {
+      const subpath = args.path.substring("@opentui/core".length) // e.g., "/testing"
+      const exported = path.resolve(coreDir, subpath.slice(1) + ".js") // e.g., "testing.js"
+      if (fs.existsSync(exported)) {
+        return { path: exported }
+      }
+      return undefined // Let Bun resolve normally if not found
+    })
+
+    // Also handle @opentui/solid subpaths if needed
+    build.onResolve({ filter: /^@opentui\/solid\/.*/ }, (args) => {
+      const subpath = args.path.substring("@opentui/solid".length) // e.g., "/something"
+      const solidDir = path.resolve(rootNodeModules, "@opentui/solid")
+      const exported = path.resolve(solidDir, subpath.slice(1) + ".js")
+      if (fs.existsSync(exported)) {
+        return { path: exported }
+      }
+      return undefined
+    })
+  },
+}
 
 import pkg from "../package.json"
 import { Script } from "@opencode-ai/script"
@@ -120,7 +168,7 @@ for (const item of targets) {
   console.log(`building ${name}`)
   await $`mkdir -p dist/${name}/bin`
 
-  const parserWorker = fs.realpathSync(path.resolve(dir, "./node_modules/@opentui/core/parser.worker.js"))
+  const parserWorker = fs.realpathSync(path.resolve(rootDir, "node_modules/@opentui/core/parser.worker.js"))
   const workerPath = "./src/cli/cmd/tui/worker.ts"
 
   // Use platform-specific bunfs root path based on target OS
@@ -130,7 +178,7 @@ for (const item of targets) {
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [solidPlugin],
+    plugins: [dedupePlugin, solidPlugin],
     sourcemap: "external",
     compile: {
       autoloadBunfig: false,

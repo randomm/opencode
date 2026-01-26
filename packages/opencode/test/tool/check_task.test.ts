@@ -37,7 +37,7 @@ describe("tool.check_task", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create()
+        const session = await Session.create({ permission: [] })
 
         SessionStatus.set(session.id, { type: "busy" })
 
@@ -59,7 +59,7 @@ describe("tool.check_task", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create()
+        const session = await Session.create({ permission: [] })
 
         const msgInfo: MessageV2.Info = {
           id: "msg1",
@@ -120,7 +120,7 @@ describe("tool.check_task", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const session = await Session.create()
+        const session = await Session.create({ permission: [] })
 
         SessionStatus.set(session.id, {
           type: "retry",

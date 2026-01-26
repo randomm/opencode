@@ -8,6 +8,7 @@ import { Log } from "../util/log"
 import { SessionRevert } from "./revert"
 import { Session } from "."
 import { Agent } from "../agent/agent"
+import type { BackgroundTaskResult } from "."
 import { Provider } from "../provider/provider"
 import { SessionCompaction } from "./compaction"
 import { Instance } from "../project/instance"
@@ -46,6 +47,10 @@ import { BackgroundTasks } from "@/util/tasks"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
+
+function sanitize(s: string): string {
+  return s.replace(/[<>\[\]{}]/g, "").slice(0, 200)
+}
 
 export namespace SessionPrompt {
   const log = Log.create({ service: "session.prompt" })
@@ -150,7 +155,14 @@ export namespace SessionPrompt {
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
 
-    const message = await createUserMessage(input)
+    const completedTasks = Session.getAndClearCompletedTasks(input.sessionID)
+
+    // Guard against empty prompt with no completed tasks
+    if (input.parts.length === 0 && completedTasks.length === 0) {
+      return { info: null, parts: [] }
+    }
+
+    const message = await createUserMessage(input, completedTasks)
     await Session.touch(input.sessionID)
 
     // this is backwards compatibility for allowing `tools` to be specified when
@@ -230,7 +242,9 @@ export namespace SessionPrompt {
 
   function start(sessionID: string) {
     const s = state()
-    if (s[sessionID]) return
+    if (s[sessionID]) {
+      return
+    }
     const controller = new AbortController()
     s[sessionID] = {
       abort: controller,
@@ -240,7 +254,6 @@ export namespace SessionPrompt {
   }
 
   export function cancel(sessionID: string) {
-    log.info("cancel", { sessionID })
     const s = state()
     const match = s[sessionID]
     if (!match) return
@@ -268,8 +281,9 @@ export namespace SessionPrompt {
     const session = await Session.get(sessionID)
     while (true) {
       SessionStatus.set(sessionID, { type: "busy" })
-      log.info("loop", { step, sessionID })
-      if (abort.aborted) break
+      if (abort.aborted) {
+        break
+      }
       let msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))
 
       let lastUser: MessageV2.User | undefined
@@ -289,13 +303,16 @@ export namespace SessionPrompt {
         }
       }
 
+      if (Session.isClosing(sessionID)) {
+        break
+      }
+
       if (!lastUser) throw new Error("No user message found in stream. This should never happen.")
       if (
         lastAssistant?.finish &&
         !["tool-calls", "unknown"].includes(lastAssistant.finish) &&
         lastUser.id < lastAssistant.id
       ) {
-        log.info("exiting loop", { sessionID })
         break
       }
 
@@ -460,11 +477,7 @@ export namespace SessionPrompt {
           if (executionError) {
             Bus.publish(Session.Event.Error, {
               sessionID,
-              error: {
-                message: errorMessage,
-                stack: executionError.stack,
-                data: {},
-              },
+              error: new NamedError.Unknown({ message: errorMessage }).toObject(),
             })
           }
         }
@@ -660,7 +673,7 @@ export namespace SessionPrompt {
     return Provider.defaultModel()
   }
 
-  async function createUserMessage(input: PromptInput) {
+  async function createUserMessage(input: PromptInput, completedTasks: BackgroundTaskResult[] = []) {
     const agent = await Agent.get(input.agent ?? (await Agent.defaultAgent()))
     const info: MessageV2.Info = {
       id: input.messageID ?? Identifier.ascending("message"),
@@ -676,13 +689,12 @@ export namespace SessionPrompt {
       variant: input.variant,
     }
 
-    const parts = await Promise.all(
+    let parts = await Promise.all(
       input.parts.map(async (part): Promise<MessageV2.Part[]> => {
         if (part.type === "file") {
           // before checking the protocol we check if this is an mcp resource because it needs special handling
           if (part.source?.type === "resource") {
             const { clientName, uri } = part.source
-            log.info("mcp resource", { clientName, uri, mime: part.mime })
 
             const pieces: MessageV2.Part[] = [
               {
@@ -782,7 +794,6 @@ export namespace SessionPrompt {
               }
               break
             case "file:":
-              log.info("file", { mime: part.mime })
               // have to normalize, symbol search returns absolute paths
               // Decode the pathname since URL constructor doesn't automatically decode it
               const filepath = fileURLToPath(part.url)
@@ -1002,6 +1013,19 @@ export namespace SessionPrompt {
         ]
       }),
     ).then((x) => x.flat())
+
+    if (completedTasks.length > 0) {
+      const injectionText = Session.formatCompletedTasksForInjection(completedTasks)
+      const injectionPart: MessageV2.Part = {
+        id: Identifier.ascending("part"),
+        messageID: info.id,
+        sessionID: input.sessionID,
+        type: "text",
+        text: injectionText,
+        synthetic: true,
+      }
+      parts.unshift(injectionPart)
+    }
 
     await Plugin.trigger(
       "chat.message",
@@ -1434,7 +1458,6 @@ NOTE: At any point in time through this workflow you should feel free to ask the
    */
 
   export async function command(input: CommandInput) {
-    log.info("command", input)
     const command = await Command.get(input.command)
     const agentName = command.agent ?? input.agent ?? (await Agent.defaultAgent())
 

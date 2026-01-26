@@ -73,4 +73,8 @@ export namespace SessionStatus {
     }
     state()[sessionID] = status
   }
+
+  export function remove(sessionID: string) {
+    delete state()[sessionID]
+  }
 }

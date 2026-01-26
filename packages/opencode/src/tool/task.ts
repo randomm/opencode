@@ -1,11 +1,11 @@
 import { Tool } from "./tool"
 import DESCRIPTION from "./task.txt"
 import z from "zod"
-import { Session } from "../session"
 import { Bus } from "../bus"
 import { MessageV2 } from "../session/message-v2"
 import { Identifier } from "../id/id"
 import { Agent } from "../agent/agent"
+import { Session, type TaskMetadata, getSessionTaskCount, reserveTaskSlot } from "../session"
 import { SessionPrompt } from "../session/prompt"
 import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
@@ -20,11 +20,115 @@ const parameters = z.object({
   command: z.string().describe("The command that triggered this task").optional(),
 })
 
-export const TaskTool = Tool.define("task", async (ctx) => {
+const MAX_CONCURRENT_TASKS_PER_SESSION = 5
+
+type LockCallback = (release: () => void) => void
+interface LockState {
+  locked: boolean
+  queue: LockCallback[]
+}
+
+const sessionLocks = new Map<string, LockState>()
+const releaseCallbacks = new Map<string, Array<() => void>>()
+
+async function acquireLock(sessionID: string): Promise<() => void> {
+  let lock = sessionLocks.get(sessionID)
+
+  if (!lock) {
+    lock = { locked: true, queue: [] }
+    sessionLocks.set(sessionID, lock)
+    return () => releaseLock(sessionID)
+  }
+
+  if (!lock.locked) {
+    lock.locked = true
+    return () => releaseLock(sessionID)
+  }
+
+  return new Promise((resolve) => {
+    const callback: LockCallback = (release: () => void) => resolve(release)
+    lock.queue.push(callback)
+  })
+}
+
+function releaseLock(sessionID: string): void {
+  const lock = sessionLocks.get(sessionID)
+  if (!lock) return
+
+  const next = lock.queue.shift()
+  if (next) {
+    lock.locked = true
+    next(() => releaseLock(sessionID))
+  } else {
+    lock.locked = false
+    sessionLocks.delete(sessionID)
+  }
+}
+
+export async function tryIncrementSessionCount(sessionID: string): Promise<boolean> {
+  const release = await acquireLock(sessionID)
+
+  try {
+    const current = getSessionTaskCount(sessionID)
+    if (current >= MAX_CONCURRENT_TASKS_PER_SESSION) return false
+
+    const releaseSlot = reserveTaskSlot(sessionID)
+
+    const afterReserve = getSessionTaskCount(sessionID)
+    if (afterReserve > MAX_CONCURRENT_TASKS_PER_SESSION) {
+      releaseSlot()
+      return false
+    }
+
+    const callbacks = releaseCallbacks.get(sessionID) ?? []
+    callbacks.push(releaseSlot)
+    releaseCallbacks.set(sessionID, callbacks)
+
+    return true
+  } finally {
+    release()
+  }
+}
+
+export async function decrementSessionCount(sessionID: string): Promise<void> {
+  const release = await acquireLock(sessionID)
+
+  try {
+    const callbacks = releaseCallbacks.get(sessionID)
+    if (!callbacks || callbacks.length === 0) return
+
+    const releaseSlot = callbacks.shift()
+    if (releaseSlot) releaseSlot()
+
+    if (callbacks.length === 0) releaseCallbacks.delete(sessionID)
+  } finally {
+    release()
+  }
+}
+
+export async function cleanupSessionTaskMaps(sessionID: string): Promise<void> {
+  const lock = sessionLocks.get(sessionID)
+  const callbacks = releaseCallbacks.get(sessionID)
+
+  if (callbacks) {
+    for (const callback of callbacks) callback()
+  }
+
+  releaseCallbacks.delete(sessionID)
+
+  if (lock) {
+    for (const waiter of lock.queue) {
+      waiter(() => {})
+    }
+  }
+
+  sessionLocks.delete(sessionID)
+}
+
+export const TaskTool = Tool.define("task", async (initCtx) => {
   const agents = await Agent.list().then((x) => x.filter((a) => a.mode !== "primary"))
 
-  // Filter agents by permissions if agent provided
-  const caller = ctx?.agent
+  const caller = initCtx?.agent
   const accessibleAgents = caller
     ? agents.filter((a) => PermissionNext.evaluate("task", a.name, caller.permission).action !== "deny")
     : agents
@@ -35,13 +139,28 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       .map((a) => `- ${a.name}: ${a.description ?? "This subagent should only be called manually by the user."}`)
       .join("\n"),
   )
+
+  type TaskResultMetadata = { sessionId?: string }
+
   return {
     description,
     parameters,
     async execute(params: z.infer<typeof parameters>, ctx) {
       const config = await Config.get()
 
-      // Skip permission check when user explicitly invoked via @ or command subtask
+      const allowed = await tryIncrementSessionCount(ctx.sessionID)
+      if (!allowed) {
+        return {
+          title: params.description,
+          output: JSON.stringify({
+            task_id: null,
+            status: "error",
+            message: `Cannot spawn task: exceeded concurrent task limit (${MAX_CONCURRENT_TASKS_PER_SESSION}). Wait for existing tasks to complete or cancel them.`,
+          }),
+          metadata: {} as TaskResultMetadata,
+        }
+      }
+
       if (!ctx.extra?.bypassAgentCheck) {
         await ctx.ask({
           permission: "task",
@@ -58,6 +177,9 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
 
       const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
+
+      const taskId = Identifier.ascending("task")
+      const startTime = Date.now()
 
       const session = await iife(async () => {
         if (params.session_id) {
@@ -96,6 +218,7 @@ export const TaskTool = Tool.define("task", async (ctx) => {
           ],
         })
       })
+
       const msg = await MessageV2.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
       if (msg.info.role !== "assistant") throw new Error("Not an assistant message")
 
@@ -113,13 +236,13 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       })
 
       const messageID = Identifier.ascending("message")
-      const parts: Record<string, { id: string; tool: string; state: { status: string; title?: string } }> = {}
+      const currentParts = new Map<string, { id: string; tool: string; state: { status: string; title?: string } }>()
       const unsub = Bus.subscribe(MessageV2.Event.PartUpdated, async (evt) => {
         if (evt.properties.part.sessionID !== session.id) return
         if (evt.properties.part.messageID === messageID) return
         if (evt.properties.part.type !== "tool") return
         const part = evt.properties.part
-        parts[part.id] = {
+        const updatedPart = {
           id: part.id,
           tool: part.tool,
           state: {
@@ -127,15 +250,33 @@ export const TaskTool = Tool.define("task", async (ctx) => {
             title: part.state.status === "completed" ? part.state.title : undefined,
           },
         }
+        const updatedParts = new Map(currentParts)
+        updatedParts.set(part.id, updatedPart)
+        currentParts.clear()
+        updatedParts.forEach((v, k) => currentParts.set(k, v))
         ctx.metadata({
           title: params.description,
           metadata: {
-            summary: Object.values(parts).sort((a, b) => a.id.localeCompare(b.id)),
+            summary: Array.from(currentParts.values()).sort((a, b) => a.id.localeCompare(b.id)),
             sessionId: session.id,
             model,
           },
         })
       })
+
+      if (ctx.abort.aborted) {
+        unsub()
+        await decrementSessionCount(ctx.sessionID)
+        return {
+          title: params.description,
+          output: JSON.stringify({
+            task_id: taskId,
+            status: "aborted",
+            message: "Task aborted before start",
+          }),
+          metadata: { sessionId: session.id } as TaskResultMetadata,
+        }
+      }
 
       function cancel() {
         SessionPrompt.cancel(session.id)
@@ -144,47 +285,59 @@ export const TaskTool = Tool.define("task", async (ctx) => {
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
       const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
 
-      const result = await SessionPrompt.prompt({
-        messageID,
-        sessionID: session.id,
-        model: {
-          modelID: model.modelID,
-          providerID: model.providerID,
-        },
-        agent: agent.name,
-        tools: {
-          todowrite: false,
-          todoread: false,
-          ...(hasTaskPermission ? {} : { task: false }),
-          ...Object.fromEntries((config.experimental?.primary_tools ?? []).map((t) => [t, false])),
-        },
-        parts: promptParts,
-      })
-      unsub()
-      const messages = await Session.messages({ sessionID: session.id })
-      const summary = messages
-        .filter((x) => x.info.role === "assistant")
-        .flatMap((msg) => msg.parts.filter((x: any) => x.type === "tool") as MessageV2.ToolPart[])
-        .map((part) => ({
-          id: part.id,
-          tool: part.tool,
-          state: {
-            status: part.state.status,
-            title: part.state.status === "completed" ? part.state.title : undefined,
-          },
-        }))
-      const text = result.parts.findLast((x) => x.type === "text")?.text ?? ""
+      const taskMetadata: TaskMetadata = {
+        agent_type: agent.name,
+        description: params.description,
+        session_id: ctx.sessionID,
+        start_time: startTime,
+      }
 
-      const output = text + "\n\n" + ["<task_metadata>", `session_id: ${session.id}`, "</task_metadata>"].join("\n")
+      Session.enableAutoWakeup(ctx.sessionID)
+
+      try {
+        Session.trackBackgroundTask(
+          taskId,
+          (async () => {
+            try {
+              const promptResult = await SessionPrompt.prompt({
+                messageID,
+                sessionID: session.id,
+                model: {
+                  modelID: model.modelID,
+                  providerID: model.providerID,
+                },
+                agent: agent.name,
+                tools: {
+                  todowrite: false,
+                  todoread: false,
+                  ...(hasTaskPermission ? {} : { task: false }),
+                  ...Object.fromEntries((config.experimental?.primary_tools ?? []).map((t) => [t, false])),
+                },
+                parts: promptParts,
+              })
+              const textPart = promptResult.parts.find((p) => p.type === "text" && !p.synthetic)
+              return textPart && "text" in textPart ? textPart.text : undefined
+            } finally {
+              unsub()
+              await decrementSessionCount(ctx.sessionID)
+            }
+          })(),
+          session.id,
+          taskMetadata,
+        )
+      } catch (e) {
+        Session.disableAutoWakeup(ctx.sessionID)
+        throw e
+      }
 
       return {
         title: params.description,
-        metadata: {
-          summary,
-          sessionId: session.id,
-          model,
-        },
-        output,
+        output: JSON.stringify({
+          task_id: taskId,
+          status: "started",
+          message: `Task dispatched to @${agent.name}`,
+        }),
+        metadata: { sessionId: session.id } as TaskResultMetadata,
       }
     },
   }

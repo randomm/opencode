@@ -942,6 +942,21 @@ export function Session() {
   // snap to bottom when session changes
   createEffect(on(() => route.sessionID, toBottom))
 
+  // auto-scroll when last assistant message completes (for auto-wakeup)
+  const lastAssistantCompleted = createMemo(() => {
+    const msgs = messages()
+    const last = msgs.findLast((m) => m.role === "assistant")
+    return last?.time?.completed || 0
+  })
+
+  createEffect(
+    on(lastAssistantCompleted, (newTime, oldTime) => {
+      if (newTime > 0 && newTime !== oldTime) {
+        toBottom()
+      }
+    }),
+  )
+
   return (
     <context.Provider
       value={{
