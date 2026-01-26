@@ -103,6 +103,7 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
     })
 
     const sdk = useSDK()
+    const fullSyncedSessions = new Set<string>()
 
     sdk.event.listen((e) => {
       const event = e.details
@@ -226,9 +227,35 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
         }
 
         case "message.updated": {
-          const messages = store.message[event.properties.info.sessionID]
+          const sessionID = event.properties.info.sessionID
+          if (!fullSyncedSessions.has(sessionID)) {
+            fullSyncedSessions.add(sessionID)
+            Promise.all([
+              sdk.client.session.get({ sessionID }, { throwOnError: true }),
+              sdk.client.session.messages({ sessionID, limit: 100 }),
+              sdk.client.session.todo({ sessionID }),
+              sdk.client.session.diff({ sessionID }),
+            ])
+              .then(([session, messages, todo, diff]) => {
+                setStore(
+                  produce((draft) => {
+                    const match = Binary.search(draft.session, sessionID, (s) => s.id)
+                    if (match.found) draft.session[match.index] = session.data!
+                    if (!match.found) draft.session.splice(match.index, 0, session.data!)
+                    draft.todo[sessionID] = todo.data ?? []
+                    draft.message[sessionID] = messages.data!.map((x) => x.info)
+                    for (const message of messages.data!) {
+                      draft.part[message.info.id] = message.parts
+                    }
+                    draft.session_diff[sessionID] = diff.data ?? []
+                  }),
+                )
+              })
+              .catch(() => {})
+          }
+          const messages = store.message[sessionID]
           if (!messages) {
-            setStore("message", event.properties.info.sessionID, [event.properties.info])
+            setStore("message", sessionID, [event.properties.info])
             break
           }
           const result = Binary.search(messages, event.properties.info.id, (m) => m.id)
@@ -412,7 +439,6 @@ export const { use: useSync, provider: SyncProvider } = createSimpleContext({
       bootstrap()
     })
 
-    const fullSyncedSessions = new Set<string>()
     const result = {
       data: store,
       set: setStore,
