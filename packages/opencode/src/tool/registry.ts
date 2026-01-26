@@ -28,6 +28,7 @@ import { PlanExitTool, PlanEnterTool } from "./plan"
 import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
+import { CancelTaskTool } from "./cancel_task"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -111,6 +112,7 @@ export namespace ToolRegistry {
       TaskTool,
       CheckTaskTool,
       ListTasksTool,
+      CancelTaskTool,
       WebFetchTool,
       TodoWriteTool,
       // TodoReadTool,
