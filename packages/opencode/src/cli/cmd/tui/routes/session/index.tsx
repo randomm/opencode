@@ -1794,6 +1794,20 @@ function Task(props: ToolProps<typeof TaskTool>) {
   const local = useLocal()
   const sync = useSync()
 
+  // Ensure child session data is loaded before accessing it
+  createEffect(async () => {
+    const childSessionId = props.metadata.sessionId
+    if (!childSessionId) return
+    const hasMessages = !!sync.data.message[childSessionId]?.length
+    if (!hasMessages) {
+      try {
+        await sync.session.sync(childSessionId)
+      } catch {
+        // Silently ignore sync errors - activity will just not show
+      }
+    }
+  })
+
   const current = createMemo(() =>
     props.metadata.summary?.findLast(
       (x: { id: string; tool: string; state: { status: string; title?: string } }) => x.state.status !== "pending",
