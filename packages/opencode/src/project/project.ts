@@ -1,5 +1,5 @@
 import z from "zod"
-import fs from "fs/promises"
+import fs, { stat as fsStat } from "fs/promises"
 import { Filesystem } from "../util/filesystem"
 import path from "path"
 import { $ } from "bun"
@@ -131,10 +131,8 @@ export namespace Project {
         }
 
         let worktree = top
-        const stat = await Bun.file(git)
-          .stat()
-          .catch(() => null)
-        if (stat?.isFile) {
+        const stat = await fsStat(git).catch(() => null)
+        if (stat?.isFile()) {
           const gitDirContent = await Bun.file(git)
             .text()
             .then((x) => x.trim())
