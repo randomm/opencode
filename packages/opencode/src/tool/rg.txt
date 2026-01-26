@@ -1,0 +1,13 @@
+Search file contents or list files using ripgrep.
+
+Two modes:
+1. Content search (default): Search for regex pattern in file contents
+2. File listing: List files matching a glob pattern
+
+Parameters:
+- pattern: Regex pattern for content search, or glob pattern when files_only=true
+- path: Directory to search (default: project root)
+- include: File glob filter (e.g. "*.ts", "*.{js,jsx}")
+- files_only: If true, list files matching pattern instead of searching content
+
+Returns matching files or file contents with line numbers and paths, truncated to 100 results.
