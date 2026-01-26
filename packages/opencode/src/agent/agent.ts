@@ -327,8 +327,11 @@ export namespace Agent {
         for await (const part of result.fullStream) {
           if (part.type === "error") throw part.error
         }
-      } catch (e: any) {
-        if (e?.name === "AbortError" || (e instanceof DOMException && e.name === "AbortError")) {
+      } catch (e) {
+        if (typeof e === "object" && e !== null && "name" in e && e.name === "AbortError") {
+          throw e
+        }
+        if (e instanceof DOMException && e.name === "AbortError") {
           throw e
         }
         throw e

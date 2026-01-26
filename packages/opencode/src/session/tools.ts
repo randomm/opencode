@@ -104,8 +104,11 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
             result,
           )
           return result
-        } catch (e: any) {
-          if (e?.name === "AbortError" || (e instanceof DOMException && e.name === "AbortError")) {
+        } catch (e) {
+          if (typeof e === "object" && e !== null && "name" in e && e.name === "AbortError") {
+            throw e
+          }
+          if (e instanceof DOMException && e.name === "AbortError") {
             throw e
           }
           throw e

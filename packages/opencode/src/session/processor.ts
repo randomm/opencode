@@ -341,22 +341,26 @@ export namespace SessionProcessor {
                 }
                 if (needsCompaction) break
               }
-            } catch (e: any) {
-              if (e?.name === "AbortError" || (e instanceof DOMException && e.name === "AbortError")) {
+            } catch (e) {
+              if (typeof e === "object" && e !== null && "name" in e && e.name === "AbortError") {
+                throw e
+              }
+              if (e instanceof DOMException && e.name === "AbortError") {
                 throw e
               }
               throw e
             }
-          } catch (e: any) {
+          } catch (e) {
+            const error = e instanceof Error ? e : new Error(String(e))
             log.error("process", {
-              error: e,
-              stack: JSON.stringify(e.stack),
+              error,
+              stack: error.stack,
             })
-            const error = MessageV2.fromError(e, { providerID: input.model.providerID })
-            const retry = SessionRetry.retryable(error)
+            const parsedError = MessageV2.fromError(error, { providerID: input.model.providerID })
+            const retry = SessionRetry.retryable(parsedError)
             if (retry !== undefined) {
               attempt++
-              const delay = SessionRetry.delay(attempt, error.name === "APIError" ? error : undefined)
+              const delay = SessionRetry.delay(attempt, parsedError.name === "APIError" ? parsedError : undefined)
               SessionStatus.set(input.sessionID, {
                 type: "retry",
                 attempt,
@@ -364,14 +368,14 @@ export namespace SessionProcessor {
                 next: Date.now() + delay,
               })
               await SessionRetry.sleep(delay, input.abort).catch((err) => {
-                if (err?.name === "AbortError") {
+                if (typeof err === "object" && err !== null && "name" in err && err.name === "AbortError") {
                   log.info("Sleep aborted, checking signal before retry")
                 }
               })
               if (input.abort.aborted) break
               continue
             }
-            input.assistantMessage.error = error
+            input.assistantMessage.error = parsedError
             Bus.publish(Session.Event.Error, {
               sessionID: input.assistantMessage.sessionID,
               error: input.assistantMessage.error,
