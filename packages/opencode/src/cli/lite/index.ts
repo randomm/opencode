@@ -9,6 +9,8 @@ import { renderTaskPanel, type Task, type AgentStatus } from "./taskpanel"
 import { renderStatusLine, type StatusLineState } from "./statusline"
 import { renderBottomBar, renderPrompt, type BottomBarState } from "./bottombar"
 import { bootstrap } from "../bootstrap"
+import { Log } from "../../util/log"
+import { Global } from "../../global"
 
 // UI State
 let tasksVisible = false
@@ -35,6 +37,15 @@ async function main() {
     console.error("oclite requires a TTY")
     process.exit(1)
   }
+
+  // Initialize logging to ERROR level to suppress debug/info logs
+  // Must be done before bootstrap to prevent Log.Default.info() from being printed
+  await Global.init()
+  await Log.init({
+    print: false,
+    dev: false,
+    level: "ERROR",
+  })
 
   // Bootstrap with Instance context for current directory
   await bootstrap(process.cwd(), async () => {
