@@ -166,8 +166,14 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
           if (found) return found
         }
 
-        return await Session.create({
+        const parentSession = await Session.get(ctx.sessionID).catch(() => null)
+        if (!parentSession?.directory) {
+          throw new Error("Parent session not found or has no directory")
+        }
+
+        return await Session.createNext({
           parentID: ctx.sessionID,
+          directory: parentSession.directory,
           title: params.description + ` (@${agent.name} subagent)`,
           permission: [
             {
