@@ -3,6 +3,8 @@ import { Global } from "../global"
 import fs from "fs/promises"
 import z from "zod"
 import { Lock } from "../util/lock"
+import * as crypto from "crypto"
+import { Log } from "../util/log"
 
 export const OAUTH_DUMMY_KEY = "opencode-oauth-dummy-key"
 
@@ -47,15 +49,22 @@ export namespace Auth {
     const release = await Lock.read("auth")
     try {
       const file = Bun.file(filepath)
-      
+
       if (!(await file.exists())) return {}
-      
-      const data = await file.json()
-      
-      if (typeof data !== "object" || data === null) {
-        throw new Error("auth.json contains invalid data")
+
+      let data: unknown
+      try {
+        data = await file.json()
+      } catch (error) {
+        Log.Default.warn("auth.json corrupted or unreadable, returning empty", { error })
+        return {}
       }
-      
+
+      if (typeof data !== "object" || data === null) {
+        Log.Default.warn("auth.json contains invalid data, returning empty")
+        return {}
+      }
+
       return Object.entries(data).reduce(
         (acc, [key, value]) => {
           const parsed = Info.safeParse(value)
@@ -86,8 +95,10 @@ export namespace Auth {
       }
 
       data[key] = info
-      await Bun.write(file, JSON.stringify(data, null, 2))
-      await fs.chmod(filepath, 0o600)
+      const temp = filepath + ".tmp." + crypto.randomUUID()
+      await Bun.write(temp, JSON.stringify(data, null, 2))
+      await fs.chmod(temp, 0o600)
+      await fs.rename(temp, filepath)
     } finally {
       release[Symbol.dispose]()
     }
@@ -109,8 +120,10 @@ export namespace Auth {
       }
 
       delete data[key]
-      await Bun.write(file, JSON.stringify(data, null, 2))
-      await fs.chmod(filepath, 0o600)
+      const temp = filepath + ".tmp." + crypto.randomUUID()
+      await Bun.write(temp, JSON.stringify(data, null, 2))
+      await fs.chmod(temp, 0o600)
+      await fs.rename(temp, filepath)
     } finally {
       release[Symbol.dispose]()
     }
