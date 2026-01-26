@@ -1800,7 +1800,11 @@ function Task(props: ToolProps<typeof TaskTool>) {
     if (!childSessionId) return
     const hasMessages = !!sync.data.message[childSessionId]?.length
     if (!hasMessages) {
-      await sync.session.sync(childSessionId)
+      try {
+        await sync.session.sync(childSessionId)
+      } catch {
+        // Silently ignore sync errors - activity will just not show
+      }
     }
   })
 
