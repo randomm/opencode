@@ -19,8 +19,11 @@ export namespace BackgroundTasks {
    */
   export function spawn<T>(task: Promise<T>): void {
     const wrapped = task
-      .catch((err: any) => {
-        if (err?.name !== "AbortError" && !(err instanceof DOMException && err.name === "AbortError")) {
+      .catch((err) => {
+        if (
+          !(typeof err === "object" && err !== null && "name" in err && err.name === "AbortError") &&
+          !(err instanceof DOMException && err.name === "AbortError")
+        ) {
           log.error("background task failed", { error: err })
         }
       })
