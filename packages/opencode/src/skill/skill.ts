@@ -87,10 +87,10 @@ export namespace Skill {
         stop: Instance.worktree,
       }),
     )
-    // Also include global ~/.claude/skills/
-    const globalClaude = `${Global.Path.home}/.claude`
-    if (await Filesystem.isDir(globalClaude)) {
-      claudeDirs.push(globalClaude)
+    // Also include global ~/.claude/skills/ if not disabled
+    if (!Flag.OPENCODE_DISABLE_GLOBAL_SKILLS) {
+      const globalClaude = `${Global.Path.home}/.claude`
+      if (await Filesystem.isDir(globalClaude)) claudeDirs.push(globalClaude)
     }
 
     if (!Flag.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS) {
@@ -115,7 +115,11 @@ export namespace Skill {
     }
 
     // Scan .opencode/skill/ directories
-    for (const dir of await Config.directories()) {
+    const directories = await Config.directories()
+    const filteredDirs = Flag.OPENCODE_DISABLE_GLOBAL_SKILLS
+      ? directories.filter((d) => !d.startsWith(Global.Path.home))
+      : directories
+    for (const dir of filteredDirs) {
       for await (const match of OPENCODE_SKILL_GLOB.scan({
         cwd: dir,
         absolute: true,
