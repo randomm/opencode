@@ -942,6 +942,21 @@ export function Session() {
   // snap to bottom when session changes
   createEffect(on(() => route.sessionID, toBottom))
 
+  // auto-scroll when last assistant message completes (for auto-wakeup)
+  const lastAssistantCompleted = createMemo(() => {
+    const msgs = messages()
+    const last = msgs.findLast((m) => m.role === "assistant")
+    return last?.time?.completed || 0
+  })
+
+  createEffect(
+    on(lastAssistantCompleted, (newTime, oldTime) => {
+      if (newTime > 0 && newTime !== oldTime) {
+        toBottom()
+      }
+    }),
+  )
+
   return (
     <context.Provider
       value={{
@@ -1777,9 +1792,50 @@ function Task(props: ToolProps<typeof TaskTool>) {
   const keybind = useKeybind()
   const { navigate } = useRoute()
   const local = useLocal()
+  const sync = useSync()
 
-  const current = createMemo(() => props.metadata.summary?.findLast((x) => x.state.status !== "pending"))
+  const current = createMemo(() =>
+    props.metadata.summary?.findLast(
+      (x: { id: string; tool: string; state: { status: string; title?: string } }) => x.state.status !== "pending",
+    ),
+  )
   const color = createMemo(() => local.agent.color(props.input.subagent_type ?? "unknown"))
+
+  // Access child session's messages for real-time activity display
+  const childMessages = createMemo(() =>
+    props.metadata.sessionId ? (sync.data.message[props.metadata.sessionId] ?? []) : [],
+  )
+
+  // Get latest activity for display during pending state
+  const activity = createMemo(() => {
+    const msgs = childMessages()
+    if (msgs.length === 0) return null
+
+    const last = msgs[msgs.length - 1]
+    if (!last) return null
+
+    // Extract meaningful activity text from message parts
+    const parts = sync.data.part[last.id] ?? []
+    for (const part of parts) {
+      if (part.type === "tool") {
+        // For completed tools, show the title
+        if (part.state.status === "completed") {
+          return `${Locale.titlecase(part.tool)}: ${part.state.title}`
+        }
+        // For running tools, show title if available
+        if (part.state.status === "running" && "title" in part.state && part.state.title) {
+          return `${Locale.titlecase(part.tool)}: ${part.state.title}`
+        }
+      }
+      if (part.type === "text" && part.text.trim()) {
+        // Show text content (truncate to 60 chars)
+        const text = part.text.trim()
+        return text.length > 60 ? text.slice(0, 57) + "..." : text
+      }
+    }
+
+    return null
+  })
 
   return (
     <Switch>
@@ -1803,6 +1859,9 @@ function Task(props: ToolProps<typeof TaskTool>) {
                 {current()!.state.status === "completed" ? current()!.state.title : ""}
               </text>
             </Show>
+            <Show when={activity()}>
+              <text style={{ fg: theme.textMuted }}>→ {activity()}</text>
+            </Show>
           </box>
           <text fg={theme.text}>
             {keybind.print("session_child_cycle")}
@@ -1811,16 +1870,18 @@ function Task(props: ToolProps<typeof TaskTool>) {
         </BlockTool>
       </Match>
       <Match when={true}>
-        <InlineTool
-          icon="◉"
-          iconColor={color()}
-          pending="Delegating..."
-          complete={props.input.subagent_type ?? props.input.description}
-          part={props.part}
-        >
-          <span style={{ fg: theme.text }}>{Locale.titlecase(props.input.subagent_type ?? "unknown")}</span> Task "
-          {props.input.description}"
-        </InlineTool>
+        <box paddingLeft={3} marginTop={1}>
+          <text fg={color()}>
+            <Show fallback={<>~ Delegating...</>} when={props.input.subagent_type ?? props.input.description}>
+              <span style={{ bold: true }}>◉</span>{" "}
+              <span style={{ fg: theme.text }}>{Locale.titlecase(props.input.subagent_type ?? "unknown")}</span> Task "
+              {props.input.description}"
+            </Show>
+          </text>
+          <Show when={activity()}>
+            <text style={{ fg: theme.textMuted }}>→ {activity()}</text>
+          </Show>
+        </box>
       </Match>
     </Switch>
   )
