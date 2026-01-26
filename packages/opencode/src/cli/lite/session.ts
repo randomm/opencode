@@ -16,12 +16,14 @@ export interface ChatChunk {
   input?: Record<string, unknown>
   output?: string
   tokens?: number
+  sessionID?: string
 }
 
 interface ChatOptions {
   model?: string
   agent?: string
   sessionID?: string
+  signal?: AbortSignal
 }
 
 export async function* chat(message: string, options?: ChatOptions): AsyncGenerator<ChatChunk> {
@@ -34,34 +36,37 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
   const agent = options?.agent || (await Agent.defaultAgent())
   const modelParam = options?.model ? Provider.parseModel(options.model) : undefined
 
-  const buffer: ChatChunk[] = []
-  let lastTextBuffer = ""
+  const chunks: ChatChunk[] = []
   let stepTokens = 0
+  let done = false
+  let cancelled = false
+  let error: unknown = null
+  let waiting: (() => void) | null = null
 
   const unsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
     const part = event.properties.part
-    const sessionMatch = part.sessionID === sessionID
-
-    if (!sessionMatch) return
+    if (part.sessionID !== sessionID) return
 
     if (part.type === "text" && event.properties.delta) {
-      lastTextBuffer += event.properties.delta
-      buffer.push({ type: "text", content: event.properties.delta })
+      chunks.push({ type: "text", content: event.properties.delta, sessionID })
+      wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        buffer.push({
+        chunks.push({
           type: "tool_start",
           tool: part.tool,
           input: part.state.input,
+          sessionID,
         })
       } else if (part.state.status === "completed") {
-        const output = part.state.output
-        buffer.push({
+        chunks.push({
           type: "tool_end",
           tool: part.tool,
-          output,
+          output: part.state.output,
+          sessionID,
         })
       }
+      wake()
     } else if (part.type === "step-finish") {
       stepTokens +=
         part.tokens.input +
@@ -72,25 +77,74 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     }
   })
 
+  function wake() {
+    if (waiting) {
+      const fn = waiting
+      waiting = null
+      fn()
+    }
+  }
+
   try {
     const parts = [{ type: "text" as const, text: message }]
-    await SessionPrompt.prompt({
+
+    // Yield sessionID for cancellation tracking
+    yield { type: "done" as const, sessionID }
+
+    // Start prompt
+    const promptPromise = SessionPrompt.prompt({
       sessionID,
       agent,
       model: modelParam,
       parts,
+    }).catch((err) => {
+      // Capture error but don't throw yet
+      error = err
+      cancelled = true
     })
 
-    for (const chunk of buffer) {
-      yield chunk
+    // Stream chunks as they arrive
+    while (!done && !options?.signal?.aborted && !cancelled) {
+      // Yield buffered chunks
+      while (chunks.length > 0) {
+        const chunk = chunks.shift()!
+        yield chunk
+      }
+
+      // Check if we're done or if there was an error
+      if (cancelled) {
+        break
+      }
+
+      // Wait for either prompt to complete or new chunks
+      await Promise.race([
+        promptPromise.then(() => {
+          done = true
+        }),
+        new Promise<void>((resolve) => {
+          waiting = () => resolve()
+          // Also resolve immediately if there are chunks
+          if (chunks.length > 0) {
+            waiting = null
+            resolve()
+          }
+        }),
+      ])
     }
 
-    yield { type: "done", tokens: stepTokens }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    const stack = error instanceof Error ? error.stack : undefined
+    // Yield any remaining chunks
+    while (chunks.length > 0) {
+      yield chunks.shift()!
+    }
+
+    if (!options?.signal?.aborted && !cancelled && !error) {
+      yield { type: "done", tokens: stepTokens, sessionID }
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    const stack = err instanceof Error ? err.stack : undefined
     log.error("chat error", { error: errorMessage, stack, sessionID })
-    yield { type: "error", content: errorMessage }
+    yield { type: "error", content: errorMessage, sessionID }
   } finally {
     unsubscribe()
   }

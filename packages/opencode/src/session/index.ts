@@ -547,6 +547,39 @@ export namespace Session {
     return true
   }
 
+  export function tryCancel(taskId: string): {
+    status: "cancelled" | "not_found" | "already_completed"
+    message?: string
+  } {
+    const result = backgroundTaskResults.get(taskId)
+    if (!result) {
+      return {
+        status: "not_found",
+        message: `Task ${taskId} not found`,
+      }
+    }
+
+    if (result.status !== "running") {
+      return {
+        status: "already_completed",
+        message: `Task ${taskId} is ${result.status} and cannot be cancelled`,
+      }
+    }
+
+    const cancelled = cancelBackgroundTask(taskId)
+    if (cancelled) {
+      return {
+        status: "cancelled",
+        message: `Task ${taskId} has been cancelled`,
+      }
+    }
+
+    return {
+      status: "not_found",
+      message: `Task ${taskId} could not be cancelled`,
+    }
+  }
+
   async function waitForBackgroundTasks(): Promise<void> {
     const tasks = Array.from(pendingBackgroundTasks.values())
     if (tasks.length === 0) return

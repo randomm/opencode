@@ -11,6 +11,7 @@ import { renderBottomBar, renderPrompt, type BottomBarState } from "./bottombar"
 import { bootstrap } from "../bootstrap"
 import { Log } from "../../util/log"
 import { Global } from "../../global"
+import { SessionPrompt } from "../../session/prompt"
 
 // UI State
 let tasksVisible = false
@@ -30,6 +31,8 @@ let bottomBar: BottomBarState = {
     removed: 0,
   },
 }
+let isOperationInProgress = false
+let currentSessionID: string | null = null
 
 async function main() {
   // Check TTY
@@ -74,6 +77,16 @@ async function main() {
       if (key.ctrl && key.name === "c") {
         cleanup()
         process.exit(0)
+      }
+
+      // Escape to cancel ongoing operation
+      if (key.name === "escape" && isOperationInProgress && currentSessionID) {
+        SessionPrompt.cancel(currentSessionID)
+        isOperationInProgress = false
+        currentSessionID = null
+        write("\n")
+        editor.render(renderPrompt())
+        return
       }
 
       // Ctrl+T to toggle task panel
@@ -148,12 +161,19 @@ async function handleMessage(message: string) {
   let first = true
   let totalTokens = 0
   const startTime = Date.now()
+  isOperationInProgress = true
 
   try {
     for await (const chunk of chat(message)) {
-      if (first) {
+      // Capture sessionID from first chunk for cancellation
+      if (chunk.sessionID && !currentSessionID) {
+        currentSessionID = chunk.sessionID
+      }
+
+      if (first && chunk.type !== "done") {
         spinner.stop(true)
         first = false
+        write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
       }
 
       if (chunk.type === "text" && chunk.content) {
@@ -184,6 +204,9 @@ async function handleMessage(message: string) {
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)
     write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+  } finally {
+    isOperationInProgress = false
+    currentSessionID = null
   }
 
   write("\n")
