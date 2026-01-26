@@ -3,8 +3,30 @@ import { cursor, clear, fg, style, write, screen } from "./terminal"
 import { parseKey, LineEditor } from "./input"
 import { Spinner } from "./spinner"
 import { chat } from "./session"
+import { formatTokens, formatDuration } from "../metrics"
+import { Icons } from "../cmd/tui/util/icons"
+import { renderTaskPanel, type Task, type AgentStatus } from "./taskpanel"
+import { renderStatusLine, type StatusLineState } from "./statusline"
+import { renderBottomBar, renderPrompt, type BottomBarState } from "./bottombar"
 
-const PROMPT = `${fg.cyan}>${style.reset} `
+// UI State
+let tasksVisible = false
+let tasks: Task[] = []
+let agents: AgentStatus[] = []
+let statusLine: StatusLineState = {
+  activity: "Idle",
+  duration: 0,
+  tokens: 0,
+  tasksVisible: false,
+}
+let bottomBar: BottomBarState = {
+  permissionMode: "ask",
+  fileChanges: {
+    total: 0,
+    added: 0,
+    removed: 0,
+  },
+}
 
 async function main() {
   // Check TTY
@@ -28,7 +50,7 @@ async function main() {
   process.stdin.resume()
 
   // Render prompt
-  editor.render(PROMPT)
+  editor.render(renderPrompt())
 
   // Handle input
   process.stdin.on("data", async (data: Buffer) => {
@@ -38,6 +60,13 @@ async function main() {
     if (key.ctrl && key.name === "c") {
       cleanup()
       process.exit(0)
+    }
+
+    // Ctrl+T to toggle task panel
+    if (key.ctrl && key.name === "t") {
+      tasksVisible = !tasksVisible
+      statusLine.tasksVisible = tasksVisible
+      editor.render(renderPrompt())
     }
 
     const result = editor.handle(key)
@@ -51,9 +80,9 @@ async function main() {
         await handleMessage(result)
       }
 
-      editor.render(PROMPT)
+      editor.render(renderPrompt())
     } else {
-      editor.render(PROMPT)
+      editor.render(renderPrompt())
     }
   })
 
@@ -102,6 +131,9 @@ async function handleMessage(message: string) {
   spinner.start()
 
   let first = true
+  let totalTokens = 0
+  const startTime = Date.now()
+
   try {
     for await (const chunk of chat(message)) {
       if (first) {
@@ -113,18 +145,26 @@ async function handleMessage(message: string) {
         write(chunk.content)
       }
 
-      if (chunk.type === "tool_start" && chunk.tool) {
-        write(`\n${fg.yellow}▶ ${chunk.tool}${style.reset}\n`)
+      if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+        write(`\n${Icons.taskIcon("progress")} ${chunk.tool}\n`)
       }
 
-      if (chunk.type === "tool_end" && chunk.tool) {
-        write(`${fg.green}✓ ${chunk.tool}${style.reset}\n`)
+      if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+        write(`${Icons.taskIcon("completed")} ${chunk.tool}\n`)
       }
 
       if (chunk.type === "error" && chunk.content) {
-        write(`\n${fg.red}Error: ${chunk.content}${style.reset}\n`)
+        const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+        write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+      }
+
+      if (chunk.tokens !== undefined) {
+        totalTokens += chunk.tokens
       }
     }
+
+    const duration = Date.now() - startTime
+    write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } catch (err) {
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)

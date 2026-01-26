@@ -20,7 +20,7 @@ const parameters = z.object({
   command: z.string().describe("The command that triggered this task").optional(),
 })
 
-const MAX_CONCURRENT_TASKS_PER_SESSION = 5
+const MAX_CONCURRENT_TASKS_PER_SESSION = 10
 
 type LockCallback = (release: () => void) => void
 interface LockState {

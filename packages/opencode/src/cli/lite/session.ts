@@ -15,6 +15,7 @@ export interface ChatChunk {
   tool?: string
   input?: Record<string, unknown>
   output?: string
+  tokens?: number
 }
 
 interface ChatOptions {
@@ -35,6 +36,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
 
   const buffer: ChatChunk[] = []
   let lastTextBuffer = ""
+  let stepTokens = 0
 
   const unsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
     const part = event.properties.part
@@ -60,6 +62,13 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
           output,
         })
       }
+    } else if (part.type === "step-finish") {
+      stepTokens +=
+        part.tokens.input +
+        part.tokens.output +
+        part.tokens.reasoning +
+        part.tokens.cache.read +
+        part.tokens.cache.write
     }
   })
 
@@ -76,7 +85,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       yield chunk
     }
 
-    yield { type: "done" }
+    yield { type: "done", tokens: stepTokens }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     const stack = error instanceof Error ? error.stack : undefined
