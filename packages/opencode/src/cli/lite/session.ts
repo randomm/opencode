@@ -4,8 +4,8 @@ import { Agent } from "../../agent/agent"
 import { Provider } from "../../provider/provider"
 import { Instance } from "../../project/instance"
 import { Log } from "../../util/log"
-import { Bus } from "../../bus"
-import { MessageV2 } from "../../session/message-v2"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2"
+import { Server } from "../../server/server"
 
 const log = Log.create({ service: "lite.session" })
 
@@ -36,59 +36,29 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
   const agent = options?.agent || (await Agent.defaultAgent())
   const modelParam = options?.model ? Provider.parseModel(options.model) : undefined
 
-  const chunks: ChatChunk[] = []
-  let stepTokens = 0
-  let done = false
-  let cancelled = false
-  let error: unknown = null
-  let waiting: (() => void) | null = null
+  const abortController = new AbortController()
+  const signal = options?.signal || abortController.signal
 
-  const unsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
-    const part = event.properties.part
-    if (part.sessionID !== sessionID) return
+  const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const request = new Request(input, init)
+    return Server.App().fetch(request)
+  }) as typeof globalThis.fetch
 
-    if (part.type === "text" && event.properties.delta) {
-      chunks.push({ type: "text", content: event.properties.delta, sessionID })
-      wake()
-    } else if (part.type === "tool") {
-      if (part.state.status === "running") {
-        chunks.push({
-          type: "tool_start",
-          tool: part.tool,
-          input: part.state.input,
-          sessionID,
-        })
-      } else if (part.state.status === "completed") {
-        chunks.push({
-          type: "tool_end",
-          tool: part.tool,
-          output: part.state.output,
-          sessionID,
-        })
-      }
-      wake()
-    } else if (part.type === "step-finish") {
-      stepTokens +=
-        part.tokens.input +
-        part.tokens.output +
-        part.tokens.reasoning +
-        part.tokens.cache.read +
-        part.tokens.cache.write
-    }
+  const sdk = createOpencodeClient({
+    baseUrl: "http://opencode.internal",
+    directory: Instance.directory,
+    fetch: fetchFn,
+    signal,
   })
 
-  function wake() {
-    if (waiting) {
-      const fn = waiting
-      waiting = null
-      fn()
-    }
-  }
+  let stepTokens = 0
+  let cancelled = false
+  let error: unknown = null
 
   try {
     const parts = [{ type: "text" as const, text: message }]
 
-    // Yield sessionID for cancellation tracking (NOT done type!)
+    // Yield sessionID for cancellation tracking
     yield { type: "start" as const, sessionID }
 
     // Start prompt
@@ -98,46 +68,70 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       model: modelParam,
       parts,
     }).catch((err) => {
-      // Capture error but don't throw yet
       error = err
       cancelled = true
     })
 
-    // Stream chunks as they arrive
-    while (!done && !options?.signal?.aborted && !cancelled) {
-      // Yield buffered chunks
-      while (chunks.length > 0) {
-        const chunk = chunks.shift()!
-        yield chunk
-      }
+    // Subscribe to SDK events
+    const events = await sdk.event.subscribe({}, { signal })
 
-      // Check if we're done or if there was an error
-      if (cancelled) {
-        break
-      }
+    // Process events from SDK stream concurrently with prompt
+    const eventTask = (async () => {
+      const chunks: ChatChunk[] = []
+      for await (const event of events.stream) {
+        if (signal.aborted || cancelled) break
 
-      // Wait for either prompt to complete or new chunks
-      await Promise.race([
-        promptPromise.then(() => {
-          done = true
-        }),
-        new Promise<void>((resolve) => {
-          waiting = () => resolve()
-          // Also resolve immediately if there are chunks
-          if (chunks.length > 0) {
-            waiting = null
-            resolve()
+        if (event.type === "message.part.updated") {
+          const part = event.properties.part
+
+          // Only process parts from this session
+          if (part.sessionID !== sessionID) continue
+
+          // Handle text content with streaming
+          if (part.type === "text" && event.properties.delta) {
+            chunks.push({ type: "text", content: event.properties.delta, sessionID })
           }
-        }),
-      ])
+          // Handle tool execution lifecycle
+          else if (part.type === "tool") {
+            if (part.state.status === "running") {
+              chunks.push({
+                type: "tool_start",
+                tool: part.tool,
+                input: part.state.input,
+                sessionID,
+              })
+            } else if (part.state.status === "completed") {
+              chunks.push({
+                type: "tool_end",
+                tool: part.tool,
+                output: part.state.output,
+                sessionID,
+              })
+            }
+          }
+          // Accumulate tokens from step completion
+          else if (part.type === "step-finish") {
+            stepTokens +=
+              part.tokens.input +
+              part.tokens.output +
+              part.tokens.reasoning +
+              part.tokens.cache.read +
+              part.tokens.cache.write
+          }
+        }
+      }
+      return chunks
+    })()
+
+    // Wait for prompt to complete
+    const [, bufferedChunks] = await Promise.all([promptPromise, eventTask])
+
+    // Yield buffered chunks
+    for (const chunk of bufferedChunks) {
+      yield chunk
     }
 
-    // Yield any remaining chunks
-    while (chunks.length > 0) {
-      yield chunks.shift()!
-    }
-
-    if (!options?.signal?.aborted && !cancelled && !error) {
+    if (!signal.aborted && !cancelled && !error) {
       yield { type: "done", tokens: stepTokens, sessionID }
     }
   } catch (err) {
@@ -146,7 +140,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     log.error("chat error", { error: errorMessage, stack, sessionID })
     yield { type: "error", content: errorMessage, sessionID }
   } finally {
-    unsubscribe()
+    abortController.abort()
   }
 }
 
