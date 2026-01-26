@@ -62,14 +62,14 @@ export namespace Log {
 
   export async function init(options: Options) {
     if (options.level) level = options.level
-    cleanup(sanitizePath(Global.Path.log))
+    const logDir = sanitizePath(Global.Path.log)
+    if (!options.print) {
+      await fs.mkdir(logDir, { recursive: true }).catch(() => {})
+      cleanup(logDir)
+    }
     if (options.print) return
-    logpath = sanitizePath(
-      path.join(
-        sanitizePath(Global.Path.log),
-        options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log",
-      ),
-    )
+    const filename = options.dev ? "dev.log" : new Date().toISOString().split(".")[0].replace(/:/g, "") + ".log"
+    logpath = sanitizePath(path.join(logDir, filename))
     const logfile = Bun.file(logpath)
     await fs.truncate(logpath).catch(() => {})
     const writer = logfile.writer()

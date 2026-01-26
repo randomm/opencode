@@ -63,10 +63,13 @@ export namespace Project {
         const gitBinary = Bun.which("git")
 
         // cached id calculation
-        let id = await Bun.file(path.join(git, "opencode"))
-          .text()
-          .then((x) => x.trim())
-          .catch(() => undefined)
+        let id
+        try {
+          const content = await Bun.file(path.join(git, "opencode")).text()
+          id = content.trim()
+        } catch {
+          id = undefined
+        }
 
         if (!gitBinary) {
           return {
@@ -110,15 +113,6 @@ export namespace Project {
           }
         }
 
-        if (!id) {
-          return {
-            id: "global",
-            worktree: sandbox,
-            sandbox: sandbox,
-            vcs: "git",
-          }
-        }
-
         const top = await $`git rev-parse --show-toplevel`
           .quiet()
           .nothrow()
@@ -136,8 +130,28 @@ export namespace Project {
           }
         }
 
+        let worktree = top
+        const stat = await Bun.file(git)
+          .stat()
+          .catch(() => null)
+        if (stat?.isFile) {
+          const gitDirContent = await Bun.file(git)
+            .text()
+            .then((x) => x.trim())
+          const gitDir = gitDirContent.replace("gitdir: ", "")
+          const gitCommonDirPath = path.join(gitDir, "commondir")
+          if (await Bun.file(gitCommonDirPath).exists()) {
+            const commonDir =
+              path.dirname(gitDir) +
+              "/" +
+              (await Bun.file(gitCommonDirPath)
+                .text()
+                .then((x) => x.trim()))
+            worktree = path.dirname(path.resolve(commonDir))
+          }
+        }
+
         sandbox = top
-        const worktree = top
 
         return {
           id,

@@ -5,13 +5,13 @@ import path from "path"
 import fs from "fs/promises"
 import fsSync from "fs"
 import { afterAll } from "bun:test"
-const { Global } = await import("../src/global")
 
 const dir = path.join(os.tmpdir(), "opencode-test-data-" + process.pid)
 await fs.mkdir(dir, { recursive: true })
 afterAll(() => {
   fsSync.rmSync(dir, { recursive: true, force: true })
 })
+
 // Set test home directory to isolate tests from user's actual home directory
 // This prevents tests from picking up real user configs/skills from ~/.claude/skills
 const testHome = path.join(dir, "home")
@@ -22,6 +22,21 @@ process.env["XDG_DATA_HOME"] = path.join(dir, "share")
 process.env["XDG_CACHE_HOME"] = path.join(dir, "cache")
 process.env["XDG_CONFIG_HOME"] = path.join(dir, "config")
 process.env["XDG_STATE_HOME"] = path.join(dir, "state")
+
+// Now safe to import Global - xdg-basedir will use the environment vars we just set
+const { Global } = await import("../src/global")
+
+// Create an empty config file at OPENCODE_TEST_HOME/.config/opencode/opencode.json
+// This ensures tests don't load the user's actual config files that may contain plugins
+// and other configuration that conflicts with test isolation
+const testConfigDir = path.join(testHome, ".config", "opencode")
+await fs.mkdir(testConfigDir, { recursive: true })
+const testConfigPath = path.join(testConfigDir, "opencode.json")
+const testConfig = {
+  $schema: "https://opencode.ai/config.json",
+  plugin: [],
+}
+await Bun.write(testConfigPath, JSON.stringify(testConfig, null, 2))
 
 // Pre-fetch models.json so tests don't need the macro fallback
 // Also write the cache version file to prevent global/index.ts from clearing the cache
@@ -56,6 +71,11 @@ delete process.env["DEEPSEEK_API_KEY"]
 delete process.env["FIREWORKS_API_KEY"]
 delete process.env["CEREBRAS_API_KEY"]
 delete process.env["SAMBANOVA_API_KEY"]
+
+// Clear config env vars to prevent loading user's config files from tests
+delete process.env["OPENCODE_CONFIG"]
+delete process.env["OPENCODE_CONFIG_DIR"]
+delete process.env["OPENCODE_CONFIG_CONTENT"]
 
 // Now safe to import from src/
 const { Log } = await import("../src/util/log")

@@ -276,7 +276,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
       const taskMetadata: TaskMetadata = {
         agent_type: agent.name,
         description: params.description,
-        session_id: session.id,
+        session_id: ctx.sessionID,
         start_time: startTime,
         release_slot: result.releaseSlot,
       }
