@@ -1870,9 +1870,7 @@ function Task(props: ToolProps<typeof TaskTool>) {
                 {current()!.state.status === "completed" ? current()!.state.title : ""}
               </text>
             </Show>
-            <Show when={activity()}>
-              <text style={{ fg: theme.textMuted }}>→ {activity()}</text>
-            </Show>
+            <text style={{ fg: theme.textMuted }}>→ {activity() ?? " "}</text>
           </box>
           <text fg={theme.text}>
             {keybind.print("session_child_cycle")}
@@ -1889,9 +1887,7 @@ function Task(props: ToolProps<typeof TaskTool>) {
               {props.input.description}"
             </Show>
           </text>
-          <Show when={activity()}>
-            <text style={{ fg: theme.textMuted }}>→ {activity()}</text>
-          </Show>
+          <text style={{ fg: theme.textMuted }}>→ {activity() ?? " "}</text>
         </box>
       </Match>
     </Switch>
