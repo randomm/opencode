@@ -137,27 +137,7 @@ export namespace Project {
         }
 
         sandbox = top
-
-        const worktree = await $`git rev-parse --git-common-dir`
-          .quiet()
-          .nothrow()
-          .cwd(sandbox)
-          .text()
-          .then((x) => {
-            const dirname = path.dirname(x.trim())
-            if (dirname === ".") return sandbox
-            return dirname
-          })
-          .catch(() => undefined)
-
-        if (!worktree) {
-          return {
-            id,
-            sandbox,
-            worktree: sandbox,
-            vcs: Info.shape.vcs.parse(Flag.OPENCODE_FAKE_VCS),
-          }
-        }
+        const worktree = top
 
         return {
           id,

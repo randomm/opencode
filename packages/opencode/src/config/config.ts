@@ -1136,6 +1136,57 @@ export namespace Config {
             .positive()
             .optional()
             .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
+          remory_enabled: z
+            .boolean()
+            .optional()
+            .default(true)
+            .describe("Enable memory persistence for context recall across sessions"),
+          remory_persist_context: z
+            .boolean()
+            .optional()
+            .default(true)
+            .describe("Persist conversation context to memory for future recall"),
+          remory_persist_thinking: z
+            .boolean()
+            .optional()
+            .default(true)
+            .describe("Persist AI thinking/reasoning to memory"),
+          remory_inject_context: z
+            .boolean()
+            .optional()
+            .default(true)
+            .describe("Inject relevant memory context into new conversations"),
+          remory_max_length: z
+            .number()
+            .int()
+            .min(100, "Memory max length must be at least 100 characters")
+            .max(2000, "Memory max length cannot exceed 2000 characters")
+            .optional()
+            .default(700)
+            .describe("Maximum length in characters for each memory entry (100-2000)"),
+          remory_search_limit: z
+            .number()
+            .int()
+            .min(1, "Memory search limit must be at least 1")
+            .max(20, "Memory search limit cannot exceed 20")
+            .optional()
+            .default(5)
+            .describe("Maximum number of memory entries to retrieve per search (1-20)"),
+          background_tasks: z.boolean().optional().default(true).describe("Enable background task execution"),
+          max_background_tasks: z
+            .number()
+            .int()
+            .min(0, "Max background tasks cannot be negative")
+            .optional()
+            .default(0)
+            .describe("Maximum concurrent background tasks (0 = unlimited)"),
+          context_window_percent: z
+            .number()
+            .min(0.1, "Context window percent must be at least 0.1 (10%)")
+            .max(1.0, "Context window percent cannot exceed 1.0 (100%)")
+            .optional()
+            .default(0.8)
+            .describe("Fraction of context window to use before compaction (0.1-1.0)"),
         })
         .optional(),
     })

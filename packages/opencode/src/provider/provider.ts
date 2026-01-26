@@ -1,5 +1,4 @@
 import z from "zod"
-import os from "os"
 import fuzzysort from "fuzzysort"
 import { Config } from "../config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
@@ -15,30 +14,10 @@ import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
 import { iife } from "@/util/iife"
 
-// Direct imports for bundled providers
-import { createAmazonBedrock, type AmazonBedrockProviderSettings } from "@ai-sdk/amazon-bedrock"
-import { createAnthropic } from "@ai-sdk/anthropic"
-import { createAzure } from "@ai-sdk/azure"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
-import { createVertex } from "@ai-sdk/google-vertex"
-import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic"
-import { createOpenAI } from "@ai-sdk/openai"
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
-import { createOpenRouter, type LanguageModelV2 } from "@openrouter/ai-sdk-provider"
-import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
-import { createXai } from "@ai-sdk/xai"
-import { createMistral } from "@ai-sdk/mistral"
-import { createGroq } from "@ai-sdk/groq"
-import { createDeepInfra } from "@ai-sdk/deepinfra"
-import { createCerebras } from "@ai-sdk/cerebras"
-import { createCohere } from "@ai-sdk/cohere"
-import { createGateway } from "@ai-sdk/gateway"
-import { createTogetherAI } from "@ai-sdk/togetherai"
-import { createPerplexity } from "@ai-sdk/perplexity"
-import { createVercel } from "@ai-sdk/vercel"
-import { createGitLab, VERSION as GITLAB_PROVIDER_VERSION } from "@gitlab/gitlab-ai-provider"
+// Type imports only (lazy loading via dynamic imports)
+import type { AmazonBedrockProviderSettings } from "@ai-sdk/amazon-bedrock"
+import type { LanguageModelV2 } from "@openrouter/ai-sdk-provider"
 import { ProviderTransform } from "./transform"
-import { Installation } from "../installation"
 
 export namespace Provider {
   const log = Log.create({ service: "provider" })
@@ -55,29 +34,29 @@ export namespace Provider {
     return isGpt5OrLater(modelID) && !modelID.startsWith("gpt-5-mini")
   }
 
-  const BUNDLED_PROVIDERS: Record<string, (options: any) => SDK> = {
-    "@ai-sdk/amazon-bedrock": createAmazonBedrock,
-    "@ai-sdk/anthropic": createAnthropic,
-    "@ai-sdk/azure": createAzure,
-    "@ai-sdk/google": createGoogleGenerativeAI,
-    "@ai-sdk/google-vertex": createVertex,
-    "@ai-sdk/google-vertex/anthropic": createVertexAnthropic,
-    "@ai-sdk/openai": createOpenAI,
-    "@ai-sdk/openai-compatible": createOpenAICompatible,
-    "@openrouter/ai-sdk-provider": createOpenRouter,
-    "@ai-sdk/xai": createXai,
-    "@ai-sdk/mistral": createMistral,
-    "@ai-sdk/groq": createGroq,
-    "@ai-sdk/deepinfra": createDeepInfra,
-    "@ai-sdk/cerebras": createCerebras,
-    "@ai-sdk/cohere": createCohere,
-    "@ai-sdk/gateway": createGateway,
-    "@ai-sdk/togetherai": createTogetherAI,
-    "@ai-sdk/perplexity": createPerplexity,
-    "@ai-sdk/vercel": createVercel,
-    "@gitlab/gitlab-ai-provider": createGitLab,
-    // @ts-ignore (TODO: kill this code so we dont have to maintain it)
-    "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
+  const BUNDLED_PROVIDERS: Record<string, () => Promise<Function>> = {
+    "@ai-sdk/amazon-bedrock": () => import("@ai-sdk/amazon-bedrock").then((m) => m.createAmazonBedrock),
+    "@ai-sdk/anthropic": () => import("@ai-sdk/anthropic").then((m) => m.createAnthropic),
+    "@ai-sdk/azure": () => import("@ai-sdk/azure").then((m) => m.createAzure),
+    "@ai-sdk/google": () => import("@ai-sdk/google").then((m) => m.createGoogleGenerativeAI),
+    "@ai-sdk/google-vertex": () => import("@ai-sdk/google-vertex").then((m) => m.createVertex),
+    "@ai-sdk/google-vertex/anthropic": () =>
+      import("@ai-sdk/google-vertex/anthropic").then((m) => m.createVertexAnthropic),
+    "@ai-sdk/openai": () => import("@ai-sdk/openai").then((m) => m.createOpenAI),
+    "@ai-sdk/openai-compatible": () => import("@ai-sdk/openai-compatible").then((m) => m.createOpenAICompatible),
+    "@openrouter/ai-sdk-provider": () => import("@openrouter/ai-sdk-provider").then((m) => m.createOpenRouter),
+    "@ai-sdk/xai": () => import("@ai-sdk/xai").then((m) => m.createXai),
+    "@ai-sdk/mistral": () => import("@ai-sdk/mistral").then((m) => m.createMistral),
+    "@ai-sdk/groq": () => import("@ai-sdk/groq").then((m) => m.createGroq),
+    "@ai-sdk/deepinfra": () => import("@ai-sdk/deepinfra").then((m) => m.createDeepInfra),
+    "@ai-sdk/cerebras": () => import("@ai-sdk/cerebras").then((m) => m.createCerebras),
+    "@ai-sdk/cohere": () => import("@ai-sdk/cohere").then((m) => m.createCohere),
+    "@ai-sdk/gateway": () => import("@ai-sdk/gateway").then((m) => m.createGateway),
+    "@ai-sdk/togetherai": () => import("@ai-sdk/togetherai").then((m) => m.createTogetherAI),
+    "@ai-sdk/perplexity": () => import("@ai-sdk/perplexity").then((m) => m.createPerplexity),
+    "@ai-sdk/vercel": () => import("@ai-sdk/vercel").then((m) => m.createVercel),
+    "@gitlab/gitlab-ai-provider": () => import("@gitlab/gitlab-ai-provider").then((m) => m.createGitLab),
+    "@ai-sdk/github-copilot": () => import("./sdk/openai-compatible/src").then((m) => m.createOpenaiCompatible),
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -134,7 +113,6 @@ export namespace Provider {
       return {
         autoload: false,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
-          if (sdk.responses === undefined && sdk.chat === undefined) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
         options: {},
@@ -144,7 +122,6 @@ export namespace Provider {
       return {
         autoload: false,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
-          if (sdk.responses === undefined && sdk.chat === undefined) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
         options: {},
@@ -197,13 +174,11 @@ export namespace Provider {
 
       const awsAccessKeyId = Env.get("AWS_ACCESS_KEY_ID")
 
-      // TODO: Using process.env directly because Env.set only updates a process.env shallow copy,
-      // until the scope of the Env API is clarified (test only or runtime?)
       const awsBearerToken = iife(() => {
-        const envToken = process.env.AWS_BEARER_TOKEN_BEDROCK
+        const envToken = Env.get("AWS_BEARER_TOKEN_BEDROCK")
         if (envToken) return envToken
         if (auth?.type === "api") {
-          process.env.AWS_BEARER_TOKEN_BEDROCK = auth.key
+          Env.set("AWS_BEARER_TOKEN_BEDROCK", auth.key)
           return auth.key
         }
         return undefined
@@ -380,19 +355,17 @@ export namespace Provider {
     },
     "sap-ai-core": async () => {
       const auth = await Auth.get("sap-ai-core")
-      // TODO: Using process.env directly because Env.set only updates a shallow copy (not process.env),
-      // until the scope of the Env API is clarified (test only or runtime?)
       const envServiceKey = iife(() => {
-        const envAICoreServiceKey = process.env.AICORE_SERVICE_KEY
+        const envAICoreServiceKey = Env.get("AICORE_SERVICE_KEY")
         if (envAICoreServiceKey) return envAICoreServiceKey
         if (auth?.type === "api") {
-          process.env.AICORE_SERVICE_KEY = auth.key
+          Env.set("AICORE_SERVICE_KEY", auth.key)
           return auth.key
         }
         return undefined
       })
-      const deploymentId = process.env.AICORE_DEPLOYMENT_ID
-      const resourceGroup = process.env.AICORE_RESOURCE_GROUP
+      const deploymentId = Env.get("AICORE_DEPLOYMENT_ID")
+      const resourceGroup = Env.get("AICORE_RESOURCE_GROUP")
 
       return {
         autoload: !!envServiceKey,
@@ -426,26 +399,19 @@ export namespace Provider {
       const config = await Config.get()
       const providerConfig = config.provider?.["gitlab"]
 
-      const aiGatewayHeaders = {
-        "User-Agent": `opencode/${Installation.VERSION} gitlab-ai-provider/${GITLAB_PROVIDER_VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`,
-        ...(providerConfig?.options?.aiGatewayHeaders || {}),
-      }
-
       return {
         autoload: !!apiKey,
         options: {
           instanceUrl,
           apiKey,
-          aiGatewayHeaders,
           featureFlags: {
             duo_agent_platform_agentic_chat: true,
             duo_agent_platform: true,
             ...(providerConfig?.options?.featureFlags || {}),
           },
         },
-        async getModel(sdk: ReturnType<typeof createGitLab>, modelID: string) {
+        async getModel(sdk: any, modelID: string) {
           return sdk.agenticChat(modelID, {
-            aiGatewayHeaders,
             featureFlags: {
               duo_agent_platform_agentic_chat: true,
               duo_agent_platform: true,
@@ -616,7 +582,10 @@ export namespace Provider {
       api: {
         id: model.id,
         url: provider.api!,
-        npm: model.provider?.npm ?? provider.npm ?? "@ai-sdk/openai-compatible",
+        npm: iife(() => {
+          if (provider.id.startsWith("github-copilot")) return "@ai-sdk/github-copilot"
+          return model.provider?.npm ?? provider.npm ?? "@ai-sdk/openai-compatible"
+        }),
       },
       status: model.status ?? "active",
       headers: model.headers ?? {},
@@ -866,9 +835,10 @@ export namespace Provider {
       // Load for the main provider if auth exists
       if (auth) {
         const options = await plugin.auth.loader(() => Auth.get(providerID) as any, database[plugin.auth.provider])
-        const opts = options ?? {}
-        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
-        mergeProvider(providerID, patch)
+        mergeProvider(plugin.auth.provider, {
+          source: "custom",
+          options: options,
+        })
       }
 
       // If this is github-copilot plugin, also register for github-copilot-enterprise if auth exists
@@ -881,11 +851,10 @@ export namespace Provider {
               () => Auth.get(enterpriseProviderID) as any,
               database[enterpriseProviderID],
             )
-            const opts = enterpriseOptions ?? {}
-            const patch: Partial<Info> = providers[enterpriseProviderID]
-              ? { options: opts }
-              : { source: "custom", options: opts }
-            mergeProvider(enterpriseProviderID, patch)
+            mergeProvider(enterpriseProviderID, {
+              source: "custom",
+              options: enterpriseOptions,
+            })
           }
         }
       }
@@ -901,9 +870,10 @@ export namespace Provider {
       const result = await fn(data)
       if (result && (result.autoload || providers[providerID])) {
         if (result.getModel) modelLoaders[providerID] = result.getModel
-        const opts = result.options ?? {}
-        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
-        mergeProvider(providerID, patch)
+        mergeProvider(providerID, {
+          source: "custom",
+          options: result.options,
+        })
       }
     }
 
@@ -935,8 +905,6 @@ export namespace Provider {
           (configProvider?.whitelist && !configProvider.whitelist.includes(modelID))
         )
           delete provider.models[modelID]
-
-        model.variants = mapValues(ProviderTransform.variants(model), (v) => v)
 
         // Filter out disabled variants from config
         const configVariants = configProvider?.models?.[modelID]?.variants
@@ -990,7 +958,7 @@ export namespace Provider {
           ...model.headers,
         }
 
-      const key = Bun.hash.xxHash32(JSON.stringify({ providerID: model.providerID, npm: model.api.npm, options }))
+      const key = Bun.hash.xxHash32(JSON.stringify({ npm: model.api.npm, options }))
       const existing = s.sdk.get(key)
       if (existing) return existing
 
@@ -1036,10 +1004,14 @@ export namespace Provider {
         })
       }
 
-      const bundledFn = BUNDLED_PROVIDERS[model.api.npm]
-      if (bundledFn) {
-        log.info("using bundled provider", { providerID: model.providerID, pkg: model.api.npm })
-        const loaded = bundledFn({
+      // Special case: google-vertex-anthropic uses a subpath import
+      const bundledKey =
+        model.providerID === "google-vertex-anthropic" ? "@ai-sdk/google-vertex/anthropic" : model.api.npm
+      const bundledLoader = BUNDLED_PROVIDERS[bundledKey]
+      if (bundledLoader) {
+        log.info("using bundled provider", { providerID: model.providerID, pkg: bundledKey })
+        const bundledFn = await bundledLoader()
+        const loaded = (bundledFn as any)({
           name: model.providerID,
           ...options,
         })

@@ -1719,3 +1719,232 @@ describe("OPENCODE_DISABLE_PROJECT_CONFIG", () => {
     }
   })
 })
+
+describe("experimental config validation", () => {
+  test("accepts valid experimental config with defaults", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_enabled: true,
+              remory_max_length: 500,
+              context_window_percent: 0.7,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.experimental?.remory_enabled).toBe(true)
+        expect(config.experimental?.remory_max_length).toBe(500)
+        expect(config.experimental?.context_window_percent).toBe(0.7)
+      },
+    })
+  })
+
+  test("rejects remory_max_length below minimum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_max_length: 50,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects remory_max_length above maximum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_max_length: 3000,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects context_window_percent below minimum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              context_window_percent: 0.05,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects context_window_percent above maximum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              context_window_percent: 1.5,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects remory_search_limit below minimum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_search_limit: 0,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects remory_search_limit above maximum", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_search_limit: 25,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("rejects negative max_background_tasks", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              max_background_tasks: -1,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        await expect(Config.get()).rejects.toThrow()
+      },
+    })
+  })
+
+  test("accepts boundary values for remory_max_length", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              remory_max_length: 100,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.experimental?.remory_max_length).toBe(100)
+      },
+    })
+  })
+
+  test("accepts boundary values for context_window_percent", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(
+          path.join(dir, "opencode.json"),
+          JSON.stringify({
+            $schema: "https://opencode.ai/config.json",
+            experimental: {
+              context_window_percent: 0.1,
+            },
+          }),
+        )
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const config = await Config.get()
+        expect(config.experimental?.context_window_percent).toBe(0.1)
+      },
+    })
+  })
+})
