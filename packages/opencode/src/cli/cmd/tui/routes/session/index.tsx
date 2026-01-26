@@ -34,9 +34,8 @@ import type { Tool } from "@/tool/tool"
 import type { ReadTool } from "@/tool/read"
 import type { WriteTool } from "@/tool/write"
 import { BashTool } from "@/tool/bash"
-import type { GlobTool } from "@/tool/glob"
+import type { RgTool } from "@/tool/rg"
 import { TodoWriteTool } from "@/tool/todo"
-import type { GrepTool } from "@/tool/grep"
 import type { ListTool } from "@/tool/ls"
 import type { EditTool } from "@/tool/edit"
 import type { ApplyPatchTool } from "@/tool/apply_patch"
@@ -1430,14 +1429,11 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
         <Match when={props.part.tool === "bash"}>
           <Bash {...toolprops} />
         </Match>
-        <Match when={props.part.tool === "glob"}>
+        <Match when={props.part.tool === "glob" || props.part.tool === "grep"}>
           <Glob {...toolprops} />
         </Match>
         <Match when={props.part.tool === "read"}>
           <Read {...toolprops} />
-        </Match>
-        <Match when={props.part.tool === "grep"}>
-          <Grep {...toolprops} />
         </Match>
         <Match when={props.part.tool === "list"}>
           <List {...toolprops} />
@@ -1719,11 +1715,21 @@ function Write(props: ToolProps<typeof WriteTool>) {
   )
 }
 
-function Glob(props: ToolProps<typeof GlobTool>) {
+function Glob(props: ToolProps<typeof RgTool>) {
+  const isContentSearch = !props.input.files_only
+  const displayValue = props.input.pattern ?? props.input.include
+  const matchesCount = props.metadata.matches
+
   return (
-    <InlineTool icon="✱" pending="Finding files..." complete={props.input.pattern} part={props.part}>
-      Glob "{props.input.pattern}" <Show when={props.input.path}>in {normalizePath(props.input.path)} </Show>
-      <Show when={props.metadata.count}>({props.metadata.count} matches)</Show>
+    <InlineTool
+      icon="✱"
+      pending={isContentSearch ? "Searching content..." : "Finding files..."}
+      complete={displayValue}
+      part={props.part}
+    >
+      {isContentSearch ? "Grep" : "Glob"} "{displayValue}"{" "}
+      <Show when={props.input.path}>in {normalizePath(props.input.path)} </Show>
+      <Show when={matchesCount !== undefined}>({matchesCount} matches)</Show>
     </InlineTool>
   )
 }
@@ -1732,15 +1738,6 @@ function Read(props: ToolProps<typeof ReadTool>) {
   return (
     <InlineTool icon="→" pending="Reading file..." complete={props.input.filePath} part={props.part}>
       Read {normalizePath(props.input.filePath!)} {input(props.input, ["filePath"])}
-    </InlineTool>
-  )
-}
-
-function Grep(props: ToolProps<typeof GrepTool>) {
-  return (
-    <InlineTool icon="✱" pending="Searching content..." complete={props.input.pattern} part={props.part}>
-      Grep "{props.input.pattern}" <Show when={props.input.path}>in {normalizePath(props.input.path)} </Show>
-      <Show when={props.metadata.matches}>({props.metadata.matches} matches)</Show>
     </InlineTool>
   )
 }

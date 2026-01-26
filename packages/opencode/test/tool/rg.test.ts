@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "path"
-import { GrepTool } from "../../src/tool/grep"
+import { RgTool } from "../../src/tool/rg"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
@@ -17,17 +17,36 @@ const ctx = {
 
 const projectRoot = path.join(__dirname, "../..")
 
-describe("tool.grep", () => {
+describe("tool.rg", () => {
   test("basic search", async () => {
     await Instance.provide({
       directory: projectRoot,
       fn: async () => {
-        const grep = await GrepTool.init()
-        const result = await grep.execute(
+        const rg = await RgTool.init()
+        const result = await rg.execute(
           {
             pattern: "export",
             path: path.join(projectRoot, "src/tool"),
             include: "*.ts",
+          },
+          ctx,
+        )
+        expect(result.metadata.matches).toBeGreaterThan(0)
+        expect(result.output).toContain("Found")
+      },
+    })
+  })
+
+  test("file listing with files_only", async () => {
+    await Instance.provide({
+      directory: projectRoot,
+      fn: async () => {
+        const rg = await RgTool.init()
+        const result = await rg.execute(
+          {
+            pattern: "*.ts",
+            path: path.join(projectRoot, "src/tool"),
+            files_only: true,
           },
           ctx,
         )
@@ -46,8 +65,8 @@ describe("tool.grep", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const grep = await GrepTool.init()
-        const result = await grep.execute(
+        const rg = await RgTool.init()
+        const result = await rg.execute(
           {
             pattern: "xyznonexistentpatternxyz123",
             path: tmp.path,
@@ -71,8 +90,8 @@ describe("tool.grep", () => {
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
-        const grep = await GrepTool.init()
-        const result = await grep.execute(
+        const rg = await RgTool.init()
+        const result = await rg.execute(
           {
             pattern: "line",
             path: tmp.path,
