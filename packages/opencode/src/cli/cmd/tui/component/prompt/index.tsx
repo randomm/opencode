@@ -816,7 +816,7 @@ export function Prompt(props: PromptProps) {
                 }
                 if (keybind.match("app_exit", e)) {
                   if (store.prompt.input === "") {
-                    await exit()
+                    exit()
                     // Don't preventDefault - let textarea potentially handle the event
                     e.preventDefault()
                     return
