@@ -880,9 +880,22 @@ export namespace Session {
     const { cleanupSessionTaskMaps } = await import("../tool/task")
     await cleanupSessionTaskMaps(sessionID)
 
+    // Create snapshot of entries before iteration to avoid concurrent modification issues
+    const pendingEntries = Array.from(pendingTaskMetadata.entries())
+
+    for (const [id, metadata] of pendingEntries) {
+      if (metadata.session_id === sessionID && metadata.release_slot) {
+        try {
+          metadata.release_slot()
+        } catch (e) {
+          const error = e instanceof Error ? e.message : String(e)
+          log.warn("failed to release task slot during cleanup", { task_id: id, session_id: sessionID, error })
+        }
+      }
+    }
+
     reservedTaskSlots.delete(sessionID)
 
-    const pendingEntries = Array.from(pendingTaskMetadata.entries())
     const cancelNeeded = pendingEntries.some(([_, metadata]) => metadata.session_id === sessionID)
 
     if (cancelNeeded) {
