@@ -42,7 +42,8 @@ describe("tool.check_task", () => {
         SessionStatus.set(session.id, { type: "busy" })
 
         const tool = await CheckTaskTool.init()
-        const result = await tool.execute({ task_id: session.id }, ctx)
+        const ctxWithSessionID = { ...ctx, sessionID: session.id }
+        const result = await tool.execute({ task_id: session.id }, ctxWithSessionID)
 
         const output = JSON.parse(result.output)
         expect(output.status).toBe("running")
@@ -102,7 +103,8 @@ describe("tool.check_task", () => {
         SessionStatus.set(session.id, { type: "idle" })
 
         const tool = await CheckTaskTool.init()
-        const result = await tool.execute({ task_id: session.id }, ctx)
+        const ctxWithSessionID = { ...ctx, sessionID: session.id }
+        const result = await tool.execute({ task_id: session.id }, ctxWithSessionID)
 
         const output = JSON.parse(result.output)
         expect(output.status).toBe("completed")
@@ -130,7 +132,8 @@ describe("tool.check_task", () => {
         })
 
         const tool = await CheckTaskTool.init()
-        const result = await tool.execute({ task_id: session.id }, ctx)
+        const ctxWithSessionID = { ...ctx, sessionID: session.id }
+        const result = await tool.execute({ task_id: session.id }, ctxWithSessionID)
 
         const output = JSON.parse(result.output)
         expect(output.status).toBe("failed")

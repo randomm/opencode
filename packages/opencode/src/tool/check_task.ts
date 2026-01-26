@@ -2,6 +2,7 @@ import { Tool } from "./tool"
 import DESCRIPTION from "./check_task.txt"
 import z from "zod"
 import { Session } from "../session"
+import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
 
@@ -65,9 +66,12 @@ function checkBackgroundTask(id: string): TaskResult | undefined {
 }
 
 async function checkSessionTask(id: string, callerSessionId?: string): Promise<TaskResult | undefined> {
-  const session = await Promise.resolve()
-    .then(() => Session.get(id))
-    .catch(() => undefined)
+  let session: Session.Info | undefined
+  try {
+    session = await Session.get(id)
+  } catch (e) {
+    // intentionally swallow errors, session will be undefined
+  }
   if (!session) return undefined
 
   if (callerSessionId) {
