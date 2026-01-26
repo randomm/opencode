@@ -96,12 +96,12 @@ export namespace Project {
             )
             .catch(() => undefined)
 
-          if (!roots) {
+          if (!roots || roots.length === 0) {
             return {
               id: "global",
               worktree: sandbox,
               sandbox: sandbox,
-              vcs: Info.shape.vcs.parse(Flag.OPENCODE_FAKE_VCS),
+              vcs: "git",
             }
           }
 
@@ -139,13 +139,11 @@ export namespace Project {
           const gitDir = gitDirContent.replace("gitdir: ", "")
           const gitCommonDirPath = path.join(gitDir, "commondir")
           if (await Bun.file(gitCommonDirPath).exists()) {
-            const commonDir =
-              path.dirname(gitDir) +
-              "/" +
-              (await Bun.file(gitCommonDirPath)
-                .text()
-                .then((x) => x.trim()))
-            worktree = path.dirname(path.resolve(commonDir))
+            const commonDirContent = await Bun.file(gitCommonDirPath)
+              .text()
+              .then((x) => x.trim())
+            const commonGitDir = path.resolve(gitDir, commonDirContent)
+            worktree = path.dirname(commonGitDir)
           }
         }
 
