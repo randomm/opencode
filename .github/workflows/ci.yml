@@ -16,6 +16,12 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Setup environment
+        run: |
+          mkdir -p ~/.local/share/opencode/log
+          git config --global user.name "CI"
+          git config --global user.email "ci@test.local"
+
       - run: bun install
 
       - run: bun typecheck
