@@ -1,101 +1,104 @@
-import { write, cursor, clear, style, fg } from "./terminal"
+import { createLogUpdate } from "log-update"
 import { parseKey } from "./input"
+import { fg, style, cursor, write } from "./terminal"
 
 export interface SelectOption<T = string> {
-  label: string
-  value: T
+  label?: string
+  value?: T
   description?: string
   current?: boolean
+  section?: string
+  separator?: boolean
 }
 
 let active = false
+let frozenBlock: (() => void) | null = null
+
+export function setBlockFreeze(freezeFn: () => void) {
+  frozenBlock = freezeFn
+}
 
 export async function select<T>(options: SelectOption<T>[], title?: string): Promise<T | null> {
+  if (options.length === 0) return null
   if (active) return null
-  if (options.length === 0) {
-    return null
+
+  if (frozenBlock) {
+    frozenBlock()
+    await new Promise((resolve) => setTimeout(resolve, 100))
   }
 
-  active = true
+  const update = createLogUpdate(process.stdout, { showCursor: false })
+  const listeners = process.stdin.listeners("data").slice()
+  process.stdin.removeAllListeners("data")
+
   try {
-    const originalListeners = process.stdin.listeners("data").slice()
-    process.stdin.removeAllListeners("data")
+    active = true
+    const selectableOptions = options.filter((opt) => !opt.separator && opt.value !== undefined)
+    if (selectableOptions.length === 0) {
+      return null
+    }
 
-    let selected = options.findIndex((opt) => opt.current) ?? 0
-    selected = Math.max(0, Math.min(selected, options.length - 1))
-
-    let totalLines = 0
+    const found = selectableOptions.findIndex((opt) => opt.current)
+    let selected = found >= 0 ? found : 0
+    selected = Math.max(0, Math.min(selected, selectableOptions.length - 1))
 
     const render = () => {
-      write(cursor.save)
-      write(cursor.toColumn(0))
+      const lines: string[] = []
 
       if (title) {
-        write(title)
-        write("\n")
-        totalLines = 1
-      } else {
-        totalLines = 0
+        lines.push(title)
       }
 
-      for (let i = 0; i < options.length; i++) {
-        const opt = options[i]
-        const isSelected = i === selected
-        const prefix = isSelected ? `${fg.cyan}${style.bold}>${style.reset}` : " "
+      let currentSection = ""
+
+      for (const opt of options) {
+        if (opt.separator) {
+          currentSection = opt.section || ""
+          lines.push(`  ${style.dim}${currentSection}${style.reset}`)
+          continue
+        }
+
+        const selectedIndex = selectableOptions.indexOf(opt)
+        const isSelected = selectedIndex === selected
+        const prefix = isSelected ? `${fg.cyan}${style.bold}›${style.reset}` : " "
         const current = opt.current ? " ●" : ""
         const description = opt.description ? ` ${fg.gray}(${opt.description})${style.reset}` : ""
 
-        const text = opt.label || opt.value || "(unknown)"
+        const text = opt.label || String(opt.value)
         const line = `${prefix} ${text}${current}${description}`
-        write(line)
-        write("\n")
-        totalLines++
+        lines.push(line)
       }
 
-      write(cursor.restore)
-    }
-
-    const clearDisplay = () => {
-      write(cursor.save)
-
-      for (let i = 0; i < totalLines; i++) {
-        write(cursor.up())
-        write(clear.line)
-      }
-
-      write(cursor.restore)
+      update(lines.join("\n"))
     }
 
     const result = await new Promise<T | null>((resolve) => {
-      let handler: ((data: Buffer) => void) | null = null
+      const handler = (data: Buffer) => {
+        try {
+          const key = parseKey(data)
+          const max = selectableOptions.length - 1
 
-      const cleanup = () => {
-        if (handler) {
-          process.stdin.removeListener("data", handler)
-        }
-        clearDisplay()
-        const listeners = originalListeners.filter(
-          (item): item is (chunk: Buffer) => void => typeof item === "function",
-        )
-        for (const listener of listeners) {
-          process.stdin.on("data", listener)
-        }
-      }
-
-      handler = (data: Buffer) => {
-        const key = parseKey(data)
-
-        if (key.name === "up" && selected > 0) {
-          selected--
-          render()
-        } else if (key.name === "down" && selected < options.length - 1) {
-          selected++
-          render()
-        } else if (key.name === "return") {
-          cleanup()
-          resolve(options[selected].value)
-        } else if (key.name === "escape") {
-          cleanup()
+          if (key.name === "up" && selected > 0) {
+            selected--
+            render()
+            return
+          }
+          if (key.name === "down" && selected < max) {
+            selected++
+            render()
+            return
+          }
+          if (key.name === "return") {
+            const value = selectableOptions[selected].value
+            resolve(value !== undefined ? value : null)
+            return
+          }
+          if (key.name === "escape") {
+            update.clear()
+            resolve(null)
+            return
+          }
+        } catch {
           resolve(null)
         }
       }
@@ -107,5 +110,12 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
     return result
   } finally {
     active = false
+    write(cursor.show)
+    update.done()
+    process.stdin.removeAllListeners("data")
+    const typed = listeners.filter((item): item is (chunk: Buffer) => void => typeof item === "function")
+    for (const fn of typed) {
+      process.stdin.on("data", fn)
+    }
   }
 }
