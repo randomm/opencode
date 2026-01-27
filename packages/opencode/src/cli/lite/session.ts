@@ -51,9 +51,20 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     signal,
   })
 
+  const chunks: ChatChunk[] = []
   let stepTokens = 0
+  let done = false
   let cancelled = false
   let error: unknown = null
+  let waiting: (() => void) | null = null
+
+  function wake() {
+    if (waiting) {
+      const fn = waiting
+      waiting = null
+      fn()
+    }
+  }
 
   try {
     const parts = [{ type: "text" as const, text: message }]
@@ -61,7 +72,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     // Yield sessionID for cancellation tracking
     yield { type: "start" as const, sessionID }
 
-    // Start prompt
+    // Start prompt (triggers LLM, emits events)
     const promptPromise = SessionPrompt.prompt({
       sessionID,
       agent,
@@ -70,65 +81,70 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     }).catch((err) => {
       error = err
       cancelled = true
+      wake()
     })
 
-    // Subscribe to SDK events
-    const events = await sdk.event.subscribe({}, { signal })
+    // Subscribe to SDK events and push to chunks array
+    sdk.event
+      .subscribe({}, { signal })
+      .then(async (events) => {
+        for await (const event of events.stream) {
+          if (signal.aborted || cancelled) break
 
-    // Process events from SDK stream concurrently with prompt
-    const eventTask = (async () => {
-      const chunks: ChatChunk[] = []
-      for await (const event of events.stream) {
-        if (signal.aborted || cancelled) break
+          if (event.type === "message.part.updated") {
+            const part = event.properties.part
+            if (part.sessionID !== sessionID) continue
 
-        if (event.type === "message.part.updated") {
-          const part = event.properties.part
-
-          // Only process parts from this session
-          if (part.sessionID !== sessionID) continue
-
-          // Handle text content with streaming
-          if (part.type === "text" && event.properties.delta) {
-            chunks.push({ type: "text", content: event.properties.delta, sessionID })
-          }
-          // Handle tool execution lifecycle
-          else if (part.type === "tool") {
-            if (part.state.status === "running") {
-              chunks.push({
-                type: "tool_start",
-                tool: part.tool,
-                input: part.state.input,
-                sessionID,
-              })
-            } else if (part.state.status === "completed") {
-              chunks.push({
-                type: "tool_end",
-                tool: part.tool,
-                output: part.state.output,
-                sessionID,
-              })
+            if (part.type === "text" && event.properties.delta) {
+              chunks.push({ type: "text", content: event.properties.delta, sessionID })
+              wake()
+            } else if (part.type === "tool") {
+              if (part.state.status === "running") {
+                chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
+              } else if (part.state.status === "completed") {
+                chunks.push({ type: "tool_end", tool: part.tool, output: part.state.output, sessionID })
+              }
+              wake()
+            } else if (part.type === "step-finish") {
+              stepTokens +=
+                part.tokens.input +
+                part.tokens.output +
+                part.tokens.reasoning +
+                part.tokens.cache.read +
+                part.tokens.cache.write
             }
           }
-          // Accumulate tokens from step completion
-          else if (part.type === "step-finish") {
-            stepTokens +=
-              part.tokens.input +
-              part.tokens.output +
-              part.tokens.reasoning +
-              part.tokens.cache.read +
-              part.tokens.cache.write
-          }
         }
+      })
+      .catch(() => {})
+
+    // Wait for prompt to complete, yielding chunks as they arrive
+    while (!done && !signal.aborted && !cancelled) {
+      // Yield any buffered chunks
+      while (chunks.length > 0) {
+        yield chunks.shift()!
       }
-      return chunks
-    })()
 
-    // Wait for prompt to complete
-    const [, bufferedChunks] = await Promise.all([promptPromise, eventTask])
+      if (cancelled) break
 
-    // Yield buffered chunks
-    for (const chunk of bufferedChunks) {
-      yield chunk
+      // Wait for either prompt completion or new chunks
+      await Promise.race([
+        promptPromise.then(() => {
+          done = true
+        }),
+        new Promise<void>((resolve) => {
+          waiting = resolve
+          if (chunks.length > 0) {
+            waiting = null
+            resolve()
+          }
+        }),
+      ])
+    }
+
+    // Yield remaining chunks
+    while (chunks.length > 0) {
+      yield chunks.shift()!
     }
 
     if (!signal.aborted && !cancelled && !error) {
