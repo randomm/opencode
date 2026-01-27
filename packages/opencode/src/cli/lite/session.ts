@@ -16,6 +16,7 @@ export interface ChatChunk {
   callID?: string
   input?: Record<string, unknown>
   output?: string
+  metadata?: Record<string, unknown>
   tokens?: number
   sessionID?: string
 }
@@ -72,6 +73,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
           callID: part.callID,
           input: part.state.input,
           output: part.state.output,
+          metadata: part.state.metadata,
           sessionID,
         })
       }
@@ -211,6 +213,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
           callID: part.callID,
           input: part.state.input,
           output: part.state.output,
+          metadata: part.state.metadata,
           sessionID,
         })
       }
