@@ -376,6 +376,7 @@ async function listSessions(): Promise<Session.Info[]> {
 
 async function handleCustomCommand(name: string, args: string) {
   const spinner = new Spinner("Thinking")
+  spinner.start()
 
   let first = true
   let totalTokens = 0
@@ -395,8 +396,6 @@ async function handleCustomCommand(name: string, args: string) {
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
-
-    spinner.start()
 
     try {
       for await (const chunk of command(name, args, options)) {
@@ -424,14 +423,15 @@ async function handleCustomCommand(name: string, args: string) {
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
+          const cols = process.stdout.columns || 80
 
           if (tool === lastToolName && arg === lastToolArg) {
             repeatCount += 1
             const count = repeatCount + 1
             const countText = count > 1 ? ` (×${count})` : ""
-            write(
-              `\x1b[1A\r\x1b[2K${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
-            )
+            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
             if (lastChunkType === "text") {
               write("\n")
@@ -440,7 +440,9 @@ async function handleCustomCommand(name: string, args: string) {
             lastToolArg = arg
             repeatCount = 0
             const summary = arg ? ` ${arg}` : ""
-            write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`${display}\n`)
           }
 
           lastToolSummary = arg
@@ -451,13 +453,14 @@ async function handleCustomCommand(name: string, args: string) {
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
+          const cols = process.stdout.columns || 80
 
           if (lastChunkWasToolStart && lastToolSummary === arg) {
             const count = repeatCount + 1
             const countText = count > 1 ? ` (×${count})` : ""
-            write(
-              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
-            )
+            const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
             write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
@@ -484,7 +487,7 @@ async function handleCustomCommand(name: string, args: string) {
       const duration = Date.now() - startTime
       write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
-      write(cursor.show)
+      spinner.stop(true)
     }
   } catch (err) {
     if (first) spinner.stop(false)
@@ -499,6 +502,7 @@ async function handleCustomCommand(name: string, args: string) {
 
 async function handleMessage(message: string) {
   const spinner = new Spinner("Thinking")
+  spinner.start()
 
   let first = true
   let totalTokens = 0
@@ -518,8 +522,6 @@ async function handleMessage(message: string) {
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
-
-    spinner.start()
 
     try {
       for await (const chunk of chat(message, options)) {
@@ -547,14 +549,15 @@ async function handleMessage(message: string) {
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
+          const cols = process.stdout.columns || 80
 
           if (tool === lastToolName && arg === lastToolArg) {
             repeatCount += 1
             const count = repeatCount + 1
             const countText = count > 1 ? ` (×${count})` : ""
-            write(
-              `\x1b[1A\r\x1b[2K${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
-            )
+            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
             if (lastChunkType === "text") {
               write("\n")
@@ -563,7 +566,9 @@ async function handleMessage(message: string) {
             lastToolArg = arg
             repeatCount = 0
             const summary = arg ? ` ${arg}` : ""
-            write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`${display}\n`)
           }
 
           lastToolSummary = arg
@@ -574,13 +579,14 @@ async function handleMessage(message: string) {
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
+          const cols = process.stdout.columns || 80
 
           if (lastChunkWasToolStart && lastToolSummary === arg) {
             const count = repeatCount + 1
             const countText = count > 1 ? ` (×${count})` : ""
-            write(
-              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
-            )
+            const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
+            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+            write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
             write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
@@ -607,7 +613,7 @@ async function handleMessage(message: string) {
       const duration = Date.now() - startTime
       write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
-      write(cursor.show)
+      spinner.stop(true)
     }
   } catch (err) {
     if (first) spinner.stop(false)

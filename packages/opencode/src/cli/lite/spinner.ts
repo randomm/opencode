@@ -14,7 +14,9 @@ export class Spinner {
 
   start() {
     write(cursor.hide)
+    this.frame = 0
     this.startTime = Date.now()
+    write(`\r${clear.line}${fg.cyan}${frames[0]}${style.reset} ${fg.gray}${this.text}${style.reset}`)
     this.interval = setInterval(() => {
       this.frame = (this.frame + 1) % frames.length
       const elapsed = Math.floor((Date.now() - this.startTime) / 1000)
