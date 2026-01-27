@@ -152,8 +152,8 @@ describe("createLiveBlock", () => {
     test("setTodos sets todo list", () => {
       const block = createLiveBlock()
       const todos = [
-        { content: "Write tests", status: "completed" as const },
-        { content: "Fix bugs", status: "in_progress" as const },
+        { id: "1", content: "Write tests", status: "completed" as const, priority: "medium" as const },
+        { id: "2", content: "Fix bugs", status: "in_progress" as const, priority: "high" as const },
       ]
 
       block.setTodos(todos)
@@ -164,7 +164,7 @@ describe("createLiveBlock", () => {
 
     test("setTodos with empty list clears todos", () => {
       const block = createLiveBlock()
-      block.setTodos([{ content: "Write tests", status: "pending" as const }])
+      block.setTodos([{ id: "1", content: "Write tests", status: "pending" as const, priority: "low" as const }])
       mockLogUpdate.mockClear()
 
       block.setTodos([])
@@ -174,12 +174,12 @@ describe("createLiveBlock", () => {
 
     test("setTodos replaces previous todos", () => {
       const block = createLiveBlock()
-      block.setTodos([{ content: "First todo", status: "pending" as const }])
+      block.setTodos([{ id: "1", content: "First todo", status: "pending" as const, priority: "low" as const }])
       mockLogUpdate.mockClear()
 
       const newTodos = [
-        { content: "Second todo", status: "completed" as const },
-        { content: "Third todo", status: "pending" as const },
+        { id: "2", content: "Second todo", status: "completed" as const, priority: "medium" as const },
+        { id: "3", content: "Third todo", status: "pending" as const, priority: "high" as const },
       ]
 
       block.setTodos(newTodos)
@@ -192,9 +192,33 @@ describe("createLiveBlock", () => {
       block.toolStart("1", "search", "Searching files")
       mockLogUpdate.mockClear()
 
-      block.setTodos([{ content: "Test todo", status: "pending" as const }])
+      block.setTodos([{ id: "1", content: "Test todo", status: "pending" as const, priority: "low" as const }])
 
       expect(mockLogUpdate).toHaveBeenCalled()
+    })
+
+    test("todos render with correct icons and priorities", () => {
+      const block = createLiveBlock()
+      block.setTodos([
+        { id: "1", content: "Priority task", status: "pending" as const, priority: "low" as const },
+        { id: "2", content: "High priority", status: "in_progress" as const, priority: "high" as const },
+        { id: "3", content: "Done task", status: "completed" as const, priority: "medium" as const },
+        { id: "4", content: "Cancelled task", status: "cancelled" as const, priority: "low" as const },
+      ])
+
+      mockLogUpdate.mockClear()
+
+      block.toolStart("1", "search", "Searching files")
+
+      expect(mockLogUpdate).toHaveBeenCalled()
+      const allCalls = mockLogUpdate.mock.calls as unknown[][]
+      const output = allCalls[allCalls.length - 1][0] as string
+      expect(output).toContain("☐")
+      expect(output).toContain("◆")
+      expect(output).toContain("☑")
+      expect(output).toContain("☒")
+      expect(output).toContain("Priority task")
+      expect(output).toContain("Done task")
     })
   })
 
@@ -234,7 +258,7 @@ describe("createLiveBlock", () => {
       mockDone.mockClear()
       block.toolStart("1", "search", "Searching files")
       block.taskStart("2", "developer", "Writing code")
-      block.setTodos([{ content: "Test", status: "pending" as const }])
+      block.setTodos([{ id: "1", content: "Test", status: "pending" as const, priority: "low" as const }])
 
       block.reset()
 
@@ -321,7 +345,7 @@ describe("createLiveBlock", () => {
 
     test("reset clears todos", () => {
       const block = createLiveBlock()
-      block.setTodos([{ content: "Test", status: "pending" as const }])
+      block.setTodos([{ id: "1", content: "Test", status: "pending" as const, priority: "low" as const }])
 
       block.reset()
 
@@ -342,8 +366,8 @@ describe("createLiveBlock", () => {
     test("full workflow: tools, tasks, and todos", () => {
       const block = createLiveBlock()
       const todos = [
-        { content: "Write code", status: "pending" as const },
-        { content: "Run tests", status: "in_progress" as const },
+        { id: "1", content: "Write code", status: "pending" as const, priority: "low" as const },
+        { id: "2", content: "Run tests", status: "in_progress" as const, priority: "medium" as const },
       ]
 
       block.setTodos(todos)

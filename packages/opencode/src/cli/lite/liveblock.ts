@@ -17,8 +17,10 @@ export interface Task {
 }
 
 export interface Todo {
+  id: string
   content: string
   status: "pending" | "in_progress" | "completed" | "cancelled"
+  priority: "high" | "medium" | "low"
 }
 
 const frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
@@ -63,19 +65,19 @@ export function createLiveBlock() {
     if (todos.length > 0) {
       lines.push(`  ${style.dim}${"─".repeat(Math.min(cols, 60))}${style.reset}`)
       for (const todo of todos) {
-        const isCompleted = todo.status === "completed"
-        const isInProgress = todo.status === "in_progress"
-        const isCancelled = todo.status === "cancelled"
-        const check = isCompleted
-          ? `${fg.green}✓${style.reset}`
-          : isInProgress
-            ? `${fg.cyan}›${style.reset}`
-            : isCancelled
-              ? `${fg.gray}✗${style.reset}`
-              : `${fg.gray}○${style.reset}`
-        const dim = isCompleted || isCancelled ? style.dim : ""
-        const reset = dim ? style.reset : ""
-        lines.push(`  ${check} ${dim}${todo.content}${reset}`)
+        const icon =
+          todo.status === "completed"
+            ? `${fg.green}☑${style.reset}`
+            : todo.status === "in_progress"
+              ? `${fg.cyan}${style.bold}◆${style.reset}`
+              : todo.status === "cancelled"
+                ? `${style.dim}☒${style.reset}`
+                : `${style.dim}☐${style.reset}`
+        const priorityColor = todo.priority === "high" ? fg.red : todo.priority === "medium" ? fg.yellow : fg.gray
+        const maxLen = Math.max(0, cols - 25)
+        const truncated = todo.content.length > maxLen ? `${todo.content.slice(0, maxLen)}…` : todo.content
+        const content = todo.status === "cancelled" ? `${style.dim}${truncated}${style.reset}` : truncated
+        lines.push(`  ${icon} ${priorityColor}${todo.priority}${style.reset} ${content}`)
       }
     }
 
@@ -140,8 +142,7 @@ export function createLiveBlock() {
     },
 
     setTodos(items: Todo[]) {
-      todos.length = 0
-      todos.push(...items)
+      todos.splice(0, todos.length, ...items)
       if (active) render()
     },
 

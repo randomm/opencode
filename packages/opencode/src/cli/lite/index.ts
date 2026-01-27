@@ -16,11 +16,13 @@ import { Instance } from "../../project/instance"
 import { Agent } from "../../agent/agent"
 import { MCP } from "../../mcp"
 import { Command } from "../../command"
-import { select } from "./select"
 import type { ChatChunk } from "./session"
 import { createLiveBlock } from "./liveblock"
 import { summarizeInput } from "./summary"
 import { wrap } from "./wrap"
+import * as Panel from "./panel"
+import * as Commands from "./commands"
+import { setBlockFreeze } from "./select"
 export { summarizeInput }
 
 // UI Constants
@@ -44,15 +46,15 @@ let currentAgent: string | undefined
 // Live block for tool/task display
 const block = createLiveBlock()
 
+// Set block freeze function for select
+setBlockFreeze(() => block.freeze())
+
 async function main() {
-  // Check TTY
   if (!process.stdin.isTTY) {
     console.error("oclite requires a TTY")
     process.exit(1)
   }
 
-  // Initialize logging to ERROR level to suppress debug/info logs
-  // Must be done before bootstrap to prevent Log.Default.info() from being printed
   await Global.init()
   await Log.init({
     print: false,
@@ -60,63 +62,50 @@ async function main() {
     level: "ERROR",
   })
 
-  // Cleanup function
   function cleanup() {
     block.freeze()
     write(cursor.show)
     process.stdin.setRawMode(false)
   }
 
-  // Register cleanup before bootstrap
   process.on("exit", cleanup)
   process.on("SIGINT", () => {
     cleanup()
     process.exit(0)
   })
 
-  // Clear screen and show header
   write("\x1b[2J\x1b[H")
   write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
 
-  // Start bootstrap spinner (Spinner.start() hides cursor internally)
   const setup = new Spinner("Setting up environment")
   setup.start()
 
-  // Bootstrap with Instance context for current directory
   try {
     await bootstrap(process.cwd(), async () => {
-      // Force eager init of heavy subsystems during spinner
       await Promise.all([Provider.list(), Agent.list(), MCP.clients()])
 
       setup.stop(true)
       write(`${fg.green}✓${style.reset} Ready\n\n`)
 
-      // Initialize default agent (agentList is cached from eager init)
       currentAgent = await Agent.defaultAgent()
       const agentList = await Agent.list()
 
-      // Show help hint after Ready
       write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
 
-      // Input setup
       const editor = new LineEditor()
       process.stdin.setRawMode(true)
       process.stdin.resume()
 
-      // Render prompt
       editor.render(renderPrompt(currentAgent))
 
-      // Handle input
       process.stdin.on("data", async (data: Buffer) => {
         const key = parseKey(data)
 
-        // Ctrl+C to exit
         if (key.ctrl && key.name === "c") {
           cleanup()
           process.exit(0)
         }
 
-        // Shift+Tab to cycle agents
         if (key.name === "shift_tab") {
           const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
           const index = available.findIndex((a) => a.name === currentAgent)
@@ -127,7 +116,6 @@ async function main() {
           return
         }
 
-        // Escape to cancel ongoing operation
         if (key.name === "escape" && isOperationInProgress && currentSessionID) {
           block.freeze()
           SessionPrompt.cancel(currentSessionID)
@@ -140,12 +128,51 @@ async function main() {
           return
         }
 
-        // Block further input during operation (except Escape and Ctrl+C which are handled above)
         if (isOperationInProgress) {
           return
         }
 
-        // Ctrl+T to toggle task panel
+        if (key.ctrl && key.name === "x") {
+          Panel.enterNavigationMode()
+          return
+        }
+
+        if (Panel.isInNavigationMode()) {
+          if (key.name === "escape") {
+            Panel.exitNavigationMode()
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
+
+          let direction: "left" | "right" | "up" | null = null
+
+          if (key.name === "left" || key.name === "h") {
+            direction = "left"
+          } else if (key.name === "right" || key.name === "l") {
+            direction = "right"
+          } else if (key.name === "up" || key.name === "k") {
+            direction = "up"
+          }
+
+          if (direction) {
+            const navigated = Panel.navigate(direction)
+
+            if (navigated) {
+              await Panel.renderPanel()
+              const hint = Panel.getHint()
+              if (hint) {
+                write(`\n${hint}\n`)
+              }
+              write(clear.screen)
+              write(cursor.home)
+            }
+          }
+
+          Panel.exitNavigationMode()
+          editor.render(renderPrompt(currentAgent))
+          return
+        }
+
         if (key.ctrl && key.name === "t") {
           tasksVisible = !tasksVisible
           editor.render(renderPrompt(currentAgent))
@@ -208,147 +235,94 @@ async function handleCommand(cmd: string) {
   }
 
   if (name === "sessions") {
-    await handleSessions()
+    const state = { currentSessionID, currentModel, currentAgent }
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleSessions(state, setState, Panel.setParentSession)
     return
   }
 
   if (name === "new") {
-    await handleNew()
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleNew(setState, Panel.setParentSession)
     return
   }
 
   if (name === "agents") {
-    await handleAgents()
+    const state = { currentSessionID, currentModel, currentAgent }
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleAgents(state, setState)
     return
   }
 
   if (name === "models") {
-    await handleModels()
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleModels(setState)
     return
   }
 
   if (name === "subagent-model") {
-    await handleSubagentModel()
+    await Commands.handleSubagentModel()
     return
   }
 
   const custom = await Command.get(name)
   if (custom) {
     const args = cmd.slice(1 + name.length).trim()
-    await handleCustomCommand(custom.name, args)
+    await Commands.handleCustomCommand(
+      custom.name,
+      args,
+      command,
+      streamResponse,
+      { currentSessionID, currentModel, currentAgent },
+      (inProgress: boolean) => {
+        isOperationInProgress = inProgress
+      },
+      () => block.freeze(),
+    )
     return
   }
 
   write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
-}
-
-async function handleSessions() {
-  const sessions = await listSessions()
-  if (sessions.length === 0) {
-    write(`${fg.yellow}No sessions found${style.reset}\n\n`)
-    return
-  }
-
-  const options = sessions.map((session) => ({
-    label: session.title,
-    value: session.id,
-    description: new Date(session.time.created).toLocaleDateString(),
-  }))
-
-  const selected = await select(options, `${fg.cyan}Select a session:${style.reset}`)
-  if (selected) {
-    currentSessionID = selected
-    write(`${fg.green}Session switched${style.reset}\n\n`)
-  } else {
-    write("\n")
-  }
-}
-
-async function handleNew() {
-  const session = await Session.createNext({
-    directory: Instance.directory,
-  })
-  currentSessionID = session.id
-  currentModel = null
-  write(`${fg.green}New session started${style.reset}\n\n`)
-}
-
-async function handleAgents() {
-  const all = await Agent.list()
-  const filtered = all.filter((a) => a.mode !== "subagent" && !a.hidden)
-
-  if (filtered.length === 0) {
-    write(`${fg.red}No agents available${style.reset}\n\n`)
-    return
-  }
-
-  const options = filtered.map((agent) => ({
-    label: `${agent.name} — ${agent.description ?? ""}`,
-    value: agent.name,
-    current: agent.name === currentAgent,
-  }))
-
-  const selected = await select(options, `${fg.cyan}Select an agent:${style.reset}`)
-  if (selected) {
-    currentAgent = selected
-    write(`${fg.green}Agent switched to ${selected}${style.reset}\n\n`)
-  } else {
-    write("\n")
-  }
-}
-
-async function handleModels() {
-  const models = await getAllModels()
-  if (models.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
-    return
-  }
-  const selected = await select(models, `${fg.cyan}Select a model:${style.reset}`)
-  if (selected) {
-    currentModel = selected
-    write(`${fg.green}Model switched to ${selected}${style.reset}\n\n`)
-  } else {
-    write("\n")
-  }
-}
-
-async function handleSubagentModel() {
-  const models = await getAllModels()
-  if (models.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
-    return
-  }
-  const selected = await select(models, `${fg.cyan}Select model for subagents:${style.reset}`)
-  if (selected) {
-    process.env.SUBAGENT_MODEL = selected
-    write(`${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
-  } else {
-    write("\n")
-  }
-}
-
-async function listSessions(): Promise<Session.Info[]> {
-  const sessions: Session.Info[] = []
-  for await (const session of Session.list()) {
-    sessions.push(session)
-    if (sessions.length >= 10) break
-  }
-  return sessions.reverse()
-}
-
-async function getAllModels() {
-  const providers = await Provider.list()
-  const models: Array<{ label: string; value: string; description?: string }> = []
-  for (const [providerID, provider] of Object.entries(providers)) {
-    for (const [modelID, model] of Object.entries(provider.models)) {
-      models.push({
-        label: `${model.name} (${providerID})`,
-        value: `${providerID}/${modelID}`,
-        description: `${model.family || ""}${model.cost.input > 0 ? " • Paid" : " • Free"}`.trim(),
-      })
-    }
-  }
-  return models
 }
 
 interface StreamOptions {
@@ -434,6 +408,41 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           block.toolEnd(id, tool, summary)
         }
         lastChunkType = "tool"
+
+        if (chunk.input && tool === "todowrite") {
+          if (!Array.isArray(chunk.input.todos)) continue
+
+          const valid = ["pending", "in_progress", "completed", "cancelled"]
+          const priorities = ["high", "medium", "low"]
+
+          const todos = chunk.input.todos
+            .filter(
+              (item) =>
+                item &&
+                typeof item === "object" &&
+                typeof item.id === "string" &&
+                typeof item.content === "string" &&
+                typeof item.status === "string" &&
+                valid.includes(item.status) &&
+                typeof item.priority === "string" &&
+                priorities.includes(item.priority),
+            )
+            .map((item) => ({
+              id: item.id,
+              content: item.content,
+              status: item.status,
+              priority: item.priority,
+            }))
+
+          if (todos.length > 0) block.setTodos(todos)
+        }
+
+        if (tool === "task" && chunk.metadata) {
+          const childSessionID = chunk.metadata.sessionId as string | undefined
+          if (childSessionID && typeof childSessionID === "string") {
+            Panel.addChild(childSessionID)
+          }
+        }
       }
 
       if (chunk.type === "error" && chunk.content) {
@@ -461,26 +470,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   }
 
   write("\n")
-}
-
-async function handleCustomCommand(name: string, args: string) {
-  const options = {
-    model: currentModel || undefined,
-    agent: currentAgent,
-    sessionID: currentSessionID || undefined,
-  }
-
-  isOperationInProgress = true
-  try {
-    const source = command(name, args, options)
-    await streamResponse(source, options)
-  } catch (err) {
-    block.freeze()
-    const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
-  } finally {
-    isOperationInProgress = false
-  }
 }
 
 async function handleMessage(message: string) {
