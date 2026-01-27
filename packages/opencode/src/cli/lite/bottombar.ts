@@ -21,8 +21,9 @@ const safeNum = (n: number): number => (Number.isFinite(n) ? Math.max(0, n) : 0)
 
 const formatCount = (n: number): string => (n > 9999 ? `${(n / 1000).toFixed(1)}k` : String(n))
 
-export function renderPrompt(): string {
-  return `${fg.cyan}❯${style.reset} `
+export function renderPrompt(agent?: string): string {
+  const prefix = agent ? `${agent} ` : ""
+  return `${prefix}${fg.cyan}❯${style.reset} `
 }
 
 export function renderBottomBar(state: BottomBarState): string {

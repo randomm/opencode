@@ -19,6 +19,7 @@ export function parseKey(data: Buffer): Key {
   if (s === "\r" || s === "\n") return { name: "return" }
   if (s === "\x7f" || s === "\b") return { name: "backspace" }
   if (s === "\t") return { name: "tab" }
+  if (s === "\x1b[Z") return { name: "shift_tab" }
   if (s === "\x1b") return { name: "escape" }
 
   // Arrow keys

@@ -99,7 +99,7 @@ const backgroundTaskResults = new Map<string, BackgroundTaskResult>()
 const MAX_DELIVERED_RESULTS = 10000
 const deliveredTaskResults = new Set<string>()
 
-const DEFAULT_TASK_TIMEOUT = 5 * 60 * 1000
+const DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000
 const closingSessions = new Set<string>()
 
 // Constants for metadata and result truncation
