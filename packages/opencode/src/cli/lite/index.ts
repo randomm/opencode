@@ -357,6 +357,9 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   const startTime = Date.now()
   let lastChunkType: string | null = null
   let toolCounter = 0
+  let lastToolId = ""
+  let lastToolKey = ""
+  let dedupCount = 0
   const md = createMarkdownRenderer()
 
   try {
@@ -375,6 +378,8 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
       if (chunk.type === "text" && chunk.content) {
         block.freeze()
+        lastToolKey = ""
+        dedupCount = 0
         lastChunkType = "text"
         write(md.render(chunk.content))
       }
@@ -382,23 +387,43 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
-        const id = chunk.callID || `${tool}-${++toolCounter}`
-        const summary = arg ? `${tool}  ${arg}` : tool
-        block.toolStart(id, tool, summary)
+        const summary = arg || ""
+        const key = `${tool}:${summary}`
+
+        if (key === lastToolKey) {
+          dedupCount++
+          const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+          block.toolStart(lastToolId, tool, label)
+        } else {
+          const id = chunk.callID || `${tool}-${++toolCounter}`
+          lastToolId = id
+          lastToolKey = key
+          dedupCount = 1
+          block.toolStart(id, tool, summary)
+        }
         lastChunkType = "tool"
       }
 
       if (chunk.type === "tool_end" && chunk.tool?.trim()) {
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
-        const id = chunk.callID || `${tool}-${toolCounter}`
-        const summary = arg ? `${tool}  ${arg}` : tool
-        block.toolEnd(id, tool, summary)
+        const summary = arg || ""
+        const key = `${tool}:${summary}`
+
+        if (key === lastToolKey) {
+          const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+          block.toolEnd(lastToolId, tool, label)
+        } else {
+          const id = chunk.callID || `${tool}-${toolCounter}`
+          block.toolEnd(id, tool, summary)
+        }
         lastChunkType = "tool"
       }
 
       if (chunk.type === "error" && chunk.content) {
         block.freeze()
+        lastToolKey = ""
+        dedupCount = 0
         lastChunkType = "error"
         const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
         write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)

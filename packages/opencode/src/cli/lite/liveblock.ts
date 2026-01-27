@@ -43,11 +43,11 @@ export function createLiveBlock() {
           : tool.status === "done"
             ? `${fg.green}✓${style.reset}`
             : `${fg.red}✗${style.reset}`
+      const sep = tool.summary ? "  " : ""
       const maxLen = Math.max(0, cols - tool.name.length - 6)
       const showEllipsis = tool.summary.length > maxLen
-      const display = showEllipsis
-        ? `${icon} ${fg.cyan}${tool.name}${style.reset}${fg.gray}  ${tool.summary.slice(0, maxLen)}…${style.reset}`
-        : `${icon} ${fg.cyan}${tool.name}${style.reset}${fg.gray}  ${tool.summary}${style.reset}`
+      const text = showEllipsis ? `${tool.summary.slice(0, maxLen)}…` : tool.summary
+      const display = `${icon} ${fg.cyan}${tool.name}${style.reset}${fg.gray}${sep}${text}${style.reset}`
       lines.push(display)
     }
 
