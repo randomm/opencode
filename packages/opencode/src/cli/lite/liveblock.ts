@@ -48,7 +48,7 @@ export function createLiveBlock() {
       const showEllipsis = tool.summary.length > maxLen
       const text = showEllipsis ? `${tool.summary.slice(0, maxLen)}…` : tool.summary
       const display = `${icon} ${fg.cyan}${tool.name}${style.reset}${fg.gray}${sep}${text}${style.reset}`
-      lines.push(display)
+      lines.push(`  ${display}`)
     }
 
     // Render running tasks
@@ -56,12 +56,12 @@ export function createLiveBlock() {
       const spinner =
         task.status === "running" ? `${fg.cyan}${frames[frame]}${style.reset}` : `${fg.green}✓${style.reset}`
       const time = task.elapsed > 0 ? ` ${fg.gray}(${task.elapsed}s)${style.reset}` : ""
-      lines.push(`${spinner} ${fg.gray}@${task.agent}:${style.reset} ${task.description}${time}`)
+      lines.push(`  ${spinner} ${fg.gray}@${task.agent}:${style.reset} ${task.description}${time}`)
     }
 
     // Render todos if any
     if (todos.length > 0) {
-      lines.push(`${style.dim}${"─".repeat(Math.min(cols, 60))}${style.reset}`)
+      lines.push(`  ${style.dim}${"─".repeat(Math.min(cols, 60))}${style.reset}`)
       for (const todo of todos) {
         const isCompleted = todo.status === "completed"
         const isInProgress = todo.status === "in_progress"
@@ -75,7 +75,7 @@ export function createLiveBlock() {
               : `${fg.gray}○${style.reset}`
         const dim = isCompleted || isCancelled ? style.dim : ""
         const reset = dim ? style.reset : ""
-        lines.push(`${check} ${dim}${todo.content}${reset}`)
+        lines.push(`  ${check} ${dim}${todo.content}${reset}`)
       }
     }
 

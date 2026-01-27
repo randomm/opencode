@@ -19,7 +19,19 @@ import { select } from "./select"
 import type { ChatChunk } from "./session"
 import { createLiveBlock } from "./liveblock"
 import { summarizeInput } from "./summary"
+import { wrap } from "./wrap"
 export { summarizeInput }
+
+// UI Constants
+const PAD = "  "
+const MAX_WIDTH = Math.min(100, (process.stdout.columns || 80) - 4)
+
+function padLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line ? `${PAD}${line}` : line))
+    .join("\n")
+}
 
 // UI State
 let tasksVisible = false
@@ -72,10 +84,13 @@ async function main() {
   // Bootstrap with Instance context for current directory
   try {
     await bootstrap(process.cwd(), async () => {
+      // Force eager init of heavy subsystems during spinner
+      await Promise.all([Provider.list(), Agent.list()])
+
       setup.stop(true)
       write(`${fg.green}✓${style.reset} Ready\n\n`)
 
-      // Initialize default agent
+      // Initialize default agent (agentList is cached from eager init)
       currentAgent = await Agent.defaultAgent()
       const agentList = await Agent.list()
 
@@ -366,8 +381,8 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       if (first && chunk.type !== "done" && chunk.type !== "start") {
         spinner.stop(true)
         first = false
-        write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
-        const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+        write(`${PAD}${fg.gray}(Esc to cancel)${style.reset}\n`)
+        const rule = `${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
         write(rule)
       }
 
@@ -376,7 +391,9 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         lastToolKey = ""
         dedupCount = 0
         lastChunkType = "text"
-        write(md.render(chunk.content))
+        const rendered = md.render(chunk.content)
+        const wrapped = wrap(rendered, MAX_WIDTH)
+        write(padLines(wrapped))
       }
 
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
@@ -424,7 +441,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         dedupCount = 0
         lastChunkType = "error"
         const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-        write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+        write(`\n${PAD}${fg.red}Error: ${safeContent}${style.reset}\n`)
       }
 
       if (chunk.tokens !== undefined) {
@@ -434,10 +451,10 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
     block.freeze()
     write(md.flush())
-    const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+    const rule = `\n${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
     write(rule)
     const duration = Date.now() - startTime
-    write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+    write(`${PAD}${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } finally {
     spinner.stop(true)
   }
