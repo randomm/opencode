@@ -3,7 +3,7 @@ import DESCRIPTION from "./cancel_task.txt"
 import z from "zod"
 import { Session } from "../session"
 
-type CancellationStatus = "cancelled" | "not_found" | "already_completed"
+type CancellationStatus = "cancelled" | "not_found" | "already_completed" | "unauthorized"
 
 interface CancelTaskResult {
   task_id: string
@@ -27,7 +27,7 @@ export const CancelTaskTool = Tool.define<z.ZodObject<{ task_id: z.ZodString }>,
       .describe("The ID of the background task to cancel"),
   }),
   async execute(params, ctx) {
-    const result = Session.tryCancel(params.task_id)
+    const result = Session.tryCancel(params.task_id, ctx.sessionID)
 
     const response: CancelTaskResult = {
       task_id: params.task_id,

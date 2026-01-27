@@ -93,6 +93,41 @@ describe("tool.cancel_task", () => {
     })
   })
 
+  test("returns unauthorized when trying to cancel another session's task", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await CancelTaskTool.init()
+        const taskId = "test-task-other-session"
+
+        const promise = new Promise<string>((resolve) => {
+          setTimeout(() => resolve("Should not be cancelled"), 10000)
+        })
+
+        Session.trackBackgroundTask(taskId, promise, undefined, {
+          agent_type: "test",
+          description: "Test task",
+          session_id: "other-session-id",
+          start_time: Date.now(),
+        })
+
+        await new Promise((r) => setTimeout(r, 50))
+
+        const result = await tool.execute({ task_id: taskId }, ctx)
+
+        const output = JSON.parse(result.output)
+        expect(output.status).toBe("unauthorized")
+        expect(output.task_id).toBe(taskId)
+        expect(output.message).toContain("different session")
+        expect(result.metadata.status).toBe("unauthorized")
+
+        const taskResult = Session.getBackgroundTaskResult(taskId)
+        expect(taskResult?.status).toBe("running")
+      },
+    })
+  })
+
   test("validates input with Zod schema", async () => {
     await Instance.provide({
       directory: "/tmp/test",

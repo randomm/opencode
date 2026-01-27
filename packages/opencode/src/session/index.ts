@@ -501,14 +501,16 @@ export namespace Session {
     wakeupInProgress.delete(sessionID)
   }
 
-  export function cancelBackgroundTask(id: string): boolean {
+  function cancelBackgroundTask(id: string): boolean {
     const task = pendingBackgroundTasks.get(id)
     if (!task) return false
+
+    const existing = backgroundTaskResults.get(id)
+    if (existing && existing.status !== "running") return false
 
     const metadata = pendingTaskMetadata.get(id)
     const startTime = metadata?.start_time ?? Date.now()
 
-    // Release slot BEFORE deleting metadata to prevent permanent slot leak
     if (metadata?.release_slot) {
       try {
         metadata.release_slot()
@@ -530,12 +532,13 @@ export namespace Session {
       cancelled: true,
     }
 
-    const existing = backgroundTaskResults.get(id)
     if (existing) {
-      existing.status = "failed"
-      existing.error = "Task was cancelled"
-      existing.cancelled = true
-      existing.time.completed = Date.now()
+      if (existing.status === "running") {
+        existing.status = "failed"
+        existing.error = "Task was cancelled"
+        existing.cancelled = true
+        existing.time.completed = Date.now()
+      }
     } else {
       backgroundTaskResults.set(id, result)
       if (backgroundTaskResults.size > MAX_STORED_TASK_RESULTS) {
@@ -553,8 +556,11 @@ export namespace Session {
     return true
   }
 
-  export function tryCancel(taskId: string): {
-    status: "cancelled" | "not_found" | "already_completed"
+  export function tryCancel(
+    taskId: string,
+    callerSessionID: string,
+  ): {
+    status: "cancelled" | "not_found" | "already_completed" | "unauthorized"
     message?: string
   } {
     const result = backgroundTaskResults.get(taskId)
@@ -562,6 +568,13 @@ export namespace Session {
       return {
         status: "not_found",
         message: `Task ${taskId} not found`,
+      }
+    }
+
+    if (result.metadata?.session_id !== callerSessionID) {
+      return {
+        status: "unauthorized",
+        message: `Task ${taskId} belongs to a different session and cannot be cancelled`,
       }
     }
 
