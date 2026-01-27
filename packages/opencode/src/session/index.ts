@@ -89,6 +89,7 @@ function sanitizeError(error: string): string {
 
 const pendingBackgroundTasks = new Map<string, Promise<string | undefined | void>>()
 const pendingTaskMetadata = new Map<string, TaskMetadata>()
+const subagentSessionIDs = new Map<string, string>()
 const cancelledTasks = new Set<string>()
 const reservedTaskSlots = new Map<string, Set<string>>()
 
@@ -198,6 +199,9 @@ export namespace Session {
     if (metadata) {
       pendingTaskMetadata.set(id, metadata)
     }
+    if (sessionID) {
+      subagentSessionIDs.set(id, sessionID)
+    }
 
     if (sessionID && closingSessions.has(sessionID)) {
       log.warn("task rejected: session closed during tracking", { task_id: id, session_id: sessionID })
@@ -285,6 +289,7 @@ export namespace Session {
     } finally {
       pendingBackgroundTasks.delete(id)
       pendingTaskMetadata.delete(id)
+      subagentSessionIDs.delete(id)
 
       if (metadata?.release_slot) {
         try {
@@ -539,10 +544,11 @@ export namespace Session {
       }
     }
 
-    const sessionID = metadata?.session_id
-    if (sessionID) {
-      SessionPrompt.cancel(sessionID)
+    const subagentSessionID = subagentSessionIDs.get(id)
+    if (subagentSessionID) {
+      SessionPrompt.cancel(subagentSessionID)
     }
+    subagentSessionIDs.delete(id)
 
     return true
   }
@@ -924,6 +930,7 @@ export namespace Session {
         backgroundTaskResults.delete(id)
         deliveredTaskResults.delete(id)
         cancelledTasks.delete(id)
+        subagentSessionIDs.delete(id)
       }
     }
   }
