@@ -38,12 +38,13 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
 
   const chunks: ChatChunk[] = []
   let stepTokens = 0
-  let done = false
+  let promptDone = false
   let cancelled = false
   let error: unknown = null
   let waiting: (() => void) | null = null
 
   function wake() {
+    console.error("[DEBUG] Wake called, chunks:", chunks.length)
     if (waiting) {
       const fn = waiting
       waiting = null
@@ -97,39 +98,44 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       agent,
       model: modelParam,
       parts,
-    }).catch((err) => {
-      console.error("[DEBUG] Prompt error:", err)
-      error = err
-      cancelled = true
-      wake()
     })
+      .then(() => {
+        console.error("[DEBUG] Prompt completed")
+        promptDone = true
+        wake()
+      })
+      .catch((err) => {
+        console.error("[DEBUG] Prompt error:", err)
+        error = err
+        cancelled = true
+        wake()
+      })
 
     console.error("[DEBUG] Prompt started, waiting for chunks...")
 
     // Yield chunks as they arrive
-    while (!done && !cancelled) {
+    while (!promptDone && !cancelled) {
       while (chunks.length > 0) {
-        yield chunks.shift()!
+        const chunk = chunks.shift()!
+        console.error("[DEBUG] Yielding chunk:", chunk.type, chunk.content?.slice(0, 50))
+        yield chunk
       }
       if (cancelled) break
 
-      await Promise.race([
-        promptPromise.then(() => {
-          console.error("[DEBUG] Prompt completed")
-          done = true
-        }),
-        new Promise<void>((resolve) => {
-          waiting = resolve
-          if (chunks.length > 0) {
-            waiting = null
-            resolve()
-          }
-        }),
-      ])
+      console.error("[DEBUG] PromptDone:", promptDone, "cancelled:", cancelled)
+      await new Promise<void>((resolve) => {
+        waiting = resolve
+        if (chunks.length > 0 || promptDone || cancelled) {
+          waiting = null
+          resolve()
+        }
+      })
     }
 
     while (chunks.length > 0) {
-      yield chunks.shift()!
+      const chunk = chunks.shift()!
+      console.error("[DEBUG] Yielding final chunk:", chunk.type, chunk.content?.slice(0, 50))
+      yield chunk
     }
 
     if (!cancelled && !error) {
