@@ -18,23 +18,18 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
 
   active = true
   try {
-    // Save the original stdin data listeners
     const originalListeners = process.stdin.listeners("data").slice()
     process.stdin.removeAllListeners("data")
 
-    // Find initially selected index
     let selected = options.findIndex((opt) => opt.current) ?? 0
     selected = Math.max(0, Math.min(selected, options.length - 1))
 
-    // Track the number of lines we've written for cleanup
     let totalLines = 0
 
-    // Render initial display
     const render = () => {
-      // Move to start
-      write(cursor.home)
+      write(cursor.save)
+      write(cursor.toColumn(0))
 
-      // Print title if provided
       if (title) {
         write(title)
         write("\n")
@@ -43,7 +38,6 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
         totalLines = 0
       }
 
-      // Print all options
       for (let i = 0; i < options.length; i++) {
         const opt = options[i]
         const isSelected = i === selected
@@ -57,18 +51,21 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
         write("\n")
         totalLines++
       }
+
+      write(cursor.restore)
     }
 
     const clearDisplay = () => {
-      // Clear the menu from terminal
+      write(cursor.save)
+
       for (let i = 0; i < totalLines; i++) {
         write(cursor.up())
         write(clear.line)
       }
-      write(cursor.toColumn(0))
+
+      write(cursor.restore)
     }
 
-    // Promise that resolves when user selects or cancels
     const result = await new Promise<T | null>((resolve) => {
       let handler: ((data: Buffer) => void) | null = null
 

@@ -174,6 +174,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
   let cancelled = false
   let error: unknown = null
   let waiting: (() => void) | null = null
+  let promptPromise: Promise<void> | null = null
 
   function wake() {
     if (waiting) {
@@ -212,7 +213,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
   try {
     yield { type: "start" as const, sessionID }
 
-    const promptPromise = SessionPrompt.command({
+    promptPromise = SessionPrompt.command({
       sessionID,
       agent,
       model: modelParam?.modelID ? `${modelParam.providerID}/${modelParam.modelID}` : undefined,
@@ -245,6 +246,8 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
         }
       })
     }
+
+    await promptPromise
 
     while (chunks.length > 0) {
       const chunk = chunks.shift()!
