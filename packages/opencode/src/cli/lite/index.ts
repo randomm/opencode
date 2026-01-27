@@ -1,14 +1,11 @@
 #!/usr/bin/env bun
-import { cursor, clear, fg, style, write, screen } from "./terminal"
+import { cursor, clear, fg, style, write } from "./terminal"
 import { parseKey, LineEditor } from "./input"
 import { Spinner } from "./spinner"
 import { chat, command } from "./session"
 import { createMarkdownRenderer } from "./markdown"
 import { formatTokens, formatDuration } from "../metrics"
-import { Icons } from "../cmd/tui/util/icons"
-import { type Task, type AgentStatus } from "./taskpanel"
-import { renderStatusLine, type StatusLineState } from "./statusline"
-import { renderPrompt, type BottomBarState } from "./bottombar"
+import { renderPrompt } from "./bottombar"
 import { bootstrap } from "../bootstrap"
 import { Log } from "../../util/log"
 import { Global } from "../../global"
@@ -20,6 +17,7 @@ import { Agent } from "../../agent/agent"
 import { Command } from "../../command"
 import { select } from "./select"
 import type { ChatChunk } from "./session"
+import { createLiveBlock } from "./liveblock"
 
 export function summarizeInput(tool: string, input?: Record<string, unknown>): string {
   if (!input) return ""
@@ -47,26 +45,13 @@ export function summarizeInput(tool: string, input?: Record<string, unknown>): s
 
 // UI State
 let tasksVisible = false
-let tasks: Task[] = []
-let agents: AgentStatus[] = []
-let statusLine: StatusLineState = {
-  activity: "Idle",
-  duration: 0,
-  tokens: 0,
-  tasksVisible: false,
-}
-let bottomBar: BottomBarState = {
-  permissionMode: "ask",
-  fileChanges: {
-    total: 0,
-    added: 0,
-    removed: 0,
-  },
-}
 let isOperationInProgress = false
 let currentSessionID: string | null = null
 let currentModel: string | null = null
 let currentAgent: string | undefined
+
+// Live block for tool/task display
+const block = createLiveBlock()
 
 async function main() {
   // Check TTY
@@ -86,6 +71,7 @@ async function main() {
 
   // Cleanup function
   function cleanup() {
+    block.freeze()
     write(cursor.show)
     process.stdin.setRawMode(false)
   }
@@ -140,6 +126,7 @@ async function main() {
 
       // Escape to cancel ongoing operation
       if (key.name === "escape" && isOperationInProgress && currentSessionID) {
+        block.freeze()
         SessionPrompt.cancel(currentSessionID)
         isOperationInProgress = false
         currentSessionID = null
@@ -158,7 +145,6 @@ async function main() {
       // Ctrl+T to toggle task panel
       if (key.ctrl && key.name === "t") {
         tasksVisible = !tasksVisible
-        statusLine.tasksVisible = tasksVisible
         editor.render(renderPrompt(currentAgent))
       }
 
@@ -302,29 +288,12 @@ async function handleAgents() {
 }
 
 async function handleModels() {
-  const providers = await Provider.list()
-  const allModels: Array<{
-    label: string
-    value: string
-    description?: string
-  }> = []
-
-  for (const [providerID, provider] of Object.entries(providers)) {
-    for (const [modelID, model] of Object.entries(provider.models)) {
-      allModels.push({
-        label: `${model.name} (${providerID})`,
-        value: `${providerID}/${modelID}`,
-        description: `${model.family || ""}${model.cost.input > 0 ? " • Paid" : " • Free"}`.trim(),
-      })
-    }
-  }
-
-  if (allModels.length === 0) {
+  const models = await getAllModels()
+  if (models.length === 0) {
     write(`${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
-
-  const selected = await select(allModels, `${fg.cyan}Select a model:${style.reset}`)
+  const selected = await select(models, `${fg.cyan}Select a model:${style.reset}`)
   if (selected) {
     currentModel = selected
     write(`${fg.green}Model switched to ${selected}${style.reset}\n\n`)
@@ -334,29 +303,12 @@ async function handleModels() {
 }
 
 async function handleSubagentModel() {
-  const providers = await Provider.list()
-  const allModels: Array<{
-    label: string
-    value: string
-    description?: string
-  }> = []
-
-  for (const [providerID, provider] of Object.entries(providers)) {
-    for (const [modelID, model] of Object.entries(provider.models)) {
-      allModels.push({
-        label: `${model.name} (${providerID})`,
-        value: `${providerID}/${modelID}`,
-        description: `${model.family || ""}${model.cost.input > 0 ? " • Paid" : " • Free"}`.trim(),
-      })
-    }
-  }
-
-  if (allModels.length === 0) {
+  const models = await getAllModels()
+  if (models.length === 0) {
     write(`${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
-
-  const selected = await select(allModels, `${fg.cyan}Select model for subagents:${style.reset}`)
+  const selected = await select(models, `${fg.cyan}Select model for subagents:${style.reset}`)
   if (selected) {
     process.env.SUBAGENT_MODEL = selected
     write(`${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
@@ -374,250 +326,140 @@ async function listSessions(): Promise<Session.Info[]> {
   return sessions.reverse()
 }
 
-async function handleCustomCommand(name: string, args: string) {
+async function getAllModels() {
+  const providers = await Provider.list()
+  const models: Array<{ label: string; value: string; description?: string }> = []
+  for (const [providerID, provider] of Object.entries(providers)) {
+    for (const [modelID, model] of Object.entries(provider.models)) {
+      models.push({
+        label: `${model.name} (${providerID})`,
+        value: `${providerID}/${modelID}`,
+        description: `${model.family || ""}${model.cost.input > 0 ? " • Paid" : " • Free"}`.trim(),
+      })
+    }
+  }
+  return models
+}
+
+interface StreamOptions {
+  model?: string
+  agent?: string
+  sessionID?: string
+}
+
+async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
+  block.reset()
   const spinner = new Spinner("Thinking")
   spinner.start()
 
   let first = true
   let totalTokens = 0
   const startTime = Date.now()
-  isOperationInProgress = true
-  let lastChunkWasToolStart = false
   let lastChunkType: string | null = null
-  let lastToolName = ""
-  let lastToolArg = ""
-  let repeatCount = 0
+  let toolCounter = 0
   const md = createMarkdownRenderer()
 
   try {
-    const options = {
-      model: currentModel || undefined,
-      agent: currentAgent,
-      sessionID: currentSessionID || undefined,
-    }
-
-    try {
-      for await (const chunk of command(name, args, options)) {
-        if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
-          currentSessionID = chunk.sessionID
-        }
-
-        if (first && chunk.type !== "done" && chunk.type !== "start") {
-          spinner.stop(true)
-          first = false
-          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
-          const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
-          write(rule)
-        }
-
-        if (chunk.type === "text" && chunk.content) {
-          if (lastChunkWasToolStart) {
-            write("\n")
-          }
-          lastChunkWasToolStart = false
-          lastChunkType = "text"
-          write(md.render(chunk.content))
-        }
-
-        if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-          const tool = chunk.tool.trim()
-          const arg = summarizeInput(tool, chunk.input)
-          const cols = process.stdout.columns || 80
-
-          if (tool === lastToolName && arg === lastToolArg) {
-            repeatCount += 1
-            const count = repeatCount + 1
-            const countText = count > 1 ? ` (×${count})` : ""
-            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-            write(`\x1b[1A\r\x1b[2K${display}\n`)
-          } else {
-            if (lastChunkType === "text") {
-              write("\n")
-            }
-            lastToolName = tool
-            lastToolArg = arg
-            repeatCount = 0
-            const summary = arg ? ` ${arg}` : ""
-            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-            write(`${display}\n`)
-          }
-
-          lastChunkWasToolStart = true
-          lastChunkType = "tool"
-        }
-
-        if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-          const tool = chunk.tool.trim()
-          const arg = summarizeInput(tool, chunk.input)
-          const cols = process.stdout.columns || 80
-          const summary = arg ? ` ${arg}` : ""
-          const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
-          const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-
-          if (lastChunkType === "tool") {
-            write(`\x1b[1A\r\x1b[2K${display}\n`)
-          } else {
-            write(`${display}\n`)
-          }
-
-          lastChunkWasToolStart = false
-          lastChunkType = "tool"
-        }
-
-        if (chunk.type === "error" && chunk.content) {
-          lastChunkWasToolStart = false
-          lastChunkType = "error"
-          const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
-        }
-
-        if (chunk.tokens !== undefined) {
-          totalTokens += chunk.tokens
-        }
+    for await (const chunk of source) {
+      if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
+        currentSessionID = chunk.sessionID
       }
 
-      write(md.flush())
-      const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
-      write(rule)
-      const duration = Date.now() - startTime
-      write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
-    } finally {
-      spinner.stop(true)
+      if (first && chunk.type !== "done" && chunk.type !== "start") {
+        spinner.stop(true)
+        first = false
+        write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+        const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+        write(rule)
+      }
+
+      if (chunk.type === "text" && chunk.content) {
+        block.freeze()
+        lastChunkType = "text"
+        write(md.render(chunk.content))
+      }
+
+      if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+        const tool = chunk.tool.trim()
+        const arg = summarizeInput(tool, chunk.input)
+        const id = chunk.callID || `${tool}-${++toolCounter}`
+        const summary = arg ? `${tool}  ${arg}` : tool
+        block.toolStart(id, tool, summary)
+        lastChunkType = "tool"
+      }
+
+      if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+        const tool = chunk.tool.trim()
+        const arg = summarizeInput(tool, chunk.input)
+        const id = chunk.callID || `${tool}-${toolCounter}`
+        const summary = arg ? `${tool}  ${arg}` : tool
+        block.toolEnd(id, tool, summary)
+        lastChunkType = "tool"
+      }
+
+      if (chunk.type === "error" && chunk.content) {
+        block.freeze()
+        lastChunkType = "error"
+        const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+        write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+      }
+
+      if (chunk.tokens !== undefined) {
+        totalTokens += chunk.tokens
+      }
     }
-  } catch (err) {
-    if (first) spinner.stop(false)
-    const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+
+    block.freeze()
+    write(md.flush())
+    const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+    write(rule)
+    const duration = Date.now() - startTime
+    write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } finally {
-    isOperationInProgress = false
+    spinner.stop(true)
   }
 
   write("\n")
 }
 
-async function handleMessage(message: string) {
-  const spinner = new Spinner("Thinking")
-  spinner.start()
+async function handleCustomCommand(name: string, args: string) {
+  const options = {
+    model: currentModel || undefined,
+    agent: currentAgent,
+    sessionID: currentSessionID || undefined,
+  }
 
-  let first = true
-  let totalTokens = 0
-  const startTime = Date.now()
   isOperationInProgress = true
-  let lastChunkWasToolStart = false
-  let lastChunkType: string | null = null
-  let lastToolName = ""
-  let lastToolArg = ""
-  let repeatCount = 0
-  const md = createMarkdownRenderer()
-
   try {
-    const options = {
-      model: currentModel || undefined,
-      agent: currentAgent,
-      sessionID: currentSessionID || undefined,
-    }
-
-    try {
-      for await (const chunk of chat(message, options)) {
-        if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
-          currentSessionID = chunk.sessionID
-        }
-
-        if (first && chunk.type !== "done" && chunk.type !== "start") {
-          spinner.stop(true)
-          first = false
-          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
-          const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
-          write(rule)
-        }
-
-        if (chunk.type === "text" && chunk.content) {
-          if (lastChunkWasToolStart) {
-            write("\n")
-          }
-          lastChunkWasToolStart = false
-          lastChunkType = "text"
-          write(md.render(chunk.content))
-        }
-
-        if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-          const tool = chunk.tool.trim()
-          const arg = summarizeInput(tool, chunk.input)
-          const cols = process.stdout.columns || 80
-
-          if (tool === lastToolName && arg === lastToolArg) {
-            repeatCount += 1
-            const count = repeatCount + 1
-            const countText = count > 1 ? ` (×${count})` : ""
-            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-            write(`\x1b[1A\r\x1b[2K${display}\n`)
-          } else {
-            if (lastChunkType === "text") {
-              write("\n")
-            }
-            lastToolName = tool
-            lastToolArg = arg
-            repeatCount = 0
-            const summary = arg ? ` ${arg}` : ""
-            const line = `${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-            write(`${display}\n`)
-          }
-
-          lastChunkWasToolStart = true
-          lastChunkType = "tool"
-        }
-
-        if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-          const tool = chunk.tool.trim()
-          const arg = summarizeInput(tool, chunk.input)
-          const cols = process.stdout.columns || 80
-          const summary = arg ? ` ${arg}` : ""
-          const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
-          const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
-
-          if (lastChunkType === "tool") {
-            write(`\x1b[1A\r\x1b[2K${display}\n`)
-          } else {
-            write(`${display}\n`)
-          }
-
-          lastChunkWasToolStart = false
-          lastChunkType = "tool"
-        }
-
-        if (chunk.type === "error" && chunk.content) {
-          lastChunkWasToolStart = false
-          lastChunkType = "error"
-          const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
-        }
-
-        if (chunk.tokens !== undefined) {
-          totalTokens += chunk.tokens
-        }
-      }
-
-      write(md.flush())
-      const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
-      write(rule)
-      const duration = Date.now() - startTime
-      write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
-    } finally {
-      spinner.stop(true)
-    }
+    const source = command(name, args, options)
+    await streamResponse(source, options)
   } catch (err) {
-    if (first) spinner.stop(false)
+    block.freeze()
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
   } finally {
     isOperationInProgress = false
   }
+}
 
-  write("\n")
+async function handleMessage(message: string) {
+  const options = {
+    model: currentModel || undefined,
+    agent: currentAgent,
+    sessionID: currentSessionID || undefined,
+  }
+
+  isOperationInProgress = true
+  try {
+    const source = chat(message, options)
+    await streamResponse(source, options)
+  } catch (err) {
+    block.freeze()
+    const msg = err instanceof Error ? err.message : String(err)
+    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
+  } finally {
+    isOperationInProgress = false
+  }
 }
 
 main().catch(console.error)

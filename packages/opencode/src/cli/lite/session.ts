@@ -13,6 +13,7 @@ export interface ChatChunk {
   type: "text" | "tool_start" | "tool_end" | "error" | "done" | "start"
   content?: string
   tool?: string
+  callID?: string
   input?: Record<string, unknown>
   output?: string
   tokens?: number
@@ -63,11 +64,12 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
+        chunks.push({ type: "tool_start", tool: part.tool, callID: part.callID, input: part.state.input, sessionID })
       } else if (part.state.status === "completed") {
         chunks.push({
           type: "tool_end",
           tool: part.tool,
+          callID: part.callID,
           input: part.state.input,
           output: part.state.output,
           sessionID,
@@ -201,11 +203,12 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
+        chunks.push({ type: "tool_start", tool: part.tool, callID: part.callID, input: part.state.input, sessionID })
       } else if (part.state.status === "completed") {
         chunks.push({
           type: "tool_end",
           tool: part.tool,
+          callID: part.callID,
           input: part.state.input,
           output: part.state.output,
           sessionID,
