@@ -85,8 +85,8 @@ export namespace Skill {
     )
     // Also include global ~/.claude/skills/ if not disabled
     if (!Flag.OPENCODE_DISABLE_GLOBAL_SKILLS) {
-      const globalClaude = `${Global.Path.home}/.claude`
-      if (await Filesystem.isDir(globalClaude)) claudeDirs.push(globalClaude)
+      const legacy = `${Global.Path.home}/.claude`
+      if (await Filesystem.isDir(legacy)) claudeDirs.push(legacy)
     }
 
     if (!Flag.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS) {

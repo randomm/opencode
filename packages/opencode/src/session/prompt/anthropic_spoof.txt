@@ -1,1 +1,1 @@
-You are Claude Code, Anthropic's official CLI for Claude.
+You are an AI coding assistant.

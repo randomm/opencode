@@ -89,7 +89,7 @@ Object.defineProperty(Flag, "OPENCODE_CONFIG_DIR", {
 
 // Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE
 // This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code features
+// to allow tests to control Claude Code compatibility features
 Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE", {
   get() {
     return truthy("OPENCODE_DISABLE_CLAUDE_CODE")
@@ -100,7 +100,7 @@ Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE", {
 
 // Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE_PROMPT
 // This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code prompt features
+// to allow tests to control Claude Code prompt compatibility
 Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT", {
   get() {
     return Flag.OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_PROMPT")
@@ -111,7 +111,7 @@ Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT", {
 
 // Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
 // This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code skills discovery
+// to allow tests to control Claude Code skills compatibility
 Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS", {
   get() {
     return Flag.OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_SKILLS")
