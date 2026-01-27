@@ -225,6 +225,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       })
       .catch((err) => {
         error = err
+        promptDone = true
         cancelled = true
         wake()
       })
@@ -250,7 +251,10 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       yield chunk
     }
 
-    if (!cancelled && !error) {
+    if (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      yield { type: "error", content: errorMessage, sessionID }
+    } else if (!cancelled) {
       yield { type: "done", tokens: stepTokens, sessionID }
     }
   } catch (err) {

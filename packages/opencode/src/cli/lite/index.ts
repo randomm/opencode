@@ -98,7 +98,7 @@ async function main() {
         const index = available.findIndex((a) => a.name === currentAgent)
         const next = index === -1 ? 0 : (index + 1) % available.length
         currentAgent = available[next].name
-        write(`${fg.gray}Switched to: ${currentAgent}${style.reset}\n`)
+        write(`\r${clear.line}`)
         editor.render(renderPrompt(currentAgent))
         return
       }
