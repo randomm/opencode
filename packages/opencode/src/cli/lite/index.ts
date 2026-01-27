@@ -18,30 +18,8 @@ import { Command } from "../../command"
 import { select } from "./select"
 import type { ChatChunk } from "./session"
 import { createLiveBlock } from "./liveblock"
-
-export function summarizeInput(tool: string, input?: Record<string, unknown>): string {
-  if (!input) return ""
-  const str = (key: string) => String(input[key] || "")
-
-  if (tool === "bash") return str("command").slice(0, 60)
-  if (tool === "read") return str("filePath").split("/").slice(-2).join("/")
-  if (tool === "write" || tool === "edit") return str("filePath").split("/").slice(-2).join("/")
-  if (tool === "rg" || tool === "grep") {
-    const pattern = str("pattern").slice(0, 30)
-    const include = str("include")
-    return include ? `"${pattern}" in ${include}` : `"${pattern}"`
-  }
-  if (tool === "glob") return str("pattern").slice(0, 60)
-  if (tool === "task") {
-    const agent = str("subagent_type")
-    const desc = str("description").slice(0, 40)
-    return agent ? `@${agent}: ${desc}` : desc
-  }
-  if (tool === "todowrite" || tool === "todoread") return "todo list"
-
-  const first = Object.values(input).find((v) => typeof v === "string")
-  return first ? String(first).slice(0, 60) : ""
-}
+import { summarizeInput } from "./summary"
+export { summarizeInput }
 
 // UI State
 let tasksVisible = false
@@ -83,88 +61,104 @@ async function main() {
     process.exit(0)
   })
 
+  // Clear screen and show header
+  write("\x1b[2J\x1b[H")
+  write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
+
+  // Start bootstrap spinner (Spinner.start() hides cursor internally)
+  const setup = new Spinner("Setting up environment")
+  setup.start()
+
   // Bootstrap with Instance context for current directory
-  await bootstrap(process.cwd(), async () => {
-    // Initialize default agent
-    currentAgent = await Agent.defaultAgent()
-    const agentList = await Agent.list()
+  try {
+    await bootstrap(process.cwd(), async () => {
+      setup.stop(true)
+      write(`${fg.green}✓${style.reset} Ready\n\n`)
 
-    // Setup
+      // Initialize default agent
+      currentAgent = await Agent.defaultAgent()
+      const agentList = await Agent.list()
 
-    // Header
-    write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
-    write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
+      // Show help hint after Ready
+      write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
 
-    // Input setup
-    const editor = new LineEditor()
-    process.stdin.setRawMode(true)
-    process.stdin.resume()
+      // Input setup
+      const editor = new LineEditor()
+      process.stdin.setRawMode(true)
+      process.stdin.resume()
 
-    // Render prompt
-    editor.render(renderPrompt(currentAgent))
+      // Render prompt
+      editor.render(renderPrompt(currentAgent))
 
-    // Handle input
-    process.stdin.on("data", async (data: Buffer) => {
-      const key = parseKey(data)
+      // Handle input
+      process.stdin.on("data", async (data: Buffer) => {
+        const key = parseKey(data)
 
-      // Ctrl+C to exit
-      if (key.ctrl && key.name === "c") {
-        cleanup()
-        process.exit(0)
-      }
-
-      // Shift+Tab to cycle agents
-      if (key.name === "shift_tab") {
-        const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
-        const index = available.findIndex((a) => a.name === currentAgent)
-        const next = index === -1 ? 0 : (index + 1) % available.length
-        currentAgent = available[next].name
-        write(`\r${clear.line}`)
-        editor.render(renderPrompt(currentAgent))
-        return
-      }
-
-      // Escape to cancel ongoing operation
-      if (key.name === "escape" && isOperationInProgress && currentSessionID) {
-        block.freeze()
-        SessionPrompt.cancel(currentSessionID)
-        isOperationInProgress = false
-        currentSessionID = null
-        write("\n")
-        editor.line = ""
-        editor.cursor = 0
-        editor.render(renderPrompt(currentAgent))
-        return
-      }
-
-      // Block further input during operation (except Escape and Ctrl+C which are handled above)
-      if (isOperationInProgress) {
-        return
-      }
-
-      // Ctrl+T to toggle task panel
-      if (key.ctrl && key.name === "t") {
-        tasksVisible = !tasksVisible
-        editor.render(renderPrompt(currentAgent))
-      }
-
-      const result = editor.handle(key)
-
-      if (result !== null) {
-        write("\n")
-
-        if (result.startsWith("/")) {
-          await handleCommand(result)
-        } else if (result.trim()) {
-          await handleMessage(result)
+        // Ctrl+C to exit
+        if (key.ctrl && key.name === "c") {
+          cleanup()
+          process.exit(0)
         }
 
-        editor.render(renderPrompt(currentAgent))
-      } else {
-        editor.render(renderPrompt(currentAgent))
-      }
+        // Shift+Tab to cycle agents
+        if (key.name === "shift_tab") {
+          const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
+          const index = available.findIndex((a) => a.name === currentAgent)
+          const next = index === -1 ? 0 : (index + 1) % available.length
+          currentAgent = available[next].name
+          write(`\r${clear.line}`)
+          editor.render(renderPrompt(currentAgent))
+          return
+        }
+
+        // Escape to cancel ongoing operation
+        if (key.name === "escape" && isOperationInProgress && currentSessionID) {
+          block.freeze()
+          SessionPrompt.cancel(currentSessionID)
+          isOperationInProgress = false
+          currentSessionID = null
+          write("\n")
+          editor.line = ""
+          editor.cursor = 0
+          editor.render(renderPrompt(currentAgent))
+          return
+        }
+
+        // Block further input during operation (except Escape and Ctrl+C which are handled above)
+        if (isOperationInProgress) {
+          return
+        }
+
+        // Ctrl+T to toggle task panel
+        if (key.ctrl && key.name === "t") {
+          tasksVisible = !tasksVisible
+          editor.render(renderPrompt(currentAgent))
+        }
+
+        const result = editor.handle(key)
+
+        if (result !== null) {
+          write("\n")
+
+          if (result.startsWith("/")) {
+            await handleCommand(result)
+          } else if (result.trim()) {
+            await handleMessage(result)
+          }
+
+          editor.render(renderPrompt(currentAgent))
+        } else {
+          editor.render(renderPrompt(currentAgent))
+        }
+      })
     })
-  })
+  } catch (err) {
+    setup.stop(false)
+    write(cursor.show)
+    const msg = err instanceof Error ? err.message : String(err)
+    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    process.exit(1)
+  }
 }
 
 async function handleCommand(cmd: string) {
@@ -360,6 +354,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   let lastToolId = ""
   let lastToolKey = ""
   let dedupCount = 0
+  const idMap = new Map<string, string>()
   const md = createMarkdownRenderer()
 
   try {
@@ -394,12 +389,14 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           dedupCount++
           const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
           block.toolStart(lastToolId, tool, label)
+          if (chunk.callID) idMap.set(chunk.callID, lastToolId)
         } else {
           const id = chunk.callID || `${tool}-${++toolCounter}`
           lastToolId = id
           lastToolKey = key
           dedupCount = 1
           block.toolStart(id, tool, summary)
+          if (chunk.callID) idMap.set(chunk.callID, id)
         }
         lastChunkType = "tool"
       }
@@ -410,11 +407,12 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         const summary = arg || ""
         const key = `${tool}:${summary}`
 
+        const id = (chunk.callID && idMap.get(chunk.callID)) || chunk.callID || `${tool}-${toolCounter}`
+
         if (key === lastToolKey) {
           const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
-          block.toolEnd(lastToolId, tool, label)
+          block.toolEnd(id, tool, label)
         } else {
-          const id = chunk.callID || `${tool}-${toolCounter}`
           block.toolEnd(id, tool, summary)
         }
         lastChunkType = "tool"
