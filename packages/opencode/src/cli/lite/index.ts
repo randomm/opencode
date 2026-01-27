@@ -14,6 +14,7 @@ import { Session } from "../../session"
 import { Provider } from "../../provider/provider"
 import { Instance } from "../../project/instance"
 import { Agent } from "../../agent/agent"
+import { MCP } from "../../mcp"
 import { Command } from "../../command"
 import { select } from "./select"
 import type { ChatChunk } from "./session"
@@ -85,7 +86,7 @@ async function main() {
   try {
     await bootstrap(process.cwd(), async () => {
       // Force eager init of heavy subsystems during spinner
-      await Promise.all([Provider.list(), Agent.list()])
+      await Promise.all([Provider.list(), Agent.list(), MCP.clients()])
 
       setup.stop(true)
       write(`${fg.green}✓${style.reset} Ready\n\n`)
