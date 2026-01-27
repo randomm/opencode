@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test"
-import { summarizeInput } from "../../../src/cli/lite/index"
+import { summarizeInput } from "../../../src/cli/lite/summary"
 
 describe("summarizeInput", () => {
   describe("bash tool", () => {
@@ -86,7 +86,7 @@ describe("summarizeInput", () => {
       const input = { subagent_type: "developer", description: longDesc }
       const result = summarizeInput("task", input)
       expect(result).toMatch(/^@developer:/)
-      expect(result.length).toBeLessThanOrEqual(50) // "@developer: " (12) + 40 chars
+      expect(result.length).toBe(52) // "@developer: " (12) + 40 chars
     })
 
     it("returns just description without agent", () => {
