@@ -90,6 +90,26 @@ If the type system complains, fix the underlying issue.
 
 If work must be deferred, create a GitHub issue. The issue IS the TODO.
 
+### Style Guide Compliance
+
+**MANDATORY: `STYLE_GUIDE.md` is not advisory — it is a blocking requirement.**
+
+All code must comply with style rules. Violations are **blocking** and will fail adversarial review. No exceptions.
+
+**Common violation categories:**
+
+- No else statements — use early returns
+- No destructuring — preserve context
+- No let statements — use const with ternary operators
+- No semicolons in code
+- No type bypasses (`as any`, `@ts-ignore`, `@ts-expect-error`)
+- Prefer single-word variable names
+- Use Bun APIs (`Bun.file()`, `Bun.write()`)
+- No `try`/`catch` where early returns suffice
+- Keep functions flat and composable
+
+**Reference:** See the "TypeScript Style Guide" section below for detailed code examples, and `STYLE_GUIDE.md` for complete rules and rationale.
+
 ---
 
 ## Pre-Push Verification
@@ -260,10 +280,17 @@ function process(data: unknown): Result {
 ### No semicolons, minimal trailing commas
 
 ```typescript
+// Good
 const config = {
   name: "opencode",
   version: "1.0.0",
 }
+
+// Bad
+const config = {
+  name: "opencode",
+  version: "1.0.0",
+};
 ```
 
 ---
