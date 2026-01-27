@@ -453,7 +453,6 @@ async function handleCustomCommand(name: string, args: string) {
     write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
   } finally {
     isOperationInProgress = false
-    currentSessionID = null
   }
 
   write("\n")
@@ -538,7 +537,6 @@ async function handleMessage(message: string) {
     write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
   } finally {
     isOperationInProgress = false
-    currentSessionID = null
   }
 
   write("\n")
