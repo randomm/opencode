@@ -4,8 +4,8 @@ import { Agent } from "../../agent/agent"
 import { Provider } from "../../provider/provider"
 import { Instance } from "../../project/instance"
 import { Log } from "../../util/log"
-import { createOpencodeClient } from "@opencode-ai/sdk/v2"
-import { Server } from "../../server/server"
+import { Bus } from "../../bus"
+import { MessageV2 } from "../../session/message-v2"
 
 const log = Log.create({ service: "lite.session" })
 
@@ -36,21 +36,6 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
   const agent = options?.agent || (await Agent.defaultAgent())
   const modelParam = options?.model ? Provider.parseModel(options.model) : undefined
 
-  const abortController = new AbortController()
-  const signal = options?.signal || abortController.signal
-
-  const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const request = new Request(input, init)
-    return Server.App().fetch(request)
-  }) as typeof globalThis.fetch
-
-  const sdk = createOpencodeClient({
-    baseUrl: "http://opencode.internal",
-    directory: Instance.directory,
-    fetch: fetchFn,
-    signal,
-  })
-
   const chunks: ChatChunk[] = []
   let stepTokens = 0
   let done = false
@@ -66,70 +51,71 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
     }
   }
 
+  // Subscribe to Bus events BEFORE starting prompt
+  console.error("[DEBUG] Bus subscription active for", sessionID)
+  const unsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
+    console.error("[DEBUG] Bus event received:", event.properties.part.type)
+    const part = event.properties.part
+    if (part.sessionID !== sessionID) {
+      console.error("[DEBUG] Event for different session, skipping:", part.sessionID)
+      return
+    }
+
+    console.error("[DEBUG] Processing part type:", part.type)
+    if (part.type === "text" && event.properties.delta) {
+      console.error("[DEBUG] Adding text chunk:", event.properties.delta.substring(0, 50))
+      chunks.push({ type: "text", content: event.properties.delta, sessionID })
+      wake()
+    } else if (part.type === "tool") {
+      if (part.state.status === "running") {
+        console.error("[DEBUG] Tool started:", part.tool)
+        chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
+      } else if (part.state.status === "completed") {
+        console.error("[DEBUG] Tool completed:", part.tool)
+        chunks.push({ type: "tool_end", tool: part.tool, output: part.state.output, sessionID })
+      }
+      wake()
+    } else if (part.type === "step-finish") {
+      console.error("[DEBUG] Step finished, tokens:", part.tokens)
+      stepTokens +=
+        part.tokens.input +
+        part.tokens.output +
+        part.tokens.reasoning +
+        part.tokens.cache.read +
+        part.tokens.cache.write
+    }
+  })
+
   try {
     const parts = [{ type: "text" as const, text: message }]
-
-    // Yield sessionID for cancellation tracking
     yield { type: "start" as const, sessionID }
 
-    // Start prompt (triggers LLM, emits events)
+    console.error("[DEBUG] Starting prompt...")
+    // Start prompt - this triggers events via Bus
     const promptPromise = SessionPrompt.prompt({
       sessionID,
       agent,
       model: modelParam,
       parts,
     }).catch((err) => {
+      console.error("[DEBUG] Prompt error:", err)
       error = err
       cancelled = true
       wake()
     })
 
-    // Subscribe to SDK events and push to chunks array
-    sdk.event
-      .subscribe({}, { signal })
-      .then(async (events) => {
-        for await (const event of events.stream) {
-          if (signal.aborted || cancelled) break
+    console.error("[DEBUG] Prompt started, waiting for chunks...")
 
-          if (event.type === "message.part.updated") {
-            const part = event.properties.part
-            if (part.sessionID !== sessionID) continue
-
-            if (part.type === "text" && event.properties.delta) {
-              chunks.push({ type: "text", content: event.properties.delta, sessionID })
-              wake()
-            } else if (part.type === "tool") {
-              if (part.state.status === "running") {
-                chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
-              } else if (part.state.status === "completed") {
-                chunks.push({ type: "tool_end", tool: part.tool, output: part.state.output, sessionID })
-              }
-              wake()
-            } else if (part.type === "step-finish") {
-              stepTokens +=
-                part.tokens.input +
-                part.tokens.output +
-                part.tokens.reasoning +
-                part.tokens.cache.read +
-                part.tokens.cache.write
-            }
-          }
-        }
-      })
-      .catch(() => {})
-
-    // Wait for prompt to complete, yielding chunks as they arrive
-    while (!done && !signal.aborted && !cancelled) {
-      // Yield any buffered chunks
+    // Yield chunks as they arrive
+    while (!done && !cancelled) {
       while (chunks.length > 0) {
         yield chunks.shift()!
       }
-
       if (cancelled) break
 
-      // Wait for either prompt completion or new chunks
       await Promise.race([
         promptPromise.then(() => {
+          console.error("[DEBUG] Prompt completed")
           done = true
         }),
         new Promise<void>((resolve) => {
@@ -142,21 +128,19 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       ])
     }
 
-    // Yield remaining chunks
     while (chunks.length > 0) {
       yield chunks.shift()!
     }
 
-    if (!signal.aborted && !cancelled && !error) {
+    if (!cancelled && !error) {
       yield { type: "done", tokens: stepTokens, sessionID }
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
-    const stack = err instanceof Error ? err.stack : undefined
-    log.error("chat error", { error: errorMessage, stack, sessionID })
+    log.error("chat error", { error: errorMessage, sessionID })
     yield { type: "error", content: errorMessage, sessionID }
   } finally {
-    abortController.abort()
+    unsubscribe()
   }
 }
 
