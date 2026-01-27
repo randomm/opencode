@@ -383,7 +383,6 @@ async function handleCustomCommand(name: string, args: string) {
   const startTime = Date.now()
   isOperationInProgress = true
   let lastChunkWasToolStart = false
-  let lastToolSummary = ""
   let lastChunkType: string | null = null
   let lastToolName = ""
   let lastToolArg = ""
@@ -445,7 +444,6 @@ async function handleCustomCommand(name: string, args: string) {
             write(`${display}\n`)
           }
 
-          lastToolSummary = arg
           lastChunkWasToolStart = true
           lastChunkType = "tool"
         }
@@ -454,15 +452,14 @@ async function handleCustomCommand(name: string, args: string) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
           const cols = process.stdout.columns || 80
+          const summary = arg ? ` ${arg}` : ""
+          const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
+          const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
 
-          if (lastChunkWasToolStart && lastToolSummary === arg) {
-            const count = repeatCount + 1
-            const countText = count > 1 ? ` (×${count})` : ""
-            const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+          if (lastChunkType === "tool") {
             write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
-            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+            write(`${display}\n`)
           }
 
           lastChunkWasToolStart = false
@@ -509,7 +506,6 @@ async function handleMessage(message: string) {
   const startTime = Date.now()
   isOperationInProgress = true
   let lastChunkWasToolStart = false
-  let lastToolSummary = ""
   let lastChunkType: string | null = null
   let lastToolName = ""
   let lastToolArg = ""
@@ -571,7 +567,6 @@ async function handleMessage(message: string) {
             write(`${display}\n`)
           }
 
-          lastToolSummary = arg
           lastChunkWasToolStart = true
           lastChunkType = "tool"
         }
@@ -580,15 +575,14 @@ async function handleMessage(message: string) {
           const tool = chunk.tool.trim()
           const arg = summarizeInput(tool, chunk.input)
           const cols = process.stdout.columns || 80
+          const summary = arg ? ` ${arg}` : ""
+          const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}`
+          const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
 
-          if (lastChunkWasToolStart && lastToolSummary === arg) {
-            const count = repeatCount + 1
-            const countText = count > 1 ? ` (×${count})` : ""
-            const line = `${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}`
-            const display = line.length > cols ? line.slice(0, cols - 1) + "…" : line
+          if (lastChunkType === "tool") {
             write(`\x1b[1A\r\x1b[2K${display}\n`)
           } else {
-            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+            write(`${display}\n`)
           }
 
           lastChunkWasToolStart = false

@@ -65,7 +65,13 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       if (part.state.status === "running") {
         chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
       } else if (part.state.status === "completed") {
-        chunks.push({ type: "tool_end", tool: part.tool, output: part.state.output, sessionID })
+        chunks.push({
+          type: "tool_end",
+          tool: part.tool,
+          input: part.state.input,
+          output: part.state.output,
+          sessionID,
+        })
       }
       wake()
     } else if (part.type === "step-finish") {
@@ -197,7 +203,13 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       if (part.state.status === "running") {
         chunks.push({ type: "tool_start", tool: part.tool, input: part.state.input, sessionID })
       } else if (part.state.status === "completed") {
-        chunks.push({ type: "tool_end", tool: part.tool, output: part.state.output, sessionID })
+        chunks.push({
+          type: "tool_end",
+          tool: part.tool,
+          input: part.state.input,
+          output: part.state.output,
+          sessionID,
+        })
       }
       wake()
     } else if (part.type === "step-finish") {
