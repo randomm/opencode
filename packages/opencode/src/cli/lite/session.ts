@@ -221,10 +221,14 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       arguments: args,
     })
       .then(() => {
+        process.stderr.write(`[DEBUG] SessionPrompt.command() succeeded\n`)
         promptDone = true
         wake()
       })
       .catch((err) => {
+        process.stderr.write(
+          `[DEBUG] SessionPrompt.command() caught error: ${err instanceof Error ? err.message : String(err)}\n`,
+        )
         error = err
         promptDone = true
         cancelled = true
@@ -247,7 +251,14 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       })
     }
 
-    await promptPromise
+    try {
+      await promptPromise
+    } catch (err) {
+      process.stderr.write(
+        `[DEBUG] await promptPromise threw (should not happen): ${err instanceof Error ? err.message : String(err)}\n`,
+      )
+      error = err
+    }
 
     while (chunks.length > 0) {
       const chunk = chunks.shift()!
@@ -262,6 +273,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
     }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
+    process.stderr.write(`[DEBUG] Unhandled error in command generator: ${errorMessage}\n`)
     log.error("command error", { error: errorMessage, sessionID })
     yield { type: "error", content: errorMessage, sessionID }
   } finally {

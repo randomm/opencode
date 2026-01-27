@@ -357,13 +357,16 @@ async function handleCustomCommand(name: string, args: string) {
   isOperationInProgress = true
 
   try {
+    process.stderr.write(`[DEBUG] handleCustomCommand: Starting with name="${name}", args="${args}"\n`)
     const options = {
       model: currentModel || undefined,
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
 
+    process.stderr.write(`[DEBUG] handleCustomCommand: Created options, starting iteration\n`)
     for await (const chunk of command(name, args, options)) {
+      process.stderr.write(`[DEBUG] handleCustomCommand: Received chunk type="${chunk.type}"\n`)
       if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
         currentSessionID = chunk.sessionID
       }
@@ -396,9 +399,13 @@ async function handleCustomCommand(name: string, args: string) {
       }
     }
 
+    process.stderr.write(`[DEBUG] handleCustomCommand: Iteration complete\n`)
     const duration = Date.now() - startTime
     write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } catch (err) {
+    process.stderr.write(
+      `[DEBUG] handleCustomCommand: Caught error: ${err instanceof Error ? err.message : String(err)}\n`,
+    )
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)
     write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
