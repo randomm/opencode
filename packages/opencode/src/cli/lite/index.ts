@@ -5,9 +5,9 @@ import { Spinner } from "./spinner"
 import { chat, command } from "./session"
 import { formatTokens, formatDuration } from "../metrics"
 import { Icons } from "../cmd/tui/util/icons"
-import { renderTaskPanel, type Task, type AgentStatus } from "./taskpanel"
+import { type Task, type AgentStatus } from "./taskpanel"
 import { renderStatusLine, type StatusLineState } from "./statusline"
-import { renderBottomBar, renderPrompt, type BottomBarState } from "./bottombar"
+import { renderPrompt, type BottomBarState } from "./bottombar"
 import { bootstrap } from "../bootstrap"
 import { Log } from "../../util/log"
 import { Global } from "../../global"
@@ -59,6 +59,19 @@ async function main() {
     level: "ERROR",
   })
 
+  // Cleanup function
+  function cleanup() {
+    write(cursor.show)
+    process.stdin.setRawMode(false)
+  }
+
+  // Register cleanup before bootstrap
+  process.on("exit", cleanup)
+  process.on("SIGINT", () => {
+    cleanup()
+    process.exit(0)
+  })
+
   // Bootstrap with Instance context for current directory
   await bootstrap(process.cwd(), async () => {
     // Initialize default agent
@@ -66,9 +79,6 @@ async function main() {
     const agentList = await Agent.list()
 
     // Setup
-    write(screen.alt)
-    write(clear.screen)
-    write(cursor.home)
 
     // Header
     write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
@@ -115,6 +125,11 @@ async function main() {
         return
       }
 
+      // Block further input during operation (except Escape and Ctrl+C which are handled above)
+      if (isOperationInProgress) {
+        return
+      }
+
       // Ctrl+T to toggle task panel
       if (key.ctrl && key.name === "t") {
         tasksVisible = !tasksVisible
@@ -137,19 +152,6 @@ async function main() {
       } else {
         editor.render(renderPrompt(currentAgent))
       }
-    })
-
-    // Cleanup on exit
-    function cleanup() {
-      write(cursor.show)
-      write(screen.main)
-      process.stdin.setRawMode(false)
-    }
-
-    process.on("exit", cleanup)
-    process.on("SIGINT", () => {
-      cleanup()
-      process.exit(0)
     })
   })
 }
@@ -357,55 +359,52 @@ async function handleCustomCommand(name: string, args: string) {
   isOperationInProgress = true
 
   try {
-    process.stderr.write(`[DEBUG] handleCustomCommand: Starting with name="${name}", args="${args}"\n`)
     const options = {
       model: currentModel || undefined,
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
 
-    process.stderr.write(`[DEBUG] handleCustomCommand: Created options, starting iteration\n`)
-    for await (const chunk of command(name, args, options)) {
-      process.stderr.write(`[DEBUG] handleCustomCommand: Received chunk type="${chunk.type}"\n`)
-      if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
-        currentSessionID = chunk.sessionID
+    try {
+      for await (const chunk of command(name, args, options)) {
+        if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
+          currentSessionID = chunk.sessionID
+        }
+
+        if (first && chunk.type !== "done" && chunk.type !== "start") {
+          spinner.stop(true)
+          first = false
+          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+        }
+
+        if (chunk.type === "text" && chunk.content) {
+          write(chunk.content)
+        }
+
+        if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+          write(`${fg.gray}${chunk.tool?.trim()} ${style.reset}`)
+        }
+
+        if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+          write(`${fg.gray}✓${style.reset} `)
+        }
+
+        if (chunk.type === "error" && chunk.content) {
+          const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+        }
+
+        if (chunk.tokens !== undefined) {
+          totalTokens += chunk.tokens
+        }
       }
 
-      if (first && chunk.type !== "done" && chunk.type !== "start") {
-        spinner.stop(true)
-        first = false
-        write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
-      }
-
-      if (chunk.type === "text" && chunk.content) {
-        write(chunk.content)
-      }
-
-      if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-        write(`\n${Icons.taskIcon("progress")} ${chunk.tool}\n`)
-      }
-
-      if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-        write(`${Icons.taskIcon("completed")} ${chunk.tool}\n`)
-      }
-
-      if (chunk.type === "error" && chunk.content) {
-        const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-        write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
-      }
-
-      if (chunk.tokens !== undefined) {
-        totalTokens += chunk.tokens
-      }
+      const duration = Date.now() - startTime
+      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+    } finally {
+      write(cursor.show)
     }
-
-    process.stderr.write(`[DEBUG] handleCustomCommand: Iteration complete\n`)
-    const duration = Date.now() - startTime
-    write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } catch (err) {
-    process.stderr.write(
-      `[DEBUG] handleCustomCommand: Caught error: ${err instanceof Error ? err.message : String(err)}\n`,
-    )
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)
     write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
@@ -433,42 +432,45 @@ async function handleMessage(message: string) {
       sessionID: currentSessionID || undefined,
     }
 
-    for await (const chunk of chat(message, options)) {
-      // Capture sessionID from start chunk for cancellation
-      if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
-        currentSessionID = chunk.sessionID
+    try {
+      for await (const chunk of chat(message, options)) {
+        if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
+          currentSessionID = chunk.sessionID
+        }
+
+        if (first && chunk.type !== "done" && chunk.type !== "start") {
+          spinner.stop(true)
+          first = false
+          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+        }
+
+        if (chunk.type === "text" && chunk.content) {
+          write(chunk.content)
+        }
+
+        if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+          write(`${fg.gray}${chunk.tool?.trim()} ${style.reset}`)
+        }
+
+        if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+          write(`${fg.gray}✓${style.reset} `)
+        }
+
+        if (chunk.type === "error" && chunk.content) {
+          const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+        }
+
+        if (chunk.tokens !== undefined) {
+          totalTokens += chunk.tokens
+        }
       }
 
-      if (first && chunk.type !== "done" && chunk.type !== "start") {
-        spinner.stop(true)
-        first = false
-        write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
-      }
-
-      if (chunk.type === "text" && chunk.content) {
-        write(chunk.content)
-      }
-
-      if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-        write(`\n${Icons.taskIcon("progress")} ${chunk.tool}\n`)
-      }
-
-      if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-        write(`${Icons.taskIcon("completed")} ${chunk.tool}\n`)
-      }
-
-      if (chunk.type === "error" && chunk.content) {
-        const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-        write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
-      }
-
-      if (chunk.tokens !== undefined) {
-        totalTokens += chunk.tokens
-      }
+      const duration = Date.now() - startTime
+      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+    } finally {
+      write(cursor.show)
     }
-
-    const duration = Date.now() - startTime
-    write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   } catch (err) {
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)

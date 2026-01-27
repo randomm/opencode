@@ -16,7 +16,7 @@ export class Spinner {
     this.interval = setInterval(() => {
       this.frame = (this.frame + 1) % frames.length
       write(`\r${clear.line}${fg.cyan}${frames[this.frame]}${style.reset} ${fg.gray}${this.text}${style.reset}`)
-    }, 80)
+    }, 50)
   }
 
   update(text: string) {
