@@ -3,6 +3,7 @@ import { cursor, clear, fg, style, write, screen } from "./terminal"
 import { parseKey, LineEditor } from "./input"
 import { Spinner } from "./spinner"
 import { chat, command } from "./session"
+import { createMarkdownRenderer } from "./markdown"
 import { formatTokens, formatDuration } from "../metrics"
 import { Icons } from "../cmd/tui/util/icons"
 import { type Task, type AgentStatus } from "./taskpanel"
@@ -19,6 +20,30 @@ import { Agent } from "../../agent/agent"
 import { Command } from "../../command"
 import { select } from "./select"
 import type { ChatChunk } from "./session"
+
+export function summarizeInput(tool: string, input?: Record<string, unknown>): string {
+  if (!input) return ""
+  const str = (key: string) => String(input[key] || "")
+
+  if (tool === "bash") return str("command").slice(0, 60)
+  if (tool === "read") return str("filePath").split("/").slice(-2).join("/")
+  if (tool === "write" || tool === "edit") return str("filePath").split("/").slice(-2).join("/")
+  if (tool === "rg" || tool === "grep") {
+    const pattern = str("pattern").slice(0, 30)
+    const include = str("include")
+    return include ? `"${pattern}" in ${include}` : `"${pattern}"`
+  }
+  if (tool === "glob") return str("pattern").slice(0, 60)
+  if (tool === "task") {
+    const agent = str("subagent_type")
+    const desc = str("description").slice(0, 40)
+    return agent ? `@${agent}: ${desc}` : desc
+  }
+  if (tool === "todowrite" || tool === "todoread") return "todo list"
+
+  const first = Object.values(input).find((v) => typeof v === "string")
+  return first ? String(first).slice(0, 60) : ""
+}
 
 // UI State
 let tasksVisible = false
@@ -357,6 +382,9 @@ async function handleCustomCommand(name: string, args: string) {
   let totalTokens = 0
   const startTime = Date.now()
   isOperationInProgress = true
+  let lastChunkWasToolStart = false
+  let lastToolSummary = ""
+  const md = createMarkdownRenderer()
 
   try {
     const options = {
@@ -378,18 +406,32 @@ async function handleCustomCommand(name: string, args: string) {
         }
 
         if (chunk.type === "text" && chunk.content) {
-          write(chunk.content)
+          lastChunkWasToolStart = false
+          write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-          write(`${fg.gray}${chunk.tool?.trim()} ${style.reset}`)
+          const tool = chunk.tool.trim()
+          lastToolSummary = summarizeInput(tool, chunk.input)
+          const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
+          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          lastChunkWasToolStart = true
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-          write(`${fg.gray}✓${style.reset} `)
+          const tool = chunk.tool.trim()
+          if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
+            write(
+              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
+            )
+          } else {
+            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+          }
+          lastChunkWasToolStart = false
         }
 
         if (chunk.type === "error" && chunk.content) {
+          lastChunkWasToolStart = false
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
           write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
@@ -399,6 +441,7 @@ async function handleCustomCommand(name: string, args: string) {
         }
       }
 
+      write(md.flush())
       const duration = Date.now() - startTime
       write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
@@ -424,6 +467,9 @@ async function handleMessage(message: string) {
   let totalTokens = 0
   const startTime = Date.now()
   isOperationInProgress = true
+  let lastChunkWasToolStart = false
+  let lastToolSummary = ""
+  const md = createMarkdownRenderer()
 
   try {
     const options = {
@@ -445,18 +491,32 @@ async function handleMessage(message: string) {
         }
 
         if (chunk.type === "text" && chunk.content) {
-          write(chunk.content)
+          lastChunkWasToolStart = false
+          write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-          write(`${fg.gray}${chunk.tool?.trim()} ${style.reset}`)
+          const tool = chunk.tool.trim()
+          lastToolSummary = summarizeInput(tool, chunk.input)
+          const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
+          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          lastChunkWasToolStart = true
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
-          write(`${fg.gray}✓${style.reset} `)
+          const tool = chunk.tool.trim()
+          if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
+            write(
+              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
+            )
+          } else {
+            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+          }
+          lastChunkWasToolStart = false
         }
 
         if (chunk.type === "error" && chunk.content) {
+          lastChunkWasToolStart = false
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
           write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
@@ -466,6 +526,7 @@ async function handleMessage(message: string) {
         }
       }
 
+      write(md.flush())
       const duration = Date.now() - startTime
       write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
