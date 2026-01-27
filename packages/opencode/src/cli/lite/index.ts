@@ -4,6 +4,7 @@ import { parseKey, LineEditor } from "./input"
 import { Spinner } from "./spinner"
 import { chat, command } from "./session"
 import { createMarkdownRenderer } from "./markdown"
+import { createLayout } from "./layout"
 import { formatTokens, formatDuration } from "../metrics"
 import { Icons } from "../cmd/tui/util/icons"
 import { type Task, type AgentStatus } from "./taskpanel"
@@ -67,6 +68,8 @@ let isOperationInProgress = false
 let currentSessionID: string | null = null
 let currentModel: string | null = null
 let currentAgent: string | undefined
+let layout = createLayout()
+let resizePending = false
 
 async function main() {
   // Check TTY
@@ -86,7 +89,7 @@ async function main() {
 
   // Cleanup function
   function cleanup() {
-    write(cursor.show)
+    layout.cleanup()
     process.stdin.setRawMode(false)
   }
 
@@ -97,6 +100,10 @@ async function main() {
     process.exit(0)
   })
 
+  process.on("SIGWINCH", () => {
+    resizePending = true
+  })
+
   // Bootstrap with Instance context for current directory
   await bootstrap(process.cwd(), async () => {
     // Initialize default agent
@@ -104,21 +111,27 @@ async function main() {
     const agentList = await Agent.list()
 
     // Setup
+    layout.setup()
 
     // Header
-    write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
-    write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
+    layout.write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
+    layout.write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
 
     // Input setup
     const editor = new LineEditor()
     process.stdin.setRawMode(true)
     process.stdin.resume()
 
-    // Render prompt
-    editor.render(renderPrompt(currentAgent))
+    layout.setHint("Esc cancel · Shift+Tab agents · /help commands")
+    layout.focusInput(renderPrompt(currentAgent))
 
     // Handle input
     process.stdin.on("data", async (data: Buffer) => {
+      if (resizePending) {
+        resizePending = false
+        layout.resize()
+      }
+
       const key = parseKey(data)
 
       // Ctrl+C to exit
@@ -133,8 +146,7 @@ async function main() {
         const index = available.findIndex((a) => a.name === currentAgent)
         const next = index === -1 ? 0 : (index + 1) % available.length
         currentAgent = available[next].name
-        write(`\r${clear.line}`)
-        editor.render(renderPrompt(currentAgent))
+        layout.focusInput(renderPrompt(currentAgent))
         return
       }
 
@@ -143,10 +155,10 @@ async function main() {
         SessionPrompt.cancel(currentSessionID)
         isOperationInProgress = false
         currentSessionID = null
-        write("\n")
+        layout.write("\n")
         editor.line = ""
         editor.cursor = 0
-        editor.render(renderPrompt(currentAgent))
+        layout.focusInput(renderPrompt(currentAgent))
         return
       }
 
@@ -159,13 +171,13 @@ async function main() {
       if (key.ctrl && key.name === "t") {
         tasksVisible = !tasksVisible
         statusLine.tasksVisible = tasksVisible
-        editor.render(renderPrompt(currentAgent))
+        layout.focusInput(renderPrompt(currentAgent))
       }
 
       const result = editor.handle(key)
 
       if (result !== null) {
-        write("\n")
+        layout.write("\n")
 
         if (result.startsWith("/")) {
           await handleCommand(result)
@@ -173,9 +185,9 @@ async function main() {
           await handleMessage(result)
         }
 
-        editor.render(renderPrompt(currentAgent))
+        layout.focusInput(renderPrompt(currentAgent))
       } else {
-        editor.render(renderPrompt(currentAgent))
+        layout.focusInput(renderPrompt(currentAgent))
       }
     })
   })
@@ -186,24 +198,27 @@ async function handleCommand(cmd: string) {
   const name = parts[0].toLowerCase()
 
   if (name === "help") {
-    write(`${fg.yellow}Commands:${style.reset}\n`)
-    write(`  /help             - Show this help\n`)
-    write(`  /clear            - Clear screen\n`)
-    write(`  /sessions         - List and switch sessions\n`)
-    write(`  /new              - Create a new session\n`)
-    write(`  /agents           - List and select agents\n`)
-    write(`  /models           - List and select models\n`)
-    write(`  /subagent-model   - Select model for subagents\n`)
-    write(`  /quit             - Exit oclite\n`)
-    write(`  /<command>        - Run custom command\n`)
-    write("\n")
+    layout.write(`${fg.yellow}Commands:${style.reset}\n`)
+    layout.write(`  /help             - Show this help\n`)
+    layout.write(`  /clear            - Clear screen\n`)
+    layout.write(`  /sessions         - List and switch sessions\n`)
+    layout.write(`  /new              - Create a new session\n`)
+    layout.write(`  /agents           - List and select agents\n`)
+    layout.write(`  /models           - List and select models\n`)
+    layout.write(`  /subagent-model   - Select model for subagents\n`)
+    layout.write(`  /quit             - Exit oclite\n`)
+    layout.write(`  /<command>        - Run custom command\n`)
+    layout.write("\n")
     return
   }
 
   if (name === "clear") {
     write(clear.screen)
     write(cursor.home)
-    write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n\n`)
+    layout.setup()
+    layout.write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n\n`)
+    layout.setHint("Esc cancel · Shift+Tab agents · /help commands")
+    layout.focusInput(renderPrompt(currentAgent))
     return
   }
 
@@ -243,13 +258,13 @@ async function handleCommand(cmd: string) {
     return
   }
 
-  write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
+  layout.write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
 }
 
 async function handleSessions() {
   const sessions = await listSessions()
   if (sessions.length === 0) {
-    write(`${fg.yellow}No sessions found${style.reset}\n\n`)
+    layout.write(`${fg.yellow}No sessions found${style.reset}\n\n`)
     return
   }
 
@@ -262,9 +277,9 @@ async function handleSessions() {
   const selected = await select(options, `${fg.cyan}Select a session:${style.reset}`)
   if (selected) {
     currentSessionID = selected
-    write(`${fg.green}Session switched${style.reset}\n\n`)
+    layout.write(`${fg.green}Session switched${style.reset}\n\n`)
   } else {
-    write("\n")
+    layout.write("\n")
   }
 }
 
@@ -274,7 +289,7 @@ async function handleNew() {
   })
   currentSessionID = session.id
   currentModel = null
-  write(`${fg.green}New session started${style.reset}\n\n`)
+  layout.write(`${fg.green}New session started${style.reset}\n\n`)
 }
 
 async function handleAgents() {
@@ -282,7 +297,7 @@ async function handleAgents() {
   const filtered = all.filter((a) => a.mode !== "subagent" && !a.hidden)
 
   if (filtered.length === 0) {
-    write(`${fg.red}No agents available${style.reset}\n\n`)
+    layout.write(`${fg.red}No agents available${style.reset}\n\n`)
     return
   }
 
@@ -295,9 +310,9 @@ async function handleAgents() {
   const selected = await select(options, `${fg.cyan}Select an agent:${style.reset}`)
   if (selected) {
     currentAgent = selected
-    write(`${fg.green}Agent switched to ${selected}${style.reset}\n\n`)
+    layout.write(`${fg.green}Agent switched to ${selected}${style.reset}\n\n`)
   } else {
-    write("\n")
+    layout.write("\n")
   }
 }
 
@@ -320,16 +335,16 @@ async function handleModels() {
   }
 
   if (allModels.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
+    layout.write(`${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
 
   const selected = await select(allModels, `${fg.cyan}Select a model:${style.reset}`)
   if (selected) {
     currentModel = selected
-    write(`${fg.green}Model switched to ${selected}${style.reset}\n\n`)
+    layout.write(`${fg.green}Model switched to ${selected}${style.reset}\n\n`)
   } else {
-    write("\n")
+    layout.write("\n")
   }
 }
 
@@ -352,16 +367,16 @@ async function handleSubagentModel() {
   }
 
   if (allModels.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
+    layout.write(`${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
 
   const selected = await select(allModels, `${fg.cyan}Select model for subagents:${style.reset}`)
   if (selected) {
     process.env.SUBAGENT_MODEL = selected
-    write(`${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
+    layout.write(`${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
   } else {
-    write("\n")
+    layout.write("\n")
   }
 }
 
@@ -376,7 +391,9 @@ async function listSessions(): Promise<Session.Info[]> {
 
 async function handleCustomCommand(name: string, args: string) {
   const spinner = new Spinner("Thinking")
-  spinner.start()
+  spinner.start((text) => {
+    layout.setStatus(text)
+  })
 
   let first = true
   let totalTokens = 0
@@ -402,30 +419,32 @@ async function handleCustomCommand(name: string, args: string) {
         if (first && chunk.type !== "done" && chunk.type !== "start") {
           spinner.stop(true)
           first = false
-          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          layout.setMode("scroll")
+          layout.write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          layout.setHint("Esc to cancel")
         }
 
         if (chunk.type === "text" && chunk.content) {
           lastChunkWasToolStart = false
-          write(md.render(chunk.content))
+          layout.write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           lastToolSummary = summarizeInput(tool, chunk.input)
           const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
-          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          layout.write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
           lastChunkWasToolStart = true
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
-            write(
+            layout.write(
               `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
             )
           } else {
-            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+            layout.write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
           lastChunkWasToolStart = false
         }
@@ -433,7 +452,7 @@ async function handleCustomCommand(name: string, args: string) {
         if (chunk.type === "error" && chunk.content) {
           lastChunkWasToolStart = false
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+          layout.write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
 
         if (chunk.tokens !== undefined) {
@@ -441,27 +460,35 @@ async function handleCustomCommand(name: string, args: string) {
         }
       }
 
-      write(md.flush())
+      if (resizePending) {
+        resizePending = false
+        layout.resize()
+      }
+
+      layout.write(md.flush())
       const duration = Date.now() - startTime
-      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+      layout.write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
-      write(cursor.show)
+      layout.setStatus("")
     }
   } catch (err) {
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    layout.write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
   } finally {
     isOperationInProgress = false
     currentSessionID = null
+    layout.setHint("Esc cancel · Shift+Tab agents · /help commands")
   }
 
-  write("\n")
+  layout.write("\n")
 }
 
 async function handleMessage(message: string) {
   const spinner = new Spinner("Thinking")
-  spinner.start()
+  spinner.start((text) => {
+    layout.setStatus(text)
+  })
 
   let first = true
   let totalTokens = 0
@@ -487,30 +514,32 @@ async function handleMessage(message: string) {
         if (first && chunk.type !== "done" && chunk.type !== "start") {
           spinner.stop(true)
           first = false
-          write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          layout.setMode("scroll")
+          layout.write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          layout.setHint("Esc to cancel")
         }
 
         if (chunk.type === "text" && chunk.content) {
           lastChunkWasToolStart = false
-          write(md.render(chunk.content))
+          layout.write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           lastToolSummary = summarizeInput(tool, chunk.input)
           const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
-          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          layout.write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
           lastChunkWasToolStart = true
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
           if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
-            write(
+            layout.write(
               `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
             )
           } else {
-            write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
+            layout.write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
           lastChunkWasToolStart = false
         }
@@ -518,7 +547,7 @@ async function handleMessage(message: string) {
         if (chunk.type === "error" && chunk.content) {
           lastChunkWasToolStart = false
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
-          write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
+          layout.write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
 
         if (chunk.tokens !== undefined) {
@@ -526,22 +555,28 @@ async function handleMessage(message: string) {
         }
       }
 
-      write(md.flush())
+      if (resizePending) {
+        resizePending = false
+        layout.resize()
+      }
+
+      layout.write(md.flush())
       const duration = Date.now() - startTime
-      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+      layout.write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
-      write(cursor.show)
+      layout.setStatus("")
     }
   } catch (err) {
     if (first) spinner.stop(false)
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    layout.write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
   } finally {
     isOperationInProgress = false
     currentSessionID = null
+    layout.setHint("Esc cancel · Shift+Tab agents · /help commands")
   }
 
-  write("\n")
+  layout.write("\n")
 }
 
 main().catch(console.error)
