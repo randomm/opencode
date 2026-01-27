@@ -376,7 +376,6 @@ async function listSessions(): Promise<Session.Info[]> {
 
 async function handleCustomCommand(name: string, args: string) {
   const spinner = new Spinner("Thinking")
-  spinner.start()
 
   let first = true
   let totalTokens = 0
@@ -384,6 +383,10 @@ async function handleCustomCommand(name: string, args: string) {
   isOperationInProgress = true
   let lastChunkWasToolStart = false
   let lastToolSummary = ""
+  let lastChunkType: string | null = null
+  let lastToolName = ""
+  let lastToolArg = ""
+  let repeatCount = 0
   const md = createMarkdownRenderer()
 
   try {
@@ -392,6 +395,8 @@ async function handleCustomCommand(name: string, args: string) {
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
+
+    spinner.start()
 
     try {
       for await (const chunk of command(name, args, options)) {
@@ -403,35 +408,67 @@ async function handleCustomCommand(name: string, args: string) {
           spinner.stop(true)
           first = false
           write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+          write(rule)
         }
 
         if (chunk.type === "text" && chunk.content) {
+          if (lastChunkWasToolStart) {
+            write("\n")
+          }
           lastChunkWasToolStart = false
+          lastChunkType = "text"
           write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
-          lastToolSummary = summarizeInput(tool, chunk.input)
-          const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
-          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          const arg = summarizeInput(tool, chunk.input)
+
+          if (tool === lastToolName && arg === lastToolArg) {
+            repeatCount += 1
+            const count = repeatCount + 1
+            const countText = count > 1 ? ` (×${count})` : ""
+            write(
+              `\x1b[1A\r\x1b[2K${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
+            )
+          } else {
+            if (lastChunkType === "text") {
+              write("\n")
+            }
+            lastToolName = tool
+            lastToolArg = arg
+            repeatCount = 0
+            const summary = arg ? ` ${arg}` : ""
+            write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          }
+
+          lastToolSummary = arg
           lastChunkWasToolStart = true
+          lastChunkType = "tool"
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
-          if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
+          const arg = summarizeInput(tool, chunk.input)
+
+          if (lastChunkWasToolStart && lastToolSummary === arg) {
+            const count = repeatCount + 1
+            const countText = count > 1 ? ` (×${count})` : ""
             write(
-              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
+              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
             )
           } else {
             write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
+
           lastChunkWasToolStart = false
+          lastChunkType = "tool"
         }
 
         if (chunk.type === "error" && chunk.content) {
           lastChunkWasToolStart = false
+          lastChunkType = "error"
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
           write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
@@ -442,8 +479,10 @@ async function handleCustomCommand(name: string, args: string) {
       }
 
       write(md.flush())
+      const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+      write(rule)
       const duration = Date.now() - startTime
-      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+      write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
       write(cursor.show)
     }
@@ -460,7 +499,6 @@ async function handleCustomCommand(name: string, args: string) {
 
 async function handleMessage(message: string) {
   const spinner = new Spinner("Thinking")
-  spinner.start()
 
   let first = true
   let totalTokens = 0
@@ -468,6 +506,10 @@ async function handleMessage(message: string) {
   isOperationInProgress = true
   let lastChunkWasToolStart = false
   let lastToolSummary = ""
+  let lastChunkType: string | null = null
+  let lastToolName = ""
+  let lastToolArg = ""
+  let repeatCount = 0
   const md = createMarkdownRenderer()
 
   try {
@@ -476,6 +518,8 @@ async function handleMessage(message: string) {
       agent: currentAgent,
       sessionID: currentSessionID || undefined,
     }
+
+    spinner.start()
 
     try {
       for await (const chunk of chat(message, options)) {
@@ -487,35 +531,67 @@ async function handleMessage(message: string) {
           spinner.stop(true)
           first = false
           write(`${fg.gray}(Esc to cancel)${style.reset}\n`)
+          const rule = `${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+          write(rule)
         }
 
         if (chunk.type === "text" && chunk.content) {
+          if (lastChunkWasToolStart) {
+            write("\n")
+          }
           lastChunkWasToolStart = false
+          lastChunkType = "text"
           write(md.render(chunk.content))
         }
 
         if (chunk.type === "tool_start" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
-          lastToolSummary = summarizeInput(tool, chunk.input)
-          const summary = lastToolSummary ? ` ${lastToolSummary}` : ""
-          write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          const arg = summarizeInput(tool, chunk.input)
+
+          if (tool === lastToolName && arg === lastToolArg) {
+            repeatCount += 1
+            const count = repeatCount + 1
+            const countText = count > 1 ? ` (×${count})` : ""
+            write(
+              `\x1b[1A\r\x1b[2K${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
+            )
+          } else {
+            if (lastChunkType === "text") {
+              write("\n")
+            }
+            lastToolName = tool
+            lastToolArg = arg
+            repeatCount = 0
+            const summary = arg ? ` ${arg}` : ""
+            write(`${fg.gray}◇ ${style.reset}${fg.cyan}${tool}${style.reset}${fg.gray}${summary}${style.reset}\n`)
+          }
+
+          lastToolSummary = arg
           lastChunkWasToolStart = true
+          lastChunkType = "tool"
         }
 
         if (chunk.type === "tool_end" && chunk.tool?.trim()) {
           const tool = chunk.tool.trim()
-          if (lastChunkWasToolStart && lastToolSummary === summarizeInput(tool, chunk.input)) {
+          const arg = summarizeInput(tool, chunk.input)
+
+          if (lastChunkWasToolStart && lastToolSummary === arg) {
+            const count = repeatCount + 1
+            const countText = count > 1 ? ` (×${count})` : ""
             write(
-              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${lastToolSummary ? ` ${lastToolSummary}` : ""}${style.reset}\n`,
+              `\x1b[1A\r\x1b[2K${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}${fg.gray}${arg ? ` ${arg}` : ""}${countText}${style.reset}\n`,
             )
           } else {
             write(`${fg.green}✓${style.reset} ${fg.cyan}${tool}${style.reset}\n`)
           }
+
           lastChunkWasToolStart = false
+          lastChunkType = "tool"
         }
 
         if (chunk.type === "error" && chunk.content) {
           lastChunkWasToolStart = false
+          lastChunkType = "error"
           const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
           write(`\n${fg.red}Error: ${safeContent}${style.reset}\n`)
         }
@@ -526,8 +602,10 @@ async function handleMessage(message: string) {
       }
 
       write(md.flush())
+      const rule = `\n${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+      write(rule)
       const duration = Date.now() - startTime
-      write(`\n${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
+      write(`${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
     } finally {
       write(cursor.show)
     }
