@@ -328,6 +328,59 @@ gh pr create --base dev
 
 ---
 
+## QA Workflow
+
+### Binary Build & Test Loop
+
+All feature work is validated by building and manually testing binaries. The cycle:
+
+```
+implement → build binary → manual QA → file bugs → fix → rebuild
+```
+
+### Build Commands
+
+```bash
+# oclite (auto-installs to ~/bin/oclite with codesign)
+cd packages/opencode
+bun run build:lite
+
+# Full opencode binary
+cd packages/opencode
+bun run build --single
+cp dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode
+codesign --force --deep --sign - ~/bin/opencode
+xattr -cr ~/bin/opencode
+```
+
+### Agent Pipeline
+
+Every code change follows this pipeline — no exceptions:
+
+```
+@developer → @adversarial-developer → fix loop → @git-agent (commit+push) → rebuild binary
+```
+
+Never skip adversarial review. Never commit before adversarial passes.
+
+### Research First
+
+For non-trivial features, dispatch `@explore` to research how existing open-source projects solve the same problem. Clone repos to `/tmp` and analyze actual source code — don't rely on documentation alone.
+
+### QA Bug Tracking
+
+- All bugs found during QA get GitHub issues immediately
+- Issues reference the specific commit and include reproduction steps
+- Screenshots when applicable
+
+### Feature Branch Discipline
+
+- All work stays on the feature branch until manual QA is complete
+- Push frequently — the PR is already open
+- Don't merge to dev until QA passes
+
+---
+
 ## Auto-Merge Policy
 
 After code-review-specialist approval AND CI passes:
