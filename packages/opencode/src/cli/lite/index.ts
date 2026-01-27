@@ -346,6 +346,15 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   let dedupCount = 0
   const idMap = new Map<string, string>()
   const md = createMarkdownRenderer()
+  let lineBuffer = ""
+
+  function flushLineBuffer() {
+    if (!lineBuffer) return
+    const rendered = md.render(lineBuffer)
+    const wrapped = wrap(rendered, MAX_WIDTH)
+    write(padLines(wrapped))
+    lineBuffer = ""
+  }
 
   try {
     for await (const chunk of source) {
@@ -366,12 +375,27 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         lastToolKey = ""
         dedupCount = 0
         lastChunkType = "text"
-        const rendered = md.render(chunk.content)
-        const wrapped = wrap(rendered, MAX_WIDTH)
-        write(padLines(wrapped))
+
+        lineBuffer += chunk.content
+
+        const parts = lineBuffer.split("\n")
+
+        for (let idx = 0; idx < parts.length - 1; idx++) {
+          const line = parts[idx]
+          const rendered = md.render(line + "\n")
+          const wrapped = wrap(rendered, MAX_WIDTH)
+          write(padLines(wrapped))
+        }
+
+        lineBuffer = parts[parts.length - 1]
+
+        if (lineBuffer.length > MAX_WIDTH) {
+          flushLineBuffer()
+        }
       }
 
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+        flushLineBuffer()
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -394,6 +418,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       }
 
       if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+        flushLineBuffer()
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -446,6 +471,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       }
 
       if (chunk.type === "error" && chunk.content) {
+        flushLineBuffer()
         block.freeze()
         lastToolKey = ""
         dedupCount = 0
@@ -461,15 +487,18 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         totalTokens += chunk.tokens
       }
     }
-
+  } finally {
+    spinner.stop(true)
+    flushLineBuffer()
     block.freeze()
-    write(md.flush())
+    const flushed = md.flush()
+    if (flushed) {
+      write(padLines(flushed))
+    }
     const rule = `\n${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
     write(rule)
     const duration = Date.now() - startTime
     write(`${PAD}${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
-  } finally {
-    spinner.stop(true)
   }
 
   write("\n")
