@@ -47,10 +47,43 @@ async function build() {
 
   await $`chmod +x ${path.join(BIN, "oclite")}`
 
-  // Discover WASM assets produced by bundler
-  const wasmOutputs = result.outputs.filter((o) => o.path.endsWith(".wasm"))
-  if (wasmOutputs.length === 0) {
-    console.error("Error: No WASM files in build output. Tree-sitter requires WASM at runtime.")
+  // Discover WASM assets — check bundler output first, then BIN dir, then node_modules
+  let wasmFiles: string[] = result.outputs.filter((o) => o.path.endsWith(".wasm")).map((o) => o.path)
+
+  let wasmSource = "bundler output"
+
+  // Fallback: check if Bun placed WASM files in BIN without listing in outputs
+  if (wasmFiles.length === 0) {
+    const glob = new Bun.Glob("*.wasm")
+    for await (const file of glob.scan(BIN)) {
+      wasmFiles.push(path.join(BIN, file))
+    }
+    if (wasmFiles.length > 0) {
+      wasmSource = "BIN directory"
+    }
+  }
+
+  // Final fallback: copy from node_modules
+  if (wasmFiles.length === 0) {
+    const MONOREPO_ROOT = path.resolve(ROOT, "../..")
+    const sources = [
+      path.join(MONOREPO_ROOT, "node_modules/web-tree-sitter/tree-sitter.wasm"),
+      path.join(MONOREPO_ROOT, "node_modules/tree-sitter-bash/tree-sitter-bash.wasm"),
+    ]
+    for (const src of sources) {
+      const dest = path.join(BIN, path.basename(src))
+      const success = await copyWasm(src, dest)
+      if (success) {
+        wasmFiles.push(dest)
+      }
+    }
+    if (wasmFiles.length > 0) {
+      wasmSource = "node_modules fallback"
+    }
+  }
+
+  if (wasmFiles.length === 0) {
+    console.error("Error: No WASM files found. Tree-sitter requires WASM at runtime.")
     process.exit(1)
   }
 
@@ -60,9 +93,9 @@ async function build() {
   await $`chmod +x ${path.join(HOME_BIN, "oclite")}`
 
   // Copy WASM assets to ~/bin
-  for (const wasm of wasmOutputs) {
-    const name = path.basename(wasm.path)
-    const success = await copyWasm(wasm.path, path.join(HOME_BIN, name))
+  for (const wasm of wasmFiles) {
+    const name = path.basename(wasm)
+    const success = await copyWasm(wasm, path.join(HOME_BIN, name))
     if (!success) {
       console.error(`Error: Failed to copy WASM file: ${name}`)
       process.exit(1)
@@ -77,7 +110,7 @@ async function build() {
 
   console.log(`✓ Built oclite (${sizeMB} MB)`)
   console.log(`✓ Installed to ~/bin/oclite`)
-  console.log(`✓ Copied ${wasmOutputs.length} WASM files`)
+  console.log(`✓ Copied ${wasmFiles.length} WASM files (from ${wasmSource})`)
   console.log("\nRun with: ~/bin/oclite")
 }
 
