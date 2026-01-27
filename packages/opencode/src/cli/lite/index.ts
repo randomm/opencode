@@ -450,7 +450,10 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         lastToolKey = ""
         dedupCount = 0
         lastChunkType = "error"
-        const safeContent = chunk.content.replace(/\x1b\[[0-9;]*m/g, "").replace(/[\x00-\x1f\x7f]/g, "")
+        const safeContent = chunk.content
+          .replace(/\x1b\][^\x07]*\x07/g, "")
+          .replace(/\x1b[\[\]()#?]*[0-9;]*[A-Za-z]/g, "")
+          .replace(/[\x00-\x1f\x7f]/g, "")
         write(`\n${PAD}${fg.red}Error: ${safeContent}${style.reset}\n`)
       }
 
