@@ -82,7 +82,7 @@ async function main() {
 
   try {
     await bootstrap(process.cwd(), async () => {
-      await Promise.all([Provider.list(), Agent.list(), MCP.clients()])
+      await Promise.all([Provider.list(), Agent.list(), MCP.clients(), Command.list()])
 
       setup.stop(true)
       write(`${fg.green}✓${style.reset} Ready\n\n`)
@@ -424,7 +424,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         const summary = arg || ""
         const key = `${tool}:${summary}`
 
-        const id = (chunk.callID && idMap.get(chunk.callID)) || chunk.callID || `${tool}-${toolCounter}`
+        const id = (chunk.callID && idMap.get(chunk.callID)) || lastToolId
 
         if (key === lastToolKey) {
           const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
