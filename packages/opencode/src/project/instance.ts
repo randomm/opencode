@@ -26,15 +26,13 @@ export const Instance = {
           worktree: sandbox,
           project,
         }
-        await context.provide(ctx, async () => {
-          await input.init?.()
-        })
         return ctx
       })
       cache.set(input.directory, existing)
     }
     const ctx = await existing
     return context.provide(ctx, async () => {
+      await input.init?.()
       return await input.fn()
     })
   },

@@ -11,11 +11,10 @@ export namespace State {
 
   export function create<S>(root: () => string, init: () => S, dispose?: (state: Awaited<S>) => Promise<void>) {
     return () => {
-      const key = root()
-      let entries = recordsByKey.get(key)
+      let entries = recordsByKey.get(root())
       if (!entries) {
         entries = new Map<string, Entry>()
-        recordsByKey.set(key, entries)
+        recordsByKey.set(root(), entries)
       }
       const exists = entries.get(init)
       if (exists) return exists.state as S
