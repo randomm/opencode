@@ -213,12 +213,18 @@ describe("createLiveBlock", () => {
       expect(mockLogUpdate).toHaveBeenCalled()
       const allCalls = mockLogUpdate.mock.calls as unknown[][]
       const output = allCalls[allCalls.length - 1][0] as string
-      expect(output).toContain("☐")
-      expect(output).toContain("◆")
-      expect(output).toContain("☑")
-      expect(output).toContain("☒")
-      expect(output).toContain("Priority task")
-      expect(output).toContain("Done task")
+      expect(output).toContain("(4 tasks - ctrl+t to show)")
+
+      block.setTasksVisible(true)
+
+      const visibleCalls = mockLogUpdate.mock.calls as unknown[][]
+      const visibleOutput = visibleCalls[visibleCalls.length - 1][0] as string
+      expect(visibleOutput).toContain("☐")
+      expect(visibleOutput).toContain("◆")
+      expect(visibleOutput).toContain("☑")
+      expect(visibleOutput).toContain("☒")
+      expect(visibleOutput).toContain("Priority task")
+      expect(visibleOutput).toContain("Done task")
     })
   })
 

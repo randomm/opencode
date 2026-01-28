@@ -69,6 +69,13 @@ export interface MemoryListResponse {
   memories: MemoryResult[]
 }
 
+export interface Memory {
+  text: string
+  metadata?: Record<string, unknown>
+  created_at?: string
+  distance?: number
+}
+
 export async function initialize(socketPath?: string): Promise<boolean> {
   state.socketPath = socketPath || DEFAULT_SOCKET_PATH
 
@@ -246,6 +253,75 @@ function generateId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+let remoryAvailable: boolean | null = null
+
+export async function checkRemoryAvailable(): Promise<boolean> {
+  if (remoryAvailable !== null) return remoryAvailable
+  try {
+    if (!isEnabled()) {
+      remoryAvailable = false
+    } else {
+      await list({ userId: "check", limit: 1 })
+      remoryAvailable = true
+    }
+  } catch {
+    remoryAvailable = false
+    log.warn("remory unavailable, continuing without memory features")
+  }
+  return remoryAvailable
+}
+
+export function resetAvailabilityCache(): void {
+  remoryAvailable = null
+}
+
+export async function safeRemorySearch(query: string, userId: string, limit?: number): Promise<Memory[]> {
+  if (!(await checkRemoryAvailable())) return []
+
+  try {
+    const results = await search({
+      query,
+      userId,
+      limit: limit ?? 5,
+    })
+
+    const memories = results.map((r) => ({
+      text: r.text,
+      metadata: r.metadata,
+      created_at: r.created_at,
+      distance: r.score,
+    }))
+
+    const relevant = memories.filter((m) => m.distance && m.distance < 0.4)
+    return relevant
+  } catch {
+    return []
+  }
+}
+
+export async function safeRemoryAdd(text: string, userId: string, metadata?: object): Promise<void> {
+  if (!(await checkRemoryAvailable())) return
+
+  try {
+    await add({
+      text,
+      userId,
+      infer: false,
+    })
+  } catch {
+    // Silent fail - don't block on memory errors
+  }
+}
+
+export async function getUserId(): Promise<string> {
+  try {
+    const { execSync } = await import("child_process")
+    return execSync("git rev-list --max-parents=0 HEAD").toString().trim()
+  } catch {
+    return "default-user"
+  }
+}
+
 export const Remory = {
   initialize,
   add,
@@ -255,4 +331,9 @@ export const Remory = {
   close,
   invalidate,
   isEnabled,
+  checkRemoryAvailable,
+  safeRemorySearch,
+  safeRemoryAdd,
+  getUserId,
+  resetAvailabilityCache,
 }

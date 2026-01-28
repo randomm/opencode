@@ -39,7 +39,6 @@ function padLines(text: string): string {
 }
 
 // UI State
-let tasksVisible = false
 let isOperationInProgress = false
 let currentSessionID: string | null = null
 let currentModel: string | null = null
@@ -208,7 +207,7 @@ async function main() {
         }
 
         if (key.ctrl && key.name === "t") {
-          tasksVisible = !tasksVisible
+          block.toggleTasksVisible()
           editor.render(renderPrompt(currentAgent))
         }
 

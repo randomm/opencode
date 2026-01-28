@@ -1096,11 +1096,6 @@ export namespace Config {
             .optional()
             .default(true)
             .describe("Persist conversation context to memory for future recall"),
-          remory_persist_thinking: z
-            .boolean()
-            .optional()
-            .default(true)
-            .describe("Persist AI thinking/reasoning to memory"),
           remory_inject_context: z
             .boolean()
             .optional()

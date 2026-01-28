@@ -8,6 +8,11 @@ import {
   close,
   invalidate,
   isEnabled,
+  checkRemoryAvailable,
+  safeRemorySearch,
+  safeRemoryAdd,
+  getUserId,
+  resetAvailabilityCache,
   type MemoryAddParams,
   type MemorySearchParams,
   type MemoryListParams,
@@ -34,6 +39,7 @@ describe("Remory Integration", () => {
     searchCallCount = 0
     listCallCount = 0
     deleteCallCount = 0
+    resetAvailabilityCache()
   })
 
   afterEach(async () => {
@@ -190,6 +196,48 @@ describe("Remory Integration", () => {
     expect(results[0].memory_id).toBe("mem-1")
     expect(results[0].text).toContain("where does alice work?")
     expect(results[0].score).toBe(0.95)
+    expect(searchCallCount).toBe(1)
+  })
+
+  it("should search memories with proper score (for safeRemorySearch filter tests)", async () => {
+    server = createSocketServer((request) => {
+      if (request.method === "search") {
+        searchCallCount++
+        return {
+          result: {
+            results: [
+              {
+                memory_id: "mem-1",
+                text: "Match for: test with low score",
+                user_id: request.params.user_id,
+                score: 0.3,
+              },
+              {
+                memory_id: "mem-2",
+                text: "Match for: test with high score",
+                user_id: request.params.user_id,
+                score: 0.5,
+              },
+            ],
+          },
+        }
+      }
+      return { error: { code: -32601, message: "Method not found" } }
+    })
+
+    await initialize(testSocketPath)
+
+    const params: MemorySearchParams = {
+      query: "test",
+      userId: "alice",
+      limit: 5,
+    }
+
+    const results = await search(params)
+
+    expect(results).toHaveLength(2)
+    expect(results[0].score).toBe(0.3)
+    expect(results[1].score).toBe(0.5)
     expect(searchCallCount).toBe(1)
   })
 
@@ -505,5 +553,109 @@ describe("Remory Integration", () => {
     // Should return empty because it was invalidated
     expect(results).toEqual([])
     expect(responded).toBe(true) // Server still responded
+  })
+
+  it("should check remory availability correctly", async () => {
+    setupMockServer()
+    await initialize(testSocketPath)
+
+    const available = await checkRemoryAvailable()
+    expect(available).toBe(true)
+  })
+
+  it("should return false when remory is not available", async () => {
+    await close()
+    resetAvailabilityCache()
+
+    const available = await checkRemoryAvailable()
+    expect(available).toBe(false)
+  })
+
+  it("should perform safe remory search with relevant results", async () => {
+    server = createSocketServer((request) => {
+      if (request.method === "search") {
+        return {
+          result: {
+            results: [
+              {
+                memory_id: "mem-1",
+                text: "Match for: where does alice work?",
+                user_id: request.params.user_id,
+                score: 0.3,
+              },
+              { memory_id: "mem-2", text: "Less relevant match", user_id: request.params.user_id, score: 0.5 },
+            ],
+          },
+        }
+      }
+      return { error: { code: -32601, message: "Method not found" } }
+    })
+
+    await initialize(testSocketPath)
+
+    const results = await safeRemorySearch("where does alice work?", "alice")
+
+    expect(results).toHaveLength(1)
+    expect(results[0].text).toContain("where does alice work?")
+    expect(results[0].distance).toBe(0.3)
+  })
+
+  it("should return empty array when remory not available for search", async () => {
+    await close()
+
+    const results = await safeRemorySearch("test", "test")
+
+    expect(results).toEqual([])
+  })
+
+  it("should add memory safely", async () => {
+    setupMockServer()
+    await initialize(testSocketPath)
+
+    await safeRemoryAdd("Alice works at Google", "alice", { type: "test" })
+
+    expect(addCallCount).toBe(1)
+  })
+
+  it("should silently fail when remory not available for add", async () => {
+    await close()
+
+    // Should not throw
+    await safeRemoryAdd("Test", "test")
+
+    expect(addCallCount).toBe(0)
+  })
+
+  it("should filter results by distance threshold", async () => {
+    server = createSocketServer((request) => {
+      if (request.method === "search") {
+        return {
+          result: {
+            results: [
+              { memory_id: "mem-1", text: "Very relevant", score: 0.3 },
+              { memory_id: "mem-2", text: "Somewhat relevant", score: 0.4 },
+              { memory_id: "mem-3", text: "Not relevant", score: 0.6 },
+            ],
+          },
+        }
+      }
+      return { error: { code: -32601, message: "Method not found" } }
+    })
+
+    await initialize(testSocketPath)
+
+    const results = await safeRemorySearch("test", "alice")
+
+    // Only memories with score < 0.4 should be returned
+    expect(results).toHaveLength(1)
+    expect(results[0].text).toBe("Very relevant")
+    expect(results[0].distance).toBe(0.3)
+  })
+
+  it("should get user id from git", async () => {
+    const userId = await getUserId()
+
+    expect(userId).toBeDefined()
+    expect(typeof userId).toBe("string")
   })
 })

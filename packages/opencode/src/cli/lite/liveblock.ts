@@ -36,6 +36,7 @@ export function createLiveBlock() {
   let active = false
   let frame = 0
   let interval: ReturnType<typeof setInterval> | null = null
+  let tasksVisible = false
 
   function render() {
     const cols = process.stdout.columns || 80
@@ -89,7 +90,11 @@ export function createLiveBlock() {
     }
 
     // Render todos if any
-    if (todos.length > 0) {
+    if (todos.length > 0 && !tasksVisible) {
+      lines.push(`  ${fg.gray}(${todos.length} tasks - ctrl+t to show)${style.reset}`)
+    }
+
+    if (todos.length > 0 && tasksVisible) {
       lines.push(`  ${style.dim}${"─".repeat(Math.min(cols, 60))}${style.reset}`)
       for (const todo of todos) {
         const icon =
@@ -235,6 +240,21 @@ export function createLiveBlock() {
         logUpdate.clear()
         active = false
       }
+    },
+
+    setTasksVisible(visible: boolean) {
+      tasksVisible = visible
+      if (active) render()
+    },
+
+    toggleTasksVisible() {
+      tasksVisible = !tasksVisible
+      if (active) render()
+      return tasksVisible
+    },
+
+    getTasksVisible() {
+      return tasksVisible
     },
   }
 }

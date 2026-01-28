@@ -26,6 +26,7 @@ import { SessionStatus } from "./status"
 import crypto from "crypto"
 import { Agent } from "../agent/agent"
 import { BackgroundTasks } from "../util/tasks"
+import { safeRemoryAdd, getUserId } from "../memory/remory"
 
 export interface TaskMetadata {
   agent_type: string
@@ -238,6 +239,20 @@ export namespace Session {
         const firstKey = backgroundTaskResults.keys().next().value
         if (firstKey) backgroundTaskResults.delete(firstKey)
       }
+
+      // Post-task: Store task outcome to memory
+      if (metadata && taskResult.status === "completed") {
+        safeRemoryAdd(
+          `Task: ${metadata.description}\nOutcome: SUCCESS\nAgent: ${metadata.agent_type}`,
+          await getUserId(),
+          {
+            type: "task_outcome",
+            agent: metadata.agent_type,
+            date: new Date().toISOString(),
+          },
+        ).catch(() => {})
+      }
+
       if (sessionID) {
         if (!closingSessions.has(sessionID)) {
           const parentSessionID = metadata?.session_id
