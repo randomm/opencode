@@ -15,7 +15,7 @@ const context = Context.create<Context>("instance")
 const cache = new Map<string, Promise<Context>>()
 
 export const Instance = {
-  async provide<R>(input: { directory: string; init?: () => Promise<any>; fn: () => R }): Promise<R> {
+  async provide<R>(input: { directory: string; init?: () => Promise<void>; fn: () => Promise<R> }): Promise<R> {
     let existing = cache.get(input.directory)
     if (!existing) {
       Log.Default.info("creating instance", { directory: input.directory })
@@ -35,7 +35,7 @@ export const Instance = {
     }
     const ctx = await existing
     return context.provide(ctx, async () => {
-      return input.fn()
+      return await input.fn()
     })
   },
   get directory() {
