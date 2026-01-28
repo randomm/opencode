@@ -1,5 +1,6 @@
 import logUpdate from "log-update"
 import { fg, style } from "./terminal"
+import { theme } from "./theme"
 
 export interface Tool {
   id: string
@@ -14,6 +15,9 @@ export interface Task {
   description: string
   elapsed: number
   status: "running" | "done"
+  startTime: number
+  childTool?: { name: string; summary: string }
+  childSessionID?: string
 }
 
 export interface Todo {
@@ -39,26 +43,50 @@ export function createLiveBlock() {
 
     // Render active + recently completed tools
     for (const tool of tools.values()) {
-      const icon =
-        tool.status === "running"
-          ? `${fg.gray}◇${style.reset}`
-          : tool.status === "done"
-            ? `${fg.green}✓${style.reset}`
-            : `${fg.red}✗${style.reset}`
       const sep = tool.summary ? "  " : ""
       const maxLen = Math.max(0, cols - tool.name.length - 6)
       const showEllipsis = tool.summary.length > maxLen
-      const text = showEllipsis ? `${tool.summary.slice(0, maxLen)}…` : tool.summary
-      const display = `${icon} ${fg.cyan}${tool.name}${style.reset}${fg.gray}${sep}${text}${style.reset}`
-      lines.push(`  ${display}`)
+      const summary = showEllipsis ? `${tool.summary.slice(0, maxLen)}…` : tool.summary
+
+      const isTask = tool.name === "task"
+
+      if (tool.status === "done") {
+        const colors = isTask ? theme.task.done : theme.tool.done
+        const icon = `${colors.icon}✓${style.reset}`
+        lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
+      }
+
+      if (tool.status === "running") {
+        const colors = isTask ? theme.task.running : theme.tool.running
+        const icon = `${colors.icon}◇${style.reset}`
+        lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
+      }
+
+      if (tool.status === "error") {
+        const colors = theme.tool.error
+        const icon = `${colors.icon}✗${style.reset}`
+        lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
+      }
     }
 
     // Render running tasks
     for (const task of tasks.values()) {
+      const colors = task.status === "running" ? theme.task.running : theme.task.done
       const spinner =
-        task.status === "running" ? `${fg.cyan}${frames[frame]}${style.reset}` : `${fg.green}✓${style.reset}`
-      const time = task.elapsed > 0 ? ` ${fg.gray}(${task.elapsed}s)${style.reset}` : ""
-      lines.push(`  ${spinner} ${fg.gray}@${task.agent}:${style.reset} ${task.description}${time}`)
+        task.status === "running" ? `${colors.icon}${frames[frame]}${style.reset}` : `${colors.icon}✓${style.reset}`
+      const elapsed = task.status === "running" ? Math.floor((Date.now() - task.startTime) / 1000) : task.elapsed
+      const time = elapsed > 0 ? ` ${fg.gray}(${elapsed}s)${style.reset}` : ""
+      lines.push(`  ${spinner} ${colors.text}@${task.agent}:${style.reset} ${task.description}${time}`)
+
+      // Render nested child tool if present
+      if (task.status === "running" && task.childTool) {
+        const childColors = theme.tool.running
+        const childIcon = `${childColors.icon}◇${style.reset}`
+        const maxLen = Math.max(0, cols - task.childTool.name.length - 15)
+        const showEllipsis = task.childTool.summary.length > maxLen
+        const summary = showEllipsis ? `${task.childTool.summary.slice(0, maxLen)}…` : task.childTool.summary
+        lines.push(`      └─ ${childIcon} ${childColors.text}${task.childTool.name}  ${summary}${style.reset}`)
+      }
     }
 
     // Render todos if any
@@ -116,8 +144,8 @@ export function createLiveBlock() {
       render()
     },
 
-    taskStart(id: string, agent: string, description: string) {
-      tasks.set(id, { id, agent, description, elapsed: 0, status: "running" })
+    taskStart(id: string, agent: string, description: string, childSessionID?: string) {
+      tasks.set(id, { id, agent, description, elapsed: 0, status: "running", startTime: Date.now(), childSessionID })
       if (!active) {
         active = true
         startAnimation()
@@ -128,7 +156,25 @@ export function createLiveBlock() {
     taskEnd(id: string) {
       const task = tasks.get(id)
       if (task) {
+        task.elapsed = Math.floor((Date.now() - task.startTime) / 1000)
         task.status = "done"
+        task.childTool = undefined
+        render()
+      }
+    },
+
+    setTaskChildTool(taskId: string, childName: string, childSummary: string) {
+      const task = tasks.get(taskId)
+      if (task && task.status === "running") {
+        task.childTool = { name: childName, summary: childSummary }
+        render()
+      }
+    },
+
+    clearTaskChildTool(taskId: string) {
+      const task = tasks.get(taskId)
+      if (task) {
+        task.childTool = undefined
         render()
       }
     },

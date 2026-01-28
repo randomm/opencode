@@ -23,6 +23,8 @@ import { wrap } from "./wrap"
 import * as Panel from "./panel"
 import * as Commands from "./commands"
 import { setBlockFreeze } from "./select"
+import { Bus } from "../../bus"
+import { MessageV2 } from "../../session/message-v2"
 export { summarizeInput }
 
 // UI Constants
@@ -49,6 +51,12 @@ const block = createLiveBlock()
 // Set block freeze function for select
 setBlockFreeze(() => block.freeze())
 
+// Track task tool ID to child session ID mapping
+const taskToChildSession = new Map<string, string>()
+
+// Store Bus subscription cleanup function
+let busUnsubscribe: (() => void) | undefined
+
 async function main() {
   if (!process.stdin.isTTY) {
     console.error("oclite requires a TTY")
@@ -63,6 +71,7 @@ async function main() {
   })
 
   function cleanup() {
+    if (busUnsubscribe) busUnsubscribe()
     block.freeze()
     write(cursor.show)
     process.stdin.setRawMode(false)
@@ -79,6 +88,31 @@ async function main() {
 
   const setup = new Spinner("Setting up environment")
   setup.start()
+
+  // Subscribe to Bus events for child session tools
+  busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
+    const part = event.properties.part
+    if (part.type !== "tool") return
+
+    // Find which task this child session belongs to
+    let taskId: string | null = null
+    for (const [id, childSessionID] of taskToChildSession.entries()) {
+      if (childSessionID === part.sessionID) {
+        taskId = id
+        break
+      }
+    }
+
+    if (!taskId) return
+
+    // Update task child tool display
+    if (part.state.status === "running") {
+      const arg = summarizeInput(part.tool, part.state.input)
+      block.setTaskChildTool(taskId, part.tool, arg || "")
+    } else if (part.state.status === "completed" || part.state.status === "error") {
+      block.clearTaskChildTool(taskId)
+    }
+  })
 
   try {
     await bootstrap(process.cwd(), async () => {
@@ -305,21 +339,32 @@ async function handleCommand(cmd: string) {
     return
   }
 
-  const custom = await Command.get(name)
-  if (custom) {
-    const args = cmd.slice(1 + name.length).trim()
-    await Commands.handleCustomCommand(
-      custom.name,
-      args,
-      command,
-      streamResponse,
-      { currentSessionID, currentModel, currentAgent },
-      (inProgress: boolean) => {
-        isOperationInProgress = inProgress
-      },
-      () => block.freeze(),
-    )
-    return
+  const spinner = new Spinner(`Processing /${name}`)
+  spinner.start()
+
+  try {
+    const custom = await Command.get(name)
+    if (custom) {
+      const args = cmd.slice(1 + name.length).trim()
+      await Commands.handleCustomCommand(
+        custom.name,
+        args,
+        command,
+        streamResponse,
+        { currentSessionID, currentModel, currentAgent },
+        (inProgress: boolean) => {
+          isOperationInProgress = inProgress
+        },
+        () => block.freeze(),
+        spinner,
+      )
+      return
+    }
+
+    spinner.stop(true)
+  } catch (err) {
+    spinner.stop(false)
+    throw err
   }
 
   write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
@@ -413,6 +458,15 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           dedupCount = 1
           block.toolStart(id, tool, summary)
           if (chunk.callID) idMap.set(chunk.callID, id)
+
+          // For task tools, track as a task
+          if (tool === "task" && chunk.input && typeof chunk.input === "object") {
+            const agent = (chunk.input as any).agent || ""
+            const description = (chunk.input as any).description || ""
+            if (agent && description) {
+              block.taskStart(id, agent, description)
+            }
+          }
         }
         lastChunkType = "tool"
       }
@@ -466,7 +520,10 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           const childSessionID = chunk.metadata.sessionId as string | undefined
           if (childSessionID && typeof childSessionID === "string") {
             Panel.addChild(childSessionID)
+            taskToChildSession.set(id, childSessionID)
           }
+          block.taskEnd(id)
+          taskToChildSession.delete(id)
         }
       }
 

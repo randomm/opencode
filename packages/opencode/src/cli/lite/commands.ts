@@ -229,6 +229,7 @@ export async function handleCustomCommand(
   state: State,
   setOperationInProgress: (inProgress: boolean) => void,
   freezeBlock: () => void,
+  spinner?: { stop: (success: boolean) => void },
 ) {
   const options = {
     model: state.currentModel || undefined,
@@ -239,8 +240,10 @@ export async function handleCustomCommand(
   setOperationInProgress(true)
   try {
     const source = command(name, args, options)
+    if (spinner) spinner.stop(true)
     await streamResponse(source, options)
   } catch (err) {
+    if (spinner) spinner.stop(false)
     freezeBlock()
     const msg = err instanceof Error ? err.message : String(err)
     write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
