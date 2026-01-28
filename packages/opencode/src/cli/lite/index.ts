@@ -89,33 +89,33 @@ async function main() {
   const setup = new Spinner("Setting up environment")
   setup.start()
 
-  // Subscribe to Bus events for child session tools
-  busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
-    const part = event.properties.part
-    if (part.type !== "tool") return
-
-    // Find which task this child session belongs to
-    let taskId: string | null = null
-    for (const [id, childSessionID] of taskToChildSession.entries()) {
-      if (childSessionID === part.sessionID) {
-        taskId = id
-        break
-      }
-    }
-
-    if (!taskId) return
-
-    // Update task child tool display
-    if (part.state.status === "running") {
-      const arg = summarizeInput(part.tool, part.state.input)
-      block.setTaskChildTool(taskId, part.tool, arg || "")
-    } else if (part.state.status === "completed" || part.state.status === "error") {
-      block.clearTaskChildTool(taskId)
-    }
-  })
-
   try {
     await bootstrap(process.cwd(), async () => {
+      // Subscribe to Bus events for child session tools
+      // This must be inside bootstrap so Instance.provide() context is established
+      busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
+        const part = event.properties.part
+        if (part.type !== "tool") return
+
+        // Find which task this child session belongs to
+        let taskId: string | null = null
+        for (const [id, childSessionID] of taskToChildSession.entries()) {
+          if (childSessionID === part.sessionID) {
+            taskId = id
+            break
+          }
+        }
+
+        if (!taskId) return
+
+        // Update task child tool display
+        if (part.state.status === "running") {
+          const arg = summarizeInput(part.tool, part.state.input)
+          block.setTaskChildTool(taskId, part.tool, arg || "")
+        } else if (part.state.status === "completed" || part.state.status === "error") {
+          block.clearTaskChildTool(taskId)
+        }
+      })
       await Promise.all([Provider.list(), Agent.list(), MCP.clients(), Command.list()])
 
       setup.stop(true)

@@ -41,23 +41,22 @@ export function createLiveBlock() {
     const cols = process.stdout.columns || 80
     const lines: string[] = []
 
-    // Render active + recently completed tools
+    // Render active + recently completed tools (skip "task" tools as they're rendered separately)
     for (const tool of tools.values()) {
+      if (tool.name === "task") continue
       const sep = tool.summary ? "  " : ""
       const maxLen = Math.max(0, cols - tool.name.length - 6)
       const showEllipsis = tool.summary.length > maxLen
       const summary = showEllipsis ? `${tool.summary.slice(0, maxLen)}…` : tool.summary
 
-      const isTask = tool.name === "task"
-
       if (tool.status === "done") {
-        const colors = isTask ? theme.task.done : theme.tool.done
+        const colors = theme.tool.done
         const icon = `${colors.icon}✓${style.reset}`
         lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
       }
 
       if (tool.status === "running") {
-        const colors = isTask ? theme.task.running : theme.tool.running
+        const colors = theme.tool.running
         const icon = `${colors.icon}◇${style.reset}`
         lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
       }

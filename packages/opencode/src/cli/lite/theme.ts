@@ -5,11 +5,11 @@ export const theme = {
   tool: {
     done: {
       icon: fg.green,
-      text: style.dim,
+      text: `${style.dim}${fg.gray}`,
     },
     running: {
       icon: fg.yellow,
-      text: style.dim,
+      text: `${style.dim}${fg.gray}`,
     },
     error: {
       icon: fg.red,
@@ -21,11 +21,11 @@ export const theme = {
   task: {
     done: {
       icon: fg.green,
-      text: fg.cyan,
+      text: `${fg.cyan}`,
     },
     running: {
       icon: fg.yellow,
-      text: fg.cyan,
+      text: `${fg.cyan}`,
     },
   },
 
