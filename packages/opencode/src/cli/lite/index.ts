@@ -393,11 +393,12 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   const md = createMarkdownRenderer()
   let lineBuffer = ""
 
-  function flushLineBuffer() {
+  function flushLineBuffer(addNewline = false) {
     if (!lineBuffer) return
     const rendered = md.render(lineBuffer)
     const wrapped = wrap(rendered, MAX_WIDTH)
     write(padLines(wrapped))
+    if (addNewline) write("\n")
     lineBuffer = ""
   }
 
@@ -440,7 +441,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       }
 
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
-        flushLineBuffer()
+        flushLineBuffer(true)
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -448,24 +449,21 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
         if (key === lastToolKey) {
           dedupCount++
-          const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
-          block.toolStart(lastToolId, tool, label)
-          if (chunk.callID) idMap.set(chunk.callID, lastToolId)
         } else {
-          const id = chunk.callID || `${tool}-${++toolCounter}`
-          lastToolId = id
-          lastToolKey = key
           dedupCount = 1
-          block.toolStart(id, tool, summary)
-          if (chunk.callID) idMap.set(chunk.callID, id)
+          lastToolKey = key
+          lastToolId = chunk.callID || `${tool}-${++toolCounter}`
+        }
 
-          // For task tools, track as a task
-          if (tool === "task" && chunk.input && typeof chunk.input === "object") {
-            const agent = (chunk.input as any).agent || ""
-            const description = (chunk.input as any).description || ""
-            if (agent && description) {
-              block.taskStart(id, agent, description)
-            }
+        const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+        block.toolStart(lastToolId, tool, label)
+        if (chunk.callID) idMap.set(chunk.callID, lastToolId)
+
+        if (tool === "task" && chunk.input && typeof chunk.input === "object") {
+          const agent = (chunk.input as any).agent || ""
+          const description = (chunk.input as any).description || ""
+          if (agent && description) {
+            block.taskStart(lastToolId, agent, description)
           }
         }
         lastChunkType = "tool"
