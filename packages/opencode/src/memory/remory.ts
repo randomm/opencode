@@ -2,6 +2,7 @@
 
 import { UnixSocketClient, type JsonRpcRequest, DEFAULT_SOCKET_PATH } from "./socket-client"
 import { Log } from "@/util/log"
+import { Config } from "../config/config"
 
 const log = Log.create({ service: "memory.rememory" })
 
@@ -254,9 +255,15 @@ function generateId(): string {
 }
 
 let remoryAvailable: boolean | null = null
+let lastCheck: number = 0
+const CACHE_TTL = 60000 // 1 minute
 
 export async function checkRemoryAvailable(): Promise<boolean> {
-  if (remoryAvailable !== null) return remoryAvailable
+  const now = Date.now()
+  if (remoryAvailable !== null && now - lastCheck < CACHE_TTL) {
+    return remoryAvailable
+  }
+  lastCheck = now
   try {
     if (!isEnabled()) {
       remoryAvailable = false
@@ -273,10 +280,16 @@ export async function checkRemoryAvailable(): Promise<boolean> {
 
 export function resetAvailabilityCache(): void {
   remoryAvailable = null
+  lastCheck = 0
 }
 
 export async function safeRemorySearch(query: string, userId: string, limit?: number): Promise<Memory[]> {
   if (!(await checkRemoryAvailable())) return []
+
+  // Skip memory search for empty or whitespace-only descriptions
+  if (!query?.trim()) {
+    return []
+  }
 
   try {
     const results = await search({
@@ -292,7 +305,16 @@ export async function safeRemorySearch(query: string, userId: string, limit?: nu
       distance: r.score,
     }))
 
-    const relevant = memories.filter((m) => m.distance && m.distance < 0.4)
+    // Get threshold from config, default to 0.4
+    let threshold = 0.4
+    try {
+      const config = await Config.get()
+      threshold = config.experimental?.remory_distance_threshold ?? 0.4
+    } catch {
+      // Use default threshold if config loading fails
+    }
+
+    const relevant = memories.filter((m) => m.distance && m.distance < threshold)
     return relevant
   } catch {
     return []
@@ -303,13 +325,21 @@ export async function safeRemoryAdd(text: string, userId: string, metadata?: obj
   if (!(await checkRemoryAvailable())) return
 
   try {
+    // Serialize metadata into text if provided
+    const enhancedText = metadata ? `${text}\n\nMetadata: ${JSON.stringify(metadata)}` : text
+
     await add({
-      text,
+      text: enhancedText,
       userId,
       infer: false,
     })
-  } catch {
-    // Silent fail - don't block on memory errors
+  } catch (error) {
+    log.warn("memory add failed", {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+      textLength: text.length,
+      hasMetadata: !!metadata,
+    })
   }
 }
 

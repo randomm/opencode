@@ -1117,6 +1117,13 @@ export namespace Config {
             .optional()
             .default(5)
             .describe("Maximum number of memory entries to retrieve per search (1-20)"),
+          remory_distance_threshold: z
+            .number()
+            .min(0, "Distance threshold must be at least 0")
+            .max(1, "Distance threshold cannot exceed 1")
+            .optional()
+            .default(0.4)
+            .describe("Maximum distance threshold for memory relevance filtering (0-1, lower = more strict)"),
           background_tasks: z.boolean().optional().default(true).describe("Enable background task execution"),
           max_background_tasks: z
             .number()

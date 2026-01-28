@@ -291,14 +291,16 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
       let memoryContext = ""
       if (config.experimental?.remory_enabled !== false) {
         try {
-          const userId = await getUserId()
-          const memories = await safeRemorySearch(params.description, userId)
-          if (memories.length > 0) {
-            memoryContext = "[Relevant Context from Prior Tasks]\n"
-            for (const memory of memories) {
-              memoryContext += `${memory.text}\n`
+          if (params.description?.trim()) {
+            const userId = await getUserId()
+            const memories = await safeRemorySearch(params.description, userId)
+            if (memories.length > 0) {
+              memoryContext = "[Relevant Context from Prior Tasks]\n"
+              for (const memory of memories) {
+                memoryContext += `${memory.text}\n`
+              }
+              memoryContext += "\n"
             }
-            memoryContext += "\n"
           }
         } catch (error) {
           // Fail silently - memory features are optional
