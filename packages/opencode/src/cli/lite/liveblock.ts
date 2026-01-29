@@ -42,9 +42,34 @@ export function createLiveBlock() {
     const cols = process.stdout.columns || 80
     const lines: string[] = []
 
-    // Render active + recently completed tools (skip "task" tools as they're rendered separately)
+    // Render active + recently completed tools (tasks now render inline with tools)
     for (const tool of tools.values()) {
-      if (tool.name === "task") continue
+      if (tool.name === "task") {
+        // Render tasks with distinctive styling
+        const task = tasks.get(tool.id)
+        if (!task) continue
+
+        const colors = task.status === "running" ? theme.task.running : theme.task.done
+        const spinner =
+          task.status === "running" ? `${colors.icon}${frames[frame]}${style.reset}` : `${colors.icon}✓${style.reset}`
+        const elapsed = task.status === "running" ? Math.floor((Date.now() - task.startTime) / 1000) : task.elapsed
+        const time = elapsed > 0 ? ` ${fg.gray}(${elapsed}s)${style.reset}` : ""
+        lines.push(
+          `  ${spinner} ${colors.text}task${style.reset} ${colors.text}@${task.agent}:${style.reset} ${task.description}${time}`,
+        )
+
+        // Render nested child tool if present
+        if (task.status === "running" && task.childTool) {
+          const childColors = theme.tool.running
+          const childIcon = `${childColors.icon}◇${style.reset}`
+          const maxLen = Math.max(0, cols - task.childTool.name.length - 15)
+          const showEllipsis = task.childTool.summary.length > maxLen
+          const summary = showEllipsis ? `${task.childTool.summary.slice(0, maxLen)}…` : task.childTool.summary
+          lines.push(`      └─ ${childIcon} ${childColors.text}${task.childTool.name}  ${summary}${style.reset}`)
+        }
+        continue
+      }
+
       const sep = tool.summary ? "  " : ""
       const maxLen = Math.max(0, cols - tool.name.length - 6)
       const showEllipsis = tool.summary.length > maxLen
@@ -66,26 +91,6 @@ export function createLiveBlock() {
         const colors = theme.tool.error
         const icon = `${colors.icon}✗${style.reset}`
         lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
-      }
-    }
-
-    // Render running tasks
-    for (const task of tasks.values()) {
-      const colors = task.status === "running" ? theme.task.running : theme.task.done
-      const spinner =
-        task.status === "running" ? `${colors.icon}${frames[frame]}${style.reset}` : `${colors.icon}✓${style.reset}`
-      const elapsed = task.status === "running" ? Math.floor((Date.now() - task.startTime) / 1000) : task.elapsed
-      const time = elapsed > 0 ? ` ${fg.gray}(${elapsed}s)${style.reset}` : ""
-      lines.push(`  ${spinner} ${colors.text}@${task.agent}:${style.reset} ${task.description}${time}`)
-
-      // Render nested child tool if present
-      if (task.status === "running" && task.childTool) {
-        const childColors = theme.tool.running
-        const childIcon = `${childColors.icon}◇${style.reset}`
-        const maxLen = Math.max(0, cols - task.childTool.name.length - 15)
-        const showEllipsis = task.childTool.summary.length > maxLen
-        const summary = showEllipsis ? `${task.childTool.summary.slice(0, maxLen)}…` : task.childTool.summary
-        lines.push(`      └─ ${childIcon} ${childColors.text}${task.childTool.name}  ${summary}${style.reset}`)
       }
     }
 
@@ -150,6 +155,7 @@ export function createLiveBlock() {
 
     taskStart(id: string, agent: string, description: string, childSessionID?: string) {
       tasks.set(id, { id, agent, description, elapsed: 0, status: "running", startTime: Date.now(), childSessionID })
+      tools.set(id, { id, name: "task", summary: `${agent}: ${description}`, status: "running" })
       if (!active) {
         active = true
         startAnimation()
@@ -163,6 +169,7 @@ export function createLiveBlock() {
         task.elapsed = Math.floor((Date.now() - task.startTime) / 1000)
         task.status = "done"
         task.childTool = undefined
+        tools.set(id, { id, name: "task", summary: `${task.agent}: ${task.description}`, status: "done" })
         render()
       }
     },

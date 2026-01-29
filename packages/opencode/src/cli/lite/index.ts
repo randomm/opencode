@@ -89,145 +89,157 @@ async function main() {
   setup.start()
 
   try {
-    await bootstrap(process.cwd(), async () => {
-      // Subscribe to Bus events for child session tools
-      // This must be inside bootstrap so Instance.provide() context is established
-      busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
-        const part = event.properties.part
-        if (part.type !== "tool") return
+    await bootstrap(
+      process.cwd(),
+      async () => {
+        // Subscribe to Bus events for child session tools
+        // This must be inside bootstrap so Instance.provide() context is established
+        busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
+          const part = event.properties.part
+          if (part.type !== "tool") return
 
-        // Find which task this child session belongs to
-        let taskId: string | null = null
-        for (const [id, childSessionID] of taskToChildSession.entries()) {
-          if (childSessionID === part.sessionID) {
-            taskId = id
-            break
+          // Find which task this child session belongs to
+          let taskId: string | null = null
+          for (const [id, childSessionID] of taskToChildSession.entries()) {
+            if (childSessionID === part.sessionID) {
+              taskId = id
+              break
+            }
           }
-        }
 
-        if (!taskId) return
+          if (!taskId) return
 
-        // Update task child tool display
-        if (part.state.status === "running") {
-          const arg = summarizeInput(part.tool, part.state.input)
-          block.setTaskChildTool(taskId, part.tool, arg || "")
-        } else if (part.state.status === "completed" || part.state.status === "error") {
-          block.clearTaskChildTool(taskId)
-        }
-      })
-      await Promise.all([Provider.list(), Agent.list(), MCP.clients(), Command.list()])
+          // Update task child tool display
+          if (part.state.status === "running") {
+            const arg = summarizeInput(part.tool, part.state.input)
+            block.setTaskChildTool(taskId, part.tool, arg || "")
+          } else if (part.state.status === "completed" || part.state.status === "error") {
+            block.clearTaskChildTool(taskId)
+          }
+        })
 
-      setup.stop(true)
-      write(`${fg.green}✓${style.reset} Ready\n\n`)
+        setup.update("Loading providers")
+        await Provider.list()
+        setup.update("Loading agents")
+        await Agent.list()
+        setup.update("Connecting to MCP servers")
+        await MCP.clients()
+        setup.update("Loading commands")
+        await Command.list()
 
-      currentAgent = await Agent.defaultAgent()
-      const agentList = await Agent.list()
+        setup.stop(true)
+        write(`${fg.green}✓${style.reset} Ready\n\n`)
 
-      write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
+        currentAgent = await Agent.defaultAgent()
+        const agentList = await Agent.list()
 
-      const editor = new LineEditor()
-      process.stdin.setRawMode(true)
-      process.stdin.resume()
+        write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
 
-      editor.render(renderPrompt(currentAgent))
+        const editor = new LineEditor()
+        process.stdin.setRawMode(true)
+        process.stdin.resume()
 
-      process.stdin.on("data", async (data: Buffer) => {
-        const key = parseKey(data)
+        editor.render(renderPrompt(currentAgent))
 
-        if (key.ctrl && key.name === "c") {
-          cleanup()
-          process.exit(0)
-        }
+        process.stdin.on("data", async (data: Buffer) => {
+          const key = parseKey(data)
 
-        if (key.name === "shift_tab") {
-          const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
-          const index = available.findIndex((a) => a.name === currentAgent)
-          const next = index === -1 ? 0 : (index + 1) % available.length
-          currentAgent = available[next].name
-          write(`\r${clear.line}`)
-          editor.render(renderPrompt(currentAgent))
-          return
-        }
+          if (key.ctrl && key.name === "c") {
+            cleanup()
+            process.exit(0)
+          }
 
-        if (key.name === "escape" && isOperationInProgress && currentSessionID) {
-          block.freeze()
-          SessionPrompt.cancel(currentSessionID)
-          isOperationInProgress = false
-          currentSessionID = null
-          write("\n")
-          editor.line = ""
-          editor.cursor = 0
-          editor.render(renderPrompt(currentAgent))
-          return
-        }
+          if (key.name === "shift_tab") {
+            const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
+            const index = available.findIndex((a) => a.name === currentAgent)
+            const next = index === -1 ? 0 : (index + 1) % available.length
+            currentAgent = available[next].name
+            write(`\r${clear.line}`)
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
 
-        if (isOperationInProgress) {
-          return
-        }
+          if (key.name === "escape" && isOperationInProgress && currentSessionID) {
+            block.freeze()
+            SessionPrompt.cancel(currentSessionID)
+            isOperationInProgress = false
+            currentSessionID = null
+            write("\n")
+            editor.line = ""
+            editor.cursor = 0
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
 
-        if (key.ctrl && key.name === "x") {
-          Panel.enterNavigationMode()
-          return
-        }
+          if (isOperationInProgress) {
+            return
+          }
 
-        if (Panel.isInNavigationMode()) {
-          if (key.name === "escape") {
+          if (key.ctrl && key.name === "x") {
+            Panel.enterNavigationMode()
+            return
+          }
+
+          if (Panel.isInNavigationMode()) {
+            if (key.name === "escape") {
+              Panel.exitNavigationMode()
+              editor.render(renderPrompt(currentAgent))
+              return
+            }
+
+            let direction: "left" | "right" | "up" | null = null
+
+            if (key.name === "left" || key.name === "h") {
+              direction = "left"
+            } else if (key.name === "right" || key.name === "l") {
+              direction = "right"
+            } else if (key.name === "up" || key.name === "k") {
+              direction = "up"
+            }
+
+            if (direction) {
+              const navigated = Panel.navigate(direction)
+
+              if (navigated) {
+                await Panel.renderPanel()
+                const hint = Panel.getHint()
+                if (hint) {
+                  write(`\n${hint}\n`)
+                }
+                write(clear.screen)
+                write(cursor.home)
+              }
+            }
+
             Panel.exitNavigationMode()
             editor.render(renderPrompt(currentAgent))
             return
           }
 
-          let direction: "left" | "right" | "up" | null = null
-
-          if (key.name === "left" || key.name === "h") {
-            direction = "left"
-          } else if (key.name === "right" || key.name === "l") {
-            direction = "right"
-          } else if (key.name === "up" || key.name === "k") {
-            direction = "up"
+          if (key.ctrl && key.name === "t") {
+            block.toggleTasksVisible()
+            editor.render(renderPrompt(currentAgent))
           }
 
-          if (direction) {
-            const navigated = Panel.navigate(direction)
+          const result = editor.handle(key)
 
-            if (navigated) {
-              await Panel.renderPanel()
-              const hint = Panel.getHint()
-              if (hint) {
-                write(`\n${hint}\n`)
-              }
-              write(clear.screen)
-              write(cursor.home)
+          if (result !== null) {
+            write("\n")
+
+            if (result.startsWith("/")) {
+              await handleCommand(result)
+            } else if (result.trim()) {
+              await handleMessage(result)
             }
+
+            editor.render(renderPrompt(currentAgent))
+          } else {
+            editor.render(renderPrompt(currentAgent))
           }
-
-          Panel.exitNavigationMode()
-          editor.render(renderPrompt(currentAgent))
-          return
-        }
-
-        if (key.ctrl && key.name === "t") {
-          block.toggleTasksVisible()
-          editor.render(renderPrompt(currentAgent))
-        }
-
-        const result = editor.handle(key)
-
-        if (result !== null) {
-          write("\n")
-
-          if (result.startsWith("/")) {
-            await handleCommand(result)
-          } else if (result.trim()) {
-            await handleMessage(result)
-          }
-
-          editor.render(renderPrompt(currentAgent))
-        } else {
-          editor.render(renderPrompt(currentAgent))
-        }
-      })
-    })
+        })
+      },
+      (step) => setup.update(step),
+    )
   } catch (err) {
     setup.stop(false)
     write(cursor.show)
@@ -377,6 +389,7 @@ interface StreamOptions {
 
 async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
   block.reset()
+  taskToChildSession.clear()
   const spinner = new Spinner("Thinking")
   spinner.start()
 
@@ -520,7 +533,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
             taskToChildSession.set(id, childSessionID)
           }
           block.taskEnd(id)
-          taskToChildSession.delete(id)
         }
       }
 
