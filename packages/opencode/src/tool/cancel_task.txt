@@ -1,0 +1,4 @@
+- Stop a running background task by its ID
+- Returns the cancellation status: "cancelled", "not_found", or "already_completed"
+- Use this tool to cancel tasks that are taking too long or are no longer needed
+- Note: Only running tasks can be cancelled; completed or failed tasks cannot be cancelled

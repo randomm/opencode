@@ -23,6 +23,11 @@ Usage notes:
 5. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent
 6. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.
 
+Task lifecycle management:
+- If new information makes a running task obsolete, cancel it with cancel_task before launching a replacement. Do not leave stale tasks running.
+- Use check_task to inspect task status before deciding to cancel or wait.
+- When cancelling and re-launching, provide the updated context in the new task's prompt.
+
 Example usage (NOTE: The agents below are fictional examples for illustration only - use the actual agents listed above):
 
 <example_agent_descriptions>

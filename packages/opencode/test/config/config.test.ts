@@ -1026,7 +1026,7 @@ test("merges legacy tools with existing permission config", async () => {
           agent: {
             test: {
               permission: {
-                glob: "allow",
+                rg: "allow",
               },
               tools: {
                 bash: true,
@@ -1042,7 +1042,7 @@ test("merges legacy tools with existing permission config", async () => {
     fn: async () => {
       const config = await Config.get()
       expect(config.agent?.["test"]?.permission).toEqual({
-        glob: "allow",
+        rg: "allow",
         bash: "allow",
       })
     },

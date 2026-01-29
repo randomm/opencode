@@ -11,6 +11,7 @@ import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
+import { safeRemorySearch, getUserId } from "../memory/remory"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -20,7 +21,7 @@ const parameters = z.object({
   command: z.string().describe("The command that triggered this task").optional(),
 })
 
-const MAX_CONCURRENT_TASKS_PER_SESSION = 5
+const MAX_CONCURRENT_TASKS_PER_SESSION = 10
 
 type LockCallback = (release: () => void) => void
 interface LockState {
@@ -277,7 +278,6 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
       }
       ctx.abort.addEventListener("abort", cancel)
       using _ = defer(() => ctx.abort.removeEventListener("abort", cancel))
-      const promptParts = await SessionPrompt.resolvePromptParts(params.prompt)
 
       const taskMetadata: TaskMetadata = {
         agent_type: agent.name,
@@ -286,6 +286,33 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         start_time: startTime,
         release_slot: result.releaseSlot,
       }
+
+      // Pre-task: Search for relevant memories
+      let memoryContext = ""
+      if (config.experimental?.remory_enabled !== false) {
+        try {
+          if (params.description?.trim()) {
+            const userId = await getUserId()
+            const memories = await safeRemorySearch(params.description, userId)
+            if (memories.length > 0) {
+              memoryContext = "[Relevant Context from Prior Tasks]\n"
+              for (const memory of memories) {
+                memoryContext += `${memory.text}\n`
+              }
+              memoryContext += "\n"
+            }
+          }
+        } catch (error) {
+          // Fail silently - memory features are optional
+        }
+      }
+
+      let enhancedPrompt = params.prompt
+      if (memoryContext) {
+        enhancedPrompt = memoryContext + params.prompt
+      }
+
+      const promptParts = await SessionPrompt.resolvePromptParts(enhancedPrompt)
 
       Session.enableAutoWakeup(ctx.sessionID)
 

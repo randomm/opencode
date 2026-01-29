@@ -26,6 +26,7 @@ import { SessionStatus } from "./status"
 import crypto from "crypto"
 import { Agent } from "../agent/agent"
 import { BackgroundTasks } from "../util/tasks"
+import { safeRemoryAdd, getUserId } from "../memory/remory"
 
 export interface TaskMetadata {
   agent_type: string
@@ -89,6 +90,7 @@ function sanitizeError(error: string): string {
 
 const pendingBackgroundTasks = new Map<string, Promise<string | undefined | void>>()
 const pendingTaskMetadata = new Map<string, TaskMetadata>()
+const subagentSessionIDs = new Map<string, string>()
 const cancelledTasks = new Set<string>()
 const reservedTaskSlots = new Map<string, Set<string>>()
 
@@ -98,7 +100,7 @@ const backgroundTaskResults = new Map<string, BackgroundTaskResult>()
 const MAX_DELIVERED_RESULTS = 10000
 const deliveredTaskResults = new Set<string>()
 
-const DEFAULT_TASK_TIMEOUT = 5 * 60 * 1000
+const DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000
 const closingSessions = new Set<string>()
 
 // Constants for metadata and result truncation
@@ -198,6 +200,9 @@ export namespace Session {
     if (metadata) {
       pendingTaskMetadata.set(id, metadata)
     }
+    if (sessionID) {
+      subagentSessionIDs.set(id, sessionID)
+    }
 
     if (sessionID && closingSessions.has(sessionID)) {
       log.warn("task rejected: session closed during tracking", { task_id: id, session_id: sessionID })
@@ -234,6 +239,20 @@ export namespace Session {
         const firstKey = backgroundTaskResults.keys().next().value
         if (firstKey) backgroundTaskResults.delete(firstKey)
       }
+
+      // Post-task: Store task outcome to memory
+      if (metadata && taskResult.status === "completed") {
+        safeRemoryAdd(
+          `Task: ${metadata.description}\nOutcome: SUCCESS\nAgent: ${metadata.agent_type}`,
+          await getUserId(),
+          {
+            type: "task_outcome",
+            agent: metadata.agent_type,
+            date: new Date().toISOString(),
+          },
+        ).catch(() => {})
+      }
+
       if (sessionID) {
         if (!closingSessions.has(sessionID)) {
           const parentSessionID = metadata?.session_id
@@ -285,6 +304,7 @@ export namespace Session {
     } finally {
       pendingBackgroundTasks.delete(id)
       pendingTaskMetadata.delete(id)
+      subagentSessionIDs.delete(id)
 
       if (metadata?.release_slot) {
         try {
@@ -496,14 +516,16 @@ export namespace Session {
     wakeupInProgress.delete(sessionID)
   }
 
-  export function cancelBackgroundTask(id: string): boolean {
+  function cancelBackgroundTask(id: string): boolean {
     const task = pendingBackgroundTasks.get(id)
     if (!task) return false
+
+    const existing = backgroundTaskResults.get(id)
+    if (existing && existing.status !== "running") return false
 
     const metadata = pendingTaskMetadata.get(id)
     const startTime = metadata?.start_time ?? Date.now()
 
-    // Release slot BEFORE deleting metadata to prevent permanent slot leak
     if (metadata?.release_slot) {
       try {
         metadata.release_slot()
@@ -525,12 +547,13 @@ export namespace Session {
       cancelled: true,
     }
 
-    const existing = backgroundTaskResults.get(id)
     if (existing) {
-      existing.status = "failed"
-      existing.error = "Task was cancelled"
-      existing.cancelled = true
-      existing.time.completed = Date.now()
+      if (existing.status === "running") {
+        existing.status = "failed"
+        existing.error = "Task was cancelled"
+        existing.cancelled = true
+        existing.time.completed = Date.now()
+      }
     } else {
       backgroundTaskResults.set(id, result)
       if (backgroundTaskResults.size > MAX_STORED_TASK_RESULTS) {
@@ -539,12 +562,56 @@ export namespace Session {
       }
     }
 
-    const sessionID = metadata?.session_id
-    if (sessionID) {
-      SessionPrompt.cancel(sessionID)
+    const subagentSessionID = subagentSessionIDs.get(id)
+    if (subagentSessionID) {
+      SessionPrompt.cancel(subagentSessionID)
     }
+    subagentSessionIDs.delete(id)
 
     return true
+  }
+
+  export function tryCancel(
+    taskId: string,
+    callerSessionID: string,
+  ): {
+    status: "cancelled" | "not_found" | "already_completed" | "unauthorized"
+    message?: string
+  } {
+    const result = backgroundTaskResults.get(taskId)
+    if (!result) {
+      return {
+        status: "not_found",
+        message: `Task ${taskId} not found`,
+      }
+    }
+
+    if (result.metadata?.session_id !== callerSessionID) {
+      return {
+        status: "unauthorized",
+        message: `Task ${taskId} belongs to a different session and cannot be cancelled`,
+      }
+    }
+
+    if (result.status !== "running") {
+      return {
+        status: "already_completed",
+        message: `Task ${taskId} is ${result.status} and cannot be cancelled`,
+      }
+    }
+
+    const cancelled = cancelBackgroundTask(taskId)
+    if (cancelled) {
+      return {
+        status: "cancelled",
+        message: `Task ${taskId} has been cancelled`,
+      }
+    }
+
+    return {
+      status: "not_found",
+      message: `Task ${taskId} could not be cancelled`,
+    }
   }
 
   async function waitForBackgroundTasks(): Promise<void> {
@@ -891,6 +958,7 @@ export namespace Session {
         backgroundTaskResults.delete(id)
         deliveredTaskResults.delete(id)
         cancelledTasks.delete(id)
+        subagentSessionIDs.delete(id)
       }
     }
   }

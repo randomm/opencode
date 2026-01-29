@@ -90,6 +90,26 @@ If the type system complains, fix the underlying issue.
 
 If work must be deferred, create a GitHub issue. The issue IS the TODO.
 
+### Style Guide Compliance
+
+**MANDATORY: `STYLE_GUIDE.md` is not advisory — it is a blocking requirement.**
+
+All code must comply with style rules. Violations are **blocking** and will fail adversarial review. No exceptions.
+
+**Common violation categories:**
+
+- No else statements — use early returns
+- No destructuring — preserve context
+- No let statements — use const with ternary operators
+- No semicolons in code
+- No type bypasses (`as any`, `@ts-ignore`, `@ts-expect-error`)
+- Prefer single-word variable names
+- Use Bun APIs (`Bun.file()`, `Bun.write()`)
+- No `try`/`catch` where early returns suffice
+- Keep functions flat and composable
+
+**Reference:** See the "TypeScript Style Guide" section below for detailed code examples, and `STYLE_GUIDE.md` for complete rules and rationale.
+
 ---
 
 ## Pre-Push Verification
@@ -260,10 +280,17 @@ function process(data: unknown): Result {
 ### No semicolons, minimal trailing commas
 
 ```typescript
+// Good
 const config = {
   name: "opencode",
   version: "1.0.0",
 }
+
+// Bad
+const config = {
+  name: "opencode",
+  version: "1.0.0",
+};
 ```
 
 ---
@@ -325,6 +352,59 @@ git add . && git commit -m "feat(opencode): implement feature (#123)"
 git push -u origin feature/issue-123-description
 gh pr create --base dev
 ```
+
+---
+
+## QA Workflow
+
+### Binary Build & Test Loop
+
+All feature work is validated by building and manually testing binaries. The cycle:
+
+```
+implement → build binary → manual QA → file bugs → fix → rebuild
+```
+
+### Build Commands
+
+```bash
+# oclite (auto-installs to ~/bin/oclite with codesign)
+cd packages/opencode
+bun run build:lite
+
+# Full opencode binary
+cd packages/opencode
+bun run build --single
+cp dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode
+codesign --force --deep --sign - ~/bin/opencode
+xattr -cr ~/bin/opencode
+```
+
+### Agent Pipeline
+
+Every code change follows this pipeline — no exceptions:
+
+```
+@developer → @adversarial-developer → fix loop → @git-agent (commit+push) → rebuild binary
+```
+
+Never skip adversarial review. Never commit before adversarial passes.
+
+### Research First
+
+For non-trivial features, dispatch `@explore` to research how existing open-source projects solve the same problem. Clone repos to `/tmp` and analyze actual source code — don't rely on documentation alone.
+
+### QA Bug Tracking
+
+- All bugs found during QA get GitHub issues immediately
+- Issues reference the specific commit and include reproduction steps
+- Screenshots when applicable
+
+### Feature Branch Discipline
+
+- All work stays on the feature branch until manual QA is complete
+- Push frequently — the PR is already open
+- Don't merge to dev until QA passes
 
 ---
 

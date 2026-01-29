@@ -2,6 +2,7 @@
 
 import { UnixSocketClient, type JsonRpcRequest, DEFAULT_SOCKET_PATH } from "./socket-client"
 import { Log } from "@/util/log"
+import { Config } from "../config/config"
 
 const log = Log.create({ service: "memory.rememory" })
 
@@ -67,6 +68,13 @@ export interface MemorySearchResponse {
 
 export interface MemoryListResponse {
   memories: MemoryResult[]
+}
+
+export interface Memory {
+  text: string
+  metadata?: Record<string, unknown>
+  created_at?: string
+  distance?: number
 }
 
 export async function initialize(socketPath?: string): Promise<boolean> {
@@ -246,6 +254,104 @@ function generateId(): string {
   return `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+let remoryAvailable: boolean | null = null
+let lastCheck: number = 0
+const CACHE_TTL = 60000 // 1 minute
+
+export async function checkRemoryAvailable(): Promise<boolean> {
+  const now = Date.now()
+  if (remoryAvailable !== null && now - lastCheck < CACHE_TTL) {
+    return remoryAvailable
+  }
+  lastCheck = now
+  try {
+    if (!isEnabled()) {
+      remoryAvailable = false
+    } else {
+      await list({ userId: "check", limit: 1 })
+      remoryAvailable = true
+    }
+  } catch {
+    remoryAvailable = false
+    log.warn("remory unavailable, continuing without memory features")
+  }
+  return remoryAvailable
+}
+
+export function resetAvailabilityCache(): void {
+  remoryAvailable = null
+  lastCheck = 0
+}
+
+export async function safeRemorySearch(query: string, userId: string, limit?: number): Promise<Memory[]> {
+  if (!(await checkRemoryAvailable())) return []
+
+  // Skip memory search for empty or whitespace-only descriptions
+  if (!query?.trim()) {
+    return []
+  }
+
+  try {
+    const results = await search({
+      query,
+      userId,
+      limit: limit ?? 5,
+    })
+
+    const memories = results.map((r) => ({
+      text: r.text,
+      metadata: r.metadata,
+      created_at: r.created_at,
+      distance: r.score,
+    }))
+
+    // Get threshold from config, default to 0.4
+    let threshold = 0.4
+    try {
+      const config = await Config.get()
+      threshold = config.experimental?.remory_distance_threshold ?? 0.4
+    } catch {
+      // Use default threshold if config loading fails
+    }
+
+    const relevant = memories.filter((m) => m.distance && m.distance < threshold)
+    return relevant
+  } catch {
+    return []
+  }
+}
+
+export async function safeRemoryAdd(text: string, userId: string, metadata?: object): Promise<void> {
+  if (!(await checkRemoryAvailable())) return
+
+  try {
+    // Serialize metadata into text if provided
+    const enhancedText = metadata ? `${text}\n\nMetadata: ${JSON.stringify(metadata)}` : text
+
+    await add({
+      text: enhancedText,
+      userId,
+      infer: false,
+    })
+  } catch (error) {
+    log.warn("memory add failed", {
+      error: error instanceof Error ? error.message : String(error),
+      userId,
+      textLength: text.length,
+      hasMetadata: !!metadata,
+    })
+  }
+}
+
+export async function getUserId(): Promise<string> {
+  try {
+    const { execSync } = await import("child_process")
+    return execSync("git rev-list --max-parents=0 HEAD").toString().trim()
+  } catch {
+    return "default-user"
+  }
+}
+
 export const Remory = {
   initialize,
   add,
@@ -255,4 +361,9 @@ export const Remory = {
   close,
   invalidate,
   isEnabled,
+  checkRemoryAvailable,
+  safeRemorySearch,
+  safeRemoryAdd,
+  getUserId,
+  resetAvailabilityCache,
 }

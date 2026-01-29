@@ -14,11 +14,13 @@ export function parseKey(data: Buffer): Key {
   if (s === "\x03") return { name: "c", ctrl: true }
   if (s === "\x04") return { name: "d", ctrl: true }
   if (s === "\x0c") return { name: "l", ctrl: true }
+  if (s === "\x18") return { name: "x", ctrl: true }
 
   // Special keys
   if (s === "\r" || s === "\n") return { name: "return" }
   if (s === "\x7f" || s === "\b") return { name: "backspace" }
   if (s === "\t") return { name: "tab" }
+  if (s === "\x1b[Z") return { name: "shift_tab" }
   if (s === "\x1b") return { name: "escape" }
 
   // Arrow keys

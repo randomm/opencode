@@ -10,12 +10,19 @@ export namespace State {
   const recordsByKey = new Map<string, Map<any, Entry>>()
 
   export function create<S>(root: () => string, init: () => S, dispose?: (state: Awaited<S>) => Promise<void>) {
-    return () => {
-      const key = root()
-      let entries = recordsByKey.get(key)
+    const factory = () => {
+      log.info("Invoking state factory")
+      let rootKey: string
+      try {
+        rootKey = root()
+      } catch (error) {
+        log.error("Failed to get root key in state factory", { error })
+        throw error
+      }
+      let entries = recordsByKey.get(rootKey)
       if (!entries) {
         entries = new Map<string, Entry>()
-        recordsByKey.set(key, entries)
+        recordsByKey.set(rootKey, entries)
       }
       const exists = entries.get(init)
       if (exists) return exists.state as S
@@ -26,6 +33,7 @@ export namespace State {
       })
       return state
     }
+    return factory
   }
 
   export async function dispose(key: string) {

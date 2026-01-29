@@ -14,15 +14,19 @@ import { ShareNext } from "@/share/share-next"
 import { Snapshot } from "../snapshot"
 import { Truncate } from "../tool/truncation"
 
-export async function InstanceBootstrap() {
+export async function InstanceBootstrap(onProgress?: (step: string) => void) {
   Log.Default.info("bootstrapping", { directory: Instance.directory })
+  onProgress?.("Loading plugins")
   await Plugin.init()
+  onProgress?.("Initializing LSP")
+  await LSP.init()
+  onProgress?.("Initializing file system")
+  FileWatcher.init()
+  File.init()
+  onProgress?.("Initializing components")
   Share.init()
   ShareNext.init()
   Format.init()
-  await LSP.init()
-  FileWatcher.init()
-  File.init()
   Vcs.init()
   Snapshot.init()
   Truncate.init()

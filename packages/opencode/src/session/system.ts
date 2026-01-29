@@ -59,6 +59,7 @@ export namespace SystemPrompt {
         `Here is some useful information about the environment you are running in:`,
         `<env>`,
         `  Working directory: ${Instance.directory}`,
+        `  IMPORTANT: All file paths must be relative to or within the working directory shown above. Never hallucinate or guess directory names.`,
         `  Is directory a git repo: ${project.vcs === "git" ? "yes" : "no"}`,
         `  Platform: ${process.platform}`,
         `  Today's date: ${new Date().toDateString()}`,
@@ -79,13 +80,9 @@ export namespace SystemPrompt {
 
   const LOCAL_RULE_FILES = [
     "AGENTS.md",
-    "CLAUDE.md",
     "CONTEXT.md", // deprecated
   ]
   const GLOBAL_RULE_FILES = [path.join(Global.Path.config, "AGENTS.md")]
-  if (!Flag.OPENCODE_DISABLE_CLAUDE_CODE_PROMPT) {
-    GLOBAL_RULE_FILES.push(path.join(os.homedir(), ".claude", "CLAUDE.md"))
-  }
 
   if (Flag.OPENCODE_CONFIG_DIR) {
     GLOBAL_RULE_FILES.push(path.join(Flag.OPENCODE_CONFIG_DIR, "AGENTS.md"))

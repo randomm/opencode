@@ -288,7 +288,7 @@ export namespace Worktree {
         const booted = await Instance.provide({
           directory: info.directory,
           init: InstanceBootstrap,
-          fn: () => undefined,
+          fn: async () => undefined,
         })
           .then(() => true)
           .catch((error) => {

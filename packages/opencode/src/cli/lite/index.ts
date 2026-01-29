@@ -1,66 +1,89 @@
 #!/usr/bin/env bun
-import { cursor, clear, fg, style, write, screen } from "./terminal"
+import { cursor, clear, fg, style, write } from "./terminal"
 import { parseKey, LineEditor } from "./input"
 import { Spinner } from "./spinner"
-import { chat } from "./session"
+import { chat, command } from "./session"
+import { createMarkdownRenderer } from "./markdown"
+import { formatTokens, formatDuration } from "../metrics"
+import { renderPrompt } from "./bottombar"
+import { bootstrap } from "../bootstrap"
+import { Log } from "../../util/log"
+import { Global } from "../../global"
+import { SessionPrompt } from "../../session/prompt"
+import { Session } from "../../session"
+import { Provider } from "../../provider/provider"
+import { Instance } from "../../project/instance"
+import { Agent } from "../../agent/agent"
+import { MCP } from "../../mcp"
+import { Command } from "../../command"
+import type { ChatChunk } from "./session"
+import { createLiveBlock } from "./liveblock"
+import { summarizeInput } from "./summary"
+import { wrap } from "./wrap"
+import * as Panel from "./panel"
+import * as Commands from "./commands"
+import { setBlockFreeze } from "./select"
+import { Bus } from "../../bus"
+import { MessageV2 } from "../../session/message-v2"
+export { summarizeInput }
 
-const PROMPT = `${fg.cyan}>${style.reset} `
+// UI Constants
+const PAD = "  "
+const PERMISSION_DENIED_PATTERN = /permission\s*(denied|required|error)/i
+
+interface TaskInput {
+  agent?: string
+  description?: string
+}
+const MAX_WIDTH = Math.min(100, (process.stdout.columns || 80) - 4)
+
+function padLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line ? `${PAD}${line}` : line))
+    .join("\n")
+}
+
+// UI State
+let isOperationInProgress = false
+let currentSessionID: string | null = null
+let currentModel: string | null = null
+let currentAgent: string | undefined
+let autoWakeupSessionID: string | null = null
+
+// Live block for tool/task display
+const block = createLiveBlock()
+
+// Set block freeze function for select
+setBlockFreeze(() => block.freeze())
+
+// Track task tool ID to child session ID mapping
+const taskToChildSession = new Map<string, string>()
+
+// Track part IDs to tool IDs for linking metadata updates
+const partIdToToolId = new Map<string, string>()
+
+// Store Bus subscription cleanup function
+let busUnsubscribe: (() => void) | undefined
 
 async function main() {
-  // Check TTY
   if (!process.stdin.isTTY) {
     console.error("oclite requires a TTY")
     process.exit(1)
   }
 
-  // Setup
-  write(screen.alt)
-  write(clear.screen)
-  write(cursor.home)
-
-  // Header
-  write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
-  write(`${fg.gray}Type /help for commands, Ctrl+C to exit${style.reset}\n\n`)
-
-  // Input setup
-  const editor = new LineEditor()
-  process.stdin.setRawMode(true)
-  process.stdin.resume()
-
-  // Render prompt
-  editor.render(PROMPT)
-
-  // Handle input
-  process.stdin.on("data", async (data: Buffer) => {
-    const key = parseKey(data)
-
-    // Ctrl+C to exit
-    if (key.ctrl && key.name === "c") {
-      cleanup()
-      process.exit(0)
-    }
-
-    const result = editor.handle(key)
-
-    if (result !== null) {
-      write("\n")
-
-      if (result.startsWith("/")) {
-        handleCommand(result)
-      } else if (result.trim()) {
-        await handleMessage(result)
-      }
-
-      editor.render(PROMPT)
-    } else {
-      editor.render(PROMPT)
-    }
+  await Global.init()
+  await Log.init({
+    print: false,
+    dev: false,
+    level: "ERROR",
   })
 
-  // Cleanup on exit
   function cleanup() {
+    if (autoWakeupSessionID) Session.disableAutoWakeup(autoWakeupSessionID)
+    if (busUnsubscribe) busUnsubscribe()
+    block.freeze()
     write(cursor.show)
-    write(screen.main)
     process.stdin.setRawMode(false)
   }
 
@@ -69,69 +92,537 @@ async function main() {
     cleanup()
     process.exit(0)
   })
+
+  write("\x1b[2J\x1b[H")
+  write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
+
+  const setup = new Spinner("Setting up environment")
+  setup.start()
+
+  try {
+    await bootstrap(
+      process.cwd(),
+      async () => {
+        // Subscribe to Bus events for child session tools
+        // This must be inside bootstrap so Instance.provide() context is established
+        busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
+          const part = event.properties.part
+          if (part.type !== "tool") return
+
+          // Check for task metadata updates (sessionId becomes available after session creation)
+          if (part.tool === "task" && part.callID) {
+            const metadata =
+              part.state.status === "running" || part.state.status === "completed" ? part.state.metadata : undefined
+            const sessionId = metadata?.sessionId as string | undefined
+            if (sessionId) {
+              const toolId = partIdToToolId.get(part.callID)
+              if (toolId && !taskToChildSession.has(toolId)) {
+                Panel.addChild(sessionId)
+                taskToChildSession.set(toolId, sessionId)
+              }
+            }
+          }
+
+          // Find which task this child session belongs to
+          let taskId: string | null = null
+          for (const [id, childSessionID] of taskToChildSession.entries()) {
+            if (childSessionID === part.sessionID) {
+              taskId = id
+              break
+            }
+          }
+
+          if (!taskId) return
+
+          // Update task child tool display
+          if (part.state.status === "running") {
+            const arg = summarizeInput(part.tool, part.state.input)
+            block.setTaskChildTool(taskId, part.tool, arg || "")
+          } else if (part.state.status === "completed" || part.state.status === "error") {
+            block.clearTaskChildTool(taskId)
+          }
+        })
+
+        setup.update("Loading providers")
+        await Provider.list()
+        setup.update("Loading agents")
+        await Agent.list()
+        setup.update("Connecting to MCP servers")
+        await MCP.clients()
+        setup.update("Loading commands")
+        await Command.list()
+
+        setup.stop(true)
+        write(`${fg.green}✓${style.reset} Ready\n\n`)
+
+        currentAgent = await Agent.defaultAgent()
+        const agentList = await Agent.list()
+
+        write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
+
+        const editor = new LineEditor()
+        process.stdin.setRawMode(true)
+        process.stdin.resume()
+
+        editor.render(renderPrompt(currentAgent))
+
+        process.stdin.on("data", async (data: Buffer) => {
+          const key = parseKey(data)
+
+          if (key.ctrl && key.name === "c") {
+            cleanup()
+            process.exit(0)
+          }
+
+          if (key.name === "shift_tab") {
+            const available = agentList.filter((a) => a.mode !== "subagent" && !a.hidden)
+            const index = available.findIndex((a) => a.name === currentAgent)
+            const next = index === -1 ? 0 : (index + 1) % available.length
+            currentAgent = available[next].name
+            write(`\r${clear.line}`)
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
+
+          if (key.name === "escape" && isOperationInProgress && currentSessionID) {
+            block.freeze()
+            SessionPrompt.cancel(currentSessionID)
+            taskToChildSession.clear()
+            partIdToToolId.clear()
+            isOperationInProgress = false
+            currentSessionID = null
+            write("\n")
+            editor.line = ""
+            editor.cursor = 0
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
+
+          if (isOperationInProgress) {
+            return
+          }
+
+          if (key.ctrl && key.name === "x") {
+            Panel.enterNavigationMode()
+            return
+          }
+
+          if (Panel.isInNavigationMode()) {
+            if (key.name === "escape") {
+              Panel.exitNavigationMode()
+              editor.render(renderPrompt(currentAgent))
+              return
+            }
+
+            let direction: "left" | "right" | "up" | null = null
+
+            if (key.name === "left" || key.name === "h") {
+              direction = "left"
+            } else if (key.name === "right" || key.name === "l") {
+              direction = "right"
+            } else if (key.name === "up" || key.name === "k") {
+              direction = "up"
+            }
+
+            if (direction) {
+              const navigated = Panel.navigate(direction)
+
+              if (navigated) {
+                await Panel.renderPanel()
+                const hint = Panel.getHint()
+                if (hint) {
+                  write(`\n${hint}\n`)
+                }
+                write(clear.screen)
+                write(cursor.home)
+              }
+            }
+
+            Panel.exitNavigationMode()
+            editor.render(renderPrompt(currentAgent))
+            return
+          }
+
+          if (key.ctrl && key.name === "t") {
+            block.toggleTasksVisible()
+            editor.render(renderPrompt(currentAgent))
+          }
+
+          const result = editor.handle(key)
+
+          if (result !== null) {
+            write("\n")
+
+            if (result.startsWith("/")) {
+              await handleCommand(result)
+            } else if (result.trim()) {
+              await handleMessage(result)
+            }
+
+            editor.render(renderPrompt(currentAgent))
+          } else {
+            editor.render(renderPrompt(currentAgent))
+          }
+        })
+      },
+      (step) => setup.update(step),
+    )
+  } catch (err) {
+    setup.stop(false)
+    write(cursor.show)
+    const msg = err instanceof Error ? err.message : String(err)
+    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    process.exit(1)
+  }
 }
 
-function handleCommand(cmd: string) {
-  const command = cmd.slice(1).toLowerCase().trim()
+async function handleCommand(cmd: string) {
+  const parts = cmd.slice(1).split(/\s+/)
+  const name = parts[0].toLowerCase()
 
-  if (command === "help") {
+  if (name === "help") {
     write(`${fg.yellow}Commands:${style.reset}\n`)
-    write(`  /help    - Show this help\n`)
-    write(`  /clear   - Clear screen\n`)
-    write(`  /quit    - Exit oclite\n`)
+    write(`  /help             - Show this help\n`)
+    write(`  /clear            - Clear screen\n`)
+    write(`  /sessions         - List and switch sessions\n`)
+    write(`  /new              - Create a new session\n`)
+    write(`  /agents           - List and select agents\n`)
+    write(`  /models           - List and select models\n`)
+    write(`  /subagent-model   - Select model for subagents\n`)
+    write(`  /quit             - Exit oclite\n`)
+    write(`  /<command>        - Run custom command\n`)
     write("\n")
     return
   }
 
-  if (command === "clear") {
+  if (name === "clear") {
     write(clear.screen)
     write(cursor.home)
     write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n\n`)
     return
   }
 
-  if (command === "quit" || command === "exit") {
+  if (name === "quit" || name === "exit") {
     process.exit(0)
+  }
+
+  if (name === "sessions") {
+    const state = { currentSessionID, currentModel, currentAgent }
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleSessions(state, setState, Panel.setParentSession)
+    return
+  }
+
+  if (name === "new") {
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleNew(setState, Panel.setParentSession)
+    return
+  }
+
+  if (name === "agents") {
+    const state = { currentSessionID, currentModel, currentAgent }
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleAgents(state, setState)
+    return
+  }
+
+  if (name === "models") {
+    const setState = {
+      setSessionID: (id: string | null) => {
+        currentSessionID = id
+      },
+      setModel: (model: string | null) => {
+        currentModel = model
+      },
+      setAgent: (agent: string | undefined) => {
+        currentAgent = agent
+      },
+    }
+    await Commands.handleModels(setState)
+    return
+  }
+
+  if (name === "subagent-model") {
+    await Commands.handleSubagentModel()
+    return
+  }
+
+  const spinner = new Spinner(`Processing /${name}`)
+  spinner.start()
+
+  try {
+    const custom = await Command.get(name)
+    if (custom) {
+      const args = cmd.slice(1 + name.length).trim()
+      await Commands.handleCustomCommand(
+        custom.name,
+        args,
+        command,
+        streamResponse,
+        { currentSessionID, currentModel, currentAgent },
+        (inProgress: boolean) => {
+          isOperationInProgress = inProgress
+        },
+        () => block.freeze(),
+        spinner,
+      )
+      return
+    }
+
+    spinner.stop(true)
+  } catch (err) {
+    spinner.stop(false)
+    throw err
   }
 
   write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
 }
 
-async function handleMessage(message: string) {
+interface StreamOptions {
+  model?: string
+  agent?: string
+  sessionID?: string
+}
+
+async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
+  block.reset()
+  taskToChildSession.clear()
+  partIdToToolId.clear()
   const spinner = new Spinner("Thinking")
   spinner.start()
 
   let first = true
+  let totalTokens = 0
+  const startTime = Date.now()
+  let lastChunkType: string | null = null
+  let toolCounter = 0
+  let lastToolId = ""
+  let lastToolKey = ""
+  let dedupCount = 0
+  const idMap = new Map<string, string>()
+  const md = createMarkdownRenderer()
+  let lineBuffer = ""
+
+  function flushLineBuffer(addNewline = false) {
+    if (!lineBuffer) return
+    const rendered = md.render(lineBuffer)
+    const wrapped = wrap(rendered, MAX_WIDTH)
+    write(padLines(wrapped))
+    if (addNewline) write("\n")
+    lineBuffer = ""
+  }
+
   try {
-    for await (const chunk of chat(message)) {
-      if (first) {
+    for await (const chunk of source) {
+      if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
+        currentSessionID = chunk.sessionID
+        if (autoWakeupSessionID && autoWakeupSessionID !== currentSessionID) {
+          Session.disableAutoWakeup(autoWakeupSessionID)
+        }
+        Session.enableAutoWakeup(currentSessionID)
+        autoWakeupSessionID = currentSessionID
+      }
+
+      if (first && chunk.type !== "done" && chunk.type !== "start") {
         spinner.stop(true)
         first = false
+        write(`${PAD}${fg.gray}(Esc to cancel)${style.reset}\n`)
+        const rule = `${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+        write(rule)
       }
 
       if (chunk.type === "text" && chunk.content) {
-        write(chunk.content)
+        block.freeze()
+        lastToolKey = ""
+        dedupCount = 0
+        lastChunkType = "text"
+
+        lineBuffer += chunk.content
+
+        const parts = lineBuffer.split("\n")
+
+        for (let idx = 0; idx < parts.length - 1; idx++) {
+          const line = parts[idx]
+          const rendered = md.render(line + "\n")
+          const wrapped = wrap(rendered, MAX_WIDTH)
+          write(padLines(wrapped))
+        }
+
+        lineBuffer = parts[parts.length - 1]
+
+        if (lineBuffer.length > MAX_WIDTH) {
+          flushLineBuffer()
+        }
       }
 
-      if (chunk.type === "tool_start" && chunk.tool) {
-        write(`\n${fg.yellow}▶ ${chunk.tool}${style.reset}\n`)
+      if (chunk.type === "tool_start" && chunk.tool?.trim()) {
+        flushLineBuffer(true)
+        const tool = chunk.tool.trim()
+        const arg = summarizeInput(tool, chunk.input)
+        const summary = arg || ""
+        const key = `${tool}:${summary}`
+
+        if (key === lastToolKey) {
+          dedupCount++
+        } else {
+          dedupCount = 1
+          lastToolKey = key
+          lastToolId = chunk.callID || `${tool}-${++toolCounter}`
+        }
+
+        const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+        block.toolStart(lastToolId, tool, label)
+        if (chunk.callID) {
+          idMap.set(chunk.callID, lastToolId)
+          partIdToToolId.set(chunk.callID, lastToolId)
+        }
+
+        if (tool === "task" && chunk.input && typeof chunk.input === "object") {
+          const input = chunk.input as TaskInput
+          const agent = typeof input.agent === "string" ? input.agent : ""
+          const description = typeof input.description === "string" ? input.description : ""
+          if (agent && description) {
+            block.taskStart(lastToolId, agent, description)
+          }
+        }
+        lastChunkType = "tool"
       }
 
-      if (chunk.type === "tool_end" && chunk.tool) {
-        write(`${fg.green}✓ ${chunk.tool}${style.reset}\n`)
+      if (chunk.type === "tool_end" && chunk.tool?.trim()) {
+        flushLineBuffer()
+        const tool = chunk.tool.trim()
+        const arg = summarizeInput(tool, chunk.input)
+        const summary = arg || ""
+        const key = `${tool}:${summary}`
+
+        const id = (chunk.callID && idMap.get(chunk.callID)) || lastToolId
+
+        const isPermissionDenied = typeof chunk.error === "string" && PERMISSION_DENIED_PATTERN.test(chunk.error)
+
+        const handleToolCompletion = (isDenied: boolean) => {
+          const label = key === lastToolKey && dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+          if (isDenied) return block.toolDenied(id, tool, label)
+          block.toolEnd(id, tool, label)
+        }
+
+        handleToolCompletion(isPermissionDenied)
+        lastChunkType = "tool"
+
+        if (chunk.input && tool === "todowrite") {
+          if (!Array.isArray(chunk.input.todos)) continue
+
+          const valid = ["pending", "in_progress", "completed", "cancelled"]
+          const priorities = ["high", "medium", "low"]
+
+          const todos = chunk.input.todos
+            .filter(
+              (item) =>
+                item &&
+                typeof item === "object" &&
+                typeof item.id === "string" &&
+                typeof item.content === "string" &&
+                typeof item.status === "string" &&
+                valid.includes(item.status) &&
+                typeof item.priority === "string" &&
+                priorities.includes(item.priority),
+            )
+            .map((item) => ({
+              id: item.id,
+              content: item.content,
+              status: item.status,
+              priority: item.priority,
+            }))
+
+          if (todos.length > 0) block.setTodos(todos)
+        }
+
+        if (tool === "task") {
+          block.taskEnd(id)
+        }
       }
 
       if (chunk.type === "error" && chunk.content) {
-        write(`\n${fg.red}Error: ${chunk.content}${style.reset}\n`)
+        flushLineBuffer()
+        block.freeze()
+        lastToolKey = ""
+        dedupCount = 0
+        lastChunkType = "error"
+        const safeContent = chunk.content
+          .replace(/\x1b\][^\x07]*\x07/g, "")
+          .replace(/\x1b[\[\]()#?]*[0-9;]*[A-Za-z]/g, "")
+          .replace(/[\x00-\x1f\x7f]/g, "")
+        write(`\n${PAD}${fg.red}Error: ${safeContent}${style.reset}\n`)
+      }
+
+      if (chunk.tokens !== undefined) {
+        totalTokens += chunk.tokens
       }
     }
-  } catch (err) {
-    if (first) spinner.stop(false)
-    const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+  } finally {
+    spinner.stop(true)
+    flushLineBuffer()
+    block.freeze()
+    const flushed = md.flush()
+    if (flushed) {
+      write(padLines(flushed))
+    }
+    const rule = `\n${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+    write(rule)
+    const duration = Date.now() - startTime
+    write(`${PAD}${fg.gray}${formatDuration(duration)} · ${formatTokens(totalTokens)}${style.reset}\n`)
   }
 
   write("\n")
+}
+
+async function handleMessage(message: string) {
+  const options = {
+    model: currentModel || undefined,
+    agent: currentAgent,
+    sessionID: currentSessionID || undefined,
+  }
+
+  isOperationInProgress = true
+  try {
+    const source = chat(message, options)
+    await streamResponse(source, options)
+  } catch (err) {
+    block.freeze()
+    const msg = err instanceof Error ? err.message : String(err)
+    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
+  } finally {
+    isOperationInProgress = false
+  }
 }
 
 main().catch(console.error)

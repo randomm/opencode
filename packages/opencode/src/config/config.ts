@@ -176,6 +176,18 @@ export namespace Config {
       result.permission = mergeDeep(perms, result.permission ?? {})
     }
 
+    // Migrate legacy glob/grep permissions to rg
+    if (result.permission) {
+      if (result.permission.glob) {
+        result.permission.rg = result.permission.rg || result.permission.glob
+        delete result.permission.glob
+      }
+      if (result.permission.grep) {
+        result.permission.rg = result.permission.rg || result.permission.grep
+        delete result.permission.grep
+      }
+    }
+
     if (!result.username) result.username = os.userInfo().username
 
     // Handle migration from autoshare to share field
@@ -526,8 +538,7 @@ export namespace Config {
           __originalKeys: z.string().array().optional(),
           read: PermissionRule.optional(),
           edit: PermissionRule.optional(),
-          glob: PermissionRule.optional(),
-          grep: PermissionRule.optional(),
+          rg: PermissionRule.optional(),
           list: PermissionRule.optional(),
           bash: PermissionRule.optional(),
           task: PermissionRule.optional(),
@@ -1096,11 +1107,6 @@ export namespace Config {
             .optional()
             .default(true)
             .describe("Persist conversation context to memory for future recall"),
-          remory_persist_thinking: z
-            .boolean()
-            .optional()
-            .default(true)
-            .describe("Persist AI thinking/reasoning to memory"),
           remory_inject_context: z
             .boolean()
             .optional()
@@ -1122,6 +1128,13 @@ export namespace Config {
             .optional()
             .default(5)
             .describe("Maximum number of memory entries to retrieve per search (1-20)"),
+          remory_distance_threshold: z
+            .number()
+            .min(0, "Distance threshold must be at least 0")
+            .max(1, "Distance threshold cannot exceed 1")
+            .optional()
+            .default(0.4)
+            .describe("Maximum distance threshold for memory relevance filtering (0-1, lower = more strict)"),
           background_tasks: z.boolean().optional().default(true).describe("Enable background task execution"),
           max_background_tasks: z
             .number()

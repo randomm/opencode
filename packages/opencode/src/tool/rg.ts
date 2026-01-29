@@ -35,12 +35,16 @@ Parameters:
       throw new Error("pattern is required when files_only is false")
     }
 
-    if (params.files_only && !params.pattern && !params.include) {
-      throw new Error("files_only mode requires either 'pattern' or 'include' to specify which files to list")
+    if (params.files_only) {
+      const hasPattern = params.pattern && params.pattern.trim().length > 0
+      const hasInclude = params.include && params.include.trim().length > 0
+      if (!hasPattern && !hasInclude) {
+        throw new Error("files_only mode requires non-empty 'pattern' or 'include'")
+      }
     }
 
     await ctx.ask({
-      permission: params.files_only ? "glob" : "grep",
+      permission: "rg",
       patterns: params.pattern ? [params.pattern] : [],
       always: ["*"],
       metadata: {

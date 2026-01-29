@@ -6,6 +6,7 @@ export class Spinner {
   private frame = 0
   private interval: ReturnType<typeof setInterval> | null = null
   private text: string
+  private startTime: number = 0
 
   constructor(text = "Processing") {
     this.text = text
@@ -13,10 +14,15 @@ export class Spinner {
 
   start() {
     write(cursor.hide)
+    this.frame = 0
+    this.startTime = Date.now()
+    write(`\r${clear.line}${fg.cyan}${frames[0]}${style.reset} ${fg.gray}${this.text}${style.reset}`)
     this.interval = setInterval(() => {
       this.frame = (this.frame + 1) % frames.length
-      write(`\r${clear.line}${fg.cyan}${frames[this.frame]}${style.reset} ${fg.gray}${this.text}${style.reset}`)
-    }, 80)
+      const elapsed = Math.floor((Date.now() - this.startTime) / 1000)
+      const time = elapsed > 0 ? ` · ${elapsed}s` : ""
+      write(`\r${clear.line}${fg.cyan}${frames[this.frame]}${style.reset} ${fg.gray}${this.text}${time}${style.reset}`)
+    }, 50)
   }
 
   update(text: string) {
