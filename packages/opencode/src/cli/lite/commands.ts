@@ -70,6 +70,7 @@ export async function getAllModels() {
   const allModels: Array<{ label: string; value: string; description?: string }> = []
 
   for (const [providerID, provider] of Object.entries(providers)) {
+    if (!provider.key) continue
     for (const [modelID, model] of Object.entries(provider.models)) {
       allModels.push({
         label: `${model.name} (${providerID})`,
