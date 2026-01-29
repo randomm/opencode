@@ -36,6 +36,7 @@ export const theme = {
   // Text content
   prose: {
     text: "", // No color override, use terminal default
+    background: "\x1b[48;5;236m", // Subtle dark gray background for response area
   },
 
   // Status indicators

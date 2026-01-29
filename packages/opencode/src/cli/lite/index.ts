@@ -49,6 +49,7 @@ let isOperationInProgress = false
 let currentSessionID: string | null = null
 let currentModel: string | null = null
 let currentAgent: string | undefined
+let autoWakeupSessionID: string | null = null
 
 // Live block for tool/task display
 const block = createLiveBlock()
@@ -58,6 +59,9 @@ setBlockFreeze(() => block.freeze())
 
 // Track task tool ID to child session ID mapping
 const taskToChildSession = new Map<string, string>()
+
+// Track part IDs to tool IDs for linking metadata updates
+const partIdToToolId = new Map<string, string>()
 
 // Store Bus subscription cleanup function
 let busUnsubscribe: (() => void) | undefined
@@ -76,6 +80,7 @@ async function main() {
   })
 
   function cleanup() {
+    if (autoWakeupSessionID) Session.disableAutoWakeup(autoWakeupSessionID)
     if (busUnsubscribe) busUnsubscribe()
     block.freeze()
     write(cursor.show)
@@ -103,6 +108,20 @@ async function main() {
         busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
           const part = event.properties.part
           if (part.type !== "tool") return
+
+          // Check for task metadata updates (sessionId becomes available after session creation)
+          if (part.tool === "task" && part.callID) {
+            const metadata =
+              part.state.status === "running" || part.state.status === "completed" ? part.state.metadata : undefined
+            const sessionId = metadata?.sessionId as string | undefined
+            if (sessionId) {
+              const toolId = partIdToToolId.get(part.callID)
+              if (toolId && !taskToChildSession.has(toolId)) {
+                Panel.addChild(sessionId)
+                taskToChildSession.set(toolId, sessionId)
+              }
+            }
+          }
 
           // Find which task this child session belongs to
           let taskId: string | null = null
@@ -168,6 +187,8 @@ async function main() {
           if (key.name === "escape" && isOperationInProgress && currentSessionID) {
             block.freeze()
             SessionPrompt.cancel(currentSessionID)
+            taskToChildSession.clear()
+            partIdToToolId.clear()
             isOperationInProgress = false
             currentSessionID = null
             write("\n")
@@ -396,6 +417,7 @@ interface StreamOptions {
 async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
   block.reset()
   taskToChildSession.clear()
+  partIdToToolId.clear()
   const spinner = new Spinner("Thinking")
   spinner.start()
 
@@ -424,6 +446,11 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
     for await (const chunk of source) {
       if (chunk.type === "start" && chunk.sessionID && !currentSessionID) {
         currentSessionID = chunk.sessionID
+        if (autoWakeupSessionID && autoWakeupSessionID !== currentSessionID) {
+          Session.disableAutoWakeup(autoWakeupSessionID)
+        }
+        Session.enableAutoWakeup(currentSessionID)
+        autoWakeupSessionID = currentSessionID
       }
 
       if (first && chunk.type !== "done" && chunk.type !== "start") {
@@ -475,7 +502,10 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
         const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
         block.toolStart(lastToolId, tool, label)
-        if (chunk.callID) idMap.set(chunk.callID, lastToolId)
+        if (chunk.callID) {
+          idMap.set(chunk.callID, lastToolId)
+          partIdToToolId.set(chunk.callID, lastToolId)
+        }
 
         if (tool === "task" && chunk.input && typeof chunk.input === "object") {
           const input = chunk.input as TaskInput
@@ -483,11 +513,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           const description = typeof input.description === "string" ? input.description : ""
           if (agent && description) {
             block.taskStart(lastToolId, agent, description)
-          }
-          const childSessionID = typeof chunk.metadata?.sessionId === "string" ? chunk.metadata.sessionId : undefined
-          if (childSessionID) {
-            Panel.addChild(childSessionID)
-            taskToChildSession.set(lastToolId, childSessionID)
           }
         }
         lastChunkType = "tool"
