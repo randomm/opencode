@@ -6,7 +6,7 @@ export interface Tool {
   id: string
   name: string
   summary: string
-  status: "running" | "done" | "error"
+  status: "running" | "done" | "error" | "denied"
 }
 
 export interface Task {
@@ -92,6 +92,13 @@ export function createLiveBlock() {
         const icon = `${colors.icon}✗${style.reset}`
         lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${summary}${style.reset}`)
       }
+
+      if (tool.status === "denied") {
+        const colors = theme.tool.denied
+        const icon = `${colors.icon}✗${style.reset}`
+        const deniedSuffix = `${summary} ${style.dim}(permission denied)${style.reset}`
+        lines.push(`  ${icon} ${colors.text}${tool.name}${sep}${deniedSuffix}`)
+      }
     }
 
     // Render todos if any
@@ -150,6 +157,11 @@ export function createLiveBlock() {
 
     toolEnd(id: string, name: string, summary: string, error = false) {
       tools.set(id, { id, name, summary, status: error ? "error" : "done" })
+      render()
+    },
+
+    toolDenied(id: string, name: string, summary: string) {
+      tools.set(id, { id, name, summary, status: "denied" })
       render()
     },
 

@@ -15,6 +15,10 @@ export const theme = {
       icon: fg.red,
       text: fg.red,
     },
+    denied: {
+      icon: fg.red,
+      text: fg.red,
+    },
   },
 
   // Task (subagent) display

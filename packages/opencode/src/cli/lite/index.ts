@@ -29,6 +29,12 @@ export { summarizeInput }
 
 // UI Constants
 const PAD = "  "
+const PERMISSION_DENIED_PATTERN = /permission\s*(denied|required|error)/i
+
+interface TaskInput {
+  agent?: string
+  description?: string
+}
 const MAX_WIDTH = Math.min(100, (process.stdout.columns || 80) - 4)
 
 function padLines(text: string): string {
@@ -472,10 +478,16 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
         if (chunk.callID) idMap.set(chunk.callID, lastToolId)
 
         if (tool === "task" && chunk.input && typeof chunk.input === "object") {
-          const agent = (chunk.input as any).agent || ""
-          const description = (chunk.input as any).description || ""
+          const input = chunk.input as TaskInput
+          const agent = typeof input.agent === "string" ? input.agent : ""
+          const description = typeof input.description === "string" ? input.description : ""
           if (agent && description) {
             block.taskStart(lastToolId, agent, description)
+          }
+          const childSessionID = typeof chunk.metadata?.sessionId === "string" ? chunk.metadata.sessionId : undefined
+          if (childSessionID) {
+            Panel.addChild(childSessionID)
+            taskToChildSession.set(lastToolId, childSessionID)
           }
         }
         lastChunkType = "tool"
@@ -490,12 +502,15 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
         const id = (chunk.callID && idMap.get(chunk.callID)) || lastToolId
 
-        if (key === lastToolKey) {
-          const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+        const isPermissionDenied = typeof chunk.error === "string" && PERMISSION_DENIED_PATTERN.test(chunk.error)
+
+        const handleToolCompletion = (isDenied: boolean) => {
+          const label = key === lastToolKey && dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+          if (isDenied) return block.toolDenied(id, tool, label)
           block.toolEnd(id, tool, label)
-        } else {
-          block.toolEnd(id, tool, summary)
         }
+
+        handleToolCompletion(isPermissionDenied)
         lastChunkType = "tool"
 
         if (chunk.input && tool === "todowrite") {
@@ -526,12 +541,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           if (todos.length > 0) block.setTodos(todos)
         }
 
-        if (tool === "task" && chunk.metadata) {
-          const childSessionID = chunk.metadata.sessionId as string | undefined
-          if (childSessionID && typeof childSessionID === "string") {
-            Panel.addChild(childSessionID)
-            taskToChildSession.set(id, childSessionID)
-          }
+        if (tool === "task") {
           block.taskEnd(id)
         }
       }

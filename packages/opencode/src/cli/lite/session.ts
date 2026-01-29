@@ -17,6 +17,7 @@ export interface ChatChunk {
   input?: Record<string, unknown>
   output?: string
   metadata?: Record<string, unknown>
+  error?: string
   tokens?: number
   sessionID?: string
 }
@@ -65,7 +66,14 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({ type: "tool_start", tool: part.tool, callID: part.callID, input: part.state.input, sessionID })
+        chunks.push({
+          type: "tool_start",
+          tool: part.tool,
+          callID: part.callID,
+          input: part.state.input,
+          metadata: part.state.metadata,
+          sessionID,
+        })
       } else if (part.state.status === "completed") {
         chunks.push({
           type: "tool_end",
@@ -75,6 +83,17 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
           output: part.state.output,
           metadata: part.state.metadata,
           sessionID,
+        })
+      } else if (part.state.status === "error") {
+        const error = "error" in part.state ? part.state.error : undefined
+        chunks.push({
+          type: "tool_end",
+          tool: part.tool,
+          callID: part.callID,
+          input: part.state.input,
+          metadata: part.state.metadata,
+          sessionID,
+          error,
         })
       }
       wake()
@@ -205,7 +224,14 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({ type: "tool_start", tool: part.tool, callID: part.callID, input: part.state.input, sessionID })
+        chunks.push({
+          type: "tool_start",
+          tool: part.tool,
+          callID: part.callID,
+          input: part.state.input,
+          metadata: part.state.metadata,
+          sessionID,
+        })
       } else if (part.state.status === "completed") {
         chunks.push({
           type: "tool_end",
@@ -215,6 +241,17 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
           output: part.state.output,
           metadata: part.state.metadata,
           sessionID,
+        })
+      } else if (part.state.status === "error") {
+        const error = "error" in part.state ? part.state.error : undefined
+        chunks.push({
+          type: "tool_end",
+          tool: part.tool,
+          callID: part.callID,
+          input: part.state.input,
+          metadata: part.state.metadata,
+          sessionID,
+          error,
         })
       }
       wake()

@@ -319,6 +319,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             anthropic: {
+              key: "sk-test",
               models: {
                 "claude-3-5-sonnet-20241022": {
                   name: "Claude 3.5 Sonnet",
@@ -328,6 +329,7 @@ describe("commands", () => {
               },
             },
             openai: {
+              key: "sk-test",
               models: {
                 "gpt-4o": {
                   name: "GPT-4o",
@@ -362,6 +364,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             anthropic: {
+              key: "sk-test",
               models: {
                 "claude-3-5-sonnet-20241022": {
                   name: "Claude 3.5 Sonnet",
@@ -405,6 +408,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             anthropic: {
+              key: "sk-test",
               models: {
                 "claude-3-5-sonnet-20241022": {
                   name: "Claude 3.5 Sonnet",
@@ -442,6 +446,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             opencode: {
+              key: "sk-test",
               models: {
                 "free-model": {
                   name: "Free Model",
@@ -467,6 +472,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             provider: {
+              key: "sk-test",
               models: {
                 "test-model": {
                   name: "Test Model",
@@ -490,6 +496,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             anthropic: {
+              key: "sk-test",
               models: {
                 "claude-3-5-sonnet-20241022": {
                   name: "Claude 3.5 Sonnet",
@@ -562,6 +569,7 @@ describe("commands", () => {
         Provider: {
           list: async () => ({
             anthropic: {
+              key: "sk-test",
               models: {
                 "claude-3-5-sonnet-20241022": {
                   name: "Claude 3.5 Sonnet",
