@@ -39,7 +39,7 @@ describe("summarizeInput", () => {
     })
   })
 
-  describe("rg and grep tools", () => {
+  describe("rg tool", () => {
     it("returns pattern with quotes for rg without include", () => {
       const input = { pattern: "function.*export" }
       expect(summarizeInput("rg", input)).toBe('"function.*export"')
@@ -54,24 +54,6 @@ describe("summarizeInput", () => {
       const longPattern = "a".repeat(40)
       const input = { pattern: longPattern }
       expect(summarizeInput("rg", input)).toBe(`"${"a".repeat(30)}"`)
-    })
-
-    it("works with grep tool", () => {
-      const input = { pattern: "error", include: "*.log" }
-      expect(summarizeInput("grep", input)).toBe('"error" in *.log')
-    })
-  })
-
-  describe("glob tool", () => {
-    it("returns pattern truncated to 60 chars", () => {
-      const input = { pattern: "src/**/*.test.ts" }
-      expect(summarizeInput("glob", input)).toBe("src/**/*.test.ts")
-    })
-
-    it("truncates long patterns", () => {
-      const longPattern = "a".repeat(70)
-      const input = { pattern: longPattern }
-      expect(summarizeInput("glob", input).length).toBe(60)
     })
   })
 

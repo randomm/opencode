@@ -176,6 +176,18 @@ export namespace Config {
       result.permission = mergeDeep(perms, result.permission ?? {})
     }
 
+    // Migrate legacy glob/grep permissions to rg
+    if (result.permission) {
+      if (result.permission.glob) {
+        result.permission.rg = result.permission.rg || result.permission.glob
+        delete result.permission.glob
+      }
+      if (result.permission.grep) {
+        result.permission.rg = result.permission.rg || result.permission.grep
+        delete result.permission.grep
+      }
+    }
+
     if (!result.username) result.username = os.userInfo().username
 
     // Handle migration from autoshare to share field
@@ -526,8 +538,7 @@ export namespace Config {
           __originalKeys: z.string().array().optional(),
           read: PermissionRule.optional(),
           edit: PermissionRule.optional(),
-          glob: PermissionRule.optional(),
-          grep: PermissionRule.optional(),
+          rg: PermissionRule.optional(),
           list: PermissionRule.optional(),
           bash: PermissionRule.optional(),
           task: PermissionRule.optional(),

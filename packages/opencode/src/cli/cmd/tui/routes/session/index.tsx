@@ -1429,7 +1429,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
         <Match when={props.part.tool === "bash"}>
           <Bash {...toolprops} />
         </Match>
-        <Match when={props.part.tool === "glob" || props.part.tool === "grep"}>
+        <Match when={props.part.tool === "rg"}>
           <Glob {...toolprops} />
         </Match>
         <Match when={props.part.tool === "read"}>

@@ -61,7 +61,7 @@ describe("summarizeInput", () => {
     })
   })
 
-  describe("rg and grep tools", () => {
+  describe("rg tool", () => {
     test("rg returns pattern with quotes without include", () => {
       const input = { pattern: "function.*export" }
       expect(summarizeInput("rg", input)).toBe('"function.*export"')
@@ -79,11 +79,6 @@ describe("summarizeInput", () => {
       expect(result).toBe(`"${"a".repeat(30)}"`)
     })
 
-    test("grep returns pattern and include filter", () => {
-      const input = { pattern: "error", include: "*.log" }
-      expect(summarizeInput("grep", input)).toBe('"error" in *.log')
-    })
-
     test("handles missing include key", () => {
       const input = { pattern: "test" }
       expect(summarizeInput("rg", input)).toBe('"test"')
@@ -92,26 +87,6 @@ describe("summarizeInput", () => {
     test("handles missing pattern key", () => {
       const input = { include: "*.ts" }
       expect(summarizeInput("rg", input)).toBe('"" in *.ts')
-    })
-  })
-
-  describe("glob tool", () => {
-    test("returns pattern truncated to 60 chars", () => {
-      const input = { pattern: "src/**/*.test.ts" }
-      expect(summarizeInput("glob", input)).toBe("src/**/*.test.ts")
-    })
-
-    test("truncates very long patterns", () => {
-      const longPattern = "a".repeat(70)
-      const input = { pattern: longPattern }
-      const result = summarizeInput("glob", input)
-      expect(result).toBe("a".repeat(60))
-      expect(result.length).toBe(60)
-    })
-
-    test("handles missing pattern key", () => {
-      const input = {}
-      expect(summarizeInput("glob", input)).toBe("")
     })
   })
 

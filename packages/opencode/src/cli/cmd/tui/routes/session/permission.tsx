@@ -204,11 +204,8 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
                   <Match when={props.request.permission === "read"}>
                     <TextBody icon="→" title={`Read ` + normalizePath(input().filePath as string)} />
                   </Match>
-                  <Match when={props.request.permission === "glob"}>
-                    <TextBody icon="✱" title={`Glob "` + (input().pattern ?? "") + `"`} />
-                  </Match>
-                  <Match when={props.request.permission === "grep"}>
-                    <TextBody icon="✱" title={`Grep "` + (input().pattern ?? "") + `"`} />
+                  <Match when={props.request.permission === "rg"}>
+                    <TextBody icon="✱" title={`rg "` + (input().pattern ?? "") + `"`} />
                   </Match>
                   <Match when={props.request.permission === "list"}>
                     <TextBody icon="→" title={`List ` + normalizePath(input().path as string)} />

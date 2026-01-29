@@ -40,7 +40,7 @@ Parameters:
     }
 
     await ctx.ask({
-      permission: params.files_only ? "glob" : "grep",
+      permission: "rg",
       patterns: params.pattern ? [params.pattern] : [],
       always: ["*"],
       metadata: {
