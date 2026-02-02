@@ -1,10 +1,14 @@
 import { write, fg, style } from "./terminal"
+
+const PAD = "  "
 import { select } from "./select"
 import { Session } from "../../session"
 import { Instance } from "../../project/instance"
 import { Agent } from "../../agent/agent"
 import { Provider } from "../../provider/provider"
 import { Command } from "../../command"
+import { MCP } from "../../mcp"
+import { Config } from "../../config/config"
 import path from "path"
 import { Global } from "../../global"
 
@@ -134,7 +138,7 @@ interface SetState {
 export async function handleSessions(state: State, setState: SetState, setParentSession: (id: string) => void) {
   const sessions = await listSessions()
   if (sessions.length === 0) {
-    write(`${fg.yellow}No sessions found${style.reset}\n\n`)
+    write(`${PAD}${fg.yellow}No sessions found${style.reset}\n\n`)
     return
   }
 
@@ -148,7 +152,7 @@ export async function handleSessions(state: State, setState: SetState, setParent
   if (selected) {
     setState.setSessionID(selected)
     setParentSession(selected)
-    write(`${fg.green}Session switched${style.reset}\n\n`)
+    write(`${PAD}${fg.green}Session switched${style.reset}\n\n`)
   } else {
     write("\n")
   }
@@ -161,7 +165,7 @@ export async function handleNew(setState: SetState, setParentSession: (id: strin
   setState.setSessionID(session.id)
   setState.setModel(null)
   setParentSession(session.id)
-  write(`${fg.green}New session started${style.reset}\n\n`)
+  write(`${PAD}${fg.green}New session started${style.reset}\n\n`)
 }
 
 export async function handleAgents(state: State, setState: SetState) {
@@ -169,7 +173,7 @@ export async function handleAgents(state: State, setState: SetState) {
   const filtered = all.filter((a) => a.mode !== "subagent" && !a.hidden)
 
   if (filtered.length === 0) {
-    write(`${fg.red}No agents available${style.reset}\n\n`)
+    write(`${PAD}${fg.red}No agents available${style.reset}\n\n`)
     return
   }
 
@@ -182,7 +186,7 @@ export async function handleAgents(state: State, setState: SetState) {
   const selected = await select(options, `${fg.cyan}Select an agent:${style.reset}`)
   if (selected) {
     setState.setAgent(selected)
-    write(`${fg.green}Agent switched to ${selected}${style.reset}\n\n`)
+    write(`${PAD}${fg.green}Agent switched to ${selected}${style.reset}\n\n`)
   } else {
     write("\n")
   }
@@ -191,7 +195,7 @@ export async function handleAgents(state: State, setState: SetState) {
 export async function handleModels(setState: SetState) {
   const models = await getAllModels()
   if (models.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
+    write(`${PAD}${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
   const selected = await select(models, `${fg.cyan}Select a model:${style.reset}`)
@@ -201,7 +205,7 @@ export async function handleModels(setState: SetState) {
     if (parts.length === 2) {
       await addRecentModel(parts[0], parts[1])
     }
-    write(`${fg.green}Model switched to ${selected}${style.reset}\n\n`)
+    write(`${PAD}${fg.green}Model switched to ${selected}${style.reset}\n\n`)
   } else {
     write("\n")
   }
@@ -210,16 +214,94 @@ export async function handleModels(setState: SetState) {
 export async function handleSubagentModel() {
   const models = await getAllModels()
   if (models.length === 0) {
-    write(`${fg.yellow}No models available${style.reset}\n\n`)
+    write(`${PAD}${fg.yellow}No models available${style.reset}\n\n`)
     return
   }
   const selected = await select(models, `${fg.cyan}Select model for subagents:${style.reset}`)
   if (selected) {
     process.env.SUBAGENT_MODEL = selected
-    write(`${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
+    write(`${PAD}${fg.green}Subagent model set to ${selected}${style.reset}\n\n`)
   } else {
     write("\n")
   }
+}
+
+export async function handleMcp(): Promise<void> {
+  const config = await Config.get()
+  const mcpServers = config.mcp ?? {}
+
+  if (Object.keys(mcpServers).length === 0) {
+    write(`${PAD}No MCP servers configured.\n`)
+    return
+  }
+
+  const buildOptions = async () => {
+    try {
+      const statuses = await MCP.status()
+      return Object.keys(mcpServers).map((name) => {
+        const status = statuses[name]
+        const icon =
+          status?.status === "connected"
+            ? "✓"
+            : status?.status === "disabled"
+              ? "○"
+              : status?.status === "failed"
+                ? "✗"
+                : status?.status === "needs_auth"
+                  ? "⚠"
+                  : "?"
+        const desc = status?.status === "failed" ? status.error : (status?.status ?? "unknown")
+        return {
+          label: `${icon} ${name}`,
+          value: name,
+          description: desc,
+        }
+      })
+    } catch {
+      return []
+    }
+  }
+
+  const options = await buildOptions()
+
+  await select(options, "Manage MCP servers (space=toggle, r=restart)", {
+    onKey: async (key, selected, currentOptions) => {
+      if (!selected.value) return Promise.resolve({ action: "continue" as const })
+
+      try {
+        if (key === " ") {
+          const statuses = await MCP.status()
+          const current = statuses[selected.value]
+          if (current?.status === "connected") {
+            await MCP.disconnect(selected.value)
+          } else {
+            await MCP.connect(selected.value)
+          }
+          try {
+            const updatedOptions = await buildOptions()
+            return Promise.resolve({ action: "update" as const, options: updatedOptions })
+          } catch {
+            return Promise.resolve({ action: "continue" as const })
+          }
+        }
+
+        if (key === "r") {
+          await MCP.disconnect(selected.value)
+          await MCP.connect(selected.value)
+          try {
+            const updatedOptions = await buildOptions()
+            return Promise.resolve({ action: "update" as const, options: updatedOptions })
+          } catch {
+            return Promise.resolve({ action: "continue" as const })
+          }
+        }
+      } catch {
+        return Promise.resolve({ action: "continue" as const })
+      }
+
+      return Promise.resolve({ action: "continue" as const })
+    },
+  })
 }
 
 export async function handleCustomCommand(
@@ -247,7 +329,7 @@ export async function handleCustomCommand(
     if (spinner) spinner.stop(false)
     freezeBlock()
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
+    write(`\n${PAD}${fg.red}Error: ${msg}${style.reset}\n\n`)
   } finally {
     setOperationInProgress(false)
   }

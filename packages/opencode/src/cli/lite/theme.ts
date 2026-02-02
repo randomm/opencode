@@ -1,4 +1,5 @@
 import { style, fg } from "./terminal"
+import { rgb } from "./terminal"
 
 export const theme = {
   // Tool display
@@ -36,7 +37,7 @@ export const theme = {
   // Text content
   prose: {
     text: "", // No color override, use terminal default
-    background: "\x1b[48;5;236m", // Subtle dark gray background for response area
+    bg: rgb(26, 26, 46).bg, // Subtle dark background #1a1a2e
   },
 
   // Status indicators

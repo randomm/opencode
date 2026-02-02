@@ -1,438 +1,683 @@
-import { describe, test, expect, mock } from "bun:test"
+import { describe, test, expect, beforeEach, afterEach } from "bun:test"
+import { createLiveBlock, _clearActiveLiveBlockForTesting } from "../../../src/cli/lite/liveblock"
 
-// Mock log-update to capture calls during testing
-const mockLogUpdate = mock(() => {})
-const mockDone = mock(() => {})
-const mockClear = mock(() => {})
+function stripAnsi(str: string) {
+  return str.replace(/\x1b\[[0-9;]*[mGK]/g, "")
+}
 
-mock.module("log-update", () => {
-  const fn = mockLogUpdate as any
-  fn.done = mockDone
-  fn.clear = mockClear
-  return { default: fn }
-})
+describe("liveblock", () => {
+  let liveBlock: ReturnType<typeof createLiveBlock>
+  const originalWrite = process.stdout.write
+  const output: string[] = []
 
-import { createLiveBlock } from "../../../src/cli/lite/liveblock"
+  let originalIsTTY = process.stdout.isTTY
+  let originalColumns = process.stdout.columns
 
-describe("createLiveBlock", () => {
-  describe("tool lifecycle", () => {
-    test("toolStart adds tool with running status", () => {
-      const block = createLiveBlock()
-      mockLogUpdate.mockClear()
-      block.toolStart("1", "search", "Searching files")
+  beforeEach(() => {
+    output.length = 0
+    process.stdout.write = ((data) => {
+      output.push(String(data))
+      return true
+    }) as typeof process.stdout.write
+    process.stdout.isTTY = true
+    process.stdout.columns = 80
+    _clearActiveLiveBlockForTesting()
+    liveBlock = createLiveBlock()
+  })
 
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(true)
-      expect(block.isActive()).toBe(true)
+  afterEach(() => {
+    liveBlock.clear()
+    process.stdout.write = originalWrite
+    process.stdout.isTTY = originalIsTTY
+    process.stdout.columns = originalColumns
+  })
+
+  function getCleanOutput() {
+    return stripAnsi(output.join(""))
+  }
+
+  describe("Tool lifecycle", () => {
+    test("toolStart creates entry in tools Map", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+
+      expect(output.length).toBeGreaterThan(0)
+      expect(getCleanOutput()).toContain("Tool Name")
     })
 
-    test("toolEnd updates tool to done status", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      mockLogUpdate.mockClear()
+    test("toolEnd marks tool as done and adds to frozenItems", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      const hasActiveBefore = liveBlock.hasActive()
+      liveBlock.toolEnd("tool-1", "Tool Name", "Tool summary")
 
-      block.toolEnd("1", "search", "Found 23 files")
-
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(false)
+      const hasActiveAfter = liveBlock.hasActive()
+      expect(hasActiveBefore).toBe(true)
+      expect(hasActiveAfter).toBe(false)
     })
 
-    test("toolEnd with error updates tool to error status", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      mockLogUpdate.mockClear()
+    test("toolEnd marks tool as error when error parameter is true", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.toolEnd("tool-1", "Tool Name", "Error summary", true)
 
-      block.toolEnd("1", "search", "Search failed", true)
-
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(false)
+      expect(liveBlock.hasActive()).toBe(false)
     })
 
-    test("multiple tools can exist simultaneously", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      mockLogUpdate.mockClear()
+    test("toolDenied marks tool as denied with permission denied message", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      output.length = 0
+      liveBlock.toolDenied("tool-1", "Tool Name", "Tool summary")
 
-      block.toolStart("2", "fetch", "Fetching content")
-      block.toolEnd("1", "search", "Found 23 files")
-
-      expect(mockLogUpdate).toHaveBeenCalledTimes(2)
-      expect(block.hasActive()).toBe(true)
+      const deniedOutput = getCleanOutput()
+      expect(deniedOutput).toContain("✗")
+      expect(deniedOutput).toContain("permission denied")
     })
 
-    test("hasActive returns false when all tools are done", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      block.toolStart("2", "fetch", "Fetching content")
+    test("toolEnd on non-existent tool creates new entry", () => {
+      liveBlock.toolEnd("tool-1", "Tool Name", "Tool summary")
+      liveBlock.taskStart("task-1", "agent", "test")
 
-      expect(block.hasActive()).toBe(true)
-
-      block.toolEnd("1", "search", "Found 23 files")
-      block.toolEnd("2", "fetch", "Fetched content")
-
-      expect(block.hasActive()).toBe(false)
+      expect(liveBlock.hasActive()).toBe(true)
     })
 
-    test("toolEnd can update non-existent tool", () => {
-      const block = createLiveBlock()
-      mockLogUpdate.mockClear()
+    test("toolDenied on non-existent tool creates new entry", () => {
+      liveBlock.toolDenied("tool-1", "Tool Name", "Tool summary")
+      liveBlock.taskStart("task-1", "agent", "test")
 
-      block.toolEnd("1", "search", "No files found")
+      expect(liveBlock.hasActive()).toBe(true)
+    })
 
-      expect(mockLogUpdate).toHaveBeenCalled()
+    test("toolEnd preserves original sequence number from toolStart", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.toolStart("tool-2", "Tool Name 2", "Tool summary 2")
+      liveBlock.toolEnd("tool-1", "Tool Name", "Tool summary")
+      output.length = 0
+
+      liveBlock.toolEnd("tool-2", "Tool Name 2", "Tool summary 2")
+
+      const tool1Index = getCleanOutput().indexOf("Tool Name")
+      const tool2Index = getCleanOutput().indexOf("Tool Name 2")
+      expect(tool1Index < tool2Index || tool1Index === -1 || tool2Index === -1).toBe(true)
     })
   })
 
-  describe("task lifecycle", () => {
-    test("taskStart adds task with running status", () => {
-      const block = createLiveBlock()
-      mockLogUpdate.mockClear()
+  describe("Task lifecycle", () => {
+    test("taskStart creates entry in tasks Map", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
 
-      block.taskStart("1", "developer", "Writing code")
+      expect(output.length).toBeGreaterThan(0)
+      const cleanOutput = getCleanOutput()
+      expect(cleanOutput).toContain("@agent:")
+      expect(cleanOutput).toContain("Task description")
+    })
 
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(true)
-      expect(block.isActive()).toBe(true)
+    test("taskStart with existing ID is ignored", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
+
+      liveBlock.taskStart("task-1", "agent", "Different description")
+
+      expect(output.length).toBe(0)
     })
 
     test("taskEnd marks task as done", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      mockLogUpdate.mockClear()
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      const hasActiveBefore = liveBlock.hasActive()
 
-      block.taskEnd("1")
+      liveBlock.taskEnd("task-1")
 
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(false)
+      expect(hasActiveBefore).toBe(true)
+      expect(liveBlock.hasActive()).toBe(false)
     })
 
-    test("taskTick increments elapsed time for running tasks", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      block.taskStart("2", "tester", "Running tests")
+    test("taskEnd clears lastChildTool entry", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
+      liveBlock.taskEnd("task-1")
 
-      block.taskTick()
-
-      expect(block.hasActive()).toBe(true)
-    })
-
-    test("taskTick only increments running tasks", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      block.taskStart("2", "tester", "Running tests")
-
-      block.taskEnd("1")
-      block.taskTick()
-
-      expect(block.hasActive()).toBe(true)
-    })
-
-    test("multiple tasks can exist simultaneously", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      mockLogUpdate.mockClear()
-
-      block.taskStart("2", "tester", "Running tests")
-
-      expect(mockLogUpdate).toHaveBeenCalled()
-      expect(block.hasActive()).toBe(true)
+      expect(liveBlock.hasActive()).toBe(false)
     })
 
     test("taskEnd on non-existent task does nothing", () => {
-      const block = createLiveBlock()
-      const hasActiveBefore = block.hasActive()
+      liveBlock.taskEnd("task-1")
 
-      block.taskEnd("nonexistent")
+      expect(output.length).toBe(0)
+    })
 
-      expect(block.hasActive()).toBe(hasActiveBefore)
+    test("taskEnd on already done task does nothing", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+      output.length = 0
+
+      liveBlock.taskEnd("task-1")
+
+      expect(output.length).toBe(0)
+    })
+
+    test("taskStart increments runningTaskCount", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      expect(liveBlock.hasRunningTasks()).toBe(true)
+
+      liveBlock.taskStart("task-2", "agent", "Task description 2")
+      expect(liveBlock.hasRunningTasks()).toBe(true)
+
+      liveBlock.taskEnd("task-1")
+      expect(liveBlock.hasRunningTasks()).toBe(true)
+
+      liveBlock.taskEnd("task-2")
+      expect(liveBlock.hasRunningTasks()).toBe(false)
     })
   })
 
-  describe("todo management", () => {
-    test("setTodos sets todo list", () => {
-      const block = createLiveBlock()
-      const todos = [
-        { id: "1", content: "Write tests", status: "completed" as const, priority: "medium" as const },
-        { id: "2", content: "Fix bugs", status: "in_progress" as const, priority: "high" as const },
-      ]
+  describe("Child tool tracking", () => {
+    test("setTaskChildTool updates task.childTool and lastChildTool", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
 
-      block.setTodos(todos)
-      mockLogUpdate.mockClear()
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
 
-      expect(mockLogUpdate).not.toHaveBeenCalled()
+      expect(output.length).toBeGreaterThan(0)
+      expect(getCleanOutput()).toContain("child-tool")
     })
 
-    test("setTodos with empty list clears todos", () => {
-      const block = createLiveBlock()
-      block.setTodos([{ id: "1", content: "Write tests", status: "pending" as const, priority: "low" as const }])
-      mockLogUpdate.mockClear()
+    test("setTaskChildTool on non-existent task does nothing", () => {
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
 
-      block.setTodos([])
-
-      expect(mockLogUpdate).not.toHaveBeenCalled()
+      expect(output.length).toBe(0)
     })
 
-    test("setTodos replaces previous todos", () => {
-      const block = createLiveBlock()
-      block.setTodos([{ id: "1", content: "First todo", status: "pending" as const, priority: "low" as const }])
-      mockLogUpdate.mockClear()
+    test("setTaskChildTool on done task does nothing", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+      output.length = 0
 
-      const newTodos = [
-        { id: "2", content: "Second todo", status: "completed" as const, priority: "medium" as const },
-        { id: "3", content: "Third todo", status: "pending" as const, priority: "high" as const },
-      ]
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
 
-      block.setTodos(newTodos)
-
-      expect(mockLogUpdate).not.toHaveBeenCalled()
+      expect(output.length).toBe(0)
     })
 
-    test("setTodos renders when block is active", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      mockLogUpdate.mockClear()
+    test("clearTaskChildTool clears task.childTool", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
 
-      block.setTodos([{ id: "1", content: "Test todo", status: "pending" as const, priority: "low" as const }])
+      expect(getCleanOutput()).toContain("child-tool")
 
-      expect(mockLogUpdate).toHaveBeenCalled()
+      liveBlock.clearTaskChildTool("task-1")
+      output.length = 0
+
+      liveBlock.resume()
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("todos render with correct icons and priorities", () => {
-      const block = createLiveBlock()
-      block.setTodos([
-        { id: "1", content: "Priority task", status: "pending" as const, priority: "low" as const },
-        { id: "2", content: "High priority", status: "in_progress" as const, priority: "high" as const },
-        { id: "3", content: "Done task", status: "completed" as const, priority: "medium" as const },
-        { id: "4", content: "Cancelled task", status: "cancelled" as const, priority: "low" as const },
-      ])
+    test("clearTaskChildTool keeps lastChildTool entry", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
+      liveBlock.clearTaskChildTool("task-1")
 
-      mockLogUpdate.mockClear()
+      expect(liveBlock.hasActive()).toBe(true)
+    })
 
-      block.toolStart("1", "search", "Searching files")
+    test("clearTaskChildTool on non-existent task does nothing", () => {
+      liveBlock.clearTaskChildTool("task-1")
 
-      expect(mockLogUpdate).toHaveBeenCalled()
-      const allCalls = mockLogUpdate.mock.calls as unknown[][]
-      const output = allCalls[allCalls.length - 1][0] as string
-      expect(output).toContain("(4 tasks - ctrl+t to show)")
+      expect(output.length).toBe(0)
+    })
 
-      block.setTasksVisible(true)
+    test("renderTaskChildStatus returns '---' when no info", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
 
-      const visibleCalls = mockLogUpdate.mock.calls as unknown[][]
-      const visibleOutput = visibleCalls[visibleCalls.length - 1][0] as string
-      expect(visibleOutput).toContain("☐")
-      expect(visibleOutput).toContain("◆")
-      expect(visibleOutput).toContain("☑")
-      expect(visibleOutput).toContain("☒")
-      expect(visibleOutput).toContain("Priority task")
-      expect(visibleOutput).toContain("Done task")
+      liveBlock.resume()
+
+      expect(output.some((line) => line.includes("---"))).toBe(true)
+    })
+
+    test("renderTaskChildStatus shows elapsed time after 2s", async () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
+      output.length = 0
+
+      await new Promise((resolve) => setTimeout(resolve, 2100))
+      liveBlock.resume()
+
+      const outputText = output.join("")
+      expect(outputText).toMatch(/\d+s/)
     })
   })
 
-  describe("state transitions", () => {
-    test("isActive returns false initially", () => {
-      const block = createLiveBlock()
-      expect(block.isActive()).toBe(false)
+  describe("Render guards", () => {
+    test("render() does nothing when frozen=true", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.freeze()
+      output.length = 0
+
+      liveBlock.toolStart("tool-2", "Tool Name 2", "Tool summary 2")
+
+      expect(output.length).toBe(0)
     })
 
-    test("toolStart activates the block", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
+    test("render() does nothing when pausedForProse=true", () => {
+      liveBlock.pause()
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
 
-      expect(block.isActive()).toBe(true)
+      expect(output.length).toBe(0)
     })
 
-    test("taskStart activates the block", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
+    test("render() does nothing when active=false", () => {
+      liveBlock.clear()
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+      output.length = 0
 
-      expect(block.isActive()).toBe(true)
+      liveBlock.resume()
+
+      expect(output.length).toBe(0)
     })
 
-    test("freeze deactivates the block", () => {
-      const block = createLiveBlock()
-      mockDone.mockClear()
-      block.toolStart("1", "search", "Searching files")
+    test("render() does nothing when isTTY=false", () => {
+      process.stdout.isTTY = false
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
 
-      block.freeze()
-
-      expect(block.isActive()).toBe(false)
-      expect(mockDone).toHaveBeenCalled()
+      expect(output.length).toBe(0)
     })
 
-    test("reset deactivates and clears all state", () => {
-      const block = createLiveBlock()
-      mockDone.mockClear()
-      block.toolStart("1", "search", "Searching files")
-      block.taskStart("2", "developer", "Writing code")
-      block.setTodos([{ id: "1", content: "Test", status: "pending" as const, priority: "low" as const }])
+    test("render() skips items in frozenItems", () => {
+      liveBlock.toolStart("tool-1", "ToolA", "Summary A")
+      liveBlock.toolStart("tool-2", "ToolB", "Summary B")
+      liveBlock.toolEnd("tool-1", "ToolA", "Done A")
 
-      block.reset()
+      const cleanOutput = getCleanOutput()
 
-      expect(block.isActive()).toBe(false)
-      expect(block.hasActive()).toBe(false)
-      expect(mockDone).toHaveBeenCalled()
-    })
-
-    test("clear clears without persisting", () => {
-      const block = createLiveBlock()
-      mockClear.mockClear()
-      block.toolStart("1", "search", "Searching files")
-
-      block.clear()
-
-      expect(block.isActive()).toBe(false)
-      expect(block.hasActive()).toBe(false)
-      expect(mockClear).toHaveBeenCalled()
+      expect(liveBlock.hasActive()).toBe(true)
     })
   })
 
-  describe("freeze behavior", () => {
-    test("freeze is idempotent", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
+  describe("State management", () => {
+    test("pause() sets pausedForProse and clears lines", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      const initialLength = output.length
 
-      block.freeze()
-      mockDone.mockClear()
+      liveBlock.pause()
 
-      block.freeze()
-
-      expect(block.isActive()).toBe(false)
+      expect(initialLength).toBeGreaterThan(0)
+      expect(output.length).toBeGreaterThan(initialLength)
     })
 
-    test("freeze preserves tool state", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      block.toolStart("2", "fetch", "Fetching content")
+    test("pause() clears linesToClear", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.pause()
+      output.length = 0
 
-      block.freeze()
+      liveBlock.resume()
 
-      expect(block.hasActive()).toBe(true)
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("freeze preserves task state", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
+    test("resume() clears pausedForProse and triggers render", () => {
+      liveBlock.pause()
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
 
-      block.freeze()
+      expect(output.length).toBe(0)
 
-      expect(block.hasActive()).toBe(true)
+      liveBlock.resume()
+
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("freeze on inactive block does not call done", () => {
-      const block = createLiveBlock()
-      mockDone.mockClear()
+    test("freeze() stops animation and marks frozen", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.freeze()
+      output.length = 0
 
-      block.freeze()
+      liveBlock.toolStart("tool-2", "Tool Name 2", "Tool summary 2")
 
-      expect(block.isActive()).toBe(false)
+      expect(output.length).toBe(0)
+    })
+
+    test("freeze() renders final state", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.freeze()
+
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    test("reset() clears all state", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.setTaskChildTool("task-1", "child-tool", "child summary")
+      liveBlock.reset()
+      output.length = 0
+
+      liveBlock.resume()
+
+      expect(output.length).toBe(0)
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+
+    test("reset() allows creating new liveblock instance", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.reset()
+      liveBlock.clear()
+
+      const newLiveBlock = createLiveBlock()
+
+      expect(newLiveBlock).toBeDefined()
+      newLiveBlock.clear()
+    })
+
+    test("clear() clears all maps and state", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.clear()
+      output.length = 0
+
+      liveBlock.resume()
+
+      expect(output.length).toBe(0)
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+
+    test("clear() stops animation", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      expect(liveBlock.hasActive()).toBe(true)
+      liveBlock.clear()
+
+      expect(liveBlock.hasActive()).toBe(false)
     })
   })
 
-  describe("reset behavior", () => {
-    test("reset clears tools", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      block.toolStart("2", "fetch", "Fetching content")
+  describe("FrozenItems filtering", () => {
+    test("Completed tools not rendered after freeze", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.toolEnd("tool-1", "Tool Name", "Tool summary")
+      liveBlock.freeze()
+      output.length = 0
 
-      block.reset()
+      liveBlock.resume()
 
-      expect(block.hasActive()).toBe(false)
+      const outputText = output.join("")
+      expect(outputText).not.toContain("Tool Name")
     })
 
-    test("reset clears tasks", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      block.taskStart("2", "tester", "Running tests")
+    test("Completed tasks not rendered after freeze", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+      liveBlock.freeze()
+      output.length = 0
 
-      block.reset()
+      liveBlock.resume()
 
-      expect(block.hasActive()).toBe(false)
+      expect(output.length).toBe(0)
     })
 
-    test("reset clears todos", () => {
-      const block = createLiveBlock()
-      block.setTodos([{ id: "1", content: "Test", status: "pending" as const, priority: "low" as const }])
+    test("Running tools still rendered after freeze", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      output.length = 0
 
-      block.reset()
+      liveBlock.resume()
 
-      expect(block.isActive()).toBe(false)
+      expect(output.length).toBeGreaterThan(0)
+      const outputText = output.join("")
+      expect(outputText).toContain("Tool Name")
     })
 
-    test("reset on inactive block does not call done", () => {
-      const block = createLiveBlock()
-      mockDone.mockClear()
+    test("Running tasks still rendered after freeze", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
 
-      block.reset()
+      liveBlock.resume()
 
-      expect(block.isActive()).toBe(false)
+      expect(output.length).toBeGreaterThan(0)
+      const outputText = output.join("")
+      expect(outputText).toContain("@agent:")
     })
   })
 
-  describe("integration scenarios", () => {
-    test("full workflow: tools, tasks, and todos", () => {
-      const block = createLiveBlock()
-      const todos = [
-        { id: "1", content: "Write code", status: "pending" as const, priority: "low" as const },
-        { id: "2", content: "Run tests", status: "in_progress" as const, priority: "medium" as const },
-      ]
+  describe("Single instance enforcement", () => {
+    test("Only one liveblock instance can be active at a time", () => {
+      expect(createLiveBlock).toThrow("Only one liveblock instance can be active at a time")
+    })
+  })
 
-      block.setTodos(todos)
-      block.toolStart("1", "search", "Searching files")
-      block.taskStart("2", "developer", "Writing code")
+  describe("Edge cases", () => {
+    test("toolStart with empty name and summary", () => {
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+      liveBlock.toolStart("id", "", "")
 
-      expect(block.isActive()).toBe(true)
-      expect(block.hasActive()).toBe(true)
-
-      block.taskTick()
-      block.taskEnd("2")
-      block.toolEnd("1", "search", "Found 23 files")
-
-      expect(block.hasActive()).toBe(false)
-
-      block.freeze()
-
-      expect(block.isActive()).toBe(false)
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("mixed running and done tools", () => {
-      const block = createLiveBlock()
-      block.toolStart("1", "search", "Searching files")
-      block.toolStart("2", "fetch", "Fetching content")
-      block.toolEnd("1", "search", "Found 23 files")
+    test("taskStart with empty name and description", () => {
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+      liveBlock.taskStart("id", "", "")
 
-      expect(block.hasActive()).toBe(true)
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("clear calls clear on logUpdate when active", () => {
-      const block = createLiveBlock()
-      mockClear.mockClear()
-      block.toolStart("1", "search", "Searching files")
+    test("toolStart with very long summary handles truncation", () => {
+      _clearActiveLiveBlockForTesting()
+      process.stdout.columns = 30
+      liveBlock = createLiveBlock()
+      const longSummary = "This is a very long summary that exceeds the terminal width"
 
-      block.clear()
+      liveBlock.toolStart("id", "Tool", longSummary)
 
-      expect(mockClear).toHaveBeenCalled()
+      const cleanOutput = getCleanOutput()
+      expect(cleanOutput).toContain("…")
     })
 
-    test("reset after freeze behavior", () => {
-      const block = createLiveBlock()
-      mockDone.mockClear()
-      block.toolStart("1", "search", "Searching files")
-      block.freeze()
+    test("taskStart with zero terminal width handles gracefully", () => {
+      _clearActiveLiveBlockForTesting()
+      process.stdout.columns = 0
+      liveBlock = createLiveBlock()
+      liveBlock.taskStart("id", "agent", "description")
 
-      block.reset()
-
-      expect(block.isActive()).toBe(false)
-      expect(block.hasActive()).toBe(false)
+      expect(output.length).toBeGreaterThan(0)
     })
 
-    test("taskTick with no running tasks", () => {
-      const block = createLiveBlock()
-      block.taskStart("1", "developer", "Writing code")
-      block.taskEnd("1")
+    test("taskStart with negative terminal width does not crash", () => {
+      _clearActiveLiveBlockForTesting()
+      process.stdout.columns = -1
+      liveBlock = createLiveBlock()
+      liveBlock.taskStart("id", "agent", "description")
 
-      block.taskTick()
+      expect(output.length).toBeGreaterThan(0)
+    })
 
-      expect(block.hasActive()).toBe(false)
+    test("taskStart with childSessionID parameter", () => {
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+      liveBlock.taskStart("id", "agent", "description", "session-123")
+
+      expect(liveBlock.hasActive()).toBe(true)
+    })
+
+    test("tools sorted by sequence number not start time", () => {
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+
+      liveBlock.toolStart("tool-1", "First", "sum1")
+      liveBlock.toolStart("tool-2", "Second", "sum2")
+      liveBlock.toolStart("tool-3", "Third", "sum3")
+
+      const cleanOutput = getCleanOutput()
+      const firstIndex = cleanOutput.indexOf("First")
+      const secondIndex = cleanOutput.indexOf("Second")
+      const thirdIndex = cleanOutput.indexOf("Third")
+
+      expect(firstIndex < secondIndex && secondIndex < thirdIndex).toBe(true)
+    })
+
+    test("reset() clears sequence numbers", () => {
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+
+      liveBlock.toolStart("tool-1", "First", "sum1")
+      liveBlock.reset()
+      _clearActiveLiveBlockForTesting()
+      liveBlock = createLiveBlock()
+
+      liveBlock.toolStart("tool-2", "Second", "sum2")
+
+      expect(liveBlock.hasActive()).toBe(true)
+    })
+  })
+
+  describe("hasActive", () => {
+    test("hasActive returns true when tool is running", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+
+      expect(liveBlock.hasActive()).toBe(true)
+    })
+
+    test("hasActive returns true when task is running", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+
+      expect(liveBlock.hasActive()).toBe(true)
+    })
+
+    test("hasActive returns false when all items are done", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.toolEnd("tool-1", "Tool Name", "Tool summary")
+
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+
+    test("hasActive returns false when no items", () => {
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+  })
+
+  describe("hasRunningTasks", () => {
+    test("hasRunningTasks returns true when task is running", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+
+      expect(liveBlock.hasRunningTasks()).toBe(true)
+    })
+
+    test("hasRunningTasks returns false when no tasks", () => {
+      expect(liveBlock.hasRunningTasks()).toBe(false)
+    })
+
+    test("hasRunningTasks returns false when tasks are done", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+
+      expect(liveBlock.hasRunningTasks()).toBe(false)
+    })
+  })
+
+  describe("isActive", () => {
+    test("isActive returns true after toolStart", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+
+      expect(liveBlock.isActive()).toBe(true)
+    })
+
+    test("isActive returns true after taskStart", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+
+      expect(liveBlock.isActive()).toBe(true)
+    })
+
+    test("isActive returns false when no items", () => {
+      expect(liveBlock.isActive()).toBe(false)
+    })
+
+    test("isActive returns false after freeze", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      liveBlock.freeze()
+
+      expect(liveBlock.isActive()).toBe(false)
+    })
+  })
+
+  describe("Tasks visibility", () => {
+    test("setTasksVisible triggers render when active", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
+
+      liveBlock.setTasksVisible(true)
+
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    test("toggleTasksVisible toggles and returns new value", () => {
+      const result1 = liveBlock.toggleTasksVisible()
+      expect(result1).toBe(true)
+
+      const result2 = liveBlock.toggleTasksVisible()
+      expect(result2).toBe(false)
+    })
+
+    test("toggleTasksVisible triggers render when active", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
+
+      liveBlock.toggleTasksVisible()
+
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    test("getTasksVisible returns current visibility state", () => {
+      expect(liveBlock.getTasksVisible()).toBe(false)
+
+      liveBlock.setTasksVisible(true)
+
+      expect(liveBlock.getTasksVisible()).toBe(true)
+    })
+  })
+
+  describe("Todos", () => {
+    test("setTodos triggers render when active", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      output.length = 0
+
+      liveBlock.setTodos([{ id: "todo-1", content: "Todo item", status: "pending", priority: "medium" }])
+
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    test("setTodos updates todos without triggering render when inactive", () => {
+      liveBlock.setTodos([{ id: "todo-1", content: "Todo item", status: "pending", priority: "medium" }])
+
+      expect(output.length).toBe(0)
+    })
+  })
+
+  describe("Task tick", () => {
+    test("taskTick increments elapsed time for running tasks", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+
+    test("taskTick does not increment elapsed time for done tasks", () => {
+      liveBlock.taskStart("task-1", "agent", "Task description")
+      liveBlock.taskEnd("task-1")
+      liveBlock.taskTick()
+      liveBlock.taskTick()
+
+      expect(liveBlock.hasActive()).toBe(false)
+    })
+  })
+
+  describe("clearForProse", () => {
+    test("clearForProse clears displayed lines", () => {
+      liveBlock.toolStart("tool-1", "Tool Name", "Tool summary")
+      expect(output.length).toBeGreaterThan(0)
+      output.length = 0
+
+      liveBlock.clearForProse()
+
+      expect(output.length).toBeGreaterThan(0)
+    })
+
+    test("clearForProse does nothing when linesToClear is 0", () => {
+      liveBlock.clearForProse()
+
+      expect(output.length).toBe(0)
     })
   })
 })

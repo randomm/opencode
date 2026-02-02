@@ -125,10 +125,14 @@ export function getCurrentSessionID(): string | null {
 }
 
 function padLines(text: string): string {
-  return text
-    .split("\n")
-    .map((line) => (line ? `${PAD}${line}` : line))
-    .join("\n")
+  const lines = text.split("\n")
+  const result: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line) result.push(PAD + line)
+    if (i < lines.length - 1) result.push("\n")
+  }
+  return result.join("")
 }
 
 async function renderSessionMessages(sessionID: string): Promise<string> {

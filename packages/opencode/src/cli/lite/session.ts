@@ -10,7 +10,7 @@ import { MessageV2 } from "../../session/message-v2"
 const log = Log.create({ service: "lite.session" })
 
 export interface ChatChunk {
-  type: "text" | "tool_start" | "tool_end" | "error" | "done" | "start"
+  type: "text" | "tool_start" | "tool_end" | "tool_update" | "error" | "done" | "start"
   content?: string
   tool?: string
   callID?: string
@@ -45,6 +45,8 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
   let cancelled = false
   let error: unknown = null
   let waiting: (() => void) | null = null
+  // Track running tools to detect metadata updates vs initial start
+  const runningTools = new Set<string>()
 
   function wake() {
     if (waiting) {
@@ -66,15 +68,33 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({
-          type: "tool_start",
-          tool: part.tool,
-          callID: part.callID,
-          input: part.state.input,
-          metadata: part.state.metadata,
-          sessionID,
-        })
+        // Check if this is a new tool or a metadata update for an existing running tool
+        const isUpdate = runningTools.has(part.callID)
+        if (isUpdate) {
+          // Emit tool_update for metadata changes on running tools (e.g., task child tool updates)
+          log.debug(`SESSION emitting tool_update: tool=${part.tool}, callID=${part.callID}`)
+          chunks.push({
+            type: "tool_update",
+            tool: part.tool,
+            callID: part.callID,
+            input: part.state.input,
+            metadata: part.state.metadata,
+            sessionID,
+          })
+        } else {
+          // First time seeing this tool - emit tool_start
+          runningTools.add(part.callID)
+          chunks.push({
+            type: "tool_start",
+            tool: part.tool,
+            callID: part.callID,
+            input: part.state.input,
+            metadata: part.state.metadata,
+            sessionID,
+          })
+        }
       } else if (part.state.status === "completed") {
+        runningTools.delete(part.callID)
         chunks.push({
           type: "tool_end",
           tool: part.tool,
@@ -85,6 +105,7 @@ export async function* chat(message: string, options?: ChatOptions): AsyncGenera
           sessionID,
         })
       } else if (part.state.status === "error") {
+        runningTools.delete(part.callID)
         const error = "error" in part.state ? part.state.error : undefined
         chunks.push({
           type: "tool_end",
@@ -204,6 +225,8 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
   let error: unknown = null
   let waiting: (() => void) | null = null
   let promptPromise: Promise<void> | null = null
+  // Track running tools to detect metadata updates vs initial start
+  const runningTools = new Set<string>()
 
   function wake() {
     if (waiting) {
@@ -224,15 +247,33 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
       wake()
     } else if (part.type === "tool") {
       if (part.state.status === "running") {
-        chunks.push({
-          type: "tool_start",
-          tool: part.tool,
-          callID: part.callID,
-          input: part.state.input,
-          metadata: part.state.metadata,
-          sessionID,
-        })
+        // Check if this is a new tool or a metadata update for an existing running tool
+        const isUpdate = runningTools.has(part.callID)
+        if (isUpdate) {
+          // Emit tool_update for metadata changes on running tools (e.g., task child tool updates)
+          log.debug(`SESSION emitting tool_update: tool=${part.tool}, callID=${part.callID}`)
+          chunks.push({
+            type: "tool_update",
+            tool: part.tool,
+            callID: part.callID,
+            input: part.state.input,
+            metadata: part.state.metadata,
+            sessionID,
+          })
+        } else {
+          // First time seeing this tool - emit tool_start
+          runningTools.add(part.callID)
+          chunks.push({
+            type: "tool_start",
+            tool: part.tool,
+            callID: part.callID,
+            input: part.state.input,
+            metadata: part.state.metadata,
+            sessionID,
+          })
+        }
       } else if (part.state.status === "completed") {
+        runningTools.delete(part.callID)
         chunks.push({
           type: "tool_end",
           tool: part.tool,
@@ -243,6 +284,7 @@ export async function* command(cmd: string, args: string, options?: ChatOptions)
           sessionID,
         })
       } else if (part.state.status === "error") {
+        runningTools.delete(part.callID)
         const error = "error" in part.state ? part.state.error : undefined
         chunks.push({
           type: "tool_end",

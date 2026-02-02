@@ -6,12 +6,7 @@ export async function bootstrap<T>(directory: string, cb: () => Promise<T>, onPr
     directory,
     init: () => InstanceBootstrap(onProgress),
     fn: async () => {
-      try {
-        const result = await cb()
-        return result
-      } finally {
-        await Instance.dispose()
-      }
+      return await cb()
     },
   })
 }

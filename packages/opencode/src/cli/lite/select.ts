@@ -11,6 +11,15 @@ export interface SelectOption<T = string> {
   separator?: boolean
 }
 
+export type SelectKeyAction<T> =
+  | { action: "select"; value: T }
+  | { action: "update"; options: SelectOption<T>[] }
+  | { action: "continue" }
+
+export interface SelectConfig<T> {
+  onKey?: (key: string, selected: SelectOption<T>, options: SelectOption<T>[]) => Promise<SelectKeyAction<T> | void>
+}
+
 let active = false
 let frozenBlock: (() => void) | null = null
 
@@ -18,7 +27,11 @@ export function setBlockFreeze(freezeFn: () => void) {
   frozenBlock = freezeFn
 }
 
-export async function select<T>(options: SelectOption<T>[], title?: string): Promise<T | null> {
+export async function select<T>(
+  options: SelectOption<T>[],
+  title?: string,
+  config?: SelectConfig<T>,
+): Promise<T | null> {
   if (options.length === 0) return null
   if (active) return null
 
@@ -33,7 +46,7 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
 
   try {
     active = true
-    const selectableOptions = options.filter((opt) => !opt.separator && opt.value !== undefined)
+    let selectableOptions = options.filter((opt) => !opt.separator && opt.value !== undefined)
     if (selectableOptions.length === 0) {
       return null
     }
@@ -41,6 +54,14 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
     const found = selectableOptions.findIndex((opt) => opt.current)
     let selected = found >= 0 ? found : 0
     selected = Math.max(0, Math.min(selected, selectableOptions.length - 1))
+
+    const rebuildRender = (updatedOptions: SelectOption<T>[]) => {
+      const nextSelectable = updatedOptions.filter((opt) => !opt.separator && opt.value !== undefined)
+      const nextFound = nextSelectable.findIndex((opt) => opt.current)
+      selected = nextFound >= 0 ? nextFound : 0
+      selected = Math.max(0, Math.min(selected, nextSelectable.length - 1))
+      return nextSelectable
+    }
 
     const render = () => {
       const lines: string[] = []
@@ -72,11 +93,40 @@ export async function select<T>(options: SelectOption<T>[], title?: string): Pro
       update(lines.join("\n"))
     }
 
+    let currentOptions = options
+
     const result = await new Promise<T | null>((resolve) => {
-      const handler = (data: Buffer) => {
+      const handler = async (data: Buffer) => {
         try {
           const key = parseKey(data)
           const max = selectableOptions.length - 1
+
+          const selectedOption = selectableOptions[selected]
+          if (selectedOption && config?.onKey) {
+            const keyId = key.char || key.name || ""
+            const isSpaceKey = keyId === " "
+            const isRKey = keyId.toLowerCase() === "r"
+
+            if (isSpaceKey || isRKey) {
+              const customAction = await config.onKey(keyId, selectedOption, currentOptions)
+              if (customAction?.action === "select") {
+                resolve(customAction.value)
+                return
+              }
+              if (customAction?.action === "update") {
+                currentOptions = customAction.options
+                selectableOptions = rebuildRender(customAction.options)
+                render()
+                return
+              }
+              if (customAction?.action === "continue") {
+                return
+              }
+              if (!customAction) {
+                return
+              }
+            }
+          }
 
           if (key.name === "up" && selected > 0) {
             selected--

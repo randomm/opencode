@@ -63,6 +63,17 @@ export const bg = {
   white: `${ESC}[47m`,
 }
 
+export const rgb = (r: number, g: number, b: number): { fg: string; bg: string } => {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.floor(n)))
+  const R = clamp(r)
+  const G = clamp(g)
+  const B = clamp(b)
+  return {
+    fg: `${ESC}[38;2;${R};${G};${B}m`,
+    bg: `${ESC}[48;2;${R};${G};${B}m`,
+  }
+}
+
 export const screen = {
   alt: `${ESC}[?1049h`,
   main: `${ESC}[?1049l`,

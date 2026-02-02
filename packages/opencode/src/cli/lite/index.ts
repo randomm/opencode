@@ -19,12 +19,14 @@ import { Command } from "../../command"
 import type { ChatChunk } from "./session"
 import { createLiveBlock } from "./liveblock"
 import { summarizeInput } from "./summary"
-import { wrap } from "./wrap"
+
 import * as Panel from "./panel"
 import * as Commands from "./commands"
 import { setBlockFreeze } from "./select"
 import { Bus } from "../../bus"
 import { MessageV2 } from "../../session/message-v2"
+import { SessionStatus } from "../../session/status"
+import { theme } from "./theme"
 import { createOpencodeClient, type Event } from "@opencode-ai/sdk/v2"
 import { Server } from "../../server/server"
 
@@ -39,13 +41,21 @@ interface TaskInput {
   subagent_type?: string
   description?: string
 }
-const MAX_WIDTH = Math.min(100, (process.stdout.columns || 80) - 4)
+// Left margin: 2 chars (PAD)
+// Right margin: 4 chars
+// Total: 6 chars reserved for margins
+const MAX_WIDTH = Math.max(60, (process.stdout.columns || 80) - 6)
 
 function padLines(text: string): string {
-  return text
-    .split("\n")
-    .map((line) => (line ? `${PAD}${line}` : line))
-    .join("\n")
+  const lines = text.split("\n")
+  const PAD = "  "
+  let result = ""
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line) result += PAD + line
+    if (i < lines.length - 1) result += "\n"
+  }
+  return result
 }
 
 // UI State
@@ -54,6 +64,7 @@ let currentSessionID: string | null = null
 let currentModel: string | null = null
 let currentAgent: string | undefined
 let autoWakeupSessionID: string | null = null
+let isAutoWakeupStreaming = false
 
 // Live block for tool/task display
 const block = createLiveBlock()
@@ -61,28 +72,26 @@ const block = createLiveBlock()
 // Set block freeze function for select
 setBlockFreeze(() => block.freeze())
 
-// Track task tool ID to child session ID mapping
+// Track task callID to child session ID mapping (for Panel and cleanup)
 const taskToChildSession = new Map<string, string>()
 
 // Reverse mapping: child session ID → parent task callID
 const childSessionToTask = new Map<string, string>()
 
 // Buffer for child session events that arrive before mapping is established
+// Trade-off: We accept the risk that entries may never be cleaned up if mapping is lost
+// Timeout cleanup would add complexity without clear benefit in practice
 const pendingChildEvents = new Map<string, Array<unknown>>()
 
-// Track part IDs to tool IDs for linking metadata updates
-const partIdToToolId = new Map<string, string>()
-
-// Store Bus subscription cleanup function
+// Store Bus subscription cleanup functions
 let busUnsubscribe: (() => void) | undefined
+let taskCompletionUnsubscribe: (() => void) | undefined
+let sessionIdleUnsubscribe: (() => void) | undefined
 
-// SDK event stream state
+// SDK event stream
 const eventStream = {
   abort: undefined as AbortController | undefined,
 }
-
-// Flag to prevent render() during prose streaming (causes crashes)
-let pausedForProse = false
 
 function getAuthorizationHeader(): string | undefined {
   const password = process.env.OPENCODE_SERVER_PASSWORD
@@ -92,7 +101,6 @@ function getAuthorizationHeader(): string | undefined {
 }
 
 function startEventStream(directory: string) {
-  console.error("[DEBUG] startEventStream called")
   if (eventStream.abort) eventStream.abort.abort()
   const abort = new AbortController()
   eventStream.abort = abort
@@ -130,18 +138,12 @@ function startEventStream(directory: string) {
 
       for await (const event of events.stream) {
         const e = event as Event
-        console.error("[DEBUG] SDK event received:", e.type)
 
         if (e.type === "message.part.updated") {
           const part = e.properties.part
-          console.error("[DEBUG] Part updated:", {
-            type: part.type,
-            tool: part.type === "tool" ? part.tool : "N/A",
-            sessionID: part.sessionID,
-            callID: part.type === "tool" ? part.callID : "N/A",
-          })
+          const callID = part.type === "tool" ? part.callID : "none"
 
-          // Handle task tool metadata updates to get child session ID
+          // Handle task tool metadata updates
           if (part.type === "tool" && part.tool === "task" && part.callID) {
             const partMetadata =
               part.state.status === "pending"
@@ -157,11 +159,9 @@ function startEventStream(directory: string) {
                   })()
 
             const childSessionId = partMetadata?.childSessionId
-            console.error("[DEBUG] Task metadata:", { callID: part.callID, childSessionId, status: part.state.status })
 
             // Track child session for Panel and cleanup
             if (childSessionId && !taskToChildSession.has(part.callID)) {
-              console.error("[DEBUG] Creating mapping: task=", part.callID, "child=", childSessionId)
               Panel.addChild(childSessionId)
               taskToChildSession.set(part.callID, childSessionId)
               childSessionToTask.set(childSessionId, part.callID)
@@ -182,9 +182,9 @@ function startEventStream(directory: string) {
                         : ""
 
                     if (bufferedPart.state.status === "running") {
-                      if (!pausedForProse) block.setTaskChildTool(part.callID, bufferedPart.tool, title)
+                      block.setTaskChildTool(part.callID, bufferedPart.tool, title)
                     } else if (bufferedPart.state.status === "completed" || bufferedPart.state.status === "error") {
-                      if (!pausedForProse) block.clearTaskChildTool(part.callID)
+                      block.clearTaskChildTool(part.callID)
                     }
                   }
                 }
@@ -197,22 +197,11 @@ function startEventStream(directory: string) {
           if (part.type === "tool" && part.sessionID) {
             if (!part.state) continue
             // Skip events from parent session
-            if (part.sessionID === currentSessionID) {
-              console.error("[DEBUG] Skipping parent session event")
-              continue
-            }
+            if (part.sessionID === currentSessionID) continue
 
-            console.error("[DEBUG] Child tool event:", {
-              sessionID: part.sessionID,
-              tool: part.tool,
-              status: part.state.status,
-              currentSessionID,
-            })
             const taskCallID = childSessionToTask.get(part.sessionID)
-            console.error("[DEBUG] Found taskCallID:", taskCallID, "childSessionToTask size:", childSessionToTask.size)
 
             if (!taskCallID) {
-              console.error("[DEBUG] Buffering event - no mapping yet for session:", part.sessionID)
               const buffer = pendingChildEvents.get(part.sessionID) || []
               buffer.push(part)
               pendingChildEvents.set(part.sessionID, buffer)
@@ -221,16 +210,10 @@ function startEventStream(directory: string) {
             const title =
               part.state.status === "running" || part.state.status === "completed" ? part.state.title || "running" : ""
 
-            console.error("[DEBUG] About to update UI. pausedForProse=", pausedForProse, "status=", part.state.status)
             if (part.state.status === "running") {
-              if (!pausedForProse) {
-                console.error("[DEBUG] Calling setTaskChildTool:", taskCallID, part.tool, title)
-                block.setTaskChildTool(taskCallID, part.tool, title)
-              } else {
-                console.error("[DEBUG] BLOCKED by pausedForProse!")
-              }
+              block.setTaskChildTool(taskCallID, part.tool, title)
             } else if (part.state.status === "completed" || part.state.status === "error") {
-              if (!pausedForProse) block.clearTaskChildTool(taskCallID)
+              block.clearTaskChildTool(taskCallID)
             }
           }
         }
@@ -264,6 +247,8 @@ async function main() {
     if (autoWakeupSessionID) Session.disableAutoWakeup(autoWakeupSessionID)
     if (eventStream.abort) eventStream.abort.abort()
     if (busUnsubscribe) busUnsubscribe()
+    if (taskCompletionUnsubscribe) taskCompletionUnsubscribe()
+    if (sessionIdleUnsubscribe) sessionIdleUnsubscribe()
     block.freeze()
     write(cursor.show)
     process.stdin.setRawMode(false)
@@ -276,7 +261,7 @@ async function main() {
   })
 
   write("\x1b[2J\x1b[H")
-  write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
+  write(`${PAD}${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n`)
 
   const setup = new Spinner("Setting up environment")
   setup.start()
@@ -285,50 +270,55 @@ async function main() {
     await bootstrap(
       process.cwd(),
       async () => {
-        // Start SDK event stream for task metadata updates (child session tracking)
+        // Start SDK event stream for task metadata updates
         startEventStream(process.cwd())
 
-        // Subscribe to Bus events for child session tools (backup/fallback)
-        // This must be inside bootstrap so Instance.provide() context is established
+        // Subscribe to Bus events for auto-wakeup streaming text deltas
+        // SDK event stream doesn't provide delta stream, so we keep this for text rendering
         busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
           const part = event.properties.part
-          if (part.type !== "tool") return
 
-          // Check for task metadata updates (sessionId becomes available after session creation)
-          if (part.tool === "task" && part.callID) {
-            const metadata =
-              part.state.status === "running" || part.state.status === "completed" ? part.state.metadata : undefined
-            const sessionId = metadata?.sessionId as string | undefined
-            if (sessionId) {
-              const toolId = partIdToToolId.get(part.callID)
-              if (toolId && !taskToChildSession.has(toolId)) {
-                Panel.addChild(sessionId)
-                taskToChildSession.set(toolId, sessionId)
-                childSessionToTask.set(sessionId, toolId)
-              }
+          // Handle auto-wakeup text streaming when not actively in a user-initiated operation
+          if (!isOperationInProgress && isAutoWakeupStreaming && part.sessionID === currentSessionID) {
+            if (part.type === "text" && event.properties.delta) {
+              write(event.properties.delta)
             }
           }
+        })
 
-          // Find which task this child session belongs to
-          let taskId: string | null = null
-          for (const [id, childSessionID] of taskToChildSession.entries()) {
-            if (childSessionID === part.sessionID) {
-              taskId = id
-              break
-            }
-          }
+        // Subscribe to task completion events to render auto-wakeup responses
+        // When a background task completes, the auto-wakeup mechanism triggers SessionPrompt.prompt()
+        // We need to listen for the resulting MessageV2.Event.PartUpdated events and render them
+        taskCompletionUnsubscribe = Bus.subscribe(Session.BackgroundTaskEvent.Completed, async (event) => {
+          // Only handle tasks for our current session
+          if (event.properties.parentSessionID !== currentSessionID) return
 
-          if (!taskId) return
+          // Don't start if user is typing or another operation is in progress
+          if (isOperationInProgress || isAutoWakeupStreaming) return
 
-          // Skip rendering if prose is streaming (prevents crashes)
-          if (pausedForProse) return
+          // Check if there are undelivered results that will trigger auto-wakeup
+          if (!Session.hasUndeliveredCompletedTasks(currentSessionID)) return
 
-          // Update task child tool display
-          if (part.state.status === "running") {
-            const arg = summarizeInput(part.tool, part.state.input)
-            block.setTaskChildTool(taskId, part.tool, arg || "")
-          } else if (part.state.status === "completed" || part.state.status === "error") {
-            block.clearTaskChildTool(taskId)
+          // Enable auto-wakeup streaming mode so the Bus subscriber renders the response
+          isAutoWakeupStreaming = true
+
+          // Show notification that task completed and response is streaming
+          write(`\n${PAD}${fg.cyan}●${style.reset} Background task completed\n`)
+          const rule = `${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+          write(rule)
+        })
+
+        // Subscribe to session idle events to detect when auto-wakeup streaming ends
+        sessionIdleUnsubscribe = Bus.subscribe(SessionStatus.Event.Idle, (event) => {
+          // Only handle idle events for our current session
+          if (event.properties.sessionID !== currentSessionID) return
+
+          // If we were streaming auto-wakeup response, mark it as complete
+          if (isAutoWakeupStreaming) {
+            isAutoWakeupStreaming = false
+            const rule = `\n${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
+            write(rule)
+            write("\n")
           }
         })
 
@@ -342,12 +332,12 @@ async function main() {
         await Command.list()
 
         setup.stop(true)
-        write(`${fg.green}✓${style.reset} Ready\n\n`)
+        write(`${PAD}${fg.green}✓${style.reset} Ready\n\n`)
 
         currentAgent = await Agent.defaultAgent()
         const agentList = await Agent.list()
 
-        write(`${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
+        write(`${PAD}${fg.gray}Type /help for commands, Shift+Tab to cycle agents, Ctrl+C to exit${style.reset}\n\n`)
 
         const editor = new LineEditor()
         process.stdin.setRawMode(true)
@@ -379,9 +369,8 @@ async function main() {
             taskToChildSession.clear()
             childSessionToTask.clear()
             pendingChildEvents.clear()
-            partIdToToolId.clear()
-            pausedForProse = false
             isOperationInProgress = false
+            isAutoWakeupStreaming = false
             currentSessionID = null
             write("\n")
             editor.line = ""
@@ -423,7 +412,7 @@ async function main() {
                 await Panel.renderPanel()
                 const hint = Panel.getHint()
                 if (hint) {
-                  write(`\n${hint}\n`)
+                  write(`\n${PAD}${hint}\n`)
                 }
                 write(clear.screen)
                 write(cursor.home)
@@ -463,7 +452,7 @@ async function main() {
     setup.stop(false)
     write(cursor.show)
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n`)
+    write(`\n${PAD}${fg.red}Error: ${msg}${style.reset}\n`)
     process.exit(1)
   }
 }
@@ -473,16 +462,17 @@ async function handleCommand(cmd: string) {
   const name = parts[0].toLowerCase()
 
   if (name === "help") {
-    write(`${fg.yellow}Commands:${style.reset}\n`)
-    write(`  /help             - Show this help\n`)
-    write(`  /clear            - Clear screen\n`)
-    write(`  /sessions         - List and switch sessions\n`)
-    write(`  /new              - Create a new session\n`)
-    write(`  /agents           - List and select agents\n`)
-    write(`  /models           - List and select models\n`)
-    write(`  /subagent-model   - Select model for subagents\n`)
-    write(`  /quit             - Exit oclite\n`)
-    write(`  /<command>        - Run custom command\n`)
+    write(`${PAD}${fg.yellow}Commands:${style.reset}\n`)
+    write(`${PAD}  /help             - Show this help\n`)
+    write(`${PAD}  /clear            - Clear screen\n`)
+    write(`${PAD}  /sessions         - List and switch sessions\n`)
+    write(`${PAD}  /new              - Create a new session\n`)
+    write(`${PAD}  /agents           - List and select agents\n`)
+    write(`${PAD}  /models           - List and select models\n`)
+    write(`${PAD}  /subagent-model   - Select model for subagents\n`)
+    write(`${PAD}  /mcp              - Manage MCP servers\n`)
+    write(`${PAD}  /quit             - Exit oclite\n`)
+    write(`${PAD}  /<command>        - Run custom command\n`)
     write("\n")
     return
   }
@@ -490,7 +480,7 @@ async function handleCommand(cmd: string) {
   if (name === "clear") {
     write(clear.screen)
     write(cursor.home)
-    write(`${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n\n`)
+    write(`${PAD}${fg.brightCyan}${style.bold}oclite${style.reset} ${fg.gray}v0.1.0${style.reset}\n\n`)
     return
   }
 
@@ -569,6 +559,11 @@ async function handleCommand(cmd: string) {
     return
   }
 
+  if (name === "mcp") {
+    await Commands.handleMcp()
+    return
+  }
+
   const spinner = new Spinner(`Processing /${name}`)
   spinner.start()
 
@@ -597,7 +592,7 @@ async function handleCommand(cmd: string) {
     throw err
   }
 
-  write(`${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
+  write(`${PAD}${fg.red}Unknown command: ${cmd}${style.reset}\n\n`)
 }
 
 interface StreamOptions {
@@ -609,17 +604,13 @@ interface StreamOptions {
 async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
   block.reset()
   taskToChildSession.clear()
-  childSessionToTask.clear()
-  pendingChildEvents.clear()
-  partIdToToolId.clear()
-  pausedForProse = false
   const spinner = new Spinner("Thinking")
   spinner.start()
 
   let first = true
   let totalTokens = 0
   const startTime = Date.now()
-  let lastChunkType: string | null = null
+  let lastWasProse = false
   let toolCounter = 0
   let lastToolId = ""
   let lastToolKey = ""
@@ -631,8 +622,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   function flushLineBuffer(addNewline = false) {
     if (!lineBuffer) return
     const rendered = md.render(lineBuffer)
-    const wrapped = wrap(rendered, MAX_WIDTH)
-    write(padLines(wrapped))
+    if (rendered) write(padLines(rendered))
     if (addNewline) write("\n")
     lineBuffer = ""
   }
@@ -657,21 +647,24 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       }
 
       if (chunk.type === "text" && chunk.content) {
-        block.freeze()
-        pausedForProse = true
+        // Pause block if no running tasks - they need live updates
+        if (!block.hasRunningTasks()) {
+          block.pause()
+        }
         lastToolKey = ""
         dedupCount = 0
-        lastChunkType = "text"
+
+        // Add spacing when switching from tool to prose
+        if (!lastWasProse) write("\n")
+        lastWasProse = true
 
         lineBuffer += chunk.content
 
         const parts = lineBuffer.split("\n")
 
-        for (let idx = 0; idx < parts.length - 1; idx++) {
-          const line = parts[idx]
+        for (const line of parts.slice(0, -1)) {
           const rendered = md.render(line + "\n")
-          const wrapped = wrap(rendered, MAX_WIDTH)
-          write(padLines(wrapped))
+          if (rendered) write(padLines(rendered))
         }
 
         lineBuffer = parts[parts.length - 1]
@@ -683,7 +676,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
         flushLineBuffer(true)
-        pausedForProse = false
+        block.resume()
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -697,27 +690,32 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
           lastToolId = chunk.callID || `${tool}-${++toolCounter}`
         }
 
-        const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
-        block.toolStart(lastToolId, tool, label)
         if (chunk.callID) {
           idMap.set(chunk.callID, lastToolId)
-          partIdToToolId.set(chunk.callID, lastToolId)
         }
 
+        // Render tool start (child session tools never appear here - streaming only yields parent session events)
+        // Skip toolStart for task tools - they are handled by taskStart separately
+        if (tool !== "task") {
+          const label = dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+          block.toolStart(lastToolId, tool, label)
+        }
+
+        // For task tools, register the task in the block
+        // Use callID as the canonical ID since that's what the Bus subscription uses
         if (tool === "task" && chunk.input && typeof chunk.input === "object") {
           const input = chunk.input as TaskInput
           const agent = typeof input.subagent_type === "string" ? input.subagent_type : ""
           const description = typeof input.description === "string" ? input.description : ""
-          if (agent && description) {
-            block.taskStart(lastToolId, agent, description)
+          if (agent && description && chunk.callID) {
+            block.taskStart(chunk.callID, agent, description)
           }
         }
-        lastChunkType = "tool"
+        lastWasProse = false
       }
 
       if (chunk.type === "tool_end" && chunk.tool?.trim()) {
         flushLineBuffer()
-        pausedForProse = false
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -727,14 +725,14 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
         const isPermissionDenied = typeof chunk.error === "string" && PERMISSION_DENIED_PATTERN.test(chunk.error)
 
-        const handleToolCompletion = (isDenied: boolean) => {
-          const label = key === lastToolKey && dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
-          if (isDenied) return block.toolDenied(id, tool, label)
-          block.toolEnd(id, tool, label)
+        // Render tool end (child session tools never appear here - streaming only yields parent session events)
+        const toolLabel = key === lastToolKey && dedupCount > 1 ? `${summary} (×${dedupCount})` : summary
+        if (isPermissionDenied) {
+          block.toolDenied(id, tool, toolLabel)
+        } else {
+          block.toolEnd(id, tool, toolLabel)
         }
-
-        handleToolCompletion(isPermissionDenied)
-        lastChunkType = "tool"
+        lastWasProse = false
 
         if (chunk.input && tool === "todowrite") {
           if (!Array.isArray(chunk.input.todos)) continue
@@ -744,7 +742,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
           const todos = chunk.input.todos
             .filter(
-              (item) =>
+              (item): item is { id: string; content: string; status: string; priority: string } =>
                 item &&
                 typeof item === "object" &&
                 typeof item.id === "string" &&
@@ -757,28 +755,76 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
             .map((item) => ({
               id: item.id,
               content: item.content,
-              status: item.status,
-              priority: item.priority,
+              status: item.status as "pending" | "in_progress" | "completed" | "cancelled",
+              priority: item.priority as "high" | "medium" | "low",
             }))
 
           if (todos.length > 0) block.setTodos(todos)
         }
 
-        if (tool === "task") {
-          block.taskEnd(id)
+        // Task tool returns immediately after dispatching background task.
+        // Don't end the task here - let it stay "running" so child status can be displayed.
+        // Task will be ended in the finally block when parent session completes.
+      }
+
+      // Handle tool metadata updates (e.g., task child tool changes)
+      if (chunk.type === "tool_update") {
+        log.debug(
+          `STREAM tool_update: tool=${chunk.tool}, callID=${chunk.callID}, metadata=${JSON.stringify(chunk.metadata)}`,
+        )
+      }
+
+      if (chunk.type === "tool_update" && chunk.tool === "task" && chunk.callID) {
+        const metadata = chunk.metadata as
+          | {
+              childSessionId?: string
+              summary?: Array<{ id: string; tool: string; state: { status: string } }>
+            }
+          | undefined
+        const childSessionId = metadata?.childSessionId
+
+        // Track child session for Panel and cleanup if not already tracked
+        if (childSessionId && !taskToChildSession.has(chunk.callID)) {
+          Panel.addChild(childSessionId)
+          taskToChildSession.set(chunk.callID, childSessionId)
+          childSessionToTask.set(childSessionId, chunk.callID)
+
+          const pending = pendingChildEvents.get(childSessionId)
+          if (pending) {
+            for (const p of pending) {
+              const pendingPart = p as {
+                type: string
+                tool: string
+                state: { status: string; title?: string }
+              }
+              if (pendingPart.type === "tool" && pendingPart.state.status === "running") {
+                const title = pendingPart.state.title || "running"
+                block.setTaskChildTool(chunk.callID, pendingPart.tool, title)
+              }
+            }
+            pendingChildEvents.delete(childSessionId)
+          }
+        }
+
+        // Note: Child tool status is now handled by SDK event stream
+        // Stream path here only provides empty titles, so we skip setTaskChildTool
+        const summary = metadata?.summary
+        if (summary && summary.length > 0) {
+          const running = summary.find((t) => t.state.status === "running")
+          log.debug(`STREAM task summary: length=${summary?.length || 0}, running=${running?.tool || "none"}`)
         }
       }
 
       if (chunk.type === "error" && chunk.content) {
         flushLineBuffer()
+        block.resume()
         block.freeze()
-        pausedForProse = false
         lastToolKey = ""
         dedupCount = 0
-        lastChunkType = "error"
+        lastWasProse = true
         const safeContent = chunk.content
           .replace(/\x1b\][^\x07]*\x07/g, "")
-          .replace(/\x1b[\[\]()#?]*[0-9;]*[A-Za-z]/g, "")
+          .replace(/\x1b[\[\]()#?*]*[0-9;]*[A-Za-z]/g, "")
           .replace(/[\x00-\x1f\x7f]/g, "")
         write(`\n${PAD}${fg.red}Error: ${safeContent}${style.reset}\n`)
       }
@@ -790,11 +836,20 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   } finally {
     spinner.stop(true)
     flushLineBuffer()
-    pausedForProse = false
+    // End any tasks that still have active child sessions
+    for (const taskCallId of taskToChildSession.keys()) {
+      block.taskEnd(taskCallId)
+    }
     block.freeze()
+    taskToChildSession.clear()
+    childSessionToTask.clear()
+    pendingChildEvents.clear()
     const flushed = md.flush()
     if (flushed) {
-      write(padLines(flushed))
+      // Plain text output, no bullets
+      for (const line of flushed.split("\n")) {
+        if (line) write(`${PAD}${line}\n`)
+      }
     }
     const rule = `\n${PAD}${style.dim}${"─".repeat(Math.min(process.stdout.columns || 80, 80))}${style.reset}\n`
     write(rule)
@@ -819,7 +874,7 @@ async function handleMessage(message: string) {
   } catch (err) {
     block.freeze()
     const msg = err instanceof Error ? err.message : String(err)
-    write(`\n${fg.red}Error: ${msg}${style.reset}\n\n`)
+    write(`\n${PAD}${fg.red}Error: ${msg}${style.reset}\n\n`)
   } finally {
     isOperationInProgress = false
   }

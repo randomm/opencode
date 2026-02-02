@@ -42,6 +42,16 @@ export namespace Bus {
     def: Definition,
     properties: z.output<Definition["properties"]>,
   ) {
+    const dir = (() => {
+      try {
+        return Instance.directory
+      } catch {
+        return "NO_CONTEXT"
+      }
+    })()
+    const subscriptions = state().subscriptions
+    const exactMatch = subscriptions.get(def.type)
+    const wildMatch = subscriptions.get("*")
     const payload = {
       type: def.type,
       properties,
@@ -87,6 +97,13 @@ export namespace Bus {
   }
 
   function raw(type: string, callback: (event: any) => void) {
+    const dir = (() => {
+      try {
+        return Instance.directory
+      } catch {
+        return "NO_CONTEXT"
+      }
+    })()
     log.info("subscribing", { type })
     const subscriptions = state().subscriptions
     let match = subscriptions.get(type) ?? []

@@ -117,6 +117,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
 
   type TaskResultMetadata = {
     sessionId?: string
+    childSessionId?: string
     model?: { modelID: string; providerID: string }
     summary?: Array<{ id: string; tool: string; state: { status: string; title?: string } }>
   }
@@ -219,10 +220,13 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         providerID: msg.info.providerID,
       }
 
-      ctx.metadata({
+      // MUST await to ensure Bus event is published before child session starts
+      // Otherwise child tool events may arrive before the mapping is established
+      await ctx.metadata({
         title: params.description,
         metadata: {
           sessionId: session.id,
+          childSessionId: session.id,
           model,
         },
       })
@@ -231,8 +235,14 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
       const currentParts = new Map<string, { id: string; tool: string; state: { status: string; title?: string } }>()
       const unsub = Bus.subscribe(MessageV2.Event.PartUpdated, async (evt) => {
         if (evt.properties.part.sessionID !== session.id) return
-        if (evt.properties.part.messageID === messageID) return
-        if (evt.properties.part.type !== "tool") return
+
+        if (evt.properties.part.messageID === messageID) {
+          return
+        }
+        if (evt.properties.part.type !== "tool") {
+          return
+        }
+
         const part = evt.properties.part
         const updatedPart = {
           id: part.id,
@@ -246,11 +256,14 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         updatedParts.set(part.id, updatedPart)
         currentParts.clear()
         updatedParts.forEach((v, k) => currentParts.set(k, v))
-        ctx.metadata({
+
+        const summary = Array.from(currentParts.values()).sort((a, b) => a.id.localeCompare(b.id))
+        await ctx.metadata({
           title: params.description,
           metadata: {
-            summary: Array.from(currentParts.values()).sort((a, b) => a.id.localeCompare(b.id)),
             sessionId: session.id,
+            childSessionId: session.id,
+            summary,
             model,
           },
         })
@@ -269,7 +282,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
             status: "aborted",
             message: "Task aborted before start",
           }),
-          metadata: { sessionId: session.id } as TaskResultMetadata,
+          metadata: { sessionId: session.id, childSessionId: session.id } as TaskResultMetadata,
         }
       }
 
@@ -358,7 +371,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
           status: "started",
           message: `Task dispatched to @${agent.name}`,
         }),
-        metadata: { sessionId: session.id } as TaskResultMetadata,
+        metadata: { sessionId: session.id, childSessionId: session.id } as TaskResultMetadata,
       }
     },
   }

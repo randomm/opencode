@@ -39,7 +39,18 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
     agent: input.agent.name,
     metadata: async (val: { title?: string; metadata?: Record<string, unknown> }) => {
       const match = input.processor.partFromToolCall(options.toolCallId)
-      if (match && match.state.status === "running") {
+      log.debug("metadata() called", {
+        hasMatch: !!match,
+        status: match?.state.status,
+        metadataKeys: val.metadata ? Object.keys(val.metadata) : [],
+        hasSummary: !!val.metadata?.summary,
+      })
+      if (match && (match.state.status === "pending" || match.state.status === "running")) {
+        log.debug("Calling Session.updatePart() from metadata()", {
+          toolCallId: options.toolCallId,
+          partId: match.id,
+          hasSummary: !!val.metadata?.summary,
+        })
         await Session.updatePart({
           ...match,
           state: {
