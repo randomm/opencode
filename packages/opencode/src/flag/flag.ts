@@ -132,4 +132,3 @@ Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS", {
   enumerable: true,
   configurable: false,
 })
->>>>>>> 5e8aebdd9 (fix(session): prevent orphaned task slots blocking allocation (#33) (#35))
