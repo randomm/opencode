@@ -187,10 +187,19 @@ export function createLiveBlock() {
     },
 
     setTaskChildTool(taskId: string, childName: string, childSummary: string) {
+      console.error("[DEBUG liveblock] setTaskChildTool called:", { taskId, childName, childSummary })
       const task = tasks.get(taskId)
+      console.error(
+        "[DEBUG liveblock] task found:",
+        task ? { id: task.id, status: task.status, agent: task.agent } : "NOT FOUND",
+      )
+      console.error("[DEBUG liveblock] all tasks:", Array.from(tasks.keys()))
       if (task && task.status === "running") {
         task.childTool = { name: childName, summary: childSummary }
+        console.error("[DEBUG liveblock] childTool set, calling render()")
         render()
+      } else {
+        console.error("[DEBUG liveblock] NOT updating - task missing or not running")
       }
     },
 

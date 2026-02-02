@@ -25,10 +25,6 @@ import * as Commands from "./commands"
 import { setBlockFreeze } from "./select"
 import { Bus } from "../../bus"
 import { MessageV2 } from "../../session/message-v2"
-import { createOpencodeClient, type Event } from "@opencode-ai/sdk/v2"
-import { Server } from "../../server/server"
-
-const log = Log.create({ service: "lite.run" })
 export { summarizeInput }
 
 // UI Constants
@@ -36,7 +32,7 @@ const PAD = "  "
 const PERMISSION_DENIED_PATTERN = /permission\s*(denied|required|error)/i
 
 interface TaskInput {
-  subagent_type?: string
+  agent?: string
   description?: string
 }
 const MAX_WIDTH = Math.min(100, (process.stdout.columns || 80) - 4)
@@ -64,188 +60,11 @@ setBlockFreeze(() => block.freeze())
 // Track task tool ID to child session ID mapping
 const taskToChildSession = new Map<string, string>()
 
-// Reverse mapping: child session ID → parent task callID
-const childSessionToTask = new Map<string, string>()
-
-// Buffer for child session events that arrive before mapping is established
-const pendingChildEvents = new Map<string, Array<unknown>>()
-
 // Track part IDs to tool IDs for linking metadata updates
 const partIdToToolId = new Map<string, string>()
 
 // Store Bus subscription cleanup function
 let busUnsubscribe: (() => void) | undefined
-
-// SDK event stream state
-const eventStream = {
-  abort: undefined as AbortController | undefined,
-}
-
-// Flag to prevent render() during prose streaming (causes crashes)
-let pausedForProse = false
-
-function getAuthorizationHeader(): string | undefined {
-  const password = process.env.OPENCODE_SERVER_PASSWORD
-  if (!password) return undefined
-  const username = process.env.OPENCODE_SERVER_USERNAME ?? "opencode"
-  return `Basic ${btoa(`${username}:${password}`)}`
-}
-
-function startEventStream(directory: string) {
-  console.error("[DEBUG] startEventStream called")
-  if (eventStream.abort) eventStream.abort.abort()
-  const abort = new AbortController()
-  eventStream.abort = abort
-  const signal = abort.signal
-
-  const fetchFn = (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const request = new Request(input, init)
-    const auth = getAuthorizationHeader()
-    if (auth) request.headers.set("Authorization", auth)
-    return Server.App().fetch(request)
-  }) as typeof globalThis.fetch
-
-  const sdk = createOpencodeClient({
-    baseUrl: "http://opencode.internal",
-    directory,
-    fetch: fetchFn,
-    signal,
-  })
-
-  ;(async () => {
-    while (!signal.aborted) {
-      const events = await Promise.resolve(
-        sdk.event.subscribe(
-          {},
-          {
-            signal,
-          },
-        ),
-      ).catch(() => undefined)
-
-      if (!events) {
-        await Bun.sleep(250)
-        continue
-      }
-
-      for await (const event of events.stream) {
-        const e = event as Event
-        console.error("[DEBUG] SDK event received:", e.type)
-
-        if (e.type === "message.part.updated") {
-          const part = e.properties.part
-          console.error("[DEBUG] Part updated:", {
-            type: part.type,
-            tool: part.type === "tool" ? part.tool : "N/A",
-            sessionID: part.sessionID,
-            callID: part.type === "tool" ? part.callID : "N/A",
-          })
-
-          // Handle task tool metadata updates to get child session ID
-          if (part.type === "tool" && part.tool === "task" && part.callID) {
-            const partMetadata =
-              part.state.status === "pending"
-                ? undefined
-                : (() => {
-                    if (typeof part.state.metadata !== "object" || part.state.metadata === null) return undefined
-                    return part.state.metadata as
-                      | {
-                          childSessionId?: string
-                          summary?: Array<{ id: string; tool: string; state: { status: string } }>
-                        }
-                      | undefined
-                  })()
-
-            const childSessionId = partMetadata?.childSessionId
-            console.error("[DEBUG] Task metadata:", { callID: part.callID, childSessionId, status: part.state.status })
-
-            // Track child session for Panel and cleanup
-            if (childSessionId && !taskToChildSession.has(part.callID)) {
-              console.error("[DEBUG] Creating mapping: task=", part.callID, "child=", childSessionId)
-              Panel.addChild(childSessionId)
-              taskToChildSession.set(part.callID, childSessionId)
-              childSessionToTask.set(childSessionId, part.callID)
-
-              // Process any buffered events for this child session
-              const buffered = pendingChildEvents.get(childSessionId)
-              if (buffered) {
-                for (const bufferedItem of buffered) {
-                  const bufferedPart = bufferedItem as {
-                    type: string
-                    tool: string
-                    state: { status: string; title?: string }
-                  }
-                  if (bufferedPart.type === "tool") {
-                    const title =
-                      bufferedPart.state.status === "running" || bufferedPart.state.status === "completed"
-                        ? bufferedPart.state.title || "running"
-                        : ""
-
-                    if (bufferedPart.state.status === "running") {
-                      if (!pausedForProse) block.setTaskChildTool(part.callID, bufferedPart.tool, title)
-                    } else if (bufferedPart.state.status === "completed" || bufferedPart.state.status === "error") {
-                      if (!pausedForProse) block.clearTaskChildTool(part.callID)
-                    }
-                  }
-                }
-                pendingChildEvents.delete(childSessionId)
-              }
-            }
-          }
-
-          // Handle parts from child sessions
-          if (part.type === "tool" && part.sessionID) {
-            if (!part.state) continue
-            // Skip events from parent session
-            if (part.sessionID === currentSessionID) {
-              console.error("[DEBUG] Skipping parent session event")
-              continue
-            }
-
-            console.error("[DEBUG] Child tool event:", {
-              sessionID: part.sessionID,
-              tool: part.tool,
-              status: part.state.status,
-              currentSessionID,
-            })
-            const taskCallID = childSessionToTask.get(part.sessionID)
-            console.error("[DEBUG] Found taskCallID:", taskCallID, "childSessionToTask size:", childSessionToTask.size)
-
-            if (!taskCallID) {
-              console.error("[DEBUG] Buffering event - no mapping yet for session:", part.sessionID)
-              const buffer = pendingChildEvents.get(part.sessionID) || []
-              buffer.push(part)
-              pendingChildEvents.set(part.sessionID, buffer)
-              continue
-            }
-            const title =
-              part.state.status === "running" || part.state.status === "completed" ? part.state.title || "running" : ""
-
-            console.error("[DEBUG] About to update UI. pausedForProse=", pausedForProse, "status=", part.state.status)
-            if (part.state.status === "running") {
-              if (!pausedForProse) {
-                console.error("[DEBUG] Calling setTaskChildTool:", taskCallID, part.tool, title)
-                block.setTaskChildTool(taskCallID, part.tool, title)
-              } else {
-                console.error("[DEBUG] BLOCKED by pausedForProse!")
-              }
-            } else if (part.state.status === "completed" || part.state.status === "error") {
-              if (!pausedForProse) block.clearTaskChildTool(taskCallID)
-            }
-          }
-        }
-      }
-
-      if (!signal.aborted) {
-        await Bun.sleep(250)
-      }
-    }
-  })().catch((error) => {
-    log.error("event stream error", {
-      error: error instanceof Error ? error.message : error,
-    })
-  })
-}
 
 async function main() {
   if (!process.stdin.isTTY) {
@@ -262,7 +81,6 @@ async function main() {
 
   function cleanup() {
     if (autoWakeupSessionID) Session.disableAutoWakeup(autoWakeupSessionID)
-    if (eventStream.abort) eventStream.abort.abort()
     if (busUnsubscribe) busUnsubscribe()
     block.freeze()
     write(cursor.show)
@@ -285,10 +103,7 @@ async function main() {
     await bootstrap(
       process.cwd(),
       async () => {
-        // Start SDK event stream for task metadata updates (child session tracking)
-        startEventStream(process.cwd())
-
-        // Subscribe to Bus events for child session tools (backup/fallback)
+        // Subscribe to Bus events for child session tools
         // This must be inside bootstrap so Instance.provide() context is established
         busUnsubscribe = Bus.subscribe(MessageV2.Event.PartUpdated, (event) => {
           const part = event.properties.part
@@ -304,7 +119,6 @@ async function main() {
               if (toolId && !taskToChildSession.has(toolId)) {
                 Panel.addChild(sessionId)
                 taskToChildSession.set(toolId, sessionId)
-                childSessionToTask.set(sessionId, toolId)
               }
             }
           }
@@ -319,9 +133,6 @@ async function main() {
           }
 
           if (!taskId) return
-
-          // Skip rendering if prose is streaming (prevents crashes)
-          if (pausedForProse) return
 
           // Update task child tool display
           if (part.state.status === "running") {
@@ -377,10 +188,7 @@ async function main() {
             block.freeze()
             SessionPrompt.cancel(currentSessionID)
             taskToChildSession.clear()
-            childSessionToTask.clear()
-            pendingChildEvents.clear()
             partIdToToolId.clear()
-            pausedForProse = false
             isOperationInProgress = false
             currentSessionID = null
             write("\n")
@@ -609,10 +417,7 @@ interface StreamOptions {
 async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamOptions) {
   block.reset()
   taskToChildSession.clear()
-  childSessionToTask.clear()
-  pendingChildEvents.clear()
   partIdToToolId.clear()
-  pausedForProse = false
   const spinner = new Spinner("Thinking")
   spinner.start()
 
@@ -658,7 +463,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
       if (chunk.type === "text" && chunk.content) {
         block.freeze()
-        pausedForProse = true
         lastToolKey = ""
         dedupCount = 0
         lastChunkType = "text"
@@ -683,7 +487,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
       if (chunk.type === "tool_start" && chunk.tool?.trim()) {
         flushLineBuffer(true)
-        pausedForProse = false
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -706,7 +509,7 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
         if (tool === "task" && chunk.input && typeof chunk.input === "object") {
           const input = chunk.input as TaskInput
-          const agent = typeof input.subagent_type === "string" ? input.subagent_type : ""
+          const agent = typeof input.agent === "string" ? input.agent : ""
           const description = typeof input.description === "string" ? input.description : ""
           if (agent && description) {
             block.taskStart(lastToolId, agent, description)
@@ -717,7 +520,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
 
       if (chunk.type === "tool_end" && chunk.tool?.trim()) {
         flushLineBuffer()
-        pausedForProse = false
         const tool = chunk.tool.trim()
         const arg = summarizeInput(tool, chunk.input)
         const summary = arg || ""
@@ -772,7 +574,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
       if (chunk.type === "error" && chunk.content) {
         flushLineBuffer()
         block.freeze()
-        pausedForProse = false
         lastToolKey = ""
         dedupCount = 0
         lastChunkType = "error"
@@ -790,7 +591,6 @@ async function streamResponse(source: AsyncIterable<ChatChunk>, options: StreamO
   } finally {
     spinner.stop(true)
     flushLineBuffer()
-    pausedForProse = false
     block.freeze()
     const flushed = md.flush()
     if (flushed) {
