@@ -5,7 +5,11 @@ export type Action =
   | { type: "STREAM_TEXT"; payload: string }
   | {
       type: "TOOL_START"
-      payload: { id: string; name: string; input: Record<string, string | number | boolean | null> }
+      payload: {
+        id: string
+        name: string
+        input: Record<string, string | number | boolean | null | undefined | object>
+      }
     }
   | { type: "TOOL_END"; payload: { id: string; output?: string; error?: string } }
   | { type: "TASK_START"; payload: { id: string; description: string } }

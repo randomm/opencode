@@ -37,7 +37,7 @@ export interface Tool {
   id: string
   name: string
   state: ToolState
-  input: Record<string, string | number | boolean | null>
+  input: Record<string, string | number | boolean | null | undefined | object>
   output?: string
   error?: string
 }
