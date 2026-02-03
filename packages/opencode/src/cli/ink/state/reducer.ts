@@ -1,15 +1,13 @@
 import type { AppState, Message, MessagePart, Tool, UIMode } from "./types"
 
+import type { ToolInputValue } from "./types"
+
 export type Action =
   | { type: "SET_SESSION"; payload: { id: string; agent: string; model: string | null } }
   | { type: "STREAM_TEXT"; payload: string }
   | {
       type: "TOOL_START"
-      payload: {
-        id: string
-        name: string
-        input: Record<string, string | number | boolean | null | undefined | object>
-      }
+      payload: { id: string; name: string; input: Record<string, ToolInputValue> }
     }
   | { type: "TOOL_END"; payload: { id: string; output?: string; error?: string } }
   | { type: "TASK_START"; payload: { id: string; description: string } }
