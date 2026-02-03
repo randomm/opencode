@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename)
 const dir = path.resolve(__dirname, "..")
 const rootDir = path.resolve(__dirname, "../../..")
 
-// Load solidPlugin from root's node_modules (monorepo layout)
-import solidPlugin from "../../../node_modules/@opentui/solid/scripts/solid-plugin"
+// Use hybrid plugin that handles both React (Ink) and SolidJS
+import { hybridTransformPlugin } from "./build-plugin"
 
 process.chdir(dir)
 
@@ -188,7 +188,7 @@ for (const item of targets) {
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [dedupePlugin, solidPlugin],
+    plugins: [dedupePlugin, hybridTransformPlugin],
     sourcemap: "external",
     minify: true,
     compile: {
