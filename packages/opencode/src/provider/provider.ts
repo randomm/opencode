@@ -56,7 +56,7 @@ export namespace Provider {
     "@ai-sdk/perplexity": () => import("@ai-sdk/perplexity").then((m) => m.createPerplexity),
     "@ai-sdk/vercel": () => import("@ai-sdk/vercel").then((m) => m.createVercel),
     "@gitlab/gitlab-ai-provider": () => import("@gitlab/gitlab-ai-provider").then((m) => m.createGitLab),
-    "@ai-sdk/github-copilot": () => import("./sdk/openai-compatible/src").then((m) => m.createOpenaiCompatible),
+    "@ai-sdk/github-copilot": () => import("./sdk/copilot").then((m) => m.createOpenaiCompatible),
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>

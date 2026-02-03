@@ -37,6 +37,7 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
     callID: options.toolCallId,
     extra: { model: input.model, bypassAgentCheck: input.bypassAgentCheck },
     agent: input.agent.name,
+    messages: [],
     metadata: async (val: { title?: string; metadata?: Record<string, unknown> }) => {
       const match = input.processor.partFromToolCall(options.toolCallId)
       if (match && match.state.status === "running") {

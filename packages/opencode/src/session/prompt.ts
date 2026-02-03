@@ -406,6 +406,7 @@ export namespace SessionPrompt {
           abort,
           callID: part.callID,
           extra: { bypassAgentCheck: true },
+          messages: [],
           async metadata(input) {
             await Session.updatePart({
               ...part,
@@ -631,7 +632,7 @@ export namespace SessionPrompt {
         agent,
         abort,
         sessionID,
-        system: [...(await SystemPrompt.environment()), ...(await SystemPrompt.custom())],
+        system: await SystemPrompt.environment(model),
         messages: [
           ...MessageV2.toModelMessages(sessionMessages, model),
           ...(isLastStep
@@ -863,6 +864,7 @@ export namespace SessionPrompt {
                       agent: input.agent!,
                       messageID: info.id,
                       extra: { bypassCwdCheck: true, model },
+                      messages: [],
                       metadata: async () => {},
                       ask: async () => {},
                     }
@@ -924,6 +926,7 @@ export namespace SessionPrompt {
                   agent: input.agent!,
                   messageID: info.id,
                   extra: { bypassCwdCheck: true },
+                  messages: [],
                   metadata: async () => {},
                   ask: async () => {},
                 }
