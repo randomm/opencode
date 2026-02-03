@@ -685,6 +685,7 @@ export namespace SessionPrompt {
       input.variant ??
       (agent.variant &&
       agent.model &&
+      model &&
       model.providerID === agent.model.providerID &&
       model.modelID === agent.model.modelID
         ? agent.variant

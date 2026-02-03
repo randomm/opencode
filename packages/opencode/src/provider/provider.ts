@@ -836,7 +836,11 @@ export namespace Provider {
       if (auth) {
         const options = await plugin.auth.loader(() => Auth.get(providerID) as any, database[plugin.auth.provider])
         const opts = options ?? {}
-        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
+        const patch: Partial<Info> = providers[providerID]
+          ? Object.keys(opts).length > 0
+            ? { options: opts }
+            : {}
+          : { source: "custom", options: opts }
         mergeProvider(providerID, patch)
       }
 
@@ -852,7 +856,9 @@ export namespace Provider {
             )
             const opts = enterpriseOptions ?? {}
             const patch: Partial<Info> = providers[enterpriseProviderID]
-              ? { options: opts }
+              ? Object.keys(opts).length > 0
+                ? { options: opts }
+                : {}
               : { source: "custom", options: opts }
             mergeProvider(enterpriseProviderID, patch)
           }
@@ -871,7 +877,11 @@ export namespace Provider {
       if (result && (result.autoload || providers[providerID])) {
         if (result.getModel) modelLoaders[providerID] = result.getModel
         const opts = result.options ?? {}
-        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
+        const patch: Partial<Info> = providers[providerID]
+          ? Object.keys(opts).length > 0
+            ? { options: opts }
+            : {}
+          : { source: "custom", options: opts }
         mergeProvider(providerID, patch)
       }
     }
