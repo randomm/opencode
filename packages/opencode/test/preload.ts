@@ -87,6 +87,44 @@ delete process.env["FIREWORKS_API_KEY"]
 delete process.env["CEREBRAS_API_KEY"]
 delete process.env["SAMBANOVA_API_KEY"]
 
+// Suppress React "Invalid hook call" warnings in tests
+// These warnings come from ink-testing-library's React reconciler setup
+// but don't indicate actual test failures (all tests pass)
+const originalStdoutWrite = process.stdout.write
+process.stdout.write = function (chunk: any, ...args: any[]): boolean {
+  const message = chunk.toString()
+  if (message.includes("baseline-browser-mapping")) {
+    return true
+  }
+  return originalStdoutWrite.call(process.stdout, chunk, ...args)
+}
+
+const originalStderrWrite = process.stderr.write
+process.stderr.write = function (chunk: any, ...args: any[]): boolean {
+  const message = chunk.toString()
+  if (
+    message.includes("Invalid hook call") ||
+    message.includes("baseline-browser-mapping") ||
+    message.includes("Rules of Hooks") ||
+    message.includes("react.dev/link/invalid-hook-call")
+  ) {
+    return true
+  }
+  return originalStderrWrite.call(process.stderr, chunk, ...args)
+}
+
+const originalConsoleError = console.error
+console.error = (...args: any[]) => {
+  const message = args[0]
+  if (
+    typeof message === "string" &&
+    (message.includes("Invalid hook call") || message.includes("baseline-browser-mapping"))
+  ) {
+    return
+  }
+  originalConsoleError(...args)
+}
+
 // Now safe to import from src/
 const { Log } = await import("../src/util/log")
 

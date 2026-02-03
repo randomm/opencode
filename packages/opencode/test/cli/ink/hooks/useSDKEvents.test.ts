@@ -34,7 +34,7 @@ describe("useSDKEvents - sendMessage logic", () => {
       throw error
     } catch (err) {
       isStreaming = false
-      console.error("Failed to send message:", err)
+      // Error would be logged: console.error("Failed to send message:", err)
     }
 
     expect(isStreaming).toBe(false)

@@ -51,20 +51,11 @@ export const App = (): ReactElement => {
           // Silently handle command errors
         })
       } else if (value.trim() && state.session.id) {
-        // Clear previous streaming
-        dispatch({ type: "CLEAR_STREAMING" })
-
-        // Send message via SessionPrompt
-        const parts = [{ type: "text" as const, text: value.trim() }]
-        await SessionPrompt.prompt({
-          sessionID: state.session.id,
-          agent: state.session.agent,
-          model: undefined,
-          parts,
-        })
+        // Send message via SDK hook
+        await sendMessage(value.trim())
       }
     },
-    [dispatch, setUIMode, state.session.id, state.session.agent],
+    [dispatch, setUIMode, state.session.id, sendMessage],
   )
 
   return (
