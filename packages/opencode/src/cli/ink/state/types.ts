@@ -33,7 +33,7 @@ export interface Message {
   complete: boolean
 }
 
-type ToolInputValue = string | number | boolean | null | undefined | { [key: string]: string | number | boolean | null }
+export type ToolInputValue = string | number | boolean | null | undefined | { [key: string]: string | number | boolean | null }
 
 export interface Tool {
   id: string
