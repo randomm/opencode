@@ -21,6 +21,49 @@ describe("appReducer", () => {
     })
   })
 
+  describe("SET_SUBAGENT_MODEL", () => {
+    it("updates subagent model without affecting other session properties", () => {
+      const action: Action = {
+        type: "SET_SUBAGENT_MODEL",
+        payload: "openai/gpt-4",
+      }
+      const state = appReducer(initialState, action)
+      expect(state.session.subagentModel).toBe("openai/gpt-4")
+      expect(state.session.agent).toBe("build")
+      expect(state.session.model).toBe(null)
+    })
+
+    it("can update subagent model on existing session", () => {
+      let state = appReducer(initialState, {
+        type: "SET_SESSION",
+        payload: { id: "sess-1", agent: "plan", model: "anthropic/claude-3-5-sonnet-20241022" },
+      })
+      state = appReducer(state, {
+        type: "SET_SUBAGENT_MODEL",
+        payload: "anthropic/claude-3-5-haiku-20241022",
+      })
+      expect(state.session.subagentModel).toBe("anthropic/claude-3-5-haiku-20241022")
+      expect(state.session.id).toBe("sess-1")
+      expect(state.session.agent).toBe("plan")
+      expect(state.session.model).toBe("anthropic/claude-3-5-sonnet-20241022")
+    })
+
+    it("preserves subagent model when SET_SESSION is called", () => {
+      let state = appReducer(initialState, {
+        type: "SET_SUBAGENT_MODEL",
+        payload: "anthropic/claude-3-5-haiku-20241022",
+      })
+      state = appReducer(state, {
+        type: "SET_SESSION",
+        payload: { id: "sess-1", agent: "test", model: "anthropic/claude-3-5-sonnet-20241022" },
+      })
+      expect(state.session.subagentModel).toBe("anthropic/claude-3-5-haiku-20241022")
+      expect(state.session.id).toBe("sess-1")
+      expect(state.session.agent).toBe("test")
+      expect(state.session.model).toBe("anthropic/claude-3-5-sonnet-20241022")
+    })
+  })
+
   describe("STREAM_TEXT", () => {
     it("appends text to streaming", () => {
       const action: Action = { type: "STREAM_TEXT", payload: "Hello" }

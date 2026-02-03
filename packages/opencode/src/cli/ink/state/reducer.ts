@@ -4,6 +4,7 @@ import type { ToolInputValue } from "./types"
 
 export type Action =
   | { type: "SET_SESSION"; payload: { id: string; agent: string; model: string | null } }
+  | { type: "SET_SUBAGENT_MODEL"; payload: string }
   | { type: "STREAM_TEXT"; payload: string }
   | {
       type: "TOOL_START"
@@ -27,6 +28,7 @@ export const initialState: AppState = {
     id: null,
     agent: "build",
     model: null,
+    subagentModel: null,
   },
   ui: { mode: "input" },
 }
@@ -37,9 +39,19 @@ export function appReducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         session: {
+          ...state.session,
           id: action.payload.id,
           agent: action.payload.agent,
           model: action.payload.model,
+        },
+      }
+
+    case "SET_SUBAGENT_MODEL":
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          subagentModel: action.payload,
         },
       }
 

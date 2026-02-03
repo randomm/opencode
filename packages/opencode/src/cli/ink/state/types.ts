@@ -33,7 +33,13 @@ export interface Message {
   complete: boolean
 }
 
-export type ToolInputValue = string | number | boolean | null | undefined | { [key: string]: string | number | boolean | null }
+export type ToolInputValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | { [key: string]: string | number | boolean | null }
 
 export interface Tool {
   id: string
@@ -61,6 +67,7 @@ export interface SessionState {
   id: string | null
   agent: string
   model: string | null
+  subagentModel: string | null
 }
 
 export interface SelectOption {
