@@ -124,6 +124,26 @@ describe("cli.ink.commands.handlers.submodel", () => {
       expect(mockDispatch).not.toHaveBeenCalled()
     })
 
+    test("rejects single character model name", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      await submodelHandler(["provider/a"], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("rejects single digit model name", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      await submodelHandler(["provider/1"], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
     test("accepts minimum valid format", async () => {
       const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
       const context = createContext()
@@ -134,6 +154,88 @@ describe("cli.ink.commands.handlers.submodel", () => {
         type: "SET_SUBAGENT_MODEL",
         payload: "ab/cd",
       })
+    })
+
+    test("rejects model with trailing hyphen in provider", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      await submodelHandler(["provider-/model"], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("rejects model with trailing hyphen in model name", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      await submodelHandler(["provider/model-"], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("rejects model exceeding maximum length", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      const longProvider = "a".repeat(65)
+      const longModel = "b".repeat(129)
+      await submodelHandler([`${longProvider}/${longModel}`], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("accepts model at maximum length boundary", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+
+      const provider = "a" + "b".repeat(62) + "c"
+      const model = "x" + "y".repeat(126) + "z"
+      await submodelHandler([`${provider}/${model}`], context)
+
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "SET_SUBAGENT_MODEL",
+        payload: `${provider}/${model}`,
+      })
+    })
+
+    test("rejects provider exceeding 64 characters", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      const provider = "a" + "b".repeat(63) + "c"
+      await submodelHandler([`${provider}/model`], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("rejects model name exceeding 128 characters", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      const model = "a" + "b".repeat(127) + "c"
+      await submodelHandler([`provider/${model}`], context)
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+    })
+
+    test("rejects malicious backtracking input without timeout", async () => {
+      const { submodelHandler } = await import("../../../../src/cli/ink/commands/handlers/submodel")
+      const context = createContext()
+      mockDispatch.mockClear()
+
+      const attack = "a" + "b-".repeat(50) + "!/model"
+      const start = Date.now()
+      await submodelHandler([attack], context)
+      const duration = Date.now() - start
+
+      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(duration).toBeLessThan(100)
     })
   })
 })
