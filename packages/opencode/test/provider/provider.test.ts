@@ -4,10 +4,9 @@ import path from "path"
 // Mock BunProc and default plugins to prevent actual installations during tests
 mock.module("../../src/bun/index", () => ({
   BunProc: {
-    install: async (pkg: string, _version?: string) => {
-      // Return package name without version for mocking
-      const lastAtIndex = pkg.lastIndexOf("@")
-      return lastAtIndex > 0 ? pkg.substring(0, lastAtIndex) : pkg
+    install: async (_pkg: string, _version?: string) => {
+      // Return empty string to skip plugin loading in plugin/index.ts line 77
+      return ""
     },
     run: async () => {
       throw new Error("BunProc.run should not be called in tests")

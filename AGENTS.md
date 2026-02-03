@@ -111,6 +111,34 @@ Never push to "see if CI catches anything." Fix locally first.
 
 ---
 
+## Rebase Responsibility
+
+**When rebasing introduces errors, YOU OWN THEM.**
+
+```
+❌ "Pre-existing errors from rebase"
+❌ "Need to deal with separately"
+❌ "Upstream changes broke tests"
+✅ "Fixed all rebase conflicts and resulting errors"
+✅ "All tests pass after rebase"
+```
+
+After any rebase:
+
+1. **ALL typecheck errors** must be fixed - no exceptions
+2. **ALL test failures** must be fixed - no exceptions
+3. **Your branch, your responsibility** - rebase errors are your errors now
+
+If rebase introduces breaking changes you don't understand:
+
+1. Research the upstream changes
+2. Update your code to match new APIs
+3. Fix all affected tests
+
+**NEVER push with failing tests.** The branch must be green before push.
+
+---
+
 ## Minimalist Engineering
 
 **Every line of code is a liability.**

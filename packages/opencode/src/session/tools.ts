@@ -29,6 +29,7 @@ export interface ResolveToolsInput {
 export async function resolveTools(input: ResolveToolsInput): Promise<Record<string, AITool>> {
   using _ = log.time("resolveTools")
   const tools: Record<string, AITool> = {}
+  const sessionMessages = await Session.messages({ sessionID: input.session.id })
 
   const context = (args: Record<string, unknown>, options: ToolCallOptions): Tool.Context => ({
     sessionID: input.session.id,
@@ -37,6 +38,7 @@ export async function resolveTools(input: ResolveToolsInput): Promise<Record<str
     callID: options.toolCallId,
     extra: { model: input.model, bypassAgentCheck: input.bypassAgentCheck },
     agent: input.agent.name,
+    messages: sessionMessages,
     metadata: async (val: { title?: string; metadata?: Record<string, unknown> }) => {
       const match = input.processor.partFromToolCall(options.toolCallId)
       if (match && match.state.status === "running") {

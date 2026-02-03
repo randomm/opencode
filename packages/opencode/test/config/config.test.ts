@@ -1126,6 +1126,7 @@ test("migrates mixed legacy tools config", async () => {
 
 test("merges legacy tools with existing permission config", async () => {
   await using tmp = await tmpdir({
+    git: true,
     init: async (dir) => {
       await Bun.write(
         path.join(dir, "opencode.json"),
@@ -1159,6 +1160,7 @@ test("merges legacy tools with existing permission config", async () => {
 
 test("permission config preserves key order", async () => {
   await using tmp = await tmpdir({
+    git: true,
     init: async (dir) => {
       await Bun.write(
         path.join(dir, "opencode.json"),
