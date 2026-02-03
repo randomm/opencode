@@ -1,9 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useCallback, useRef, useState } from "react"
 import { createOpencodeClient, type Event } from "@opencode-ai/sdk/v2"
 import type { Action } from "@/cli/ink/state/reducer"
 import type { Dispatch } from "react"
 
 export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action>) {
+  const sdkRef = useRef<ReturnType<typeof createOpencodeClient> | null>(null)
+  const [isStreaming, setIsStreaming] = useState(false)
+
   useEffect(() => {
     if (!sessionId) return
 
@@ -12,6 +15,8 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
       baseUrl: process.env.OPENCODE_API_URL || "http://localhost:4096",
       signal: abortController.signal,
     })
+
+    sdkRef.current = sdk
 
     const subscribeToEvents = async () => {
       try {
@@ -23,7 +28,7 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
         )
 
         for await (const event of events.stream) {
-          handleEvent(event, dispatch, sessionId)
+          handleEvent(event, dispatch, sessionId, setIsStreaming)
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -36,12 +41,44 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
     subscribeToEvents()
 
     return () => {
+      sdkRef.current = null
       abortController.abort()
     }
   }, [sessionId, dispatch])
+
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!sessionId || !sdkRef.current) return
+
+      setIsStreaming(true)
+      dispatch({ type: "CLEAR_STREAMING" })
+
+      try {
+        await sdkRef.current.session.prompt({
+          sessionID: sessionId,
+          parts: [{ type: "text", text: content }],
+        })
+      } catch (err) {
+        setIsStreaming(false)
+        console.error("Failed to send message:", err)
+        throw err
+      }
+    },
+    [sessionId, dispatch],
+  )
+
+  return {
+    sendMessage,
+    isStreaming,
+  }
 }
 
-function handleEvent(event: Event, dispatch: Dispatch<Action>, sessionId: string) {
+function handleEvent(
+  event: Event,
+  dispatch: Dispatch<Action>,
+  sessionId: string,
+  setIsStreaming: (value: boolean) => void,
+) {
   switch (event.type) {
     case "message.part.updated": {
       const part = event.properties.part
@@ -110,6 +147,7 @@ function handleEvent(event: Event, dispatch: Dispatch<Action>, sessionId: string
 
     case "message.updated": {
       if (event.properties.info.sessionID !== sessionId) return
+      setIsStreaming(false)
       dispatch({
         type: "MESSAGE_COMPLETE",
         payload: { id: event.properties.info.id },
@@ -120,6 +158,7 @@ function handleEvent(event: Event, dispatch: Dispatch<Action>, sessionId: string
     case "session.status": {
       if (event.properties.sessionID !== sessionId) return
       if (event.properties.status.type === "idle") {
+        setIsStreaming(false)
         dispatch({ type: "CLEAR_STREAMING" })
       }
       break
