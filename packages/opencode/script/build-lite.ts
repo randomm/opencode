@@ -15,14 +15,17 @@ async function build() {
   await fs.promises.rm(DIST, { recursive: true, force: true })
   await fs.promises.mkdir(BIN, { recursive: true })
 
-  // Build
+  // Build with NODE_ENV=production to avoid devtools
   const result = await Bun.build({
-    entrypoints: [path.join(ROOT, "src/cli/lite/index.ts")],
+    entrypoints: [path.join(ROOT, "src/cli/ink/entry.ts")],
     outdir: BIN,
     target: "bun",
-    minify: true,
+    minify: false,
     sourcemap: "none",
     naming: "oclite",
+    define: {
+      "process.env.NODE_ENV": '"production"',
+    },
   })
 
   if (!result.success) {
