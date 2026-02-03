@@ -33,11 +33,13 @@ export interface Message {
   complete: boolean
 }
 
+type ToolInputValue = string | number | boolean | null | undefined | { [key: string]: string | number | boolean | null }
+
 export interface Tool {
   id: string
   name: string
   state: ToolState
-  input: Record<string, string | number | boolean | null | undefined | object>
+  input: Record<string, ToolInputValue>
   output?: string
   error?: string
 }
