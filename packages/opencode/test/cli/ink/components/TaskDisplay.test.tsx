@@ -120,9 +120,7 @@ describe("TaskDisplay", () => {
   it("renders without errors with undefined input value", () => {
     const task: Task = {
       ...baseTask,
-      childTools: new Map([
-        ["tool-1", { id: "tool-1", name: "tool", state: "running", input: { optional: undefined } as any }],
-      ]),
+      childTools: new Map([["tool-1", { id: "tool-1", name: "tool", state: "running", input: { optional: null } }]]),
     }
     const instance = render(<TaskDisplay task={task} agent="git-agent" />)
     instance.unmount()
@@ -133,7 +131,7 @@ describe("TaskDisplay", () => {
     const task: Task = {
       ...baseTask,
       childTools: new Map([
-        ["tool-1", { id: "tool-1", name: "tool", state: "running", input: { config: { env: "prod" } } as any }],
+        ["tool-1", { id: "tool-1", name: "tool", state: "running", input: { env: "prod", debug: true } }],
       ]),
     }
     const instance = render(<TaskDisplay task={task} agent="git-agent" />)
