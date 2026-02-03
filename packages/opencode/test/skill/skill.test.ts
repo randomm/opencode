@@ -42,8 +42,8 @@ Instructions here.
     },
   })
 
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "1"
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
 
   try {
     await Instance.provide({
@@ -58,7 +58,7 @@ Instructions here.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -91,8 +91,8 @@ description: Second test skill.
     },
   })
 
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "1"
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
 
   try {
     await Instance.provide({
@@ -105,7 +105,7 @@ description: Second test skill.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -124,8 +124,8 @@ Just some content without YAML frontmatter.
     },
   })
 
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "1"
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
 
   try {
     await Instance.provide({
@@ -136,7 +136,7 @@ Just some content without YAML frontmatter.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -158,10 +158,8 @@ description: A skill in the .claude/skills directory.
     },
   })
 
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
   const originalDisableClaudeCode = process.env.OPENCODE_DISABLE_CLAUDE_CODE
   const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "1"
   process.env.OPENCODE_DISABLE_CLAUDE_CODE = "0"
   process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
 
@@ -177,7 +175,6 @@ description: A skill in the .claude/skills directory.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
     process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
     process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
@@ -187,11 +184,9 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
   await using tmp = await tmpdir({ git: true })
 
   const originalHome = process.env.OPENCODE_TEST_HOME
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
   const originalDisableClaudeCode = process.env.OPENCODE_DISABLE_CLAUDE_CODE
   const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
   process.env.OPENCODE_TEST_HOME = tmp.path
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "0"
   process.env.OPENCODE_DISABLE_CLAUDE_CODE = "0"
   process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
 
@@ -209,7 +204,6 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
     })
   } finally {
     process.env.OPENCODE_TEST_HOME = originalHome
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
     process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
     process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
@@ -218,8 +212,8 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })
 
-  const originalDisableGlobal = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
-  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "1"
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
 
   try {
     await Instance.provide({
@@ -230,6 +224,6 @@ test("returns empty array when no skills exist", async () => {
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobal
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
