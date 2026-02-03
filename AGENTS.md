@@ -7,6 +7,52 @@
 
 ---
 
+## Fork Workflow (CRITICAL)
+
+**This is a FORK of `anomalyco/opencode`. We do NOT contribute upstream.**
+
+### Repository Structure
+
+- **Upstream:** `anomalyco/opencode` (read-only reference)
+- **Our Fork:** `randomm/opencode` (where we work)
+- **Origin remote:** Points to our fork
+
+### PR Rules
+
+- ❌ **NEVER** create PRs targeting upstream (`anomalyco/opencode`)
+- ✅ **ALWAYS** merge feature branches locally to our fork's `dev`
+- ✅ Push directly to `origin` (our fork)
+
+### Correct Workflow
+
+```bash
+# Feature complete - merge to our dev
+git checkout dev
+git merge feature/my-feature --no-ff
+git push origin dev
+
+# Cleanup
+git branch -d feature/my-feature
+```
+
+### Syncing with Upstream (when needed)
+
+```bash
+# Fetch upstream changes
+git fetch anomalyco dev
+
+# Rebase our dev onto upstream (if we want their changes)
+git checkout dev
+git rebase anomalyco/dev
+git push origin dev --force-with-lease
+```
+
+### Why No Upstream PRs?
+
+PRs to upstream only notify them "we forked and made changes" - they don't merge into our fork. Our work stays in our fork regardless of upstream PR status.
+
+---
+
 ## Context7 Protocol
 
 **MANDATORY: Use context7 before ANY programming task.**
