@@ -54,7 +54,7 @@ function handleEvent(event: Event, dispatch: Dispatch<Action>, sessionId: string
           case "running": {
             const input: Record<string, unknown> = {}
             for (const [key, value] of Object.entries(toolState.input)) {
-              if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+              if (typeof value === "object" && value !== null) {
                 input[key] = JSON.stringify(value)
               } else {
                 input[key] = value

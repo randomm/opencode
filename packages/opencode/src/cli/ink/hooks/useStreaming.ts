@@ -51,6 +51,7 @@ export function useStreaming(sessionId: string | null) {
 
         const decoder = new TextDecoder()
         let buffer = ""
+        let streamComplete = false
 
         try {
           while (true) {
@@ -74,18 +75,25 @@ export function useStreaming(sessionId: string | null) {
                   }
 
                   if (event.type === "done") {
-                    setIsStreaming(false)
-                    return
+                    streamComplete = true
+                    break
                   }
                 } catch (error) {
                   console.error("Failed to parse SSE event:", error)
                 }
               }
             }
+
+            if (streamComplete) break
           }
         } finally {
           if (reader) {
-            reader.releaseLock()
+            try {
+              reader.releaseLock()
+              reader = null
+            } catch {
+              // Ignore lock release errors
+            }
           }
         }
 
@@ -94,6 +102,7 @@ export function useStreaming(sessionId: string | null) {
         if (reader) {
           try {
             reader.releaseLock()
+            reader = null
           } catch {
             // Ignore lock release errors
           }
