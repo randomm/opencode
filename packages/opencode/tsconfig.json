@@ -12,5 +12,7 @@
       "@/*": ["./src/*"],
       "@tui/*": ["./src/cli/cmd/tui/*"]
     }
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
