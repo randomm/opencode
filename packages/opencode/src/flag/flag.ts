@@ -18,10 +18,11 @@ export namespace Flag {
   export const OPENCODE_ENABLE_EXPERIMENTAL_MODELS = truthy("OPENCODE_ENABLE_EXPERIMENTAL_MODELS")
   export const OPENCODE_DISABLE_AUTOCOMPACT = truthy("OPENCODE_DISABLE_AUTOCOMPACT")
   export const OPENCODE_DISABLE_MODELS_FETCH = truthy("OPENCODE_DISABLE_MODELS_FETCH")
-  export declare const OPENCODE_DISABLE_CLAUDE_CODE: boolean
-  export declare const OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: boolean
-  export declare const OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: boolean
-  export declare const OPENCODE_DISABLE_GLOBAL_SKILLS: boolean
+  export const OPENCODE_DISABLE_CLAUDE_CODE = truthy("OPENCODE_DISABLE_CLAUDE_CODE")
+  export const OPENCODE_DISABLE_CLAUDE_CODE_PROMPT =
+    OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_PROMPT")
+  export const OPENCODE_DISABLE_CLAUDE_CODE_SKILLS =
+    OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_SKILLS")
   export declare const OPENCODE_DISABLE_PROJECT_CONFIG: boolean
   export const OPENCODE_FAKE_VCS = process.env["OPENCODE_FAKE_VCS"]
   export declare const OPENCODE_CLIENT: string
@@ -67,17 +68,6 @@ Object.defineProperty(Flag, "OPENCODE_DISABLE_PROJECT_CONFIG", {
   configurable: false,
 })
 
-// Dynamic getter for OPENCODE_DISABLE_GLOBAL_SKILLS
-// This must be evaluated at access time, not module load time,
-// to allow tests to control global skill discovery
-Object.defineProperty(Flag, "OPENCODE_DISABLE_GLOBAL_SKILLS", {
-  get() {
-    return truthy("OPENCODE_DISABLE_GLOBAL_SKILLS")
-  },
-  enumerable: true,
-  configurable: false,
-})
-
 // Dynamic getter for OPENCODE_CONFIG_DIR
 // This must be evaluated at access time, not module load time,
 // because external tooling may set this env var at runtime
@@ -88,7 +78,6 @@ Object.defineProperty(Flag, "OPENCODE_CONFIG_DIR", {
   enumerable: true,
   configurable: false,
 })
-})
 
 // Dynamic getter for OPENCODE_CLIENT
 // This must be evaluated at access time, not module load time,
@@ -96,39 +85,6 @@ Object.defineProperty(Flag, "OPENCODE_CONFIG_DIR", {
 Object.defineProperty(Flag, "OPENCODE_CLIENT", {
   get() {
     return process.env["OPENCODE_CLIENT"] ?? "cli"
-  },
-  enumerable: true,
-  configurable: false,
-})
-
-// Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE
-// This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code features
-Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE", {
-  get() {
-    return truthy("OPENCODE_DISABLE_CLAUDE_CODE")
-  },
-  enumerable: true,
-  configurable: false,
-})
-
-// Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE_PROMPT
-// This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code prompt features
-Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_PROMPT", {
-  get() {
-    return Flag.OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_PROMPT")
-  },
-  enumerable: true,
-  configurable: false,
-})
-
-// Dynamic getter for OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
-// This must be evaluated at access time, not module load time,
-// to allow tests to control Claude Code skills discovery
-Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS", {
-  get() {
-    return Flag.OPENCODE_DISABLE_CLAUDE_CODE || truthy("OPENCODE_DISABLE_CLAUDE_CODE_SKILLS")
   },
   enumerable: true,
   configurable: false,
