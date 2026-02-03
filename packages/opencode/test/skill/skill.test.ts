@@ -42,17 +42,24 @@ Instructions here.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills.length).toBe(1)
-      const testSkill = skills.find((s) => s.name === "test-skill")
-      expect(testSkill).toBeDefined()
-      expect(testSkill!.description).toBe("A test skill for verification.")
-      expect(testSkill!.location).toContain("skill/test-skill/SKILL.md")
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills.length).toBe(1)
+        const testSkill = skills.find((s) => s.name === "test-skill")
+        expect(testSkill).toBeDefined()
+        expect(testSkill!.description).toBe("A test skill for verification.")
+        expect(testSkill!.location).toContain("skill/test-skill/SKILL.md")
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("discovers multiple skills from .opencode/skill/ directory", async () => {
@@ -84,15 +91,22 @@ description: Second test skill.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills.length).toBe(2)
-      expect(skills.find((s) => s.name === "skill-one")).toBeDefined()
-      expect(skills.find((s) => s.name === "skill-two")).toBeDefined()
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills.length).toBe(2)
+        expect(skills.find((s) => s.name === "skill-one")).toBeDefined()
+        expect(skills.find((s) => s.name === "skill-two")).toBeDefined()
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("skips skills with missing frontmatter", async () => {
@@ -110,13 +124,20 @@ Just some content without YAML frontmatter.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills).toEqual([])
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills).toEqual([])
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("discovers skills from .claude/skills/ directory", async () => {
@@ -137,23 +158,37 @@ description: A skill in the .claude/skills directory.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills.length).toBe(1)
-      const claudeSkill = skills.find((s) => s.name === "claude-skill")
-      expect(claudeSkill).toBeDefined()
-      expect(claudeSkill!.location).toContain(".claude/skills/claude-skill/SKILL.md")
-    },
-  })
+  const originalDisableClaudeCode = process.env.OPENCODE_DISABLE_CLAUDE_CODE
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE = "0"
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills.length).toBe(1)
+        const claudeSkill = skills.find((s) => s.name === "claude-skill")
+        expect(claudeSkill).toBeDefined()
+        expect(claudeSkill!.location).toContain(".claude/skills/claude-skill/SKILL.md")
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("discovers global skills from ~/.claude/skills/ directory", async () => {
   await using tmp = await tmpdir({ git: true })
 
   const originalHome = process.env.OPENCODE_TEST_HOME
+  const originalDisableClaudeCode = process.env.OPENCODE_DISABLE_CLAUDE_CODE
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
   process.env.OPENCODE_TEST_HOME = tmp.path
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE = "0"
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
 
   try {
     await createGlobalSkill(tmp.path)
@@ -169,17 +204,26 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
     })
   } finally {
     process.env.OPENCODE_TEST_HOME = originalHome
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
 test("returns empty array when no skills exist", async () => {
   await using tmp = await tmpdir({ git: true })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills).toEqual([])
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "1"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills).toEqual([])
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })

@@ -1,5 +1,5 @@
 import z from "zod"
-import fs from "fs/promises"
+import fs, { stat as fsStat } from "fs/promises"
 import { Filesystem } from "../util/filesystem"
 import path from "path"
 import { $ } from "bun"
@@ -63,10 +63,13 @@ export namespace Project {
         const gitBinary = Bun.which("git")
 
         // cached id calculation
-        let id = await Bun.file(path.join(git, "opencode"))
-          .text()
-          .then((x) => x.trim())
-          .catch(() => undefined)
+        let id
+        try {
+          const content = await Bun.file(path.join(git, "opencode")).text()
+          id = content.trim()
+        } catch {
+          id = undefined
+        }
 
         if (!gitBinary) {
           return {
@@ -93,12 +96,12 @@ export namespace Project {
             )
             .catch(() => undefined)
 
-          if (!roots) {
+          if (!roots || roots.length === 0) {
             return {
               id: "global",
               worktree: sandbox,
               sandbox: sandbox,
-              vcs: Info.shape.vcs.parse(Flag.OPENCODE_FAKE_VCS),
+              vcs: "git",
             }
           }
 
@@ -107,15 +110,6 @@ export namespace Project {
             void Bun.file(path.join(git, "opencode"))
               .write(id)
               .catch(() => undefined)
-          }
-        }
-
-        if (!id) {
-          return {
-            id: "global",
-            worktree: sandbox,
-            sandbox: sandbox,
-            vcs: "git",
           }
         }
 
@@ -136,28 +130,24 @@ export namespace Project {
           }
         }
 
-        sandbox = top
-
-        const worktree = await $`git rev-parse --git-common-dir`
-          .quiet()
-          .nothrow()
-          .cwd(sandbox)
-          .text()
-          .then((x) => {
-            const dirname = path.dirname(x.trim())
-            if (dirname === ".") return sandbox
-            return dirname
-          })
-          .catch(() => undefined)
-
-        if (!worktree) {
-          return {
-            id,
-            sandbox,
-            worktree: sandbox,
-            vcs: Info.shape.vcs.parse(Flag.OPENCODE_FAKE_VCS),
+        let worktree = top
+        const stat = await fsStat(git).catch(() => null)
+        if (stat?.isFile()) {
+          const gitDirContent = await Bun.file(git)
+            .text()
+            .then((x) => x.trim())
+          const gitDir = gitDirContent.replace("gitdir: ", "")
+          const gitCommonDirPath = path.join(gitDir, "commondir")
+          if (await Bun.file(gitCommonDirPath).exists()) {
+            const commonDirContent = await Bun.file(gitCommonDirPath)
+              .text()
+              .then((x) => x.trim())
+            const commonGitDir = path.resolve(gitDir, commonDirContent)
+            worktree = path.dirname(commonGitDir)
           }
         }
+
+        sandbox = top
 
         return {
           id,

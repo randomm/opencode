@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Setup environment
+        run: |
+          mkdir -p ~/.local/share/opencode/log
+          git config --global user.name "CI"
+          git config --global user.email "ci@test.local"
+
+      - run: bun install
+
+      - run: bun typecheck
+
+      - working-directory: packages/opencode
+        run: bun test

@@ -533,7 +533,6 @@ export const GithubRunCommand = cmd({
           await Session.share(session.id)
           return session.id.slice(-8)
         })()
-        console.log("opencode session", session.id)
 
         // Handle event types:
         // REPO_EVENTS (schedule, workflow_dispatch): no issue/PR context, output to logs/PR only
@@ -916,7 +915,7 @@ export const GithubRunCommand = cmd({
         })
 
         // result should always be assistant just satisfying type checker
-        if (result.info.role === "assistant" && result.info.error) {
+        if (result.info && result.info.role === "assistant" && result.info.error) {
           console.error("Agent error:", result.info.error)
           throw new Error(
             `${result.info.error.name}: ${"message" in result.info.error ? result.info.error.message : ""}`,
@@ -945,7 +944,7 @@ export const GithubRunCommand = cmd({
           ],
         })
 
-        if (summary.info.role === "assistant" && summary.info.error) {
+        if (summary.info && summary.info.role === "assistant" && summary.info.error) {
           console.error("Summary agent error:", summary.info.error)
           throw new Error(
             `${summary.info.error.name}: ${"message" in summary.info.error ? summary.info.error.message : ""}`,
