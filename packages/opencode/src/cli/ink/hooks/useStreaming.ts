@@ -15,8 +15,10 @@ export function useStreaming(sessionId: string | null) {
     async (content: string) => {
       if (!sessionId) return
 
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
+      const currentController = abortControllerRef.current
+      if (currentController) {
+        currentController.abort()
+        abortControllerRef.current = null
       }
 
       const abortController = new AbortController()
@@ -24,6 +26,8 @@ export function useStreaming(sessionId: string | null) {
 
       setIsStreaming(true)
       setStreamingText("")
+
+      let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
 
       try {
         const baseUrl = process.env.OPENCODE_API_URL || "http://localhost:4096"
@@ -40,7 +44,7 @@ export function useStreaming(sessionId: string | null) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const reader = response.body?.getReader()
+        reader = response.body?.getReader() ?? null
         if (!reader) {
           throw new Error("No response body")
         }
@@ -48,44 +52,62 @@ export function useStreaming(sessionId: string | null) {
         const decoder = new TextDecoder()
         let buffer = ""
 
-        while (true) {
-          const { done, value } = await reader.read()
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
 
-          if (done) break
+            if (done) break
 
-          buffer += decoder.decode(value, { stream: true })
+            buffer += decoder.decode(value, { stream: true })
 
-          const lines = buffer.split(/\r?\n/)
-          buffer = lines.pop() || ""
+            const lines = buffer.split(/\r?\n/)
+            buffer = lines.pop() || ""
 
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const data = line.slice(6)
-              try {
-                const event: StreamEvent = JSON.parse(data)
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6)
+                try {
+                  const event: StreamEvent = JSON.parse(data)
 
-                if (event.type === "delta" && event.text) {
-                  setStreamingText((prev) => prev + event.text)
+                  if (event.type === "delta" && event.text) {
+                    setStreamingText((prev) => prev + event.text)
+                  }
+
+                  if (event.type === "done") {
+                    setIsStreaming(false)
+                    return
+                  }
+                } catch (error) {
+                  console.error("Failed to parse SSE event:", error)
                 }
-
-                if (event.type === "done") {
-                  setIsStreaming(false)
-                  return
-                }
-              } catch (error) {
-                console.error("Failed to parse SSE event:", error)
               }
             }
+          }
+        } finally {
+          if (reader) {
+            reader.releaseLock()
           }
         }
 
         setIsStreaming(false)
       } catch (error) {
+        if (reader) {
+          try {
+            reader.releaseLock()
+          } catch {
+            // Ignore lock release errors
+          }
+        }
         if (error instanceof Error && error.name === "AbortError") {
+          setIsStreaming(false)
           return
         }
         setIsStreaming(false)
         throw error
+      } finally {
+        if (abortControllerRef.current === abortController) {
+          abortControllerRef.current = null
+        }
       }
     },
     [sessionId],

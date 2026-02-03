@@ -23,7 +23,7 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
         )
 
         for await (const event of events.stream) {
-          handleEvent(event, dispatch)
+          handleEvent(event, dispatch, sessionId)
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -41,25 +41,35 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
   }, [sessionId, dispatch])
 }
 
-function handleEvent(event: Event, dispatch: Dispatch<Action>) {
+function handleEvent(event: Event, dispatch: Dispatch<Action>, sessionId: string) {
   switch (event.type) {
     case "message.part.updated": {
       const part = event.properties.part
+      if (part.sessionID !== sessionId) return
 
       if (part.type === "tool") {
         const toolState = part.state
 
         switch (toolState.status) {
-          case "running":
+          case "running": {
+            const input: Record<string, unknown> = {}
+            for (const [key, value] of Object.entries(toolState.input)) {
+              if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+                input[key] = JSON.stringify(value)
+              } else {
+                input[key] = value
+              }
+            }
             dispatch({
               type: "TOOL_START",
               payload: {
                 id: part.callID,
                 name: part.tool,
-                input: toolState.input as Record<string, string | number | boolean | null>,
+                input: input as Record<string, string | number | boolean | null | undefined>,
               },
             })
             break
+          }
 
           case "completed":
             dispatch({
@@ -99,6 +109,7 @@ function handleEvent(event: Event, dispatch: Dispatch<Action>) {
     }
 
     case "message.updated": {
+      if (event.properties.info.sessionID !== sessionId) return
       dispatch({
         type: "MESSAGE_COMPLETE",
         payload: { id: event.properties.info.id },
@@ -107,6 +118,7 @@ function handleEvent(event: Event, dispatch: Dispatch<Action>) {
     }
 
     case "session.status": {
+      if (event.properties.sessionID !== sessionId) return
       if (event.properties.status.type === "idle") {
         dispatch({ type: "CLEAR_STREAMING" })
       }
