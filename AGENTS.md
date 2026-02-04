@@ -30,13 +30,24 @@ git add . && git commit -m "feat(opencode): description (#123)"
 # 3. Push feature branch to our fork
 git push -u origin feature/issue-123-description
 
-# 4. Create PR targeting our fork's dev (NOT upstream)
-gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description
+# 4. Create PR targeting our fork's dev (capture PR number)
+PR_NUM=$(gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description --json number -q .number)
 
-# 5. Get approval from @code-review-specialist
+# 5. Wait for CI checks to complete
+gh pr checks $PR_NUM --watch
 
-# 6. Merge PR (squash merge preferred)
-gh pr merge <PR#> --squash --delete-branch
+# 6. Get approval from @code-review-specialist
+
+# 7. Verify approval received before merge
+gh pr view $PR_NUM --json reviewDecision -q .reviewDecision
+# Must output: APPROVED
+
+# 8. Verify CI passed
+gh pr checks $PR_NUM
+# All checks must show passing
+
+# 9. Merge PR (squash merge preferred)
+gh pr merge $PR_NUM --squash --delete-branch
 ```
 
 ### PR Rules
@@ -45,6 +56,15 @@ gh pr merge <PR#> --squash --delete-branch
 - ✅ **ALWAYS** create PRs targeting our fork's `dev` branch
 - ✅ **ALWAYS** get code-review-specialist approval before merge
 - ✅ Push feature branches to `origin` (our fork)
+
+### Error Handling
+
+If any step fails:
+
+- **CI fails**: Fix issues, push new commits, wait for CI to pass
+- **Approval denied**: Address review feedback, request re-review
+- **Merge conflicts**: Rebase on latest dev, resolve conflicts, force-push
+- **Command errors**: Check syntax, verify you're in correct repo/branch
 
 ### Syncing with Upstream (when needed)
 
@@ -381,11 +401,16 @@ git add . && git commit -m "feat(opencode): implement feature (#123)"
 # 5. Push feature branch to our fork
 git push -u origin feature/issue-123-description
 
-# 6. Create PR targeting our fork's dev
-gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description
+# 6. Create PR targeting our fork's dev (capture PR number)
+PR_NUM=$(gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description --json number -q .number)
 
-# 7. Get code-review-specialist approval, then merge
-gh pr merge <PR#> --squash --delete-branch
+# 7. Wait for CI checks to complete
+gh pr checks $PR_NUM --watch
+
+# 8. Get code-review-specialist approval, verify, then merge
+gh pr view $PR_NUM --json reviewDecision -q .reviewDecision  # Must be APPROVED
+gh pr checks $PR_NUM  # All must pass
+gh pr merge $PR_NUM --squash --delete-branch
 ```
 
 ---
