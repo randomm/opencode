@@ -14,6 +14,7 @@ import type ParcelWatcher from "@parcel/watcher"
 import { $ } from "bun"
 import { Flag } from "@/flag/flag"
 import { readdir } from "fs/promises"
+import chokidar from "chokidar"
 
 const SUBSCRIBE_TIMEOUT_MS = 10_000
 
@@ -32,15 +33,89 @@ export namespace FileWatcher {
     ),
   }
 
-  const watcher = lazy((): typeof import("@parcel/watcher") | undefined => {
+  const normalizeError = (err: unknown): Error => {
+    if (err instanceof Error) return err
+    if (typeof err === "string") return new Error(err)
+    if (err && typeof err === "object" && "message" in err) {
+      return new Error(String(err.message))
+    }
+    return new Error("Unknown watcher error")
+  }
+
+  const watcher = lazy((): typeof import("@parcel/watcher") => {
     try {
       const binding = require(
         `@parcel/watcher-${process.platform}-${process.arch}${process.platform === "linux" ? `-${OPENCODE_LIBC || "glibc"}` : ""}`,
       )
       return createWrapper(binding) as typeof import("@parcel/watcher")
     } catch (error) {
-      log.error("failed to load watcher binding", { error })
-      return
+      log.info("file watcher using chokidar fallback")
+
+      const chokidarAdapter: typeof import("@parcel/watcher") = {
+        subscribe: async (dir: string, callback: ParcelWatcher.SubscribeCallback, options?: ParcelWatcher.Options) => {
+          return new Promise((resolve, reject) => {
+            let closed = false
+
+            const watcher = chokidar.watch(dir, {
+              ignored: options?.ignore || [],
+              persistent: true,
+              ignoreInitial: true,
+            })
+
+            const eventMap: Record<string, ParcelWatcher.EventType> = {
+              add: "create",
+              addDir: "create",
+              change: "update",
+              unlink: "delete",
+              unlinkDir: "delete",
+            }
+
+            watcher.on("all", (eventType: string, filepath: string) => {
+              if (closed) return
+              const mappedType = eventMap[eventType]
+              if (mappedType) {
+                callback(null, [{ type: mappedType, path: filepath }])
+              }
+            })
+
+            watcher.once("ready", () => {
+              if (closed) return
+              watcher.removeAllListeners("error")
+
+              watcher.on("error", (err: unknown) => {
+                if (closed) return
+                callback(normalizeError(err), [])
+              })
+
+              resolve({
+                unsubscribe: async () => {
+                  closed = true
+                  await watcher.close()
+                },
+              })
+            })
+
+            watcher.once("error", (err: unknown) => {
+              closed = true
+              watcher.close().catch((closeErr) => {
+                log.warn("failed to close watcher during error handling", { error: closeErr })
+              })
+              reject(normalizeError(err))
+            })
+          })
+        },
+        unsubscribe: async () => {
+          // No-op for module-level unsubscribe
+        },
+        writeSnapshot: async () => {
+          throw new Error("writeSnapshot not supported with chokidar fallback")
+        },
+        getEventsSince: async () => {
+          throw new Error("getEventsSince not supported with chokidar fallback")
+        },
+      }
+
+      return chokidarAdapter
     }
   })
 
@@ -61,8 +136,6 @@ export namespace FileWatcher {
       log.info("watcher backend", { platform: process.platform, backend })
 
       const w = watcher()
-      if (!w) return {}
-
       const subscribe: ParcelWatcher.SubscribeCallback = (err, evts) => {
         if (err) return
         for (const evt of evts) {
