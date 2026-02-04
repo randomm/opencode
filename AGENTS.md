@@ -17,23 +17,34 @@
 - **Our Fork:** `randomm/opencode` (where we work)
 - **Origin remote:** Points to our fork
 
-### PR Rules
-
-- ❌ **NEVER** create PRs targeting upstream (`anomalyco/opencode`)
-- ✅ **ALWAYS** merge feature branches locally to our fork's `dev`
-- ✅ Push directly to `origin` (our fork)
-
 ### Correct Workflow
 
 ```bash
-# Feature complete - merge to our dev
-git checkout dev
-git merge feature/my-feature --no-ff
-git push origin dev
+# 1. Create feature branch from dev
+git checkout dev && git pull origin dev
+git checkout -b feature/issue-123-description
 
-# Cleanup
-git branch -d feature/my-feature
+# 2. Implement with TDD, commit changes
+git add . && git commit -m "feat(opencode): description (#123)"
+
+# 3. Push feature branch to our fork
+git push -u origin feature/issue-123-description
+
+# 4. Create PR targeting our fork's dev (NOT upstream)
+gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description
+
+# 5. Get approval from @code-review-specialist
+
+# 6. Merge PR (squash merge preferred)
+gh pr merge <PR#> --squash --delete-branch
 ```
+
+### PR Rules
+
+- ❌ **NEVER** create PRs targeting upstream (`anomalyco/opencode`)
+- ✅ **ALWAYS** create PRs targeting our fork's `dev` branch
+- ✅ **ALWAYS** get code-review-specialist approval before merge
+- ✅ Push feature branches to `origin` (our fork)
 
 ### Syncing with Upstream (when needed)
 
@@ -367,9 +378,14 @@ bun run typecheck && bun test
 # 4. Commit with conventional format
 git add . && git commit -m "feat(opencode): implement feature (#123)"
 
-# 5. Push and create PR
+# 5. Push feature branch to our fork
 git push -u origin feature/issue-123-description
-gh pr create --base dev
+
+# 6. Create PR targeting our fork's dev
+gh pr create --repo randomm/opencode --base dev --head feature/issue-123-description
+
+# 7. Get code-review-specialist approval, then merge
+gh pr merge <PR#> --squash --delete-branch
 ```
 
 ---
