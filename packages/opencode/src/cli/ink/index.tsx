@@ -3,5 +3,6 @@ import { render } from "ink"
 import App from "./App"
 
 export function startInkTUI() {
-  render(<App />)
+  const instance = render(<App />)
+  return instance.waitUntilExit()
 }
