@@ -2,6 +2,24 @@ import { useEffect, useCallback, useRef, useState } from "react"
 import { createOpencodeClient, type Event } from "@opencode-ai/sdk/v2"
 import type { Action } from "@/cli/ink/state/reducer"
 import type { Dispatch } from "react"
+import { Server } from "@/server/server"
+import { Flag } from "@/flag/flag"
+
+function getAuthorizationHeader(): string | undefined {
+  const password = Flag.OPENCODE_SERVER_PASSWORD
+  if (!password) return undefined
+  const username = Flag.OPENCODE_SERVER_USERNAME ?? "opencode"
+  return `Basic ${btoa(`${username}:${password}`)}`
+}
+
+function createInProcessFetch() {
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const request = new Request(input, init)
+    const auth = getAuthorizationHeader()
+    if (auth) request.headers.set("Authorization", auth)
+    return Server.App().fetch(request)
+  }) as typeof globalThis.fetch
+}
 
 export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action>) {
   const sdkRef = useRef<ReturnType<typeof createOpencodeClient> | null>(null)
@@ -12,7 +30,8 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
 
     const abortController = new AbortController()
     const sdk = createOpencodeClient({
-      baseUrl: process.env.OPENCODE_API_URL || "http://localhost:4096",
+      baseUrl: "http://opencode.internal",
+      fetch: createInProcessFetch(),
       signal: abortController.signal,
     })
 
