@@ -14,7 +14,7 @@ import type ParcelWatcher from "@parcel/watcher"
 import { $ } from "bun"
 import { Flag } from "@/flag/flag"
 import { readdir } from "fs/promises"
-import chokidar from "chokidar"
+import chokidar, { type ChokidarOptions } from "chokidar"
 
 const SUBSCRIBE_TIMEOUT_MS = 10_000
 
@@ -55,12 +55,16 @@ export namespace FileWatcher {
         subscribe: async (dir: string, callback: ParcelWatcher.SubscribeCallback, options?: ParcelWatcher.Options) => {
           return new Promise((resolve, reject) => {
             let closed = false
+            let resolved = false
 
-            const watcher = chokidar.watch(dir, {
+            const watcherOptions: ChokidarOptions = {
               ignored: options?.ignore || [],
               persistent: true,
               ignoreInitial: true,
-            })
+              usePolling: options?.backend === "fs-events" ? false : undefined,
+            }
+
+            const watcher = chokidar.watch(dir, watcherOptions)
 
             const eventMap: Record<string, ParcelWatcher.EventType> = {
               add: "create",
@@ -80,6 +84,7 @@ export namespace FileWatcher {
 
             watcher.once("ready", () => {
               if (closed) return
+              resolved = true
               watcher.removeAllListeners("error")
 
               watcher.on("error", (err: unknown) => {
@@ -96,6 +101,7 @@ export namespace FileWatcher {
             })
 
             watcher.once("error", (err: unknown) => {
+              if (resolved) return
               closed = true
               watcher.close().catch((closeErr) => {
                 log.warn("failed to close watcher during error handling", { error: closeErr })
