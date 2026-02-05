@@ -15,6 +15,12 @@ async function build() {
   await fs.promises.rm(DIST, { recursive: true, force: true })
   await fs.promises.mkdir(BIN, { recursive: true })
 
+  // Find Ink's React 19 to force single version (fixes #139)
+  // Workspace has React 18, Ink bundles React 19 - both in bundle = hooks fail
+  const INK_REACT_DIR = path.join(ROOT, "../../node_modules/ink/node_modules/react")
+  const INK_REACT_PATH = path.join(INK_REACT_DIR, "index.js")
+  const INK_REACT_JSX_PATH = path.join(INK_REACT_DIR, "jsx-runtime.js")
+
   // Build with NODE_ENV=production to avoid devtools
   // Explicitly set JSX to use React for Ink components.
   // oclite uses React/Ink (src/cli/ink/), not SolidJS (src/cli/cmd/tui/).
@@ -33,6 +39,21 @@ async function build() {
       runtime: "automatic",
       importSource: "react",
     },
+    conditions: ["import", "module"],
+    plugins: [
+      {
+        name: "react-alias",
+        setup(build) {
+          // Force all react imports to use Ink's React 19 (#139)
+          build.onResolve({ filter: /^react$/ }, () => ({
+            path: INK_REACT_PATH,
+          }))
+          build.onResolve({ filter: /^react\/jsx-runtime$/ }, () => ({
+            path: INK_REACT_JSX_PATH,
+          }))
+        },
+      },
+    ],
   })
 
   if (!result.success) {
