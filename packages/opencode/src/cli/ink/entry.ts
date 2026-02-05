@@ -6,6 +6,9 @@ import { Instance } from "@/project/instance"
 import { InstanceBootstrap } from "@/project/bootstrap"
 import { Installation } from "@/installation"
 import { startInkTUI } from "./index.tsx"
+import { createSpinner } from "./spinner"
+import { Provider } from "@/provider/provider"
+import { Agent } from "@/agent/agent"
 
 async function main() {
   try {
@@ -37,14 +40,37 @@ async function main() {
       })
     })
 
+    // Show spinner during bootstrap
+    const spinner = createSpinner("Starting oclite...")
+
     // Initialize Instance for SDK integration
-    await Instance.provide({
-      directory: process.cwd(),
-      init: InstanceBootstrap,
-      fn: async () => {
-        await startInkTUI()
-      },
-    })
+    try {
+      await Instance.provide({
+        directory: process.cwd(),
+        init: InstanceBootstrap,
+        fn: async () => {
+          // ISSUE FIX #6: Add timeout to bootstrap
+          const bootstrap = Promise.all([Provider.list(), Agent.list()])
+          const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error("Bootstrap timeout after 30s")), 30000)
+          })
+
+          // CRITICAL FIX #1: Error handling with timeout
+          await Promise.race([bootstrap, timeout])
+
+          spinner.stop(true)
+
+          // CRITICAL FIX #2: Prevent race condition with stdout flush
+          await new Promise((resolve) => setTimeout(resolve, 100))
+
+          await startInkTUI()
+        },
+      })
+    } catch (error) {
+      // CRITICAL FIX #1: Ensure cursor restoration on error
+      spinner.stop(false)
+      throw error
+    }
   } catch (error) {
     console.error("Failed to start oclite:", error)
     process.exit(1)

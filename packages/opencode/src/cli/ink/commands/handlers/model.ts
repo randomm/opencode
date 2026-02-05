@@ -13,12 +13,16 @@ export async function modelHandler(args: string[], context: CommandContext): Pro
     return
   }
 
-  context.dispatch({
-    type: "SET_SESSION",
-    payload: {
-      id: context.session.id ?? "default",
-      agent: context.session.agent,
-      model: modelName,
-    },
-  })
+  try {
+    context.dispatch({
+      type: "SET_SESSION",
+      payload: {
+        id: context.session.id || "default",
+        agent: context.session.agent,
+        model: modelName,
+      },
+    })
+  } catch (error) {
+    console.error("Failed to set model:", error)
+  }
 }

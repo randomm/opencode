@@ -6,6 +6,7 @@ export type Action =
   | { type: "SET_SESSION"; payload: { id: string; agent: string; model: string | null } }
   | { type: "SET_SUBAGENT_MODEL"; payload: string }
   | { type: "STREAM_TEXT"; payload: string }
+  | { type: "ADD_USER_MESSAGE"; payload: string }
   | {
       type: "TOOL_START"
       payload: { id: string; name: string; input: Record<string, ToolInputValue> }
@@ -21,6 +22,7 @@ export const initialState: AppState = {
   messages: [],
   streaming: {
     text: "",
+    userMessage: null,
     tools: new Map(),
     tasks: new Map(),
   },
@@ -61,6 +63,15 @@ export function appReducer(state: AppState, action: Action): AppState {
         streaming: {
           ...state.streaming,
           text: state.streaming.text + action.payload,
+        },
+      }
+
+    case "ADD_USER_MESSAGE":
+      return {
+        ...state,
+        streaming: {
+          ...state.streaming,
+          userMessage: action.payload,
         },
       }
 
@@ -166,6 +177,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         messages: [...state.messages, message],
         streaming: {
           text: "",
+          userMessage: null,
           tools: new Map(),
           tasks: new Map(),
         },
@@ -192,6 +204,7 @@ export function appReducer(state: AppState, action: Action): AppState {
         ...state,
         streaming: {
           text: "",
+          userMessage: null,
           tools: new Map(),
           tasks: new Map(),
         },

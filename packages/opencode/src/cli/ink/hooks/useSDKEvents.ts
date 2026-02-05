@@ -85,6 +85,7 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
       streamingLockRef.current = true
 
       dispatch({ type: "CLEAR_STREAMING" })
+      dispatch({ type: "ADD_USER_MESSAGE", payload: content })
 
       setIsStreaming(true)
 

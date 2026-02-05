@@ -78,6 +78,20 @@ describe("appReducer", () => {
     })
   })
 
+  describe("ADD_USER_MESSAGE", () => {
+    it("stores user message on ADD_USER_MESSAGE", () => {
+      const action: Action = { type: "ADD_USER_MESSAGE", payload: "hello" }
+      const state = appReducer(initialState, action)
+      expect(state.streaming.userMessage).toBe("hello")
+    })
+
+    it("replaces previous user message", () => {
+      let state = appReducer(initialState, { type: "ADD_USER_MESSAGE", payload: "first" })
+      state = appReducer(state, { type: "ADD_USER_MESSAGE", payload: "second" })
+      expect(state.streaming.userMessage).toBe("second")
+    })
+  })
+
   describe("TOOL_START", () => {
     it("adds tool to active set", () => {
       const action: Action = {
@@ -389,6 +403,21 @@ describe("appReducer", () => {
       expect(state.streaming.text).toBe("")
       expect(state.streaming.tools.size).toBe(0)
       expect(state.streaming.tasks.size).toBe(0)
+    })
+
+    it("clears user message on CLEAR_STREAMING", () => {
+      let state = appReducer(initialState, { type: "ADD_USER_MESSAGE", payload: "hello" })
+      state = appReducer(state, { type: "CLEAR_STREAMING" })
+      expect(state.streaming.userMessage).toBeNull()
+    })
+  })
+
+  describe("MESSAGE_COMPLETE with user message", () => {
+    it("clears user message on MESSAGE_COMPLETE", () => {
+      let state = appReducer(initialState, { type: "ADD_USER_MESSAGE", payload: "hello" })
+      state = appReducer(state, { type: "STREAM_TEXT", payload: "response" })
+      state = appReducer(state, { type: "MESSAGE_COMPLETE", payload: { id: "msg-1" } })
+      expect(state.streaming.userMessage).toBeNull()
     })
   })
 })

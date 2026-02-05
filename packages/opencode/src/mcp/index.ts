@@ -160,6 +160,13 @@ export namespace MCP {
     return typeof entry === "object" && entry !== null && "type" in entry
   }
 
+  // Track initialization state per instance
+  const initState = Instance.state(() => ({
+    promise: undefined as Promise<void> | undefined,
+    initialized: false,
+    failed: false,
+  }))
+
   const state = Instance.state(
     async () => {
       const cfg = await Config.get()
@@ -208,6 +215,25 @@ export namespace MCP {
       pendingOAuthTransports.clear()
     },
   )
+
+  // Initialize MCP in background without blocking
+  // Uses atomic check-and-set to prevent race conditions
+  function initializeInBackground() {
+    const init = initState()
+    if (init.initialized || init.failed || init.promise) return
+
+    // Atomic: set promise immediately before any async operations
+    init.promise = Promise.resolve()
+      .then(() => state())
+      .then(() => {
+        init.initialized = true
+        log.info("MCP initialization complete")
+      })
+      .catch((error) => {
+        init.failed = true
+        log.error("MCP initialization failed", { error })
+      })
+  }
 
   // Helper function to fetch prompts for a specific client
   async function fetchPromptsForClient(clientName: string, client: Client) {
@@ -494,6 +520,12 @@ export namespace MCP {
   }
 
   export async function status() {
+    // Start initialization in background if not already started
+    const init = initState()
+    if (!init.initialized) {
+      initializeInBackground()
+    }
+
     const s = await state()
     const cfg = await Config.get()
     const config = cfg.mcp ?? {}
@@ -509,6 +541,13 @@ export namespace MCP {
   }
 
   export async function clients() {
+    // Start initialization in background if not already started
+    const init = initState()
+    if (!init.initialized) {
+      initializeInBackground()
+      // Return empty clients if not ready yet
+      return {}
+    }
     return state().then((state) => state.clients)
   }
 
@@ -564,6 +603,21 @@ export namespace MCP {
   }
 
   export async function tools() {
+    // Start initialization in background if not already started
+    const init = initState()
+    if (!init.initialized && !init.failed) {
+      initializeInBackground()
+      // Return empty tools on first call - MCP will be available on subsequent calls
+      log.info("MCP not ready yet, returning empty tools (initializing in background)")
+      return {}
+    }
+
+    // If initialization failed, return empty tools (no MCP available)
+    if (init.failed) {
+      log.debug("MCP initialization failed, returning empty tools")
+      return {}
+    }
+
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
