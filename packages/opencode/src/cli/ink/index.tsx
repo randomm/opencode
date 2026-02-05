@@ -1,8 +1,8 @@
 /** @jsxImportSource react */
 import { render } from "ink"
-import App from "./App"
+import LiteApp from "./LiteApp"
 
 export function startInkTUI() {
-  const instance = render(<App />)
+  const instance = render(<LiteApp />)
   return instance.waitUntilExit()
 }

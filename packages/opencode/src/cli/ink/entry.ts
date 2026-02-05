@@ -8,6 +8,13 @@ import { startInkTUI } from "./index.tsx"
 
 async function main() {
   try {
+    // Check for TTY - oclite requires interactive terminal
+    if (!process.stdout.isTTY) {
+      console.error("Error: oclite requires an interactive terminal")
+      console.error("Please run this command directly in a terminal, not through pipes or scripts")
+      process.exit(1)
+    }
+
     await Global.init()
     // Disable Log printing to stdout - Ink owns stdout for TUI rendering
     await Log.init({
@@ -28,13 +35,9 @@ async function main() {
       })
     })
 
-    await Instance.provide({
-      directory: process.cwd(),
-      init: InstanceBootstrap,
-      fn: async () => {
-        await startInkTUI()
-      },
-    })
+    // For oclite, skip the heavy Instance.provide and run TUI directly
+    // This is a lightweight version that doesn't need full project bootstrap
+    await startInkTUI()
   } catch (error) {
     console.error("Failed to start oclite:", error)
     process.exit(1)
