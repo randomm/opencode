@@ -71,6 +71,10 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
         throw new Error("Session not ready - SDK client not initialized")
       }
 
+      if (isStreaming) {
+        throw new Error("Message already in progress - please wait")
+      }
+
       setIsStreaming(true)
       dispatch({ type: "CLEAR_STREAMING" })
 
@@ -85,7 +89,7 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
         throw err
       }
     },
-    [sessionId, dispatch],
+    [sessionId, dispatch, isStreaming],
   )
 
   return {

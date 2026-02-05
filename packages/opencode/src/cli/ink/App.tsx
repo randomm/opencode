@@ -74,7 +74,7 @@ export const App = (): ReactElement => {
           dispatch({ type: "CLEAR_STREAMING" })
           dispatch({
             type: "STREAM_TEXT",
-            payload: `Error: ${err}\n`,
+            payload: `Failed to send message: ${err}\n`,
           })
         }
       }
