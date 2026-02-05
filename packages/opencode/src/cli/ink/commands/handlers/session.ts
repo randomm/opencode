@@ -4,12 +4,17 @@ const SESSION_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9-_]{2,63}$/
 
 export async function sessionHandler(args: string[], context: CommandContext): Promise<void> {
   if (args.length === 0 || !args[0]) {
+    context.dispatch({ type: "STREAM_TEXT", payload: "Invalid session ID. Use: /session <id>\n" })
     return
   }
 
   const sessionId = args[0]
 
   if (!SESSION_ID_PATTERN.test(sessionId)) {
+    context.dispatch({
+      type: "STREAM_TEXT",
+      payload: "Invalid session ID format. Must be 3-64 alphanumeric characters, hyphens, or underscores.\n",
+    })
     return
   }
 
@@ -22,8 +27,10 @@ export async function sessionHandler(args: string[], context: CommandContext): P
         model: context.session.model,
       },
     })
+    context.dispatch({ type: "STREAM_TEXT", payload: `Session switched to: ${sessionId}\n` })
   } catch (error) {
     console.error("Failed to set session:", error)
+    context.dispatch({ type: "STREAM_TEXT", payload: "Failed to switch session\n" })
   }
 }
 
@@ -67,7 +74,9 @@ export async function newSessionHandler(_args: string[], context: CommandContext
         model: context.session.model,
       },
     })
+    context.dispatch({ type: "STREAM_TEXT", payload: `New session created: ${sessionId}\n` })
   } catch (error) {
     console.error("Failed to set new session:", error)
+    context.dispatch({ type: "STREAM_TEXT", payload: "Failed to create new session\n" })
   }
 }

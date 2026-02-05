@@ -412,6 +412,33 @@ describe("appReducer", () => {
     })
   })
 
+  describe("CLEAR_ALL", () => {
+    it("clears all messages and streaming state", () => {
+      let state = initialState
+      // Add completed messages
+      state = appReducer(state, { type: "ADD_USER_MESSAGE", payload: "hello" })
+      state = appReducer(state, { type: "MESSAGE_COMPLETE", payload: { id: "msg-1" } })
+      state = appReducer(state, { type: "STREAM_TEXT", payload: "response" })
+      state = appReducer(state, { type: "MESSAGE_COMPLETE", payload: { id: "msg-2" } })
+      // Add streaming state
+      state = appReducer(state, { type: "STREAM_TEXT", payload: "streaming..." })
+      state = appReducer(state, {
+        type: "TOOL_START",
+        payload: { id: "tool-1", name: "read", input: {} },
+      })
+
+      // Clear all
+      state = appReducer(state, { type: "CLEAR_ALL" })
+
+      // Verify everything is cleared
+      expect(state.messages).toEqual([])
+      expect(state.streaming.text).toBe("")
+      expect(state.streaming.userMessage).toBeNull()
+      expect(state.streaming.tools.size).toBe(0)
+      expect(state.streaming.tasks.size).toBe(0)
+    })
+  })
+
   describe("MESSAGE_COMPLETE with user message", () => {
     it("clears user message on MESSAGE_COMPLETE", () => {
       let state = appReducer(initialState, { type: "ADD_USER_MESSAGE", payload: "hello" })

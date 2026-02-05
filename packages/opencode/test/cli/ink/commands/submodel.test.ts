@@ -49,7 +49,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler([], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects invalid model format without slash", async () => {
@@ -59,7 +62,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["invalid-model"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects model with multiple slashes", async () => {
@@ -69,7 +75,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider/model/version"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("accepts model with hyphens and dots", async () => {
@@ -91,7 +100,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler([""], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects model with leading hyphen in provider", async () => {
@@ -101,7 +113,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["-provider/model"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects model with leading hyphen in model name", async () => {
@@ -111,7 +126,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider/-model"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects single character provider or model", async () => {
@@ -121,7 +139,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["a/b"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects single character model name", async () => {
@@ -131,7 +152,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider/a"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects single digit model name", async () => {
@@ -141,7 +165,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider/1"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("accepts minimum valid format", async () => {
@@ -163,7 +190,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider-/model"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects model with trailing hyphen in model name", async () => {
@@ -173,7 +203,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
 
       await submodelHandler(["provider/model-"], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
     })
 
     test("rejects model exceeding maximum length", async () => {
@@ -185,7 +218,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
       const longModel = "b".repeat(129)
       await submodelHandler([`${longProvider}/${longModel}`], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Model name too long.\n",
+      })
     })
 
     test("accepts model at maximum length boundary", async () => {
@@ -210,7 +246,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
       const provider = "a" + "b".repeat(63) + "c"
       await submodelHandler([`${provider}/model`], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Provider or model name invalid.\n",
+      })
     })
 
     test("rejects model name exceeding 128 characters", async () => {
@@ -221,7 +260,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
       const model = "a" + "b".repeat(127) + "c"
       await submodelHandler([`provider/${model}`], context)
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Provider or model name invalid.\n",
+      })
     })
 
     test("rejects malicious backtracking input without timeout", async () => {
@@ -234,7 +276,10 @@ describe("cli.ink.commands.handlers.submodel", () => {
       await submodelHandler([attack], context)
       const duration = Date.now() - start
 
-      expect(mockDispatch).not.toHaveBeenCalled()
+      expect(mockDispatch).toHaveBeenCalledWith({
+        type: "STREAM_TEXT",
+        payload: "Invalid model format. Use: /submodel provider/model-name\n",
+      })
       expect(duration).toBeLessThan(100)
     })
   })

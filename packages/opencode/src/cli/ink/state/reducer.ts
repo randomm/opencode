@@ -17,6 +17,7 @@ export type Action =
   | { type: "MESSAGE_COMPLETE"; payload: { id: string } }
   | { type: "SET_UI_MODE"; payload: UIMode }
   | { type: "CLEAR_STREAMING" }
+  | { type: "CLEAR_ALL" }
 
 export const initialState: AppState = {
   messages: [],
@@ -202,6 +203,18 @@ export function appReducer(state: AppState, action: Action): AppState {
     case "CLEAR_STREAMING":
       return {
         ...state,
+        streaming: {
+          text: "",
+          userMessage: null,
+          tools: new Map(),
+          tasks: new Map(),
+        },
+      }
+
+    case "CLEAR_ALL":
+      return {
+        ...state,
+        messages: [],
         streaming: {
           text: "",
           userMessage: null,
