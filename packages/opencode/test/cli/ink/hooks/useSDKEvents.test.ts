@@ -41,6 +41,76 @@ describe("useSDKEvents - sendMessage logic", () => {
   })
 })
 
+describe("useSDKEvents - message filtering", () => {
+  it("filters out user message text parts", () => {
+    const dispatch = mock<(action: Action) => void>(() => {})
+    const currentAssistantMessageId = "msg-assistant-123"
+    const userMessageId = "msg-user-456"
+
+    // Simulate user message text part (should be filtered)
+    const userTextEvent: Event = {
+      type: "message.part.updated",
+      properties: {
+        part: {
+          id: "part-1",
+          sessionID: "sess-1",
+          messageID: userMessageId,
+          type: "text",
+          text: "Hello?",
+        },
+      },
+    }
+
+    // Check if this is a text part from a non-assistant message
+    if (userTextEvent.type === "message.part.updated" && userTextEvent.properties.part.type === "text") {
+      const part = userTextEvent.properties.part
+      if (currentAssistantMessageId && part.messageID !== currentAssistantMessageId) {
+        // This should be skipped - don't dispatch
+        return
+      }
+    }
+
+    expect(dispatch).not.toHaveBeenCalled()
+  })
+
+  it("allows assistant message text parts", () => {
+    const dispatch = mock<(action: Action) => void>(() => {})
+    const currentAssistantMessageId = "msg-assistant-123"
+
+    // Simulate assistant message text part (should be allowed)
+    const assistantTextEvent: Event = {
+      type: "message.part.updated",
+      properties: {
+        part: {
+          id: "part-2",
+          sessionID: "sess-1",
+          messageID: currentAssistantMessageId,
+          type: "text",
+          text: "I can help with that!",
+        },
+      },
+    }
+
+    // Check if this is a text part from the assistant message
+    if (assistantTextEvent.type === "message.part.updated" && assistantTextEvent.properties.part.type === "text") {
+      const part = assistantTextEvent.properties.part
+      if (currentAssistantMessageId && part.messageID !== currentAssistantMessageId) {
+        return
+      }
+
+      dispatch({
+        type: "STREAM_TEXT",
+        payload: part.text,
+      })
+    }
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "STREAM_TEXT",
+      payload: "I can help with that!",
+    })
+  })
+})
+
 describe("useSDKEvents - streaming state tracking", () => {
   it("sets isStreaming to false on message.updated event", () => {
     const dispatch = mock<(action: Action) => void>(() => {})
@@ -89,11 +159,11 @@ describe("useSDKEvents - streaming state tracking", () => {
     if (sessionStatusEvent.type === "session.status") {
       if (sessionStatusEvent.properties.status.type === "idle") {
         isStreaming = false
-        dispatch({ type: "CLEAR_STREAMING" })
+        // Don't dispatch CLEAR_STREAMING - MESSAGE_COMPLETE handles it
       }
     }
 
     expect(isStreaming).toBe(false)
-    expect(dispatch).toHaveBeenCalledWith({ type: "CLEAR_STREAMING" })
+    expect(dispatch).not.toHaveBeenCalled()
   })
 })

@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react"
 import type { ReactElement } from "react"
 import { Box, Text, useInput } from "ink"
+
 import { theme } from "../theme"
 
 interface InputLineProps {
@@ -29,7 +30,9 @@ export const InputLine = ({
 
   useInput(
     (input, key) => {
-      if (disabled || !focus) return
+      if (disabled || !focus) {
+        return
+      }
 
       if (key.return) {
         onSubmit(state.value)

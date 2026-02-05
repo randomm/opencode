@@ -2,6 +2,7 @@
 import { useReducer, useCallback, useState, useRef, useEffect } from "react"
 import type { ReactElement } from "react"
 import { Box, Text } from "ink"
+
 import { appReducer, initialState } from "./state/reducer"
 import { theme } from "./theme"
 import { InputLine } from "./components/InputLine"
@@ -67,7 +68,6 @@ export const App = (): ReactElement => {
           })
           return
         }
-        // Send message via SDK hook
         try {
           await sendMessage(value.trim())
         } catch (err) {

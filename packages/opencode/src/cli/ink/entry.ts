@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 import { Global } from "@/global"
 import { Log } from "@/util/log"
 import { Instance } from "@/project/instance"
@@ -16,6 +17,7 @@ async function main() {
     }
 
     await Global.init()
+
     // Disable Log printing to stdout - Ink owns stdout for TUI rendering
     await Log.init({
       print: false,
