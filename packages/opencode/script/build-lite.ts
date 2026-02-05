@@ -16,6 +16,9 @@ async function build() {
   await fs.promises.mkdir(BIN, { recursive: true })
 
   // Build with NODE_ENV=production to avoid devtools
+  // Explicitly set JSX to use React for Ink components.
+  // oclite uses React/Ink (src/cli/ink/), not SolidJS (src/cli/cmd/tui/).
+  // This overrides the global tsconfig jsxImportSource: "@opentui/solid" setting.
   const result = await Bun.build({
     entrypoints: [path.join(ROOT, "src/cli/ink/entry.ts")],
     outdir: BIN,
@@ -25,6 +28,10 @@ async function build() {
     naming: "oclite",
     define: {
       "process.env.NODE_ENV": '"production"',
+    },
+    jsx: {
+      runtime: "automatic",
+      importSource: "react",
     },
   })
 

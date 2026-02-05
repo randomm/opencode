@@ -9,8 +9,9 @@ import { startInkTUI } from "./index.tsx"
 async function main() {
   try {
     await Global.init()
+    // Disable Log printing to stdout - Ink owns stdout for TUI rendering
     await Log.init({
-      print: process.stdout.isTTY,
+      print: false,
       dev: Installation.isLocal(),
       level: "INFO",
     })
