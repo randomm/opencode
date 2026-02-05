@@ -35,9 +35,14 @@ async function main() {
       })
     })
 
-    // For oclite, skip the heavy Instance.provide and run TUI directly
-    // This is a lightweight version that doesn't need full project bootstrap
-    await startInkTUI()
+    // Initialize Instance for SDK integration
+    await Instance.provide({
+      directory: process.cwd(),
+      init: InstanceBootstrap,
+      fn: async () => {
+        await startInkTUI()
+      },
+    })
   } catch (error) {
     console.error("Failed to start oclite:", error)
     process.exit(1)
