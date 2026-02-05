@@ -103,6 +103,17 @@ function handleEvent(
       const part = event.properties.part
       if (part.sessionID !== sessionId) return
 
+      // Handle text streaming
+      if (part.type === "text") {
+        const delta = event.properties.delta
+        if (delta) {
+          dispatch({
+            type: "STREAM_TEXT",
+            payload: delta,
+          })
+        }
+      }
+
       if (part.type === "tool") {
         const toolState = part.state
 
