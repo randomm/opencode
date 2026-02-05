@@ -60,6 +60,14 @@ export const App = (): ReactElement => {
 
   return (
     <Box flexDirection="column">
+      {/* Welcome message - always visible */}
+      <Box marginBottom={1}>
+        <Text color="cyan" bold>
+          oclite v1.0
+        </Text>
+        <Text dimColor> - Lightweight OpenCode TUI</Text>
+      </Box>
+
       {/* Streaming content */}
       {state.streaming.text && (
         <Box>
