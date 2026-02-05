@@ -67,7 +67,9 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!sessionId || !sdkRef.current) return
+      if (!sessionId || !sdkRef.current) {
+        throw new Error("Session not ready - SDK client not initialized")
+      }
 
       setIsStreaming(true)
       dispatch({ type: "CLEAR_STREAMING" })
@@ -105,11 +107,12 @@ function handleEvent(
 
       // Handle text streaming
       if (part.type === "text") {
-        const delta = event.properties.delta
-        if (delta) {
+        // Use delta for incremental updates, fallback to full text
+        const content = event.properties.delta ?? part.text
+        if (typeof content === "string" && content.length > 0) {
           dispatch({
             type: "STREAM_TEXT",
-            payload: delta,
+            payload: content,
           })
         }
       }

@@ -36,6 +36,7 @@ export const App = (): ReactElement => {
         })
       } catch (error) {
         console.error("Session init failed:", error)
+        dispatch({ type: "CLEAR_STREAMING" })
         dispatch({
           type: "STREAM_TEXT",
           payload: `Error: Failed to initialize session - ${error}\n`,
@@ -67,7 +68,15 @@ export const App = (): ReactElement => {
           return
         }
         // Send message via SDK hook
-        await sendMessage(value.trim())
+        try {
+          await sendMessage(value.trim())
+        } catch (err) {
+          dispatch({ type: "CLEAR_STREAMING" })
+          dispatch({
+            type: "STREAM_TEXT",
+            payload: `Error: ${err}\n`,
+          })
+        }
       }
     },
     [dispatch, setUIMode, state.session.id, sendMessage],
