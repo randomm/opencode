@@ -23,18 +23,26 @@ export const App = (): ReactElement => {
   // Initialize session on mount
   useEffect(() => {
     const initSession = async () => {
-      const session = await Session.createNext({ directory: Instance.directory })
-      const agent = await Agent.defaultAgent()
-      dispatch({
-        type: "SET_SESSION",
-        payload: {
-          id: session.id,
-          agent,
-          model: null,
-        },
-      })
+      try {
+        const session = await Session.createNext({ directory: Instance.directory })
+        const agent = await Agent.defaultAgent()
+        dispatch({
+          type: "SET_SESSION",
+          payload: {
+            id: session.id,
+            agent,
+            model: null,
+          },
+        })
+      } catch (error) {
+        console.error("Session init failed:", error)
+        dispatch({
+          type: "STREAM_TEXT",
+          payload: `Error: Failed to initialize session - ${error}\n`,
+        })
+      }
     }
-    initSession().catch(console.error)
+    initSession()
   }, [])
 
   // Use SDK events hook for streaming
@@ -50,7 +58,14 @@ export const App = (): ReactElement => {
         }).catch(() => {
           // Silently handle command errors
         })
-      } else if (value.trim() && state.session.id) {
+      } else if (value.trim()) {
+        if (!state.session.id) {
+          dispatch({
+            type: "STREAM_TEXT",
+            payload: "Waiting for session to initialize...\n",
+          })
+          return
+        }
         // Send message via SDK hook
         await sendMessage(value.trim())
       }
