@@ -7,9 +7,32 @@ import { NamedError } from "@opencode-ai/util/error"
 import { readableStreamToText } from "bun"
 import { Lock } from "../util/lock"
 import { PackageRegistry } from "./registry"
+import { mkdir, rm } from "fs/promises"
 
 export namespace BunProc {
   const log = Log.create({ service: "bun" })
+
+  async function getPendingUpdatePath(pkg: string): Promise<string> {
+    return path.join(Global.Path.cache, ".update-pending", pkg)
+  }
+
+  async function hasPendingUpdate(pkg: string): Promise<boolean> {
+    const updatePath = await getPendingUpdatePath(pkg)
+    return await Filesystem.exists(updatePath)
+  }
+
+  async function markUpdatePending(pkg: string): Promise<void> {
+    const updatePath = await getPendingUpdatePath(pkg)
+    await mkdir(path.dirname(updatePath), { recursive: true })
+    await Bun.write(updatePath, Date.now().toString())
+  }
+
+  async function clearPendingUpdate(pkg: string): Promise<void> {
+    const updatePath = await getPendingUpdatePath(pkg)
+    if (await Filesystem.exists(updatePath)) {
+      await rm(updatePath)
+    }
+  }
 
   export async function run(cmd: string[], options?: Bun.SpawnOptions.OptionsObject<any, any, any>) {
     log.info("running", {
@@ -76,14 +99,37 @@ export namespace BunProc {
     const modExists = await Filesystem.exists(mod)
     const cachedVersion = dependencies[pkg]
 
+    const pendingUpdate = await hasPendingUpdate(pkg)
+
     if (!modExists || !cachedVersion) {
       // continue to install
     } else if (version !== "latest" && cachedVersion === version) {
       return mod
-    } else if (version === "latest") {
-      const isOutdated = await PackageRegistry.isOutdated(pkg, cachedVersion, Global.Path.cache)
-      if (!isOutdated) return mod
-      log.info("Cached version is outdated, proceeding with install", { pkg, cachedVersion })
+    } else if (version === "latest" && pendingUpdate) {
+      // Update was detected in previous session - install now
+      log.info("Installing pending plugin update", { pkg, current: cachedVersion })
+      await clearPendingUpdate(pkg)
+      // Fall through to install latest version
+    } else if (version === "latest" && cachedVersion) {
+      // Return cached version immediately, check for updates in background
+      queueMicrotask(() => {
+        void (async () => {
+          try {
+            using _lock = await Lock.read("bun-install")
+            const isOutdated = await PackageRegistry.isOutdated(pkg, cachedVersion, Global.Path.cache)
+            if (isOutdated) {
+              await markUpdatePending(pkg)
+              log.info("Plugin update available - will be installed on next startup", {
+                pkg,
+                current: cachedVersion,
+              })
+            }
+          } catch (error) {
+            log.debug("Background update check failed", { pkg, error })
+          }
+        })()
+      })
+      return mod
     }
 
     const proxied = !!(

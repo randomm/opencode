@@ -253,10 +253,10 @@ describe("SDK Event Handling Logic", () => {
 
     if (sessionStatusEvent.type === "session.status") {
       if (sessionStatusEvent.properties.status.type === "idle") {
-        dispatch({ type: "CLEAR_STREAMING" })
+        // Don't dispatch CLEAR_STREAMING - MESSAGE_COMPLETE handles it
       }
     }
 
-    expect(dispatch).toHaveBeenCalledWith({ type: "CLEAR_STREAMING" })
+    expect(dispatch).not.toHaveBeenCalled()
   })
 })
