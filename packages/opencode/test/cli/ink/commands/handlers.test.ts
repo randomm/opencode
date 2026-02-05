@@ -26,11 +26,59 @@ describe("cli.ink.commands.handlers", () => {
   })
 
   describe("clear handler", () => {
-    test("dispatches CLEAR_STREAMING action", async () => {
+    test("clears terminal screen and all state in TTY environment", async () => {
       const { clearHandler } = await import("../../../../src/cli/ink/commands/handlers/clear")
       const context = createContext()
-      await clearHandler([], context)
-      expect(mockDispatch).toHaveBeenCalledWith({ type: "CLEAR_STREAMING" })
+
+      // Mock stdout.write to capture ANSI escape codes
+      const originalWrite = process.stdout.write
+      const originalIsTTY = process.stdout.isTTY
+      const writeMock = mock(() => true)
+
+      try {
+        process.stdout.write = writeMock as never
+        process.stdout.isTTY = true
+
+        await clearHandler([], context)
+
+        // Verify ANSI escape codes were written using terminal utilities
+        // Should write clear.screen (\x1b[2J) + cursor.home (\x1b[H)
+        expect(writeMock).toHaveBeenCalledWith("\x1b[2J\x1b[H")
+
+        // Verify all state was cleared (messages + streaming)
+        expect(mockDispatch).toHaveBeenCalledWith({ type: "CLEAR_ALL" })
+      } finally {
+        // Restore original write and isTTY (always executes)
+        process.stdout.write = originalWrite
+        process.stdout.isTTY = originalIsTTY
+      }
+    })
+
+    test("skips ANSI codes in non-TTY environment but clears state", async () => {
+      const { clearHandler } = await import("../../../../src/cli/ink/commands/handlers/clear")
+      const context = createContext()
+
+      // Mock stdout.write to verify ANSI codes are NOT written
+      const originalWrite = process.stdout.write
+      const originalIsTTY = process.stdout.isTTY
+      const writeMock = mock(() => true)
+
+      try {
+        process.stdout.write = writeMock as never
+        process.stdout.isTTY = false
+
+        await clearHandler([], context)
+
+        // Verify ANSI escape codes were NOT written in non-TTY
+        expect(writeMock).not.toHaveBeenCalled()
+
+        // Verify state was still cleared (this always happens)
+        expect(mockDispatch).toHaveBeenCalledWith({ type: "CLEAR_ALL" })
+      } finally {
+        // Restore original write and isTTY (always executes)
+        process.stdout.write = originalWrite
+        process.stdout.isTTY = originalIsTTY
+      }
     })
   })
 

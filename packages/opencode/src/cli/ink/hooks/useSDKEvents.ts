@@ -125,6 +125,28 @@ function handleEvent(
   currentAssistantMessageIdRef: { current: string | null },
   streamingLockRef: { current: boolean },
 ) {
+  // Debug logging for event flow
+  const getSessionId = () => {
+    const props = event.properties as Record<string, unknown>
+    if (props.part && typeof props.part === "object" && props.part !== null) {
+      const part = props.part as Record<string, unknown>
+      if (typeof part.sessionID === "string") {
+        return part.sessionID.slice(0, 8)
+      }
+    }
+    if (props.info && typeof props.info === "object" && props.info !== null) {
+      const info = props.info as Record<string, unknown>
+      if (typeof info.sessionID === "string") {
+        return info.sessionID.slice(0, 8)
+      }
+    }
+    if (typeof props.sessionID === "string") {
+      return props.sessionID.slice(0, 8)
+    }
+    return "unknown"
+  }
+  console.error(`[EVENT] ${event.type}`, getSessionId())
+
   switch (event.type) {
     case "message.part.updated": {
       const part = event.properties.part
@@ -230,14 +252,10 @@ function handleEvent(
       if (event.properties.status.type === "idle") {
         setIsStreaming(false)
         streamingLockRef.current = false
-
-        // Fallback: If MESSAGE_COMPLETE never arrived (SDK crash, network error),
-        // clear streaming state to prevent memory leak
-        if (currentAssistantMessageIdRef.current !== null) {
-          currentAssistantMessageIdRef.current = null
-          dispatch({ type: "CLEAR_STREAMING" })
-        }
-        // Otherwise, MESSAGE_COMPLETE already moved content to messages array
+        currentAssistantMessageIdRef.current = null
+        // DO NOT dispatch CLEAR_STREAMING here - let MESSAGE_COMPLETE handle it
+        // The session.status: idle event may arrive BEFORE message.updated,
+        // causing streaming content to be wiped before it can be displayed.
       }
       break
     }

@@ -6,6 +6,7 @@ import { Box, Text } from "ink"
 import { appReducer, initialState } from "./state/reducer"
 import { theme } from "./theme"
 import { InputLine } from "./components/InputLine"
+import { MessageList } from "./components/MessageList"
 import { isCommand, executeCommand } from "./commands"
 import { Session } from "../../session"
 import { Instance } from "../../project/instance"
@@ -92,7 +93,17 @@ export const App = (): ReactElement => {
         <Text dimColor> - Lightweight OpenCode TUI</Text>
       </Box>
 
-      {/* Streaming content */}
+      {/* Completed messages */}
+      <MessageList messages={state.messages} />
+
+      {/* User message being sent */}
+      {state.streaming.userMessage && (
+        <Box>
+          <Text color="blue">❯ {state.streaming.userMessage}</Text>
+        </Box>
+      )}
+
+      {/* AI streaming response */}
       {state.streaming.text && (
         <Box>
           <Text>{state.streaming.text}</Text>

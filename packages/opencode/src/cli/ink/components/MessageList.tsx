@@ -5,7 +5,7 @@ import type { Message } from "../state/types"
 import { theme } from "../theme"
 
 interface MessageListProps {
-  messages: Message[]
+  messages: readonly Message[]
 }
 
 export const MessageList = ({ messages }: MessageListProps): ReactElement => (
