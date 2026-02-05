@@ -13,12 +13,16 @@ export async function agentHandler(args: string[], context: CommandContext): Pro
     return
   }
 
-  context.dispatch({
-    type: "SET_SESSION",
-    payload: {
-      id: context.session.id ?? "default",
-      agent: agentName,
-      model: context.session.model,
-    },
-  })
+  try {
+    context.dispatch({
+      type: "SET_SESSION",
+      payload: {
+        id: context.session.id || "default",
+        agent: agentName,
+        model: context.session.model,
+      },
+    })
+  } catch (error) {
+    console.error("Failed to set agent:", error)
+  }
 }

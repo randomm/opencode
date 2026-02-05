@@ -59,6 +59,7 @@ export interface Task {
 
 export interface StreamingState {
   text: string
+  userMessage: string | null
   tools: Map<string, Tool>
   tasks: Map<string, Task>
 }
@@ -84,6 +85,7 @@ export interface AppState {
   readonly messages: readonly Message[]
   streaming: {
     readonly text: string
+    readonly userMessage: string | null
     readonly tools: ReadonlyMap<string, Tool>
     readonly tasks: ReadonlyMap<string, Task>
   }

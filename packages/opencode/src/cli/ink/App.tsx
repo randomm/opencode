@@ -87,7 +87,7 @@ export const App = (): ReactElement => {
       {/* Welcome message - always visible */}
       <Box marginBottom={1}>
         <Text color="cyan" bold>
-          oclite v1.0
+          oclite v0.1
         </Text>
         <Text dimColor> - Lightweight OpenCode TUI</Text>
       </Box>

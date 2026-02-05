@@ -29,8 +29,12 @@ export async function submodelHandler(args: string[], context: CommandContext): 
     return
   }
 
-  context.dispatch({
-    type: "SET_SUBAGENT_MODEL",
-    payload: modelName,
-  })
+  try {
+    context.dispatch({
+      type: "SET_SUBAGENT_MODEL",
+      payload: modelName,
+    })
+  } catch (error) {
+    console.error("Failed to set subagent model:", error)
+  }
 }
