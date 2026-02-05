@@ -5,14 +5,18 @@ import { Box, Text } from "ink"
 import { InputLine } from "./components/InputLine"
 import { theme } from "./theme"
 
+const MAX_HISTORY = 100
+
 export const LiteApp = (): ReactElement => {
   const [history, setHistory] = useState<string[]>([])
 
   const handleSubmit = useCallback((value: string) => {
     if (value.trim()) {
-      setHistory((prev) => [...prev, `You: ${value}`])
-      // For now, just echo back
-      setHistory((prev) => [...prev, `Assistant: I received "${value}"`])
+      setHistory((prev) => {
+        const updated = [...prev, `You: ${value}`, `Assistant: I received "${value}"`]
+        // Limit history to prevent memory leaks
+        return updated.length > MAX_HISTORY ? updated.slice(-MAX_HISTORY) : updated
+      })
     }
   }, [])
 

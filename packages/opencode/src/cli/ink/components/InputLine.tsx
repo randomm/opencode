@@ -13,6 +13,9 @@ interface InputLineProps {
   focus?: boolean
 }
 
+// Sanitize input to remove control characters and ANSI codes
+const sanitize = (str: string): string => str.replace(/[\x00-\x1F\x7F\u200B-\u200D\uFEFF]/g, "")
+
 export const InputLine = ({
   onSubmit,
   prompt,
@@ -21,37 +24,44 @@ export const InputLine = ({
   disabled = false,
   focus = true,
 }: InputLineProps): ReactElement => {
-  const [value, setValue] = useState(initialValue)
-  const [cursorOffset, setCursorOffset] = useState(initialValue.length)
+  // Use single state object to prevent race conditions
+  const [state, setState] = useState({ value: initialValue, cursor: initialValue.length })
 
   useInput(
     (input, key) => {
       if (disabled || !focus) return
 
       if (key.return) {
-        onSubmit(value)
-        setValue("")
-        setCursorOffset(0)
+        onSubmit(state.value)
+        setState({ value: "", cursor: 0 })
       } else if (key.backspace || key.delete) {
-        if (cursorOffset > 0) {
-          setValue((prev) => prev.slice(0, cursorOffset - 1) + prev.slice(cursorOffset))
-          setCursorOffset((prev) => prev - 1)
+        if (state.cursor > 0) {
+          setState((prev) => ({
+            value: prev.value.slice(0, prev.cursor - 1) + prev.value.slice(prev.cursor),
+            cursor: prev.cursor - 1,
+          }))
         }
       } else if (key.leftArrow) {
-        setCursorOffset((prev) => Math.max(0, prev - 1))
+        setState((prev) => ({ ...prev, cursor: Math.max(0, prev.cursor - 1) }))
       } else if (key.rightArrow) {
-        setCursorOffset((prev) => Math.min(value.length, prev + 1))
+        setState((prev) => ({ ...prev, cursor: Math.min(prev.value.length, prev.cursor + 1) }))
       } else if (!key.ctrl && !key.meta && input) {
-        setValue((prev) => prev.slice(0, cursorOffset) + input + prev.slice(cursorOffset))
-        setCursorOffset((prev) => prev + input.length)
+        // Sanitize input to prevent control characters
+        const cleanInput = sanitize(input)
+        if (!cleanInput) return
+
+        setState((prev) => ({
+          value: prev.value.slice(0, prev.cursor) + cleanInput + prev.value.slice(prev.cursor),
+          cursor: prev.cursor + cleanInput.length,
+        }))
       }
     },
     { isActive: focus && !disabled },
   )
 
   const displayPrompt = prompt ?? `${theme.prompt.symbol} `
-  const displayValue = value || (placeholder && !value ? placeholder : "")
-  const displayWithCursor = displayValue.slice(0, cursorOffset) + "█" + displayValue.slice(cursorOffset)
+  const displayValue = state.value || (placeholder && !state.value ? placeholder : "")
+  const displayWithCursor = displayValue.slice(0, state.cursor) + "█" + displayValue.slice(state.cursor)
 
   return (
     <Box>
