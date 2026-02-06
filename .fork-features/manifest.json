@@ -1,5 +1,4 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Fork feature manifest for randomm/opencode. Declares all intentional divergences from upstream anomalyco/opencode and how to verify they survive upstream syncs.",
   "upstream": {
@@ -19,10 +18,7 @@
         "packages/opencode/src/tool/check_task.ts",
         "packages/opencode/src/tool/check_task.txt"
       ],
-      "modifiedFiles": [
-        "packages/opencode/src/session/index.ts",
-        "packages/opencode/src/session/prompt.ts"
-      ],
+      "modifiedFiles": ["packages/opencode/src/session/index.ts", "packages/opencode/src/session/prompt.ts"],
       "criticalCode": [
         "backgroundTaskResults",
         "trackBackgroundTask",
@@ -31,9 +27,7 @@
         "TaskTool",
         "CheckTaskTool"
       ],
-      "tests": [
-        "packages/opencode/test/tool/check_task.test.ts"
-      ],
+      "tests": ["packages/opencode/test/tool/check_task.test.ts"],
       "upstreamTracking": {
         "relatedPRs": ["anomalyco/opencode#7206"],
         "relatedIssues": ["anomalyco/opencode#5887"],
@@ -49,23 +43,15 @@
         "packages/opencode/src/tool/rg.txt",
         "packages/opencode/test/tool/rg.test.ts"
       ],
-      "modifiedFiles": [
-        "packages/opencode/src/tool/registry.ts"
-      ],
+      "modifiedFiles": ["packages/opencode/src/tool/registry.ts"],
       "deletedFiles": [
         "packages/opencode/src/tool/glob.ts",
         "packages/opencode/src/tool/glob.txt",
         "packages/opencode/src/tool/grep.ts",
         "packages/opencode/src/tool/grep.txt"
       ],
-      "criticalCode": [
-        "RgTool",
-        "files_only",
-        "rg --json"
-      ],
-      "tests": [
-        "packages/opencode/test/tool/rg.test.ts"
-      ],
+      "criticalCode": ["RgTool", "files_only"],
+      "tests": ["packages/opencode/test/tool/rg.test.ts"],
       "upstreamTracking": {
         "absorptionSignals": ["RgTool", "ripgrep.*tool", "rg --json"]
       }
@@ -78,17 +64,13 @@
       "modifiedFiles": [
         "packages/opencode/src/provider/provider.ts",
         "packages/opencode/src/provider/transform.ts",
-        "packages/opencode/src/session/compaction.ts"
+        "packages/opencode/src/session/compaction.ts",
+        "packages/opencode/src/plugin/copilot.ts"
       ],
-      "criticalCode": [
-        "context-1m-2025-08-07",
-        "1000000"
-      ],
-      "tests": [
-        "packages/opencode/test/session/compaction.test.ts"
-      ],
+      "criticalCode": ["context-1m-2025-08-07", "Override context limit for Anthropic models with context-1m"],
+      "tests": ["packages/opencode/test/session/compaction.test.ts"],
       "upstreamTracking": {
-        "absorptionSignals": ["context-1m", "maxContextTokens.*1000000", "1000000.*context"]
+        "absorptionSignals": ["context-1m-2025-08-07", "context.limit.*1000000"]
       }
     }
   }

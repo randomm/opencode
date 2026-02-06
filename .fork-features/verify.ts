@@ -19,20 +19,28 @@ import fs from "fs"
 const manifestPath = path.resolve(import.meta.dir, "manifest.json")
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8"))
 
+// Basic manifest validation
+if (!manifest.features || typeof manifest.features !== "object") {
+  throw new Error("manifest.json missing 'features' object")
+}
+if (!manifest.upstream?.remote || !manifest.upstream?.branch) {
+  throw new Error("manifest.json missing 'upstream.remote' or 'upstream.branch'")
+}
+
 // Project root is one level up from .fork-features/
 const PROJECT_ROOT = path.resolve(import.meta.dir, "..")
 
 // Collect absorption warnings across all features for final summary
-const absorptionWarnings: string[] = []
+const absorptionWarnings: { feature: string; signal: string; file: string }[] = []
 
 // Filter to active features only
-const activeFeatures = Object.entries(manifest.features).filter(([, feat]: [string, any]) => feat.status === "active")
+const activeFeatures = Object.entries(manifest.features as Record<string, any>).filter(
+  ([, feat]) => feat.status === "active",
+)
 
 // ---------- Per-feature test suites ----------
 
-for (const [featureName, feature] of activeFeatures) {
-  const feat = feature as any
-
+for (const [featureName, feat] of activeFeatures) {
   describe(`Feature: ${featureName}`, () => {
     // --- New files must exist ---
     if (feat.newFiles?.length) {
@@ -96,7 +104,8 @@ for (const [featureName, feature] of activeFeatures) {
     if (feat.upstreamTracking?.absorptionSignals?.length) {
       test(`absorption scan (warnings only)`, () => {
         // Get files changed upstream since our divergence point
-        const result = Bun.spawnSync(["git", "diff", "--name-only", "HEAD...anomalyco/dev"], {
+        const upstreamRef = `${manifest.upstream.remote}/${manifest.upstream.branch}`
+        const result = Bun.spawnSync(["git", "diff", "--name-only", `HEAD...${upstreamRef}`], {
           cwd: PROJECT_ROOT,
           stdout: "pipe",
           stderr: "pipe",
@@ -146,17 +155,16 @@ for (const [featureName, feature] of activeFeatures) {
             }
 
             if (matched) {
-              const warning = `⚠️  [${featureName}] signal "${signal}" found in upstream file: ${file}`
-              absorptionWarnings.push(warning)
+              absorptionWarnings.push({ feature: featureName, signal, file })
             }
           }
         }
 
-        // Log per-feature warnings immediately
-        if (absorptionWarnings.filter((w) => w.includes(`[${featureName}]`)).length > 0) {
+        const featureWarnings = absorptionWarnings.filter((w) => w.feature === featureName)
+        if (featureWarnings.length > 0) {
           console.log(`\n${"=".repeat(60)}\n⚠️  ABSORPTION DETECTED for ${featureName}\n${"=".repeat(60)}`)
-          for (const w of absorptionWarnings.filter((w) => w.includes(`[${featureName}]`))) {
-            console.log(`  ${w}`)
+          for (const w of featureWarnings) {
+            console.log(`  ⚠️  signal "${w.signal}" found in upstream file: ${w.file}`)
           }
           console.log("=".repeat(60))
         }
@@ -177,15 +185,13 @@ describe("Absorption Summary", () => {
       console.log(`#  ⚠️  ABSORPTION WARNINGS: ${absorptionWarnings.length} signal(s) detected`)
       console.log(`${"#".repeat(60)}`)
       for (const w of absorptionWarnings) {
-        console.log(`  ${w}`)
+        console.log(`  ⚠️  [${w.feature}] "${w.signal}" in ${w.file}`)
       }
       console.log(`${"#".repeat(60)}`)
       console.log(`\nRun /sync-upstream to review upstream changes before merging.\n`)
     } else {
       console.log("\n✅ No absorption signals detected. Fork features are safe.\n")
     }
-
-    // Summary always passes — it's informational
     expect(true).toBe(true)
   })
 })

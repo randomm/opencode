@@ -97,8 +97,9 @@ If there are merge conflicts, resolve them using this hierarchy:
    - Preserve all `criticalCode` markers from the manifest
    - If both sides changed the same function, **STOP and ask the user**
    - Never silently drop fork code in these files
-4. **All other files** → accept upstream
-5. **Unresolvable conflicts** → STOP and ask the user
+4. **`.opencode/` directory** → keep ours (fork-specific configuration)
+5. **All other files** → accept upstream
+6. **Unresolvable conflicts** → STOP and ask the user
 
 After resolving, stage and continue: `git add -A && git merge --continue`
 
