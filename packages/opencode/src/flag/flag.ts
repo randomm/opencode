@@ -22,6 +22,7 @@ export namespace Flag {
   export declare const OPENCODE_DISABLE_CLAUDE_CODE_PROMPT: boolean
   export declare const OPENCODE_DISABLE_CLAUDE_CODE_SKILLS: boolean
   export declare const OPENCODE_DISABLE_GLOBAL_SKILLS: boolean
+  export declare const OPENCODE_DISABLE_EXTERNAL_SKILLS: boolean
   export declare const OPENCODE_DISABLE_PROJECT_CONFIG: boolean
   export const OPENCODE_FAKE_VCS = process.env["OPENCODE_FAKE_VCS"]
   export declare const OPENCODE_CLIENT: string
@@ -95,6 +96,17 @@ Object.defineProperty(Flag, "OPENCODE_DISABLE_CLAUDE_CODE_SKILLS", {
 Object.defineProperty(Flag, "OPENCODE_DISABLE_GLOBAL_SKILLS", {
   get() {
     return truthy("OPENCODE_DISABLE_GLOBAL_SKILLS")
+  },
+  enumerable: true,
+  configurable: false,
+})
+
+// Dynamic getter for OPENCODE_DISABLE_EXTERNAL_SKILLS
+// This must be evaluated at access time, not module load time,
+// to allow tests to control external skill discovery
+Object.defineProperty(Flag, "OPENCODE_DISABLE_EXTERNAL_SKILLS", {
+  get() {
+    return Flag.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS || truthy("OPENCODE_DISABLE_EXTERNAL_SKILLS")
   },
   enumerable: true,
   configurable: false,

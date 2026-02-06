@@ -8,6 +8,7 @@ import { readableStreamToText } from "bun"
 import { Lock } from "../util/lock"
 import { PackageRegistry } from "./registry"
 import { mkdir, rm } from "fs/promises"
+import { proxied } from "@/util/proxied"
 
 export namespace BunProc {
   const log = Log.create({ service: "bun" })
@@ -132,12 +133,6 @@ export namespace BunProc {
       return mod
     }
 
-    const proxied = !!(
-      process.env.HTTP_PROXY ||
-      process.env.HTTPS_PROXY ||
-      process.env.http_proxy ||
-      process.env.https_proxy
-    )
 
     // Build command arguments
     const args = [
@@ -145,7 +140,7 @@ export namespace BunProc {
       "--force",
       "--exact",
       // TODO: get rid of this case (see: https://github.com/oven-sh/bun/issues/19936)
-      ...(proxied ? ["--no-cache"] : []),
+      ...(proxied() ? ["--no-cache"] : []),
       "--cwd",
       Global.Path.cache,
       pkg + "@" + version,

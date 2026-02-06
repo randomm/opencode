@@ -527,6 +527,7 @@ export function Session() {
     {
       title: showThinking() ? "Hide thinking" : "Show thinking",
       value: "session.toggle.thinking",
+      keybind: "display_thinking",
       category: "Session",
       slash: {
         name: "thinking",
@@ -1115,6 +1116,9 @@ export function Session() {
                 sessionID={route.sessionID}
               />
             </box>
+            <Show when={!sidebarVisible() || !wide()}>
+              <Footer />
+            </Show>
           </Show>
           <Toast />
         </box>
@@ -1610,6 +1614,7 @@ function BlockTool(props: { title: string; children: JSX.Element; onClick?: () =
 function Bash(props: ToolProps<typeof BashTool>) {
   const { theme } = useTheme()
   const sync = useSync()
+  const isRunning = createMemo(() => props.part.state.status === "running")
   const output = createMemo(() => stripAnsi(props.metadata.output?.trim() ?? ""))
   const [expanded, setExpanded] = createSignal(false)
   const lines = createMemo(() => output().split("\n"))
@@ -1650,6 +1655,7 @@ function Bash(props: ToolProps<typeof BashTool>) {
         <BlockTool
           title={title()}
           part={props.part}
+          spinner={isRunning()}
           onClick={overflow() ? () => setExpanded((prev) => !prev) : undefined}
         >
           <box gap={1}>

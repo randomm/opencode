@@ -301,10 +301,10 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
         },
       ],
     },
-    "chat.headers": async (input, output) => {
-      if (!input.model.providerID.includes("github-copilot")) return
+    "chat.headers": async (incoming, output) => {
+      if (!incoming.model.providerID.includes("github-copilot")) return
 
-      if (input.model.api.npm === "@ai-sdk/anthropic") {
+      if (incoming.model.api.npm === "@ai-sdk/anthropic") {
         output.headers["anthropic-beta"] =
           "claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14,context-1m-2025-08-07"
       }
@@ -312,7 +312,10 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
       const session = await sdk.session
         .get({
           path: {
-            id: input.sessionID,
+            id: incoming.sessionID,
+          },
+          query: {
+            directory: input.directory,
           },
           throwOnError: true,
         })
