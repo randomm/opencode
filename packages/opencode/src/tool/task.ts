@@ -5,7 +5,15 @@ import { Bus } from "../bus"
 import { MessageV2 } from "../session/message-v2"
 import { Identifier } from "../id/id"
 import { Agent } from "../agent/agent"
-import { Session, type TaskMetadata, getSessionTaskCount, reserveTaskSlot } from "../session"
+import { Session } from "../session"
+import {
+  type TaskMetadata,
+  getSessionTaskCount,
+  reserveTaskSlot,
+  trackBackgroundTask,
+  enableAutoWakeup,
+  disableAutoWakeup,
+} from "../session/async-tasks"
 import { SessionPrompt } from "../session/prompt"
 import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
@@ -287,10 +295,10 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         release_slot: result.releaseSlot,
       }
 
-      Session.enableAutoWakeup(ctx.sessionID)
+      enableAutoWakeup(ctx.sessionID)
 
       try {
-        Session.trackBackgroundTask(
+        trackBackgroundTask(
           taskId,
           (async () => {
             try {
@@ -320,7 +328,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
           taskMetadata,
         )
       } catch (e) {
-        Session.disableAutoWakeup(ctx.sessionID)
+        disableAutoWakeup(ctx.sessionID)
         throw e
       }
 
