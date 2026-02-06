@@ -11,8 +11,8 @@ const __dirname = path.dirname(__filename)
 const dir = path.resolve(__dirname, "..")
 const rootDir = path.resolve(__dirname, "../../..")
 
-// Use hybrid plugin that handles both React (Ink) and SolidJS
-import { hybridTransformPlugin } from "./build-plugin"
+// SolidJS transform plugin for .tsx/.jsx files
+import { solidTransformPlugin } from "./build-plugin"
 
 process.chdir(dir)
 
@@ -188,7 +188,7 @@ for (const item of targets) {
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [dedupePlugin, hybridTransformPlugin],
+    plugins: [dedupePlugin, solidTransformPlugin],
     sourcemap: "external",
     minify: true,
     compile: {
