@@ -447,8 +447,33 @@ export namespace ProviderTransform {
 
       case "@ai-sdk/anthropic":
       // https://v5.ai-sdk.dev/providers/ai-sdk-providers/anthropic
-      case "@ai-sdk/google-vertex/anthropic":
+      case "@ai-sdk/google-vertex/anthropic": {
         // https://v5.ai-sdk.dev/providers/ai-sdk-providers/google-vertex#anthropic-provider
+        const modelId = model.id || ""
+        const isOpus46 =
+          modelId.includes("claude-opus-4.6") ||
+          modelId.includes("claude-opus-4-6") ||
+          modelId.includes("claude-opus-4.6")
+
+        if (isOpus46) {
+          // Opus 4.6 uses adaptive thinking with effort levels
+          return {
+            high: {
+              thinking: {
+                type: "enabled",
+                effort: "high",
+              },
+            },
+            max: {
+              thinking: {
+                type: "enabled",
+                effort: "max",
+              },
+            },
+          }
+        }
+
+        // Older models use manual thinking with budgetTokens
         return {
           high: {
             thinking: {
@@ -463,6 +488,7 @@ export namespace ProviderTransform {
             },
           },
         }
+      }
 
       case "@ai-sdk/amazon-bedrock":
         // https://v5.ai-sdk.dev/providers/ai-sdk-providers/amazon-bedrock
