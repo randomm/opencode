@@ -456,8 +456,15 @@ export namespace ProviderTransform {
           modelId.includes("claude-opus-4.6")
 
         if (isOpus46) {
-          // Opus 4.6 uses adaptive thinking with effort levels
+          // Opus 4.6 uses GA 'effort' parameter (no beta header required, officially recommended by Anthropic)
+          // Note: thinking type: 'adaptive' is separate and requires adaptive-thinking beta header
           return {
+            low: {
+              thinking: {
+                type: "enabled",
+                effort: "low",
+              },
+            },
             high: {
               thinking: {
                 type: "enabled",
