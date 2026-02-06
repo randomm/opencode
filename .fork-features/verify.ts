@@ -113,7 +113,9 @@ for (const [featureName, feat] of activeFeatures) {
 
         if (result.exitCode !== 0) {
           // Remote may not be available — skip silently
-          console.log(`  ℹ️  Skipping absorption scan for ${featureName}: git diff failed (remote unavailable?)`)
+          const msg = `⚠️  ABSORPTION SCAN SKIPPED for ${featureName}: git diff failed (remote unavailable?)`
+          console.warn(msg)
+          absorptionWarnings.push({ feature: featureName, signal: "SCAN_SKIPPED", file: "N/A" })
           expect(true).toBe(true)
           return
         }

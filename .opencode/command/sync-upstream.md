@@ -83,6 +83,8 @@ Only proceed when all absorption signals are cleared or user has made decisions.
 git checkout -b sync/upstream-$(date +%Y-%m-%d)
 ```
 
+If a branch with today's date already exists (e.g., from a failed earlier attempt), delete it first: `git branch -D sync/upstream-YYYY-MM-DD` then recreate.
+
 ### Step 5 — Merge upstream
 
 ```bash
@@ -97,7 +99,7 @@ If there are merge conflicts, resolve them using this hierarchy:
    - Preserve all `criticalCode` markers from the manifest
    - If both sides changed the same function, **STOP and ask the user**
    - Never silently drop fork code in these files
-4. **`.opencode/` directory** → keep ours (fork-specific configuration)
+4. **`.opencode/` and `.fork-features/` directories** → keep ours (fork-specific configuration and governance)
 5. **All other files** → accept upstream
 6. **Unresolvable conflicts** → STOP and ask the user
 

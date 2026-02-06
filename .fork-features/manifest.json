@@ -44,7 +44,7 @@
         "packages/opencode/src/tool/rg.txt",
         "packages/opencode/test/tool/rg.test.ts"
       ],
-      "modifiedFiles": ["packages/opencode/src/tool/registry.ts"],
+      "modifiedFiles": ["packages/opencode/src/tool/registry.ts", "packages/opencode/src/cli/cmd/run.ts"],
       "deletedFiles": [
         "packages/opencode/src/tool/glob.ts",
         "packages/opencode/src/tool/glob.txt",
