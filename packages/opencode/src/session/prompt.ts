@@ -8,8 +8,7 @@ import { Log } from "../util/log"
 import { SessionRevert } from "./revert"
 import { Session } from "."
 import { Agent } from "../agent/agent"
-import type { BackgroundTaskResult } from "./async-tasks"
-import { getAndClearCompletedTasks, formatCompletedTasksForInjection, isClosing, enableAutoWakeup } from "./async-tasks"
+import * as PromptAsync from "./prompt-async"
 import { Provider } from "../provider/provider"
 import { type Tool as AITool, tool, jsonSchema, type ToolCallOptions, asSchema } from "ai"
 import { SessionCompaction } from "./compaction"
@@ -48,17 +47,9 @@ import { LLM } from "./llm"
 import { iife } from "@/util/iife"
 import { Shell } from "@/shell/shell"
 import { Truncate } from "@/tool/truncation"
-import { BackgroundTasks } from "@/util/tasks"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
-
-// Maximum length for sanitized strings (prevents oversized content in prompts)
-const MAX_SANITIZE_LENGTH = 200
-
-function sanitize(s: string): string {
-  return s.replace(/[<>\[\]{}]/g, "").slice(0, MAX_SANITIZE_LENGTH)
-}
 
 export namespace SessionPrompt {
   const log = Log.create({ service: "session.prompt" })
@@ -163,10 +154,10 @@ export namespace SessionPrompt {
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
 
-    const completedTasks = getAndClearCompletedTasks(input.sessionID)
+    const completedTasks = PromptAsync.collectCompletedTasks(input.sessionID)
 
     // Guard against empty prompt with no completed tasks
-    if (input.parts.length === 0 && completedTasks.length === 0) {
+    if (PromptAsync.isInputEmpty(input.parts, completedTasks)) {
       return { info: null, parts: [] }
     }
 
@@ -311,7 +302,7 @@ export namespace SessionPrompt {
         }
       }
 
-      if (isClosing(sessionID)) {
+      if (PromptAsync.isClosing(sessionID)) {
         break
       }
 
@@ -326,7 +317,7 @@ export namespace SessionPrompt {
 
       step++
       if (step === 1)
-        BackgroundTasks.spawn(
+        PromptAsync.spawnBackground(
           ensureTitle({
             session,
             modelID: lastUser.model.modelID,
@@ -603,7 +594,7 @@ export namespace SessionPrompt {
       })
 
       if (step === 1) {
-        BackgroundTasks.spawn(
+        PromptAsync.spawnBackground(
           SessionSummary.summarize({
             sessionID: sessionID,
             messageID: lastUser.id,
@@ -665,7 +656,7 @@ export namespace SessionPrompt {
       }
       continue
     }
-    BackgroundTasks.spawn(SessionCompaction.prune({ sessionID }))
+    PromptAsync.spawnBackground(SessionCompaction.prune({ sessionID }))
     for await (const item of MessageV2.stream(sessionID)) {
       if (item.info.role === "user") continue
       const queued = state()[sessionID]?.callbacks ?? []
@@ -864,7 +855,10 @@ export namespace SessionPrompt {
     return tools
   }
 
-  async function createUserMessage(input: PromptInput, completedTasks: BackgroundTaskResult[] = []) {
+  async function createUserMessage(
+    input: PromptInput,
+    completedTasks: ReturnType<typeof PromptAsync.collectCompletedTasks> = [],
+  ) {
     const agent = await Agent.get(input.agent ?? (await Agent.defaultAgent()))
 
     const model = input.model ?? agent.model ?? (await lastModel(input.sessionID))
@@ -1220,18 +1214,7 @@ export namespace SessionPrompt {
       }),
     ).then((x) => x.flat())
 
-    if (completedTasks.length > 0) {
-      const injectionText = formatCompletedTasksForInjection(completedTasks)
-      const injectionPart: MessageV2.Part = {
-        id: Identifier.ascending("part"),
-        messageID: info.id,
-        sessionID: input.sessionID,
-        type: "text",
-        text: injectionText,
-        synthetic: true,
-      }
-      parts.unshift(injectionPart)
-    }
+    PromptAsync.injectTaskResults(parts, completedTasks, info.id, input.sessionID)
 
     await Plugin.trigger(
       "chat.message",

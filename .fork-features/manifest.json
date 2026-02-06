@@ -13,6 +13,7 @@
       "issue": "https://github.com/randomm/opencode/issues/159",
       "newFiles": [
         "packages/opencode/src/session/async-tasks.ts",
+        "packages/opencode/src/session/prompt-async.ts",
         "packages/opencode/src/tool/task.ts",
         "packages/opencode/src/tool/task.txt",
         "packages/opencode/src/tool/check_task.ts",
