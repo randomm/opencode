@@ -270,6 +270,38 @@ bun test:e2e:local       # Run Playwright E2E tests
 
 ---
 
+## Build & Install Binaries
+
+### Main opencode TUI
+
+```bash
+# Build for current platform only (dev builds)
+cd packages/opencode && bun run build --single
+
+# Copy to ~/bin
+cp packages/opencode/dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode
+
+# REQUIRED on macOS: ad-hoc codesign (build script does NOT auto-sign)
+codesign --force --deep --sign - ~/bin/opencode
+
+# Verify
+~/bin/opencode --version
+```
+
+### oclite (Ink-based lightweight TUI)
+
+```bash
+# Build and auto-install to ~/bin/oclite (includes codesign)
+cd packages/opencode && bun run build:lite
+
+# Verify
+~/bin/oclite
+```
+
+**Note:** The main build script (`script/build.ts`) does NOT auto-codesign. The lite build script (`script/build-lite.ts`) handles codesign automatically. Without codesign, macOS will refuse to run the binary.
+
+---
+
 ## TypeScript Style Guide
 
 Reference: `STYLE_GUIDE.md`
