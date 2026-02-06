@@ -8,7 +8,7 @@ Opinionated AI coding agent for agentic workflows.
 
 ### What is this?
 
-A lightweight fork of OpenCode optimized for single developers running agentic workflows. Think PM agents orchestrating specialist agents, with deep memory/context integration via [remory](https://github.com/randomm/remory).
+A lightweight fork of OpenCode optimized for single developers running agentic workflows. Think PM agents orchestrating specialist agents.
 
 **Philosophy:**
 
@@ -101,7 +101,6 @@ Use `@general` in messages to invoke the subagent for complex searches.
 This fork focuses on:
 
 - **Agentic workflows** - Optimized for PM/specialist agent patterns
-- **remory integration** - Deep memory and context management
 - **Minimal footprint** - No desktop app, no VS Code extension, no npm publishing
 - **Opinionated defaults** - Less configuration, more convention
 
