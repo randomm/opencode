@@ -2,6 +2,7 @@ import { Tool } from "./tool"
 import DESCRIPTION from "./check_task.txt"
 import z from "zod"
 import { Session } from "../session"
+import { listBackgroundTasks, getBackgroundTaskResult, getBackgroundTaskMetadata } from "../session/async-tasks"
 import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
@@ -27,10 +28,10 @@ interface CheckTaskMetadata {
 }
 
 function checkBackgroundTask(id: string): TaskResult | undefined {
-  const tasks = Session.listBackgroundTasks()
+  const tasks = listBackgroundTasks()
   if (tasks.pending.includes(id)) {
-    const result = Session.getBackgroundTaskResult(id)
-    const metadata = Session.getBackgroundTaskMetadata(id) ?? result?.metadata
+    const result = getBackgroundTaskResult(id)
+    const metadata = getBackgroundTaskMetadata(id) ?? result?.metadata
     const startTime = metadata?.start_time ?? result?.time.started ?? Date.now()
 
     return {
@@ -41,7 +42,7 @@ function checkBackgroundTask(id: string): TaskResult | undefined {
       duration_seconds: Math.round((Date.now() - startTime) / 1000),
     }
   }
-  const result = Session.getBackgroundTaskResult(id)
+  const result = getBackgroundTaskResult(id)
   if (!result) return undefined
 
   const metadata = result.metadata

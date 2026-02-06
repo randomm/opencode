@@ -8,7 +8,8 @@ import { Log } from "../util/log"
 import { SessionRevert } from "./revert"
 import { Session } from "."
 import { Agent } from "../agent/agent"
-import type { BackgroundTaskResult } from "."
+import type { BackgroundTaskResult } from "./async-tasks"
+import { getAndClearCompletedTasks, formatCompletedTasksForInjection, isClosing, enableAutoWakeup } from "./async-tasks"
 import { Provider } from "../provider/provider"
 import { SessionCompaction } from "./compaction"
 import { Instance } from "../project/instance"
@@ -158,7 +159,7 @@ export namespace SessionPrompt {
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
 
-    const completedTasks = Session.getAndClearCompletedTasks(input.sessionID)
+    const completedTasks = getAndClearCompletedTasks(input.sessionID)
 
     // Guard against empty prompt with no completed tasks
     if (input.parts.length === 0 && completedTasks.length === 0) {
@@ -306,7 +307,7 @@ export namespace SessionPrompt {
         }
       }
 
-      if (Session.isClosing(sessionID)) {
+      if (isClosing(sessionID)) {
         break
       }
 
@@ -1033,7 +1034,7 @@ export namespace SessionPrompt {
     ).then((x) => x.flat())
 
     if (completedTasks.length > 0) {
-      const injectionText = Session.formatCompletedTasksForInjection(completedTasks)
+      const injectionText = formatCompletedTasksForInjection(completedTasks)
       const injectionPart: MessageV2.Part = {
         id: Identifier.ascending("part"),
         messageID: info.id,
