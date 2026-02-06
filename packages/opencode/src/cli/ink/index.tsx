@@ -9,6 +9,7 @@ export function startInkTUI() {
     stdin: process.stdin,
     stdout: process.stdout,
     exitOnCtrlC: true, // Let Ink handle Ctrl+C exit
+    patchConsole: true, // Prevent console.log/error from breaking Ink rendering
   })
 
   return instance.waitUntilExit()

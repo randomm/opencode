@@ -27,6 +27,7 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
   const [isStreaming, setIsStreaming] = useState(false)
   const currentAssistantMessageIdRef = useRef<string | null>(null)
   const streamingLockRef = useRef(false)
+  const seenTextLengthRef = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
     if (!sessionId) {
@@ -52,7 +53,15 @@ export function useSDKEvents(sessionId: string | null, dispatch: Dispatch<Action
         )
 
         for await (const event of events.stream) {
-          handleEvent(event, dispatch, sessionId, setIsStreaming, currentAssistantMessageIdRef, streamingLockRef)
+          handleEvent(
+            event,
+            dispatch,
+            sessionId,
+            setIsStreaming,
+            currentAssistantMessageIdRef,
+            streamingLockRef,
+            seenTextLengthRef,
+          )
         }
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
@@ -124,29 +133,8 @@ function handleEvent(
   setIsStreaming: (value: boolean) => void,
   currentAssistantMessageIdRef: { current: string | null },
   streamingLockRef: { current: boolean },
+  seenTextLengthRef: { current: Map<string, number> },
 ) {
-  // Debug logging for event flow
-  const getSessionId = () => {
-    const props = event.properties as Record<string, unknown>
-    if (props.part && typeof props.part === "object" && props.part !== null) {
-      const part = props.part as Record<string, unknown>
-      if (typeof part.sessionID === "string") {
-        return part.sessionID.slice(0, 8)
-      }
-    }
-    if (props.info && typeof props.info === "object" && props.info !== null) {
-      const info = props.info as Record<string, unknown>
-      if (typeof info.sessionID === "string") {
-        return info.sessionID.slice(0, 8)
-      }
-    }
-    if (typeof props.sessionID === "string") {
-      return props.sessionID.slice(0, 8)
-    }
-    return "unknown"
-  }
-  console.error(`[EVENT] ${event.type}`, getSessionId())
-
   switch (event.type) {
     case "message.part.updated": {
       const part = event.properties.part
@@ -159,8 +147,19 @@ function handleEvent(
           return
         }
 
-        // Use delta for incremental updates, fallback to full text
-        const content = event.properties.delta ?? part.text
+        // Prefer delta for incremental updates, compute delta from full text as fallback
+        let content = event.properties.delta
+        if (content === undefined && typeof part.text === "string") {
+          const messageKey = `${part.sessionID}:${part.messageID}`
+          const seenLength = seenTextLengthRef.current.get(messageKey) ?? 0
+
+          // Defensive check: only slice if text grew (prevent loss on truncation)
+          if (part.text.length >= seenLength) {
+            content = part.text.slice(seenLength)
+            seenTextLengthRef.current.set(messageKey, part.text.length)
+          }
+        }
+
         if (typeof content === "string" && content.length > 0) {
           dispatch({
             type: "STREAM_TEXT",
@@ -233,6 +232,10 @@ function handleEvent(
     case "message.updated": {
       if (event.properties.info.sessionID !== sessionId) return
       setIsStreaming(false)
+
+      // Clean up text length tracking for this message (always, not just for current message)
+      const messageKey = `${event.properties.info.sessionID}:${event.properties.info.id}`
+      seenTextLengthRef.current.delete(messageKey)
 
       // Clear the tracked message ID if this is the expected assistant message
       if (currentAssistantMessageIdRef.current === event.properties.info.id) {

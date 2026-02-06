@@ -17,10 +17,20 @@ export const App = (): ReactElement => {
   const [state, dispatch] = useReducer(appReducer, initialState)
   const [uiMode, setUIMode] = useState(state.ui.mode)
   const sessionRef = useRef(state.session)
+  const hasStartedRef = useRef(false)
+  const [showWelcome, setShowWelcome] = useState(true)
 
   useEffect(() => {
     sessionRef.current = state.session
   }, [state.session])
+
+  // Hide welcome banner after first message - use ref to survive re-renders
+  useEffect(() => {
+    if (!hasStartedRef.current && (state.messages.length > 0 || state.streaming.text)) {
+      hasStartedRef.current = true
+      setShowWelcome(false)
+    }
+  }, [state.messages.length, state.streaming.text])
 
   // Initialize session on mount
   useEffect(() => {
@@ -85,13 +95,15 @@ export const App = (): ReactElement => {
 
   return (
     <Box flexDirection="column">
-      {/* Welcome message - always visible */}
-      <Box marginBottom={1}>
-        <Text color="cyan" bold>
-          oclite v0.1
-        </Text>
-        <Text dimColor> - Lightweight OpenCode TUI</Text>
-      </Box>
+      {/* Welcome message - only show once */}
+      {showWelcome && (
+        <Box marginBottom={1}>
+          <Text color="cyan" bold>
+            oclite v0.1
+          </Text>
+          <Text dimColor> - Lightweight OpenCode TUI</Text>
+        </Box>
+      )}
 
       {/* Completed messages */}
       <MessageList messages={state.messages} />
