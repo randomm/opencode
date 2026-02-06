@@ -6,6 +6,7 @@
  */
 import { getAndClearCompletedTasks, formatCompletedTasksForInjection, isClosing as _isClosing } from "./async-tasks"
 import type { BackgroundTaskResult } from "./async-tasks"
+export type { BackgroundTaskResult } from "./async-tasks"
 import { BackgroundTasks } from "@/util/tasks"
 import { Identifier } from "../id/id"
 import type { MessageV2 } from "./message-v2"
@@ -16,7 +17,7 @@ export function collectCompletedTasks(sessionID: string): BackgroundTaskResult[]
 }
 
 /** Check if input is empty (no user parts AND no completed tasks to inject). */
-export function isInputEmpty(parts: unknown[], completedTasks: BackgroundTaskResult[]): boolean {
+export function isInputEmpty(parts: readonly unknown[], completedTasks: readonly BackgroundTaskResult[]): boolean {
   return parts.length === 0 && completedTasks.length === 0
 }
 
@@ -43,7 +44,6 @@ export function injectTaskResults(
 ): void {
   if (completedTasks.length === 0) return
   const injectionText = formatCompletedTasksForInjection(completedTasks)
-  if (!injectionText) return
   parts.unshift({
     id: Identifier.ascending("part"),
     messageID,

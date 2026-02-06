@@ -855,10 +855,7 @@ export namespace SessionPrompt {
     return tools
   }
 
-  async function createUserMessage(
-    input: PromptInput,
-    completedTasks: ReturnType<typeof PromptAsync.collectCompletedTasks> = [],
-  ) {
+  async function createUserMessage(input: PromptInput, completedTasks: PromptAsync.BackgroundTaskResult[] = []) {
     const agent = await Agent.get(input.agent ?? (await Agent.defaultAgent()))
 
     const model = input.model ?? agent.model ?? (await lastModel(input.sessionID))
