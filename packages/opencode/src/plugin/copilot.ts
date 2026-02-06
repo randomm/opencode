@@ -305,8 +305,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
       if (!incoming.model.providerID.includes("github-copilot")) return
 
       if (incoming.model.api.npm === "@ai-sdk/anthropic") {
-        output.headers["anthropic-beta"] =
-          "claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14,context-1m-2025-08-07"
+        output.headers["anthropic-beta"] = "interleaved-thinking-2025-05-14"
       }
 
       const session = await sdk.session

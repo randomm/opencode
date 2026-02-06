@@ -58,7 +58,8 @@
       }
     },
     "1m-context": {
-      "status": "active",
+      "status": "dropped",
+      "droppedReason": "Caused startup errors; feature removed in issue #170",
       "description": "1M token context window for Anthropic Opus models. Requires Tier 4 account ($400 credits).",
       "issue": "https://github.com/randomm/opencode/issues/150",
       "newFiles": [],

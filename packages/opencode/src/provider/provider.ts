@@ -73,7 +73,7 @@ export namespace Provider {
         options: {
           headers: {
             "anthropic-beta":
-              "claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14,context-1m-2025-08-07",
+              "claude-code-20250219,interleaved-thinking-2025-05-14,fine-grained-tool-streaming-2025-05-14",
           },
         },
       }
@@ -645,12 +645,6 @@ export namespace Provider {
       },
       release_date: model.release_date,
       variants: {},
-    }
-
-    // Override context limit for Anthropic models with context-1m header support
-    // The models.dev API returns 200k for these models, but with our context-1m header they support 1M
-    if (provider.id === "anthropic" && (m.id.startsWith("claude-sonnet-") || m.id.startsWith("claude-opus-4"))) {
-      m.limit.context = 1_000_000
     }
 
     m.variants = mapValues(ProviderTransform.variants(m), (v) => v)
