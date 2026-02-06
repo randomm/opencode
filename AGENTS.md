@@ -1,4 +1,4 @@
-# Agent Guidelines for oclite
+# Agent Guidelines for opencode
 
 > Lightweight fork of OpenCode by Anomaly, optimized for agentic workflows.
 
@@ -288,17 +288,7 @@ codesign --force --deep --sign - ~/bin/opencode
 ~/bin/opencode --version
 ```
 
-### oclite (Ink-based lightweight TUI)
-
-```bash
-# Build and auto-install to ~/bin/oclite (includes codesign)
-cd packages/opencode && bun run build:lite
-
-# Verify
-~/bin/oclite
-```
-
-**Note:** The main build script (`script/build.ts`) does NOT auto-codesign. The lite build script (`script/build-lite.ts`) handles codesign automatically. Without codesign, macOS will refuse to run the binary.
+**Note:** The main build script (`script/build.ts`) does NOT auto-codesign. Without codesign, macOS will refuse to run the binary.
 
 ---
 
