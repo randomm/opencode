@@ -638,6 +638,12 @@ export namespace Provider {
       variants: {},
     }
 
+    // Override context limit for Anthropic models with context-1m header support
+    // The models.dev API returns 200k for these models, but with our context-1m header they support 1M
+    if (provider.id === "anthropic" && (m.id.startsWith("claude-sonnet-") || m.id.startsWith("claude-opus-4"))) {
+      m.limit.context = 1_000_000
+    }
+
     m.variants = mapValues(ProviderTransform.variants(m), (v) => v)
 
     return m

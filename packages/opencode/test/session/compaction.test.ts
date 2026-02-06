@@ -70,7 +70,8 @@ describe("session.compaction.isOverflow", () => {
       directory: tmp.path,
       fn: async () => {
         const model = createModel({ context: 100_000, output: 32_000 })
-        const tokens = { input: 50_000, output: 10_000, reasoning: 0, cache: { read: 10_000, write: 0 } }
+        // Usable = 100k - 32k = 68k. Input + cache.read = 60k + 10k = 70k > 68k
+        const tokens = { input: 60_000, output: 10_000, reasoning: 0, cache: { read: 10_000, write: 0 } }
         expect(await SessionCompaction.isOverflow({ tokens, model })).toBe(true)
       },
     })
