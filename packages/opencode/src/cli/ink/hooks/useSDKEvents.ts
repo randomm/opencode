@@ -152,8 +152,12 @@ function handleEvent(
         if (content === undefined && typeof part.text === "string") {
           const messageKey = `${part.sessionID}:${part.messageID}`
           const seenLength = seenTextLengthRef.current.get(messageKey) ?? 0
-          content = part.text.slice(seenLength)
-          seenTextLengthRef.current.set(messageKey, part.text.length)
+
+          // Defensive check: only slice if text grew (prevent loss on truncation)
+          if (part.text.length >= seenLength) {
+            content = part.text.slice(seenLength)
+            seenTextLengthRef.current.set(messageKey, part.text.length)
+          }
         }
 
         if (typeof content === "string" && content.length > 0) {
@@ -229,14 +233,14 @@ function handleEvent(
       if (event.properties.info.sessionID !== sessionId) return
       setIsStreaming(false)
 
+      // Clean up text length tracking for this message (always, not just for current message)
+      const messageKey = `${event.properties.info.sessionID}:${event.properties.info.id}`
+      seenTextLengthRef.current.delete(messageKey)
+
       // Clear the tracked message ID if this is the expected assistant message
       if (currentAssistantMessageIdRef.current === event.properties.info.id) {
         currentAssistantMessageIdRef.current = null
         streamingLockRef.current = false
-
-        // Clean up text length tracking for this message
-        const messageKey = `${event.properties.info.sessionID}:${event.properties.info.id}`
-        seenTextLengthRef.current.delete(messageKey)
       }
 
       dispatch({
