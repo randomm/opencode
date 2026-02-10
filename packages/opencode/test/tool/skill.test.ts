@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import path from "path"
+import fs from "fs/promises"
 import { pathToFileURL } from "url"
 import type { PermissionNext } from "../../src/permission/next"
 import type { Tool } from "../../src/tool/tool"
@@ -42,7 +43,6 @@ description: Skill for tool tests.
     process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "0"
 
     // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
-    const fs = await import("fs/promises")
     await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
 
     try {
@@ -55,8 +55,10 @@ description: Skill for tool tests.
         },
       })
     } finally {
-      process.env.OPENCODE_TEST_HOME = home
-      process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
+      if (home === undefined) delete process.env.OPENCODE_TEST_HOME
+      else process.env.OPENCODE_TEST_HOME = home
+      if (originalDisableGlobalSkills === undefined) delete process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
+      else process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
     }
   })
 
@@ -87,7 +89,6 @@ Use this skill.
     process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "0"
 
     // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
-    const fs = await import("fs/promises")
     await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
 
     try {
@@ -119,8 +120,10 @@ Use this skill.
         },
       })
     } finally {
-      process.env.OPENCODE_TEST_HOME = home
-      process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
+      if (home === undefined) delete process.env.OPENCODE_TEST_HOME
+      else process.env.OPENCODE_TEST_HOME = home
+      if (originalDisableGlobalSkills === undefined) delete process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
+      else process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
     }
   })
 })

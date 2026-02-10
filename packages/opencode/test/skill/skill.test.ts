@@ -58,7 +58,8 @@ Instructions here.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -99,8 +100,10 @@ description: Skill for dirs test.
       },
     })
   } finally {
-    process.env.OPENCODE_TEST_HOME = home
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
+    if (home === undefined) delete process.env.OPENCODE_TEST_HOME
+    else process.env.OPENCODE_TEST_HOME = home
+    if (originalDisableGlobalSkills === undefined) delete process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
+    else process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
   }
 })
 
@@ -147,7 +150,8 @@ description: Second test skill.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -178,7 +182,8 @@ Just some content without YAML frontmatter.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -217,8 +222,10 @@ description: A skill in the .claude/skills directory.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeCode === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -248,9 +255,12 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
       },
     })
   } finally {
-    process.env.OPENCODE_TEST_HOME = originalHome
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalHome === undefined) delete process.env.OPENCODE_TEST_HOME
+    else process.env.OPENCODE_TEST_HOME = originalHome
+    if (originalDisableClaudeCode === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE = originalDisableClaudeCode
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -269,7 +279,8 @@ test("returns empty array when no skills exist", async () => {
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -306,7 +317,8 @@ description: A skill in the .agents/skills directory.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -348,8 +360,10 @@ This skill is loaded from the global home directory.
       },
     })
   } finally {
-    process.env.OPENCODE_TEST_HOME = originalHome
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalHome === undefined) delete process.env.OPENCODE_TEST_HOME
+    else process.env.OPENCODE_TEST_HOME = originalHome
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -396,7 +410,8 @@ description: A skill in the .agents/skills directory.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -463,6 +478,7 @@ description: A skill in the .opencode/skills directory.
       },
     })
   } finally {
-    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+    if (originalDisableClaudeSkills === undefined) delete process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+    else process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })

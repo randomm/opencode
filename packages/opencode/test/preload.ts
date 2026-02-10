@@ -31,11 +31,13 @@ mock.module("../src/bun/index", () => ({
   },
 }))
 
-// Mock builtin plugins to prevent import errors
-const mockPlugin = () => ({})
+// Mock builtin plugins to prevent import errors during module resolution.
+// Mocks match real package export shapes for forward-compatibility.
+// copilot-auth is skipped at runtime (plugin/index.ts line 56) but mocked defensively.
+const mockPlugin = async () => ({})
 mock.module("opencode-copilot-auth", () => ({ default: mockPlugin }))
 mock.module("opencode-anthropic-auth", () => ({ default: mockPlugin }))
-mock.module("@gitlab/opencode-gitlab-auth", () => ({ default: mockPlugin }))
+mock.module("@gitlab/opencode-gitlab-auth", () => ({ default: mockPlugin, gitlabAuthPlugin: mockPlugin }))
 
 // Mock optional SDK dependencies that aren't installed but are dynamically imported
 mock.module("@aws-sdk/credential-providers", () => ({
