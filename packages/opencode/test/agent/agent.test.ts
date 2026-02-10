@@ -552,8 +552,10 @@ description: Permission skill.
       },
     })
   } finally {
-    process.env.OPENCODE_TEST_HOME = home
-    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
+    if (home === undefined) delete process.env.OPENCODE_TEST_HOME
+    else process.env.OPENCODE_TEST_HOME = home
+    if (originalDisableGlobalSkills === undefined) delete process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
+    else process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
   }
 })
 

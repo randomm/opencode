@@ -26,7 +26,8 @@
         "cleanupSessionMaps",
         "formatCompletedTasksForInjection",
         "TaskTool",
-        "CheckTaskTool"
+        "CheckTaskTool",
+        "Agent.get(task.agent)"
       ],
       "tests": ["packages/opencode/test/tool/check_task.test.ts"],
       "upstreamTracking": {
