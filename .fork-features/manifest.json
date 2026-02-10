@@ -115,6 +115,19 @@
       "upstreamTracking": {
         "absorptionSignals": []
       }
+    },
+    "no-desktop": {
+      "status": "active",
+      "description": "Desktop package (packages/desktop/) is not needed in our fork. We ignore it — upstream Tauri desktop code doesn't affect our build or workflow. Decision made Feb 2026, issue #166.",
+      "issue": "https://github.com/randomm/opencode/issues/166",
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": [],
+      "criticalCode": [],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": []
+      }
     }
   }
 }
