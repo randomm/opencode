@@ -59,15 +59,24 @@
     },
     "agents-config": {
       "status": "active",
-      "description": "Custom AGENTS.md with fork-specific style guide, project conventions, and fork governance rules. Diverges from upstream AGENTS.md.",
-      "issue": null,
+      "description": "Fork-specific AGENTS.md with build instructions, codesign steps, quality gates, context7 protocol, and fork governance rules. Upstream's AGENTS.md only has a style guide — ours is comprehensive. Must be manually re-applied after each upstream sync.",
+      "issue": "https://github.com/randomm/opencode/issues/158",
       "newFiles": [],
       "deletedFiles": [],
       "modifiedFiles": ["AGENTS.md"],
-      "criticalCode": ["Fork Governance", ".fork-features/"],
+      "criticalCode": [
+        "Fork Governance",
+        ".fork-features/",
+        "codesign --force",
+        "Build & Install Binaries",
+        "Context7 Protocol",
+        "Pre-Push Verification",
+        "Minimalist Engineering",
+        "Auto-Merge Policy"
+      ],
       "tests": [],
       "upstreamTracking": {
-        "absorptionSignals": ["AGENTS.md", "Style Guide", "## Testing"]
+        "absorptionSignals": []
       }
     },
     "1m-context": {
