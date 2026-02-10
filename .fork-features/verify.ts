@@ -178,6 +178,15 @@ for (const [featureName, feat] of activeFeatures) {
   })
 }
 
+// ---------- minimal-ci: core workflow must exist ----------
+
+describe("Feature: minimal-ci (extra)", () => {
+  test("core CI workflow exists: .github/workflows/ci.yml", () => {
+    const abs = path.resolve(PROJECT_ROOT, ".github/workflows/ci.yml")
+    expect(fs.existsSync(abs)).toBe(true)
+  })
+})
+
 // ---------- Final absorption summary ----------
 
 describe("Absorption Summary", () => {
