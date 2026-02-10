@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test"
 import path from "path"
+import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
 import { Instance } from "../../src/project/instance"
 import { Agent } from "../../src/agent/agent"
@@ -533,7 +534,12 @@ description: Permission skill.
   })
 
   const home = process.env.OPENCODE_TEST_HOME
+  const originalDisableGlobalSkills = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
   process.env.OPENCODE_TEST_HOME = tmp.path
+  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "0"
+
+  // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
+  await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
 
   try {
     await Instance.provide({
@@ -547,6 +553,7 @@ description: Permission skill.
     })
   } finally {
     process.env.OPENCODE_TEST_HOME = home
+    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
   }
 })
 

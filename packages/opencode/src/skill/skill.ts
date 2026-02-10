@@ -127,6 +127,7 @@ export namespace Skill {
       ? directories.filter((d) => !d.startsWith(Global.Path.home))
       : directories
     for (const dir of filteredDirs) {
+      if (!(await Filesystem.isDir(dir))) continue
       for await (const match of OPENCODE_SKILL_GLOB.scan({
         cwd: dir,
         absolute: true,

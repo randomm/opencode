@@ -110,3 +110,15 @@ const table = sqliteTable("session", {
 
 - Avoid mocks as much as possible
 - Test actual implementation, do not duplicate logic into tests
+
+## Fork Governance
+
+This is a fork of `anomalyco/opencode`. All intentional divergences from upstream MUST be tracked in `.fork-features/`.
+
+- **Before any change that diverges from upstream**: Add or update the relevant feature entry in `.fork-features/manifest.json`
+- **New fork features**: Create a new entry following the schema in `.fork-features/README.md` (`status`, `description`, `issue`, `newFiles`, `deletedFiles`, `modifiedFiles`, `criticalCode`, `tests`, and `upstreamTracking.absorptionSignals`)
+- **Deleted upstream files**: Record in the feature's `deletedFiles` array
+- **AGENTS.md itself**: This file is a fork customization. Changes here must be reflected in the manifest
+- **CI/workflow changes**: Document which upstream workflows are kept/deleted/disabled
+- **Verification**: Run `bun run .fork-features/verify.ts` after any fork-feature change to ensure all features are intact
+- **On upstream sync**: All `criticalCode` markers must survive the merge. The verify script is the gate.

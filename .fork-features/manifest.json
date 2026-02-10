@@ -57,6 +57,19 @@
         "absorptionSignals": ["RgTool", "ripgrep.*tool", "rg --json"]
       }
     },
+    "agents-config": {
+      "status": "active",
+      "description": "Custom AGENTS.md with fork-specific style guide, project conventions, and fork governance rules. Diverges from upstream AGENTS.md.",
+      "issue": null,
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": ["AGENTS.md"],
+      "criticalCode": ["Fork Governance", ".fork-features/"],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": ["AGENTS.md", "Style Guide", "## Testing"]
+      }
+    },
     "1m-context": {
       "status": "dropped",
       "droppedReason": "Caused startup errors; feature removed in issue #170",
@@ -73,6 +86,24 @@
       "tests": ["packages/opencode/test/session/compaction.test.ts"],
       "upstreamTracking": {
         "absorptionSignals": ["context-1m-2025-08-07", "context.limit.*1000000"]
+      }
+    },
+    "minimal-ci": {
+      "status": "active",
+      "description": "Fork runs only essential CI workflow. Upstream workflows (beta, nix-hashes, containers, close-stale-prs) deleted from repo. Ghost workflows (Daily Issues/PR Recap, Issue Triage, Duplicate Detection, Guidelines Check, etc.) disabled via gh CLI.",
+      "issue": "https://github.com/randomm/opencode/issues/172",
+      "newFiles": [],
+      "modifiedFiles": [],
+      "deletedFiles": [
+        ".github/workflows/beta.yml",
+        ".github/workflows/nix-hashes.yml",
+        ".github/workflows/containers.yml",
+        ".github/workflows/close-stale-prs.yml"
+      ],
+      "criticalCode": [],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": []
       }
     }
   }
