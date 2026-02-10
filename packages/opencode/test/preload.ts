@@ -35,9 +35,19 @@ mock.module("../src/bun/index", () => ({
 const mockPlugin = () => ({})
 mock.module("opencode-copilot-auth", () => ({ default: mockPlugin }))
 mock.module("opencode-anthropic-auth", () => ({ default: mockPlugin }))
-mock.module("@gitlab/opencode-gitlab-auth", () => ({
-  default: mockPlugin,
-  gitlabAuthPlugin: mockPlugin,
+mock.module("@gitlab/opencode-gitlab-auth", () => ({ default: mockPlugin }))
+
+// Mock optional SDK dependencies that aren't installed but are dynamically imported
+mock.module("@aws-sdk/credential-providers", () => ({
+  fromNodeProviderChain: (_opts?: Record<string, unknown>) => async () => ({
+    accessKeyId: "test",
+    secretAccessKey: "test",
+  }),
+}))
+
+// Mock cowsay for tool registry tests that use it as an external dependency
+mock.module("cowsay", () => ({
+  say: ({ text }: { text: string }) => `< ${text} >`,
 }))
 
 // NOW load main preload (after env vars are set)

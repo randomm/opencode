@@ -81,7 +81,12 @@ description: Skill for dirs test.
   })
 
   const home = process.env.OPENCODE_TEST_HOME
+  const originalDisableGlobalSkills = process.env.OPENCODE_DISABLE_GLOBAL_SKILLS
   process.env.OPENCODE_TEST_HOME = tmp.path
+  process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = "0"
+
+  // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
+  await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
 
   try {
     await Instance.provide({
@@ -95,6 +100,7 @@ description: Skill for dirs test.
     })
   } finally {
     process.env.OPENCODE_TEST_HOME = home
+    process.env.OPENCODE_DISABLE_GLOBAL_SKILLS = originalDisableGlobalSkills
   }
 })
 
@@ -226,6 +232,9 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
   process.env.OPENCODE_DISABLE_CLAUDE_CODE = "0"
   process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
 
+  // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
+  await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
+
   try {
     await createGlobalSkill(tmp.path)
     await Instance.provide({
@@ -282,23 +291,35 @@ description: A skill in the .agents/skills directory.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills.length).toBe(1)
-      const agentSkill = skills.find((s) => s.name === "agent-skill")
-      expect(agentSkill).toBeDefined()
-      expect(agentSkill!.location).toContain(".agents/skills/agent-skill/SKILL.md")
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills.length).toBe(1)
+        const agentSkill = skills.find((s) => s.name === "agent-skill")
+        expect(agentSkill).toBeDefined()
+        expect(agentSkill!.location).toContain(".agents/skills/agent-skill/SKILL.md")
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("discovers global skills from ~/.agents/skills/ directory", async () => {
   await using tmp = await tmpdir({ git: true })
 
   const originalHome = process.env.OPENCODE_TEST_HOME
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
   process.env.OPENCODE_TEST_HOME = tmp.path
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
+
+  // Create the config directory so Bun.Glob.scan() doesn't ENOENT with null byte
+  await fs.mkdir(path.join(tmp.path, ".config", "opencode"), { recursive: true })
 
   try {
     const skillDir = path.join(tmp.path, ".agents", "skills", "global-agent-skill")
@@ -328,6 +349,7 @@ This skill is loaded from the global home directory.
     })
   } finally {
     process.env.OPENCODE_TEST_HOME = originalHome
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
   }
 })
 
@@ -360,15 +382,22 @@ description: A skill in the .agents/skills directory.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const skills = await Skill.all()
-      expect(skills.length).toBe(2)
-      expect(skills.find((s) => s.name === "claude-skill")).toBeDefined()
-      expect(skills.find((s) => s.name === "agent-skill")).toBeDefined()
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills.length).toBe(2)
+        expect(skills.find((s) => s.name === "claude-skill")).toBeDefined()
+        expect(skills.find((s) => s.name === "agent-skill")).toBeDefined()
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })
 
 test("properly resolves directories that skills live in", async () => {
@@ -422,11 +451,18 @@ description: A skill in the .opencode/skills directory.
     },
   })
 
-  await Instance.provide({
-    directory: tmp.path,
-    fn: async () => {
-      const dirs = await Skill.dirs()
-      expect(dirs.length).toBe(4)
-    },
-  })
+  const originalDisableClaudeSkills = process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS
+  process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = "0"
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const dirs = await Skill.dirs()
+        expect(dirs.length).toBe(4)
+      },
+    })
+  } finally {
+    process.env.OPENCODE_DISABLE_CLAUDE_CODE_SKILLS = originalDisableClaudeSkills
+  }
 })

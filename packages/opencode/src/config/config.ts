@@ -338,6 +338,7 @@ export namespace Config {
   const COMMAND_GLOB = new Bun.Glob("{command,commands}/**/*.md")
   async function loadCommand(dir: string) {
     const result: Record<string, Command> = {}
+    if (!existsSync(dir)) return result
     for await (const item of COMMAND_GLOB.scan({
       absolute: true,
       followSymlinks: true,
@@ -377,6 +378,7 @@ export namespace Config {
   const AGENT_GLOB = new Bun.Glob("{agent,agents}/**/*.md")
   async function loadAgent(dir: string) {
     const result: Record<string, Agent> = {}
+    if (!existsSync(dir)) return result
 
     for await (const item of AGENT_GLOB.scan({
       absolute: true,
@@ -417,6 +419,7 @@ export namespace Config {
   const MODE_GLOB = new Bun.Glob("{mode,modes}/*.md")
   async function loadMode(dir: string) {
     const result: Record<string, Agent> = {}
+    if (!existsSync(dir)) return result
     for await (const item of MODE_GLOB.scan({
       absolute: true,
       followSymlinks: true,
@@ -454,6 +457,7 @@ export namespace Config {
   const PLUGIN_GLOB = new Bun.Glob("{plugin,plugins}/*.{ts,js}")
   async function loadPlugin(dir: string) {
     const plugins: string[] = []
+    if (!existsSync(dir)) return plugins
 
     for await (const item of PLUGIN_GLOB.scan({
       absolute: true,
