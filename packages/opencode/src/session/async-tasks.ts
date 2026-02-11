@@ -27,6 +27,7 @@ export interface TaskMetadata {
   agent_type: string
   description: string
   session_id: string
+  parent_session_id: string
   start_time: number
   release_slot?: () => void
 }
@@ -216,7 +217,7 @@ export async function trackBackgroundTask(
     }
     if (sessionID) {
       if (!closingSessions.has(sessionID)) {
-        const parentSessionID = metadata?.session_id
+        const parentSessionID = metadata?.parent_session_id
         if (taskResult.status === "completed") {
           Bus.publish(BackgroundTaskEvent.Completed, { taskID: id, sessionID, parentSessionID })
         }
@@ -251,7 +252,7 @@ export async function trackBackgroundTask(
     }
     if (sessionID) {
       if (!closingSessions.has(sessionID)) {
-        const parentSessionID = metadata?.session_id
+        const parentSessionID = metadata?.parent_session_id
         Bus.publish(BackgroundTaskEvent.Failed, {
           taskID: id,
           sessionID,
@@ -325,7 +326,7 @@ export function getAndClearCompletedTasks(sessionID: string): BackgroundTaskResu
   const completedTasks: BackgroundTaskResult[] = []
 
   for (const [id, result] of backgroundTaskResults.entries()) {
-    const isFromSession = result.metadata?.session_id === sessionID
+    const isFromSession = result.metadata?.parent_session_id === sessionID
     const isCompletedOrFailed = result.status === "completed" || result.status === "failed"
 
     if (!isCompletedOrFailed || !isFromSession) {
@@ -351,7 +352,7 @@ export function getAndClearCompletedTasks(sessionID: string): BackgroundTaskResu
 
 export function hasUndeliveredCompletedTasks(sessionID: string): boolean {
   for (const [id, result] of backgroundTaskResults.entries()) {
-    const isFromSession = result.metadata?.session_id === sessionID
+    const isFromSession = result.metadata?.parent_session_id === sessionID
     const isCompletedOrFailed = result.status === "completed" || result.status === "failed"
     const alreadyDelivered = deliveredTaskResults.has(id)
 
