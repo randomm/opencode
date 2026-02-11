@@ -27,7 +27,8 @@
         "formatCompletedTasksForInjection",
         "TaskTool",
         "CheckTaskTool",
-        "Agent.get(task.agent)"
+        "Agent.get(task.agent)",
+        "parent_session_id"
       ],
       "tests": ["packages/opencode/test/tool/check_task.test.ts"],
       "upstreamTracking": {
