@@ -149,7 +149,7 @@
       "newFiles": [".opencode/command/sync-upstream.md", ".opencode/command/upstream-gap.md"],
       "deletedFiles": [],
       "modifiedFiles": [],
-      "criticalCode": [],
+      "criticalCode": ["Absorption signal check", "git merge anomalyco/dev --no-edit", "Upstream Gap Analysis"],
       "tests": [],
       "upstreamTracking": {
         "absorptionSignals": ["sync-upstream", "upstream-gap", "fork.*sync.*command"]
