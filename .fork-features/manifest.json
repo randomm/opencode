@@ -128,6 +128,32 @@
       "upstreamTracking": {
         "absorptionSignals": []
       }
+    },
+    "task-timeout": {
+      "status": "active",
+      "description": "Increased default subagent task timeout from 5 minutes to 10 minutes. Upstream default is 5 minutes which is too short for complex tasks like sync operations and multi-file implementations.",
+      "issue": "https://github.com/randomm/opencode/issues/176",
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": ["packages/opencode/src/session/async-tasks.ts"],
+      "criticalCode": ["DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000"],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": ["TASK_TIMEOUT.*config", "task.*timeout.*env", "task_timeout"]
+      }
+    },
+    "fork-commands": {
+      "status": "active",
+      "description": "Fork-specific custom commands for upstream sync management. sync-upstream.md orchestrates merging upstream changes with conflict resolution and absorption signal checking. upstream-gap.md analyzes the gap between our fork and upstream.",
+      "issue": "https://github.com/randomm/opencode/issues/177",
+      "newFiles": [".opencode/command/sync-upstream.md", ".opencode/command/upstream-gap.md"],
+      "deletedFiles": [],
+      "modifiedFiles": [],
+      "criticalCode": [],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": ["sync-upstream", "upstream-gap", "fork.*sync.*command"]
+      }
     }
   }
 }
