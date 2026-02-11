@@ -30,7 +30,7 @@
         "Agent.get(task.agent)",
         "parent_session_id"
       ],
-      "tests": ["packages/opencode/test/tool/check_task.test.ts"],
+      "tests": ["packages/opencode/test/tool/check_task.test.ts", "packages/opencode/test/session/async-tasks.test.ts"],
       "upstreamTracking": {
         "relatedPRs": ["anomalyco/opencode#7206"],
         "relatedIssues": ["anomalyco/opencode#5887"],
