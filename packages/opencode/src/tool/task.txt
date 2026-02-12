@@ -5,6 +5,8 @@ Available agent types and the tools they have access to:
 
 When using the Task tool, you must specify a subagent_type parameter to select which agent type to use.
 
+sync: A boolean indicating whether to execute the task synchronously. When true, the task runs immediately and returns the result directly. When false (default), the task runs asynchronously and returns a task_id that can be checked with /check_task.
+
 When to use the Task tool:
 - When you are instructed to execute custom slash commands. Use the Task tool with the slash command invocation as the entire prompt. The slash command can take arguments. For example: Task(description="Check the file", prompt="/check-file path/to/file.py")
 
@@ -16,12 +18,51 @@ When NOT to use the Task tool:
 
 
 Usage notes:
-1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
-2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result. The output includes a task_id you can reuse later to continue the same subagent session.
-3. Each agent invocation starts with a fresh context unless you provide task_id to resume the same subagent session (which continues with its previous messages and tool outputs). When starting fresh, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
-4. The agent's outputs should generally be trusted
-5. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent. Tell it how to verify its work if possible (e.g., relevant test commands).
-6. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.
+  1. Launch multiple agents concurrently whenever possible, to maximize performance; to do that, use a single message with multiple tool uses
+  2. When the agent is done, it will return a single message back to you. The result returned by the agent is not visible to the user. To show the user the result, you should send a text message back to the user with a concise summary of the result. The output includes a task_id you can reuse later to continue the same subagent session.
+  3. Each agent invocation starts with a new context unless you provide task_id to resume the same subagent session (which continues with its previous messages and tool outputs). When starting fresh, your prompt should contain a highly detailed task description for the agent to perform autonomously and you should specify exactly what information the agent should return back to you in its final and only message to you.
+  4. The agent's outputs should generally be trusted
+  5. Clearly tell the agent whether you expect it to write code or just to do research (search, file reads, web fetches, etc.), since it is not aware of the user's intent. Tell it how to verify its work if possible (e.g., relevant test commands).
+  6. If the agent description mentions that it should be used proactively, then you should try your best to use it without the user having to ask for it first. Use your judgement.
+  
+  Parameters:
+  - `description`: A short (3-5 words) description of the task
+  - `prompt`: The task for the agent to perform
+  - `subagent_type`: The type of specialized agent to use for this task
+- `session_id`: (optional) Existing task session ID to continue the same subagent session
+  - `command`: (optional) The slash command that triggered this task
+  - `sync`: (Optional, default: `false`) When true, runs synchronously and returns result directly. When false (default), returns immediately with task_id; use /check_task to poll for completion.
+
+  ## Execution Modes
+
+  ### Async Mode (default, sync: false)
+  Task runs in the background. Returns immediately with a task_id. Use /check_task to poll for completion.
+
+  ### Sync Mode (sync: true)
+  Task runs synchronously and blocks until completion. Returns the result directly without using the event bus. Useful when you need the result immediately before continuing.
+
+Response Output:
+   1. **Async mode (sync=false, default)**: Returns immediately with task_id.
+   2. **Sync mode (sync=true)**: Returns result or error directly.
+   
+   Examples:
+
+   **Success (sync=true):**
+   ```json
+   { "task_id": "task_123", "status": "completed", "result": "Task output here" }
+   ```
+   
+   **Failure (sync=true):**
+   ```json
+   { "task_id": "task_123", "status": "failed", "error": "Error message" }
+   ```
+   
+   **Async (sync=false, default):**
+   ```json
+   { "task_id": "task_123", "status": "started", "message": "Task dispatched to @agent" }
+   ```
+   
+Note: Both modes respect the 5-task limit per session and 10-minute timeout.
 
 Example usage (NOTE: The agents below are fictional examples for illustration only - use the actual agents listed above):
 

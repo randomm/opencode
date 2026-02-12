@@ -9,7 +9,7 @@
   "features": {
     "async-tasks": {
       "status": "active",
-      "description": "Background task execution with slot-based concurrency (max 5). Enables async agent orchestration via /task and /check_task tools.",
+      "description": "Background task execution with slot-based concurrency (max 5). Supports both async and sync modes. Enables agent orchestration via /task and /check_task tools.",
       "issue": "https://github.com/randomm/opencode/issues/159",
       "newFiles": [
         "packages/opencode/src/session/async-tasks.ts",
@@ -28,13 +28,16 @@
         "TaskTool",
         "CheckTaskTool",
         "Agent.get(task.agent)",
-        "parent_session_id"
+        "parent_session_id",
+        "sync",
+        "sync mode execution",
+        "parameters.sync"
       ],
       "tests": ["packages/opencode/test/tool/check_task.test.ts", "packages/opencode/test/session/async-tasks.test.ts"],
       "upstreamTracking": {
         "relatedPRs": ["anomalyco/opencode#7206"],
         "relatedIssues": ["anomalyco/opencode#5887"],
-        "absorptionSignals": ["backgroundTaskResults", "BackgroundTask", "task.*concurrency.*slot"]
+        "absorptionSignals": ["backgroundTaskResults", "BackgroundTask", "task.*concurrency.*slot", "sync.*mode"]
       }
     },
     "rg-tool": {
