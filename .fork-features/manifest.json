@@ -158,6 +158,37 @@
       "upstreamTracking": {
         "absorptionSignals": ["sync-upstream", "upstream-gap", "fork.*sync.*command"]
       }
+    },
+    "permission-bubbling": {
+      "status": "active",
+      "description": "Fixes two critical permission issues: (1) Permission requests from subagents now bubble up to parent session instead of failing silently, (2) Subagents inherit parent agent's task permissions to prevent unrestricted delegation chains.",
+      "issue": "https://github.com/randomm/opencode/issues/175",
+      "newFiles": [],
+      "modifiedFiles": [
+        "packages/opencode/src/acp/agent.ts",
+        "packages/opencode/src/tool/task.ts",
+        "packages/opencode/src/session/prompt.ts"
+      ],
+      "criticalCode": [
+        "child_session_loading_parent",
+        "loadSession",
+        "parentTaskPermissions",
+        "parentAgent?.permission"
+      ],
+      "tests": [
+        "packages/opencode/test/acp/permission-bubbling.test.ts",
+        "packages/opencode/test/tool/task-permissions.test.ts"
+      ],
+      "upstreamTracking": {
+        "relatedPRs": ["anomalyco/opencode#12584", "anomalyco/opencode#12136"],
+        "relatedIssues": ["anomalyco/opencode#12566", "anomalyco/opencode#12133"],
+        "absorptionSignals": [
+          "child.*session.*parent",
+          "permission.*bubble",
+          "parentAgent.*permission",
+          "task.*delegation.*restrict"
+        ]
+      }
     }
   }
 }

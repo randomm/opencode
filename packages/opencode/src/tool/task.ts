@@ -176,9 +176,19 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         }
 
         const parentSession = await Session.get(ctx.sessionID).catch(() => null)
-        if (!parentSession?.directory) {
-          throw new Error("Parent session not found or has no directory")
-        }
+        if (!parentSession?.directory) throw new Error("Parent session not found or has no directory")
+
+        const parentAgent = ctx.agent ? await Agent.get(ctx.agent).catch(() => null) : null
+        const parentTaskPermissions =
+          parentAgent?.permission
+            ?.filter((p) => p.permission === "task")
+            .map((p) => ({
+              permission: "task" as const,
+              pattern: p.pattern,
+              // "ask" permissions become "deny" in child sessions
+              // because interactive user prompts don't work in delegated tasks
+              action: p.action === "ask" ? ("deny" as const) : p.action,
+            })) ?? []
 
         return await Session.createNext({
           parentID: ctx.sessionID,
@@ -195,6 +205,7 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
               pattern: "*",
               action: "deny",
             },
+            ...parentTaskPermissions,
             ...(hasTaskPermission
               ? []
               : [
