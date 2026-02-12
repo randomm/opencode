@@ -19,6 +19,7 @@ import { iife } from "@/util/iife"
 import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
+import { Wildcard } from "@/util/wildcard"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -111,14 +112,9 @@ export async function cleanupSessionTaskMaps(sessionID: string): Promise<void> {
 export const TaskTool = Tool.define("task", async (initCtx) => {
   const agents = await Agent.list().then((x) => x.filter((a) => a.mode !== "primary"))
 
-  const caller = initCtx?.agent
-  const accessibleAgents = caller
-    ? agents.filter((a) => PermissionNext.evaluate("task", a.name, caller.permission).action !== "deny")
-    : agents
-
   const description = DESCRIPTION.replace(
     "{agents}",
-    accessibleAgents
+    agents
       .map((a) => `- ${a.name}: ${a.description ?? "This subagent should only be called manually by the user."}`)
       .join("\n"),
   )
@@ -162,6 +158,43 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
 
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
+
+      // Check if caller has permission to spawn this agent
+      const callerAgent = ctx.agent ? await Agent.get(ctx.agent) : null
+      const callerTaskPermissions = callerAgent?.permission?.filter((p) => p.permission === "task") || []
+
+      // Evaluate if caller can spawn requested agent
+      let canSpawn = false
+      if (callerTaskPermissions.length === 0) {
+        // No task permissions defined - allow all (backward compatibility)
+        // This allows agents without explicit task permission config to spawn any agent,
+        // matching behavior before permission system was introduced.
+        canSpawn = true
+      } else {
+        // Check permissions in order, last matching wins
+        // Only explicit "allow" permits spawning; "ask" and "deny" both deny.
+        // User prompting is handled separately by ctx.ask() at lines 146-156.
+        for (const rule of callerTaskPermissions) {
+          if (Wildcard.match(agent.name, rule.pattern)) {
+            canSpawn = rule.action === "allow"
+          }
+        }
+      }
+
+      if (!canSpawn) {
+        if (result.releaseSlot) {
+          result.releaseSlot()
+        }
+        return {
+          title: params.description,
+          output: JSON.stringify({
+            task_id: null,
+            status: "error",
+            message: `Permission denied: Agent '${agent.name}' not permitted for your role`,
+          }),
+          metadata: {} as TaskResultMetadata,
+        }
+      }
 
       const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
 
