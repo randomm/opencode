@@ -26,6 +26,7 @@ const parameters = z.object({
   subagent_type: z.string().describe("The type of specialized agent to use for this task"),
   session_id: z.string().describe("Existing Task session to continue").optional(),
   command: z.string().describe("The command that triggered this task").optional(),
+  sync: z.boolean().describe("Execute synchronously and wait for result").optional(),
 })
 
 const MAX_CONCURRENT_TASKS_PER_SESSION = 5
@@ -296,6 +297,92 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         release_slot: result.releaseSlot,
       }
 
+      const taskTimeoutMs = 10 * 60 * 1000
+      const syncAbortController = new AbortController()
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          SessionPrompt.cancel(session.id)
+          syncAbortController.abort()
+          reject(new Error("Task timeout after 10 minutes"))
+        }, taskTimeoutMs)
+      })
+
+      // Check for abort before sync execution to prevent race condition
+      if (ctx.abort.aborted) {
+        unsub()
+        if (!slotReleased && result.releaseSlot) {
+          result.releaseSlot()
+          slotReleased = true
+        }
+        return {
+          title: params.description,
+          output: JSON.stringify({
+            task_id: taskId,
+            status: "aborted",
+            message: "Task aborted before execution",
+          }),
+          metadata: { sessionId: session.id } as TaskResultMetadata,
+        }
+      }
+
+      // Sync mode: execute synchronously and return result directly
+      if (params.sync) {
+        try {
+          const promptResult = await Promise.race([
+            SessionPrompt.prompt({
+              messageID,
+              sessionID: session.id,
+              model: {
+                modelID: model.modelID,
+                providerID: model.providerID,
+              },
+              agent: agent.name,
+              tools: {
+                todowrite: false,
+                todoread: false,
+                ...(hasTaskPermission ? {} : { task: false }),
+                ...Object.fromEntries((config.experimental?.primary_tools ?? []).map((t) => [t, false])),
+              },
+              parts: promptParts,
+            }),
+            timeoutPromise,
+          ])
+          const textPart = promptResult.parts.find((p) => p.type === "text" && !p.synthetic)
+          const textResult = textPart && "text" in textPart ? textPart.text : undefined
+          if (result.releaseSlot) {
+            result.releaseSlot()
+            slotReleased = true
+          }
+          return {
+            title: params.description,
+            output: JSON.stringify({
+              task_id: taskId,
+              status: "completed",
+              result: textResult,
+            }),
+            metadata: { sessionId: session.id } as TaskResultMetadata,
+          }
+        } catch (e) {
+          if (!slotReleased && result.releaseSlot) {
+            result.releaseSlot()
+            slotReleased = true
+          }
+          const errorMessage = e instanceof Error ? e.message : String(e)
+          return {
+            title: params.description,
+            output: JSON.stringify({
+              task_id: taskId,
+              status: "failed",
+              error: errorMessage,
+            }),
+            metadata: { sessionId: session.id } as TaskResultMetadata,
+          }
+        } finally {
+          unsub()
+        }
+      }
+
+      // Async mode: spawn background task
       enableAutoWakeup(ctx.sessionID)
 
       try {
