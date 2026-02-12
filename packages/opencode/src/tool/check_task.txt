@@ -1,5 +1,7 @@
+- Tasks **automatically notify you** when they complete — do NOT poll
+- Use only for rare cases: uncertainty about task status, explicit user request, or verifying very long-running tasks
+- **Never call this tool in loops or repeatedly** — let auto-notification handle task completion
 - Query the status of a background task by its ID
 - Status returns: "running", "completed", "failed", or "not_found"
 - For completed tasks, includes the result from the agent's final text output
 - For failed tasks, includes error information
-- Use this tool to poll the status of tasks created by the task tool
