@@ -31,12 +31,12 @@ Usage notes:
   - `subagent_type`: The type of specialized agent to use for this task
 - `session_id`: (optional) Existing task session ID to continue the same subagent session
   - `command`: (optional) The slash command that triggered this task
-  - `sync`: (Optional, default: `false`) When true, runs synchronously and returns result directly. When false (default), returns immediately with task_id; use /check_task to poll for completion.
+  - `sync`: (Optional, default: `false`) When true, runs synchronously and returns result directly. When false (default), returns immediately with task_id; tasks auto-notify on completion, or check status with /check_task if needed.
 
   ## Execution Modes
 
   ### Async Mode (default, sync: false)
-  Task runs in the background. Returns immediately with a task_id. Use /check_task to poll for completion.
+  Task runs in the background. Returns immediately with a task_id. Tasks automatically notify you when complete. Only use /check_task for rare cases (uncertainty, explicit request, or verifying long-running tasks).
 
   ### Sync Mode (sync: true)
   Task runs synchronously and blocks until completion. Returns the result directly without using the event bus. Useful when you need the result immediately before continuing.
