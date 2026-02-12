@@ -35,11 +35,10 @@
         "CheckTaskTool",
         "ListTasksTool",
         "parent_session_id",
-        "session ownership",
+        "Session ownership filtering",
         "filter to caller's session",
-        "sync",
-        "sync mode execution",
-        "parameters.sync"
+        "Sync mode: execute synchronously",
+        "params.sync"
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
@@ -47,18 +46,9 @@
         "packages/opencode/test/session/async-tasks.test.ts"
       ],
       "upstreamTracking": {
-        "relatedPRs": [
-          "anomalyco/opencode#7206"
-        ],
-        "relatedIssues": [
-          "anomalyco/opencode#5887"
-        ],
-        "absorptionSignals": [
-          "backgroundTaskResults",
-          "BackgroundTask",
-          "task.*concurrency.*slot",
-          "sync.*mode"
-        ]
+        "relatedPRs": ["anomalyco/opencode#7206"],
+        "relatedIssues": ["anomalyco/opencode#5887"],
+        "absorptionSignals": ["backgroundTaskResults", "BackgroundTask", "task.*concurrency.*slot", "sync.*mode"]
       }
     },
     "rg-tool": {
@@ -70,29 +60,17 @@
         "packages/opencode/src/tool/rg.txt",
         "packages/opencode/test/tool/rg.test.ts"
       ],
-      "modifiedFiles": [
-        "packages/opencode/src/tool/registry.ts",
-        "packages/opencode/src/cli/cmd/run.ts"
-      ],
+      "modifiedFiles": ["packages/opencode/src/tool/registry.ts", "packages/opencode/src/cli/cmd/run.ts"],
       "deletedFiles": [
         "packages/opencode/src/tool/glob.ts",
         "packages/opencode/src/tool/glob.txt",
         "packages/opencode/src/tool/grep.ts",
         "packages/opencode/src/tool/grep.txt"
       ],
-      "criticalCode": [
-        "RgTool",
-        "files_only"
-      ],
-      "tests": [
-        "packages/opencode/test/tool/rg.test.ts"
-      ],
+      "criticalCode": ["RgTool", "files_only"],
+      "tests": ["packages/opencode/test/tool/rg.test.ts"],
       "upstreamTracking": {
-        "absorptionSignals": [
-          "RgTool",
-          "ripgrep.*tool",
-          "rg --json"
-        ]
+        "absorptionSignals": ["RgTool", "ripgrep.*tool", "rg --json"]
       }
     },
     "agents-config": {
@@ -101,9 +79,7 @@
       "issue": "https://github.com/randomm/opencode/issues/158",
       "newFiles": [],
       "deletedFiles": [],
-      "modifiedFiles": [
-        "AGENTS.md"
-      ],
+      "modifiedFiles": ["AGENTS.md"],
       "criticalCode": [
         "Fork Governance",
         ".fork-features/",
@@ -131,18 +107,10 @@
         "packages/opencode/src/session/compaction.ts",
         "packages/opencode/src/plugin/copilot.ts"
       ],
-      "criticalCode": [
-        "context-1m-2025-08-07",
-        "Override context limit for Anthropic models with context-1m"
-      ],
-      "tests": [
-        "packages/opencode/test/session/compaction.test.ts"
-      ],
+      "criticalCode": ["context-1m-2025-08-07", "Override context limit for Anthropic models with context-1m"],
+      "tests": ["packages/opencode/test/session/compaction.test.ts"],
       "upstreamTracking": {
-        "absorptionSignals": [
-          "context-1m-2025-08-07",
-          "context.limit.*1000000"
-        ]
+        "absorptionSignals": ["context-1m-2025-08-07", "context.limit.*1000000"]
       }
     },
     "minimal-ci": {
@@ -182,79 +150,60 @@
       "issue": "https://github.com/randomm/opencode/issues/176",
       "newFiles": [],
       "deletedFiles": [],
-      "modifiedFiles": [
-        "packages/opencode/src/session/async-tasks.ts"
-      ],
-      "criticalCode": [
-        "DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000"
-      ],
+      "modifiedFiles": ["packages/opencode/src/session/async-tasks.ts"],
+      "criticalCode": ["DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000"],
       "tests": [],
       "upstreamTracking": {
-        "absorptionSignals": [
-          "TASK_TIMEOUT.*config",
-          "task.*timeout.*env",
-          "task_timeout"
-        ]
+        "absorptionSignals": ["TASK_TIMEOUT.*config", "task.*timeout.*env", "task_timeout"]
       }
     },
     "fork-commands": {
       "status": "active",
       "description": "Fork-specific custom commands for upstream sync management. sync-upstream.md orchestrates merging upstream changes with conflict resolution and absorption signal checking. upstream-gap.md analyzes the gap between our fork and upstream.",
       "issue": "https://github.com/randomm/opencode/issues/177",
-      "newFiles": [
-        ".opencode/command/sync-upstream.md",
-        ".opencode/command/upstream-gap.md"
-      ],
+      "newFiles": [".opencode/command/sync-upstream.md", ".opencode/command/upstream-gap.md"],
       "deletedFiles": [],
       "modifiedFiles": [],
-      "criticalCode": [
-        "Absorption signal check",
-        "git merge anomalyco/dev --no-edit",
-        "Upstream Gap Analysis"
-      ],
+      "criticalCode": ["Absorption signal check", "git merge anomalyco/dev --no-edit", "Upstream Gap Analysis"],
       "tests": [],
       "upstreamTracking": {
-        "absorptionSignals": [
-          "sync-upstream",
-          "upstream-gap",
-          "fork.*sync.*command"
-        ]
+        "absorptionSignals": ["sync-upstream", "upstream-gap", "fork.*sync.*command"]
       }
     },
     "permission-bubbling": {
       "status": "active",
-      "description": "Fixes critical permission issues: (1) Permission requests from subagents bubble to parent, (2) Each agent uses its OWN task permissions config (not parent's) - child config is authoritative for what that agent can delegate, (3) Prevents delegation bypass attacks where agents spawn unauthorized subagents.",
-      "issue": "https://github.com/randomm/opencode/issues/175",
+      "description": "Fixes critical permission issues: (1) Permission requests from subagents bubble to parent, (2) Each agent uses its OWN task permissions config (not parent's) - child config is authoritative for what that agent can delegate, (3) ctx.ask() bypass prevented - explicit agent config checked BEFORE user prompts so Always Allow cannot override agent deny rules, (4) Prevents delegation bypass attacks where agents spawn unauthorized subagents.",
+      "issue": "https://github.com/randomm/opencode/issues/187",
       "newFiles": [],
-      "modifiedFiles": [
-        "packages/opencode/src/acp/agent.ts",
-        "packages/opencode/src/tool/task.ts",
-        "packages/opencode/src/session/prompt.ts"
-      ],
+      "modifiedFiles": ["packages/opencode/src/acp/agent.ts", "packages/opencode/src/tool/task.ts"],
       "criticalCode": [
         "child_session_loading_parent",
         "loadSession",
-        "parentTaskPermissions",
-        "parentAgent?.permission"
+        "callerAgent",
+        "callerTaskPermissions",
+        "canSpawn",
+        "rule.action !== \"deny\"",
+        "Check explicit agent-specific permissions from caller's config",
+        "agent config is authoritative and cannot be bypassed",
+        "can only expand permissions, never restrict them",
+        "task-permission"
       ],
       "tests": [
-        "packages/opencode/test/acp/permission-bubbling.test.ts",
-        "packages/opencode/test/tool/task-permissions.test.ts"
+        "packages/opencode/test/tool/task-permission-bubbling.test.ts",
+        "packages/opencode/test/permission-task.test.ts",
+        "packages/opencode/test/tool/task.test.ts"
       ],
       "upstreamTracking": {
-        "relatedPRs": [
-          "anomalyco/opencode#12584",
-          "anomalyco/opencode#12136"
-        ],
-        "relatedIssues": [
-          "anomalyco/opencode#12566",
-          "anomalyco/opencode#12133"
-        ],
+        "relatedPRs": ["anomalyco/opencode#12584", "anomalyco/opencode#12136"],
+        "relatedIssues": ["anomalyco/opencode#12566", "anomalyco/opencode#12133"],
         "absorptionSignals": [
           "child.*session.*parent",
           "permission.*bubble",
-          "parentAgent.*permission",
-          "task.*delegation.*restrict"
+          "callerTaskPermissions.*canSpawn",
+          "rule.action.*deny",
+          "task.*delegation.*restrict",
+          "ctx.ask.*bypass",
+          "explicit.*agent.*permission"
         ]
       }
     },
@@ -267,25 +216,13 @@
         "packages/opencode/src/tool/list_tasks.txt",
         "packages/opencode/test/tool/list_tasks.test.ts"
       ],
-      "modifiedFiles": [
-        "packages/opencode/src/tool/registry.ts"
-      ],
-      "criticalCode": [
-        "ListTasksTool",
-        "listBackgroundTasks",
-        "list_tasks"
-      ],
-      "tests": [
-        "packages/opencode/test/tool/list_tasks.test.ts"
-      ],
+      "modifiedFiles": ["packages/opencode/src/tool/registry.ts"],
+      "criticalCode": ["ListTasksTool", "listBackgroundTasks", "list_tasks"],
+      "tests": ["packages/opencode/test/tool/list_tasks.test.ts"],
       "upstreamTracking": {
         "relatedPRs": [],
         "relatedIssues": [],
-        "absorptionSignals": [
-          "list.*tasks",
-          "ListTasksTool",
-          "listBackgroundTasks"
-        ]
+        "absorptionSignals": ["list.*tasks", "ListTasksTool", "listBackgroundTasks"]
       }
     }
   }
