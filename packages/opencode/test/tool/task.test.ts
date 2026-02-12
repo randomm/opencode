@@ -3,17 +3,6 @@ import { TaskTool } from "../../src/tool/task"
 import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 
-const ctx = {
-  sessionID: "test-parent",
-  messageID: "msg-1",
-  callID: "",
-  agent: "test",
-  abort: AbortSignal.any([]),
-  metadata: () => {},
-  ask: async () => {},
-  extra: { bypassAgentCheck: true },
-}
-
 describe("tool.task", () => {
   test("validates sync parameter", async () => {
     await Instance.provide({

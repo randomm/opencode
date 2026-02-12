@@ -571,15 +571,51 @@ export namespace ACP {
       try {
         const model = await defaultModel(this.config, directory)
 
-        // Store ACP session state
-        await this.sessionManager.load(sessionId, params.cwd, params.mcpServers, model)
+        // Check if session is not already registered in sessionManager (e.g., it's a child session)
+        let loadSessionId = sessionId
+        let shouldLoadAsChild = false
 
-        log.info("load_session", { sessionId, mcpServers: params.mcpServers.length })
+        const existingSession = this.sessionManager.tryGet(sessionId)
+        if (!existingSession) {
+          // Session not in ACP manager - check if it's a child session via SDK lookup
+          const sessionInfo = await this.sdk.session
+            .get(
+              {
+                sessionID: sessionId,
+                directory,
+              },
+              { throwOnError: false },
+            )
+            .then((response) => response.data)
+            .catch((error) => {
+              log.debug("session_not_found_in_sdk", { sessionId })
+              return undefined
+            })
+
+          if (sessionInfo) {
+            // This is a child session - load parent instead for permission context
+            log!.info("child_session_loading_parent", {
+              childSessionId: sessionId,
+              parentSessionId: sessionInfo.parentID,
+            })
+            loadSessionId = sessionInfo.parentID!
+            shouldLoadAsChild = true
+          }
+        }
+
+        // Store ACP session state
+        await this.sessionManager.load(loadSessionId, params.cwd, params.mcpServers, model)
+
+        log!.info("load_session", {
+          sessionId: loadSessionId,
+          mcpServers: params.mcpServers!.length,
+          loadAsChild: shouldLoadAsChild,
+        })
 
         const result = await this.loadSessionMode({
           cwd: directory,
-          mcpServers: params.mcpServers,
-          sessionId,
+          sessionId: loadSessionId,
+          mcpServers: params.mcpServers!,
         })
 
         // Replay session history
@@ -591,41 +627,41 @@ export namespace ACP {
             },
             { throwOnError: true },
           )
-          .then((x) => x.data)
-          .catch((err) => {
-            log.error("unexpected error when fetching message", { error: err })
+          .then((response) => response.data)
+          .catch((error) => {
+            log!.error("unexpected_error_fetching_message", { error })
             return undefined
           })
 
-        const lastUser = messages?.findLast((m) => m.info.role === "user")?.info
+        const lastUser = messages?.findLast((msg) => msg.info.role === "user")?.info
         if (lastUser?.role === "user") {
-          result.models.currentModelId = `${lastUser.model.providerID}/${lastUser.model.modelID}`
-          this.sessionManager.setModel(sessionId, {
-            providerID: lastUser.model.providerID,
-            modelID: lastUser.model.modelID,
+          result!.models!.currentModelId = `${lastUser!.model!.providerID}/${lastUser!.model!.modelID}`
+          this!.sessionManager!.setModel!(sessionId!, {
+            providerID: lastUser!.model!.providerID!,
+            modelID: lastUser!.model!.modelID!,
           })
-          if (result.modes?.availableModes.some((m) => m.id === lastUser.agent)) {
-            result.modes.currentModeId = lastUser.agent
-            this.sessionManager.setMode(sessionId, lastUser.agent)
+          if (result!.modes!.availableModes.some((mode) => mode.id === lastUser!.agent!)) {
+            result!.modes!.currentModeId = lastUser!.agent!
+            this!.sessionManager!.setMode!(sessionId!, lastUser!.agent!)
           }
         }
 
         for (const msg of messages ?? []) {
-          log.debug("replay message", msg)
+          log!.debug("replay", { message: msg })
           await this.processMessage(msg)
         }
 
-        await sendUsageUpdate(this.connection, this.sdk, sessionId, directory)
+        await sendUsageUpdate(this!.connection!, this!.sdk!, sessionId!, directory!)
 
-        return result
-      } catch (e) {
-        const error = MessageV2.fromError(e, {
-          providerID: this.config.defaultModel?.providerID ?? "unknown",
+        return result!
+      } catch (error) {
+        const typedError = MessageV2.fromError(error!, {
+          providerID: this!.config!.defaultModel!.providerID!,
         })
-        if (LoadAPIKeyError.isInstance(error)) {
-          throw RequestError.authRequired()
+        if (LoadAPIKeyError!.isInstance!(typedError)) {
+          throw RequestError.authRequired()!
         }
-        throw e
+        throw error!
       }
     }
 
