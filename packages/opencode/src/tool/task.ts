@@ -20,6 +20,7 @@ import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
 import { Wildcard } from "@/util/wildcard"
+import { Log } from "@/util/log"
 
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
@@ -144,24 +145,42 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         }
       }
 
-      if (!ctx.extra?.bypassAgentCheck) {
-        await ctx.ask({
-          permission: "task",
-          patterns: [params.subagent_type],
-          always: ["*"],
-          metadata: {
-            description: params.description,
-            subagent_type: params.subagent_type,
-          },
-        })
-      }
-
       const agent = await Agent.get(params.subagent_type)
       if (!agent) throw new Error(`Unknown agent type: ${params.subagent_type} is not a valid agent type`)
 
-      // Check if caller has permission to spawn this agent
+      // FIRST: Check explicit agent-specific permissions from caller's config (BEFORE ctx.ask)
+      // This ensures agent config is authoritative and cannot be bypassed by "Always Allow" prompts
       const callerAgent = ctx.agent ? await Agent.get(ctx.agent) : null
+
+      // Safety: If caller agent ID is specified but agent not found, default deny for security
+      if (ctx.agent && !callerAgent) {
+        Log.create({ service: "task-permission" }).warn("Caller agent not found", {
+          ctx_agent: ctx.agent,
+          subagent_requested: agent.name,
+        })
+        if (result.releaseSlot) {
+          result.releaseSlot()
+        }
+        return {
+          title: params.description,
+          output: JSON.stringify({
+            task_id: null,
+            status: "error",
+            message: `Permission denied: Caller agent '${ctx.agent}' not found or misconfigured`,
+          }),
+          metadata: {} as TaskResultMetadata,
+        }
+      }
+
       const callerTaskPermissions = callerAgent?.permission?.filter((p) => p.permission === "task") || []
+
+      // Debug logging for permission decision
+      Log.create({ service: "task-permission" }).debug("Task permission check", {
+        ctx_agent: ctx.agent,
+        caller_agent: callerAgent?.name,
+        subagent_requested: agent.name,
+        caller_permissions_count: callerTaskPermissions.length,
+      })
 
       // Evaluate if caller can spawn requested agent
       let canSpawn = false
@@ -172,16 +191,22 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         canSpawn = true
       } else {
         // Check permissions in order, last matching wins
-        // Only explicit "allow" permits spawning; "ask" and "deny" both deny.
-        // User prompting is handled separately by ctx.ask() at lines 146-156.
+        // Only explicit "deny" blocks spawning; "allow" and "ask" both permit proceeding.
+        // For "ask" action: the config allows potential spawning, but ctx.ask() will prompt user.
+        // This agent config check is authoritative - "ask" and "allow" cannot be bypassed.
         for (const rule of callerTaskPermissions) {
           if (Wildcard.match(agent.name, rule.pattern)) {
-            canSpawn = rule.action === "allow"
+            canSpawn = rule.action !== "deny"
           }
         }
       }
 
       if (!canSpawn) {
+        Log.create({ service: "task-permission" }).debug("Task permission denied", {
+          caller_agent: callerAgent?.name,
+          subagent_requested: agent.name,
+          reason: "explicit_config_deny",
+        })
         if (result.releaseSlot) {
           result.releaseSlot()
         }
@@ -194,6 +219,20 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
           }),
           metadata: {} as TaskResultMetadata,
         }
+      }
+
+      // SECOND: Ask user for confirmation only if agent config allows
+      // ctx.ask() can only expand permissions, never restrict them
+      if (!ctx.extra?.bypassAgentCheck) {
+        await ctx.ask({
+          permission: "task",
+          patterns: [params.subagent_type],
+          always: ["*"],
+          metadata: {
+            description: params.description,
+            subagent_type: params.subagent_type,
+          },
+        })
       }
 
       const hasTaskPermission = agent.permission.some((rule) => rule.permission === "task")
