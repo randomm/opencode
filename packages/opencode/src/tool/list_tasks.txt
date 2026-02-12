@@ -1,0 +1,17 @@
+List all background tasks with their status.
+
+Use this tool to get an overview of all running and completed tasks without needing to know their individual IDs.
+
+Parameters:
+- limit: Maximum number of tasks to return (default: 50)
+- include_completed: Whether to include completed tasks (default: true)
+
+Returns:
+- pending: Array of running tasks with task_id, status, agent, description, started_at
+- completed: Array of completed/failed tasks with task_id, status, agent, description, started_at, completed_at
+- total_count: Total number of tasks returned
+
+Example usage:
+List all tasks: /list_tasks
+List only pending tasks: /list_tasks {"include_completed": false}
+List up to 10 tasks: /list_tasks {"limit": 10}

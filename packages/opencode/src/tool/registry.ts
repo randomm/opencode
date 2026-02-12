@@ -27,6 +27,7 @@ import { Truncate } from "./truncation"
 import { PlanExitTool, PlanEnterTool } from "./plan"
 import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
+import { ListTasksTool } from "./list_tasks"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -109,6 +110,7 @@ export namespace ToolRegistry {
       WriteTool,
       TaskTool,
       CheckTaskTool,
+      ListTasksTool,
       WebFetchTool,
       TodoWriteTool,
       // TodoReadTool,
