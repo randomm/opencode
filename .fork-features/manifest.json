@@ -18,8 +18,8 @@
         "packages/opencode/src/tool/task.txt",
         "packages/opencode/src/tool/check_task.ts",
         "packages/opencode/src/tool/check_task.txt",
-        "packages/opencode/src/tool/list_tasks.ts",
-        "packages/opencode/src/tool/list_tasks.txt"
+        "packages/opencode/src/tool/cancel_task.ts",
+        "packages/opencode/src/tool/cancel_task.txt"
       ],
       "modifiedFiles": [
         "packages/opencode/src/session/index.ts",
@@ -34,6 +34,8 @@
         "TaskTool",
         "CheckTaskTool",
         "ListTasksTool",
+        "CancelTaskTool",
+        "tryCancel",
         "parent_session_id",
         "Session ownership filtering",
         "filter to caller's session",
@@ -42,13 +44,21 @@
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
-        "packages/opencode/test/tool/list_tasks.test.ts",
+        "packages/opencode/test/tool/cancel_task.test.ts",
         "packages/opencode/test/session/async-tasks.test.ts"
       ],
       "upstreamTracking": {
         "relatedPRs": ["anomalyco/opencode#7206"],
         "relatedIssues": ["anomalyco/opencode#5887"],
-        "absorptionSignals": ["backgroundTaskResults", "BackgroundTask", "task.*concurrency.*slot", "sync.*mode"]
+        "absorptionSignals": [
+          "backgroundTaskResults",
+          "BackgroundTask",
+          "task.*concurrency.*slot",
+          "sync.*mode",
+          "cancel.*task",
+          "CancelTaskTool",
+          "tryCancel"
+        ]
       }
     },
     "rg-tool": {
