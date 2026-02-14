@@ -157,6 +157,21 @@ const targets = singleFlag
     })
   : allTargets
 
+// Verify platform/architecture filter produced valid target(s) BEFORE cleanup
+if (targets.length === 0) {
+  throw new Error(
+    `No build targets matched for ${process.platform}/${process.arch}. ` +
+      `Available targets: ${allTargets.map((t) => `${t.os}-${t.arch}`).join(", ")}`,
+  )
+}
+if (targets.length > 1 && singleFlag) {
+  throw new Error(
+    `Multiple targets matched for --single flag: ${targets.map((t) => `${t.os}-${t.arch}`).join(", ")}. ` +
+      `This should not happen - please investigate.`,
+  )
+}
+
+// Safe to clean dist directory now that we know targets are valid
 await $`rm -rf dist`
 
 const binaries: Record<string, string> = {}
@@ -185,32 +200,59 @@ for (const item of targets) {
   const bunfsRoot = item.os === "win32" ? "B:/~BUN/root/" : "/$bunfs/root/"
   const workerRelativePath = path.relative(dir, parserWorker).replaceAll("\\", "/")
 
-  await Bun.build({
-    conditions: ["browser"],
-    tsconfig: "./tsconfig.json",
-    plugins: [dedupePlugin, solidTransformPlugin],
-    sourcemap: "external",
-    minify: true,
-    compile: {
-      autoloadBunfig: false,
-      autoloadDotenv: false,
-      //@ts-ignore (bun types aren't up to date)
-      autoloadTsconfig: true,
-      autoloadPackageJson: true,
-      target: name.replace(pkg.name, "bun") as any,
-      outfile: `dist/${name}/bin/opencode`,
-      execArgv: [`--user-agent=opencode/${Script.version}`, "--use-system-ca", "--"],
-      windows: {},
-    },
-    entrypoints: ["./src/index.ts", parserWorker, workerPath],
-    define: {
-      OPENCODE_VERSION: `'${Script.version}'`,
-      OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + workerRelativePath,
-      OPENCODE_WORKER_PATH: workerPath,
-      OPENCODE_CHANNEL: `'${Script.channel}'`,
-      OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
-    },
-  })
+  try {
+    await Bun.build({
+      conditions: ["browser"],
+      tsconfig: "./tsconfig.json",
+      plugins: [dedupePlugin, solidTransformPlugin],
+      sourcemap: "external",
+      minify: true,
+      compile: {
+        autoloadBunfig: false,
+        autoloadDotenv: false,
+        //@ts-ignore (bun types aren't up to date)
+        autoloadTsconfig: true,
+        autoloadPackageJson: true,
+        target: name.replace(pkg.name, "bun") as any,
+        outfile: `dist/${name}/bin/opencode`,
+        execArgv: [`--user-agent=opencode/${Script.version}`, "--use-system-ca", "--"],
+        windows: {},
+      },
+      entrypoints: ["./src/index.ts", parserWorker, workerPath],
+      define: {
+        OPENCODE_VERSION: `'${Script.version}'`,
+        OTUI_TREE_SITTER_WORKER_PATH: bunfsRoot + workerRelativePath,
+        OPENCODE_WORKER_PATH: workerPath,
+        OPENCODE_CHANNEL: `'${Script.channel}'`,
+        OPENCODE_LIBC: item.os === "linux" ? `'${item.abi ?? "glibc"}'` : "",
+      },
+    })
+  } catch (error) {
+    console.error(`FATAL: Build failed for ${name}:`, error)
+    process.exit(1)
+  }
+
+  // Verify binary was created with reasonable size
+  const binaryPath = `dist/${name}/bin/opencode`
+  if (!fs.existsSync(binaryPath)) {
+    console.error(`FATAL: Binary not created at ${binaryPath}`)
+    process.exit(1)
+  }
+  const stat = fs.statSync(binaryPath)
+  if (!stat.isFile()) {
+    console.error(`FATAL: Build artifact is not a file: ${binaryPath}`)
+    process.exit(1)
+  }
+  // Binaries should be > 10MB for production builds, > 5MB for dev
+  const minSize = Script.release ? 10 * 1024 * 1024 : 5 * 1024 * 1024
+  if (stat.size < minSize) {
+    console.error(
+      `FATAL: Binary suspiciously small: ${(stat.size / 1024 / 1024).toFixed(1)}MB ` +
+        `(expected > ${(minSize / 1024 / 1024).toFixed(1)}MB)`,
+    )
+    process.exit(1)
+  }
+  console.log(`✓ Binary verified: ${(stat.size / 1024 / 1024).toFixed(1)}MB`)
 
   await $`rm -rf ./dist/${name}/bin/tui`
   await Bun.file(`dist/${name}/package.json`).write(

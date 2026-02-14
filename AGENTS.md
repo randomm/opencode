@@ -274,6 +274,24 @@ bun test:e2e:local       # Run Playwright E2E tests
 
 ### Main opencode TUI
 
+**Recommended: Use comprehensive installation script**
+
+```bash
+cd packages/opencode && bun run build --single
+./script/install.sh
+```
+
+The install script handles:
+
+- Platform/architecture detection
+- Binary verification (size, executability)
+- Directory creation and permission checks
+- Atomic installation with rollback on failure
+- macOS codesigning with error detection
+- Comprehensive verification
+
+**Manual installation (advanced):**
+
 ```bash
 # Build for current platform only (dev builds)
 cd packages/opencode && bun run build --single
@@ -282,13 +300,17 @@ cd packages/opencode && bun run build --single
 cp packages/opencode/dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode
 
 # REQUIRED on macOS: ad-hoc codesign (build script does NOT auto-sign)
-codesign --force --deep --sign - ~/bin/opencode
+codesign --force --deep --sign - ~/bin/opencode || exit 1
 
 # Verify
 ~/bin/opencode --version
 ```
 
-**Note:** The build script (`script/build.ts`) does NOT auto-codesign. Without codesign, macOS will refuse to run the binary.
+**Critical Notes:**
+
+- The build script (`script/build.ts`) does NOT auto-codesign. Without codesign, macOS will refuse to run the binary.
+- Manual installation requires all 4 steps to succeed. Use `./script/install.sh` for automated error handling.
+- If codesigning fails on macOS, the binary becomes non-executable. The install script will detect this and rollback automatically.
 
 ### JavaScript SDK
 

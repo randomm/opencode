@@ -18,6 +18,8 @@
         "packages/opencode/src/tool/task.txt",
         "packages/opencode/src/tool/check_task.ts",
         "packages/opencode/src/tool/check_task.txt",
+        "packages/opencode/src/tool/list_tasks.ts",
+        "packages/opencode/src/tool/list_tasks.txt",
         "packages/opencode/src/tool/cancel_task.ts",
         "packages/opencode/src/tool/cancel_task.txt"
       ],
@@ -34,6 +36,8 @@
         "TaskTool",
         "CheckTaskTool",
         "ListTasksTool",
+        "list_tasks",
+        "listBackgroundTasks",
         "CancelTaskTool",
         "tryCancel",
         "parent_session_id",
@@ -44,6 +48,7 @@
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
+        "packages/opencode/test/tool/list_tasks.test.ts",
         "packages/opencode/test/tool/cancel_task.test.ts",
         "packages/opencode/test/session/async-tasks.test.ts"
       ],
@@ -215,24 +220,6 @@
           "ctx.ask.*bypass",
           "explicit.*agent.*permission"
         ]
-      }
-    },
-    "list-tasks": {
-      "status": "active",
-      "description": "New tool to list all background tasks with their status. Exposes the internal listBackgroundTasks() function as a user-facing tool. Supports filtering by limit and including/excluding completed tasks.",
-      "issue": "https://github.com/randomm/opencode/issues/184",
-      "newFiles": [
-        "packages/opencode/src/tool/list_tasks.ts",
-        "packages/opencode/src/tool/list_tasks.txt",
-        "packages/opencode/test/tool/list_tasks.test.ts"
-      ],
-      "modifiedFiles": ["packages/opencode/src/tool/registry.ts"],
-      "criticalCode": ["ListTasksTool", "listBackgroundTasks", "list_tasks"],
-      "tests": ["packages/opencode/test/tool/list_tasks.test.ts"],
-      "upstreamTracking": {
-        "relatedPRs": [],
-        "relatedIssues": [],
-        "absorptionSignals": ["list.*tasks", "ListTasksTool", "listBackgroundTasks"]
       }
     }
   }
