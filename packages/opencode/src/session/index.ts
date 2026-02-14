@@ -25,7 +25,7 @@ import { Global } from "@/global"
 import { SessionStatus } from "./status"
 import * as AsyncTasks from "./async-tasks"
 
-export type { BackgroundTaskResult, TaskMetadata } from "./async-tasks"
+export type { BackgroundTaskResult, TaskMetadata, CancelTaskStatus } from "./async-tasks"
 export {
   getSessionTaskCount,
   reserveTaskSlot,
@@ -42,6 +42,7 @@ export {
   enableAutoWakeup,
   disableAutoWakeup,
   cancelBackgroundTask,
+  tryCancel,
   isClosing,
   getLastUserAgent,
   cleanupAllTaskSlots,
@@ -74,6 +75,7 @@ export namespace Session {
   export const enableAutoWakeup = AsyncTasks.enableAutoWakeup
   export const disableAutoWakeup = AsyncTasks.disableAutoWakeup
   export const cancelBackgroundTask = AsyncTasks.cancelBackgroundTask
+  export const tryCancel = AsyncTasks.tryCancel
   export const cleanupSessionMaps = AsyncTasks.cleanupSessionMaps
   export const cleanupAllTaskSlots = AsyncTasks.cleanupAllTaskSlots
 

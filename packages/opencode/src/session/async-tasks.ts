@@ -495,11 +495,17 @@ export function disableAutoWakeup(sessionID: string): void {
 
 // ─── Cancel ────────────────────────────────────────────────────────
 
-export async function cancelBackgroundTask(id: string): Promise<boolean> {
+export async function cancelBackgroundTask(id: string, requestingSessionID?: string): Promise<boolean> {
   const task = pendingBackgroundTasks.get(id)
   if (!task) return false
 
   const metadata = pendingTaskMetadata.get(id)
+
+  // If requestingSessionID provided, verify authorization
+  if (requestingSessionID && metadata && metadata.session_id !== requestingSessionID) {
+    return false
+  }
+
   const startTime = metadata?.start_time ?? Date.now()
 
   // Release slot BEFORE deleting metadata to prevent permanent slot leak
@@ -545,6 +551,54 @@ export async function cancelBackgroundTask(id: string): Promise<boolean> {
   }
 
   return true
+}
+
+export interface CancelTaskStatus {
+  status: "cancelled" | "not_found" | "already_completed" | "unauthorized"
+  message: string
+}
+
+export async function tryCancel(id: string, sessionID: string): Promise<CancelTaskStatus> {
+  // Check if task exists in pending tasks
+  const pending = pendingBackgroundTasks.has(id)
+  if (!pending) {
+    // Check if task already exists in results
+    const result = backgroundTaskResults.get(id)
+    if (!result) {
+      return {
+        status: "not_found",
+        message: `Task ${id} not found`,
+      }
+    }
+    // Task is completed or failed
+    return {
+      status: "already_completed",
+      message: `Task ${id} cannot be cancelled - it is already ${result.status}`,
+    }
+  }
+
+  // Check authorization - task must belong to the same session
+  const metadata = pendingTaskMetadata.get(id)
+  if (metadata && metadata.session_id !== sessionID) {
+    return {
+      status: "unauthorized",
+      message: `Cannot cancel task from a different session`,
+    }
+  }
+
+  // Attempt cancellation with session authorization check
+  const cancelled = await cancelBackgroundTask(id, sessionID)
+  if (!cancelled) {
+    return {
+      status: "not_found",
+      message: `Task ${id} not found`,
+    }
+  }
+
+  return {
+    status: "cancelled",
+    message: `Task ${id} cancelled successfully`,
+  }
 }
 
 // ─── Lifecycle / Cleanup ───────────────────────────────────────────

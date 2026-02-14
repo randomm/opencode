@@ -27,7 +27,7 @@ export const CancelTaskTool = Tool.define<z.ZodObject<{ task_id: z.ZodString }>,
       .describe("The ID of the background task to cancel"),
   }),
   async execute(params, ctx) {
-    const result = Session.tryCancel(params.task_id, ctx.sessionID)
+    const result = await Session.tryCancel(params.task_id, ctx.sessionID)
 
     const response: CancelTaskResult = {
       task_id: params.task_id,
