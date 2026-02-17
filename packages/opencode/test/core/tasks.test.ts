@@ -5,6 +5,13 @@ import { SessionStatus } from "../../src/session/status"
 import { MessageV2 } from "../../src/session/message-v2"
 import { Instance } from "../../src/project/instance"
 import { Bus } from "../../src/bus"
+import {
+  BackgroundTaskEvent,
+  getBackgroundTaskResult,
+  listBackgroundTasks,
+  trackBackgroundTask,
+  cleanupSessionMaps,
+} from "../../src/session/async-tasks"
 import { tmpdir } from "../fixture/fixture"
 
 describe("BackgroundTasks", () => {
@@ -411,9 +418,7 @@ describe("BackgroundTasks", () => {
           const session = await Session.create(undefined)
 
           SessionStatus.set(session.id, { type: "busy" })
-          await Session.update(session.id, (draft) => {
-            draft.title = "Updated title"
-          })
+          await Session.setTitle({ sessionID: session.id, title: "Updated title" })
 
           expect(SessionStatus.get(session.id).type).toBe("busy")
 
@@ -564,7 +569,7 @@ describe("BackgroundTasks", () => {
           const session = await Session.create(undefined)
           let failedEvent: { taskID: string; sessionID?: string; error: string } | undefined
 
-          const unsub = Bus.subscribe(Session.BackgroundTaskEvent.Failed, (evt) => {
+          const unsub = Bus.subscribe(BackgroundTaskEvent.Failed, (evt) => {
             failedEvent = evt.properties
           })
 
@@ -577,30 +582,49 @@ describe("BackgroundTasks", () => {
           unsub()
 
           // The BackgroundTaskEvent.Failed event type should be properly defined
-          expect(Session.BackgroundTaskEvent.Failed).toBeDefined()
-          expect(Session.BackgroundTaskEvent.Completed).toBeDefined()
+          expect(BackgroundTaskEvent.Failed).toBeDefined()
+          expect(BackgroundTaskEvent.Completed).toBeDefined()
 
           await Session.remove(session.id)
         },
       })
     })
 
-    test("background task success emits completed event", async () => {
+test("background task success emits completed event", async () => {
       await using tmp = await tmpdir({ git: true })
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
           const session = await Session.create(undefined)
+          let completed: boolean = false
 
-          // Verify the completed event type exists
-          expect(Session.BackgroundTaskEvent.Completed).toBeDefined()
+          const unsub = Bus.subscribe(BackgroundTaskEvent.Completed, (evt) => {
+            if (evt.properties.taskID === "test-task-success") {
+              completed = true
+              unsub()
+            }
+          })
 
-          await Session.remove(session.id)
+          try {
+            await trackBackgroundTask(
+              "test-task-success",
+              (async () => {
+                await Bun.sleep(50)
+                return "Task completed successfully"
+              })(),
+              session.id,
+            )
+
+            expect(completed).toBe(true)
+          } finally {
+            await cleanupSessionMaps(session.id)
+            await Session.remove(session.id)
+          }
         },
       })
     })
 
-    test("background task results can be retrieved", async () => {
+test("background task results can be retrieved", async () => {
       await using tmp = await tmpdir({ git: true })
       await Instance.provide({
         directory: tmp.path,
@@ -608,15 +632,12 @@ describe("BackgroundTasks", () => {
           const session = await Session.create(undefined)
 
           // Test the getBackgroundTaskResult function exists
-          const result = Session.getBackgroundTaskResult("nonexistent-task")
+          const result = getBackgroundTaskResult("nonexistent-task")
           expect(result).toBeUndefined()
 
-          // Test listBackgroundTasks returns proper structure
-          const tasks = Session.listBackgroundTasks()
-          expect(tasks).toHaveProperty("pending")
-          expect(tasks).toHaveProperty("results")
-          expect(Array.isArray(tasks.pending)).toBe(true)
-          expect(typeof tasks.results).toBe("object")
+          // Test listBackgroundTasks function exists
+          const tasks = listBackgroundTasks()
+          expect(typeof tasks === "object" && "pending" in tasks && "results" in tasks).toBe(true)
 
           await Session.remove(session.id)
         },

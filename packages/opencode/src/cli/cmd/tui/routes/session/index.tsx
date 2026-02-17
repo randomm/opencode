@@ -35,9 +35,8 @@ import type { Tool } from "@/tool/tool"
 import type { ReadTool } from "@/tool/read"
 import type { WriteTool } from "@/tool/write"
 import { BashTool } from "@/tool/bash"
-import type { GlobTool } from "@/tool/glob"
+import type { RgTool } from "@/tool/rg"
 import { TodoWriteTool } from "@/tool/todo"
-import type { GrepTool } from "@/tool/grep"
 import type { ListTool } from "@/tool/ls"
 import type { EditTool } from "@/tool/edit"
 import type { ApplyPatchTool } from "@/tool/apply_patch"
@@ -1439,16 +1438,13 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
     <Show when={!shouldHide()}>
       <Switch>
         <Match when={props.part.tool === "bash"}>
-          <Bash {...toolprops} />
+<Bash {...toolprops} />
         </Match>
-        <Match when={props.part.tool === "glob"}>
-          <Glob {...toolprops} />
+        <Match when={props.part.tool === "rg"}>
+          <Grep {...toolprops} />
         </Match>
         <Match when={props.part.tool === "read"}>
           <Read {...toolprops} />
-        </Match>
-        <Match when={props.part.tool === "grep"}>
-          <Grep {...toolprops} />
         </Match>
         <Match when={props.part.tool === "list"}>
           <List {...toolprops} />
@@ -1750,12 +1746,12 @@ function Write(props: ToolProps<typeof WriteTool>) {
   )
 }
 
-function Glob(props: ToolProps<typeof GlobTool>) {
+function Glob(props: ToolProps<typeof RgTool>) {
   return (
     <InlineTool icon="✱" pending="Finding files..." complete={props.input.pattern} part={props.part}>
       Glob "{props.input.pattern}" <Show when={props.input.path}>in {normalizePath(props.input.path)} </Show>
-      <Show when={props.metadata.count}>
-        ({props.metadata.count} {props.metadata.count === 1 ? "match" : "matches"})
+      <Show when={props.metadata.matches}>
+        ({props.metadata.matches} {props.metadata.matches === 1 ? "match" : "matches"})
       </Show>
     </InlineTool>
   )
@@ -1788,7 +1784,7 @@ function Read(props: ToolProps<typeof ReadTool>) {
   )
 }
 
-function Grep(props: ToolProps<typeof GrepTool>) {
+function Grep(props: ToolProps<typeof RgTool>) {
   return (
     <InlineTool icon="✱" pending="Searching content..." complete={props.input.pattern} part={props.part}>
       Grep "{props.input.pattern}" <Show when={props.input.path}>in {normalizePath(props.input.path)} </Show>

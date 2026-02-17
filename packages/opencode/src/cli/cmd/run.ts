@@ -12,8 +12,7 @@ import { Provider } from "../../provider/provider"
 import { Agent } from "../../agent/agent"
 import { PermissionNext } from "../../permission/next"
 import { Tool } from "../../tool/tool"
-import { GlobTool } from "../../tool/glob"
-import { GrepTool } from "../../tool/grep"
+import { RgTool } from "../../tool/rg"
 import { ListTool } from "../../tool/ls"
 import { ReadTool } from "../../tool/read"
 import { WebFetchTool } from "../../tool/webfetch"
@@ -73,23 +72,9 @@ function fallback(part: ToolPart) {
   })
 }
 
-function glob(info: ToolProps<typeof GlobTool>) {
+function rg(info: ToolProps<typeof RgTool>) {
   const root = info.input.path ?? ""
-  const title = `Glob "${info.input.pattern}"`
-  const suffix = root ? `in ${normalizePath(root)}` : ""
-  const num = info.metadata.count
-  const description =
-    num === undefined ? suffix : `${suffix}${suffix ? " · " : ""}${num} ${num === 1 ? "match" : "matches"}`
-  inline({
-    icon: "✱",
-    title,
-    ...(description && { description }),
-  })
-}
-
-function grep(info: ToolProps<typeof GrepTool>) {
-  const root = info.input.path ?? ""
-  const title = `Grep "${info.input.pattern}"`
+  const title = info.input.files_only ? `Glob "${info.input.pattern}"` : `Grep "${info.input.pattern}"`
   const suffix = root ? `in ${normalizePath(root)}` : ""
   const num = info.metadata.matches
   const description =
@@ -408,8 +393,7 @@ export const RunCommand = cmd({
       function tool(part: ToolPart) {
         try {
           if (part.tool === "bash") return bash(props<typeof BashTool>(part))
-          if (part.tool === "glob") return glob(props<typeof GlobTool>(part))
-          if (part.tool === "grep") return grep(props<typeof GrepTool>(part))
+          if (part.tool === "rg") return rg(props<typeof RgTool>(part))
           if (part.tool === "list") return list(props<typeof ListTool>(part))
           if (part.tool === "read") return read(props<typeof ReadTool>(part))
           if (part.tool === "write") return write(props<typeof WriteTool>(part))

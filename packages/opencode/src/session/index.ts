@@ -27,6 +27,27 @@ import { Global } from "@/global"
 import type { LanguageModelV2Usage } from "@ai-sdk/provider"
 import { iife } from "@/util/iife"
 
+// Export async-tasks types and functions (module-level exports)
+// Tests should import these directly: import { trackBackgroundTask } from '@/session'
+export type { TaskMetadata, BackgroundTaskResult, CancelTaskStatus } from "./async-tasks"
+export { BackgroundTaskEvent } from "./async-tasks"
+export {
+  getAndClearCompletedTasks,
+  hasUndeliveredCompletedTasks,
+  getBackgroundTaskMetadata,
+  getInternalState,
+  isClosing,
+  markClosing,
+  clearClosing,
+  formatCompletedTasksForInjection,
+  getSessionTaskCount,
+  reserveTaskSlot,
+  trackBackgroundTask,
+  getBackgroundTaskResult,
+  listBackgroundTasks,
+  cleanupSessionMaps,
+} from "./async-tasks"
+
 export namespace Session {
   const log = Log.create({ service: "session" })
 
@@ -758,7 +779,7 @@ export namespace Session {
     },
   )
 
-  export class BusyError extends Error {
+export class BusyError extends Error {
     constructor(public readonly sessionID: string) {
       super(`Session ${sessionID} is busy`)
     }

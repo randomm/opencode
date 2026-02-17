@@ -14,6 +14,7 @@ import type { Agent } from "../agent/agent"
 import { Tool } from "./tool"
 import { Instance } from "../project/instance"
 import { Config } from "../config/config"
+import { Global } from "@/global"
 import path from "path"
 import { type ToolContext as PluginToolContext, type ToolDefinition } from "@opencode-ai/plugin"
 import z from "zod"
@@ -29,6 +30,7 @@ import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
 import { CancelTaskTool } from "./cancel_task"
+import { realpathSync, statSync } from "fs"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -37,8 +39,73 @@ export namespace ToolRegistry {
     const custom = [] as Tool.Info[]
     const glob = new Bun.Glob("{tool,tools}/*.{js,ts}")
 
+    // Security: validate each directory before scanning
+    const validateDirectory = (dir: string): boolean => {
+      // Sanitize: remove null bytes and control characters
+      const sanitized = dir.replace(/[\u0000-\u001F\u007F]/g, "")
+
+      // Security: resolve symlinks to their real paths
+      let realPath: string
+      try {
+        realPath = realpathSync(sanitized)
+      } catch (e) {
+        // ENOENT: directory not found, skip silently
+        if (e instanceof Error && (e as NodeJS.ErrnoException).code === "ENOENT") {
+          return false
+        }
+        // Other errors: potential security issue, throw
+        throw new Error(`Failed to resolve directory path ${sanitized}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+
+      // Security: verify path is within allowed boundaries using inode comparison
+      const allowedDirs = [Instance.directory, Global.Path.home]
+      const isAllowed = allowedDirs.some((allowed) => {
+        try {
+          const realAllowed = realpathSync(allowed)
+          const dirStats = statSync(realPath)
+          const allowedStats = statSync(realAllowed)
+
+          // Compare device and inode to ensure same directory (works for symlinks and case-insensitivity)
+          return dirStats.ino === allowedStats.ino && dirStats.dev === allowedStats.dev
+        } catch {
+          return false // Can't verify, reject
+        }
+      })
+
+      if (!isAllowed) {
+        const error = new Error(`Security violation: Path traversal attempt from ${dir} to ${realPath}`)
+        log.error("Path traversal detected", { path: realPath, raw: dir })
+        throw error // FAIL loudly - security violation
+      }
+
+      return true
+    }
+
     const matches = await Config.directories().then((dirs) =>
-      dirs.flatMap((dir) => [...glob.scanSync({ cwd: dir, absolute: true, followSymlinks: true, dot: true })]),
+      dirs.flatMap((dir) => {
+        // Validate before scanning
+        if (!validateDirectory(dir)) {
+          return []
+        }
+
+        const sanitized = dir.replace(/[\u0000-\u001F\u007F]/g, "")
+
+        try {
+          return [...glob.scanSync({ cwd: sanitized, absolute: true, followSymlinks: true, dot: true })]
+        } catch (e) {
+          const error = e instanceof Error ? e.message : String(e)
+          // Only ignore known safe errors
+          if (error.includes("EACCES") || error.includes("EPERM")) {
+            log.debug("Permission denied for tool directory", { path: sanitized })
+            return []
+          }
+          if (error.includes("ENOENT")) {
+            return [] // Directory deleted between validation and scan
+          }
+          // Re-throw unexpected errors
+          throw new Error(`Failed to scan tool directory ${sanitized}: ${error}`)
+        }
+      }),
     )
     if (matches.length) await Config.waitForDependencies()
     for (const match of matches) {

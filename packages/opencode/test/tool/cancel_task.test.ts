@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { CancelTaskTool } from "../../src/tool/cancel_task"
 import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
+import { trackBackgroundTask, getBackgroundTaskResult } from "../../src/session"
 import { tmpdir } from "../fixture/fixture"
 
 const ctx = {
@@ -39,10 +40,11 @@ describe("tool.cancel_task", () => {
         const tool = await CancelTaskTool.init()
         const taskId = "test-task-completed"
 
-        Session.trackBackgroundTask(taskId, Promise.resolve("Task result"), undefined, {
+        trackBackgroundTask(taskId, Promise.resolve("Task result"), ctx.sessionID, {
           agent_type: "test",
           description: "Test task",
           session_id: ctx.sessionID,
+          parent_session_id: ctx.sessionID,
           start_time: Date.now(),
         })
 
@@ -70,13 +72,14 @@ describe("tool.cancel_task", () => {
 
         const promise = new Promise<string>((resolve) => {
           taskStarted = true
-          setTimeout(() => resolve("Should not complete"), 10000)
+          setTimeout(() => resolve("Should not be cancelled"), 10000)
         })
 
-        Session.trackBackgroundTask(taskId, promise, undefined, {
+        trackBackgroundTask(taskId, promise, undefined, {
           agent_type: "test",
           description: "Test task",
-          session_id: ctx.sessionID,
+          session_id: "test",
+          parent_session_id: "test",
           start_time: Date.now(),
         })
 
@@ -105,10 +108,11 @@ describe("tool.cancel_task", () => {
           setTimeout(() => resolve("Should not be cancelled"), 10000)
         })
 
-        Session.trackBackgroundTask(taskId, promise, undefined, {
+        trackBackgroundTask(taskId, promise, undefined, {
           agent_type: "test",
           description: "Test task",
           session_id: "other-session-id",
+          parent_session_id: "other-session-id",
           start_time: Date.now(),
         })
 
@@ -122,7 +126,7 @@ describe("tool.cancel_task", () => {
         expect(output.message).toContain("different session")
         expect(result.metadata.status).toBe("unauthorized")
 
-        const taskResult = Session.getBackgroundTaskResult(taskId)
+        const taskResult = getBackgroundTaskResult(taskId)
         expect(taskResult?.status).toBe("running")
       },
     })
