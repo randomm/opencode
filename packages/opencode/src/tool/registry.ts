@@ -36,9 +36,17 @@ export namespace ToolRegistry {
   export const state = Instance.state(async () => {
     const custom = [] as Tool.Info[]
     const glob = new Bun.Glob("{tool,tools}/*.{js,ts}")
-
     const matches = await Config.directories().then((dirs) =>
-      dirs.flatMap((dir) => [...glob.scanSync({ cwd: dir, absolute: true, followSymlinks: true, dot: true })]),
+      dirs.flatMap((dir) => {
+        const sanitized = dir.replace(/\0/g, "")
+        if (sanitized !== dir) log.warn("Sanitized null byte from directory path", { path: dir })
+        try {
+          return [...glob.scanSync({ cwd: sanitized, absolute: true, followSymlinks: true, dot: true })]
+        } catch (e) {
+          log.warn("Failed to scan tool directory", { path: sanitized, error: e instanceof Error ? e.message : String(e) })
+          return []
+        }
+      }),
     )
     if (matches.length) await Config.waitForDependencies()
     for (const match of matches) {
@@ -100,10 +108,11 @@ export namespace ToolRegistry {
   async function all(): Promise<Tool.Info[]> {
     const custom = await state().then((x) => x.custom)
     const config = await Config.get()
+    const question = ["app", "cli", "desktop"].includes(Flag.OPENCODE_CLIENT) || Flag.OPENCODE_ENABLE_QUESTION_TOOL
 
     return [
       InvalidTool,
-      ...(["app", "cli", "desktop"].includes(Flag.OPENCODE_CLIENT) ? [QuestionTool] : []),
+      ...(question ? [QuestionTool] : []),
       BashTool,
       ReadTool,
       RgTool,
@@ -157,9 +166,17 @@ export namespace ToolRegistry {
         })
         .map(async (t) => {
           using _ = log.time(t.id)
+          const tool = await t.init({ agent })
+          const output = {
+            description: tool.description,
+            parameters: tool.parameters,
+          }
+          await Plugin.trigger("tool.definition", { toolID: t.id }, output)
           return {
             id: t.id,
-            ...(await t.init({ agent })),
+            ...tool,
+            description: output.description,
+            parameters: output.parameters,
           }
         }),
     )

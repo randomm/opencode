@@ -11,6 +11,12 @@ export const dict = {
   "ui.sessionReview.collapseAll": "Sažmi sve",
   "ui.sessionReview.change.added": "Dodano",
   "ui.sessionReview.change.removed": "Uklonjeno",
+  "ui.sessionReview.change.modified": "Izmijenjeno",
+  "ui.sessionReview.image.loading": "Učitavanje...",
+  "ui.sessionReview.image.placeholder": "Slika",
+  "ui.sessionReview.largeDiff.title": "Diff je prevelik za prikaz",
+  "ui.sessionReview.largeDiff.meta": "Limit: {{lines}} linija / {{limit}}. Trenutno: {{current}}.",
+  "ui.sessionReview.largeDiff.renderAnyway": "Prikaži svejedno",
 
   "ui.lineComment.label.prefix": "Komentar na ",
   "ui.lineComment.label.suffix": "",
@@ -26,6 +32,8 @@ export const dict = {
 
   "ui.sessionTurn.retry.retrying": "ponovni pokušaj",
   "ui.sessionTurn.retry.inSeconds": "za {{seconds}}s",
+  "ui.sessionTurn.error.freeUsageExceeded": "Besplatna upotreba premašena",
+  "ui.sessionTurn.error.addCredits": "Dodaj kredite",
 
   "ui.sessionTurn.status.delegating": "Delegiranje posla",
   "ui.sessionTurn.status.planning": "Planiranje sljedećih koraka",
