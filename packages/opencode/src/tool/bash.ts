@@ -1,5 +1,6 @@
 import z from "zod"
 import { spawn } from "child_process"
+import { realpathSync } from "fs"
 import { Tool } from "./tool"
 import path from "path"
 import DESCRIPTION from "./bash.txt"
@@ -65,6 +66,7 @@ export const BashTool = Tool.define("bash", async () => {
       timeout: z.number().describe("Optional timeout in milliseconds").optional(),
       workdir: z
         .string()
+        .refine((val) => !val || val.trim().length > 0, "workdir cannot be empty or whitespace only")
         .describe(
           `The working directory to run the command in. Defaults to ${Instance.directory}. Use this instead of 'cd' commands.`,
         )
@@ -76,7 +78,53 @@ export const BashTool = Tool.define("bash", async () => {
         ),
     }),
     async execute(params, ctx) {
-      const cwd = params.workdir || Instance.directory
+      let cwd = Instance.directory
+
+      if (params.workdir && params.workdir.trim()) {
+        // Resolve symlinks and normalize path before validation
+        // Reject workdir if realpathSync.native fails (permissions, circular symlinks, etc.)
+        let resolvedWorkdir: string | null = null
+        try {
+          resolvedWorkdir = realpathSync.native(params.workdir)
+        } catch (error) {
+          const err = error as NodeJS.ErrnoException
+          log.warn("workdir resolution failed, falling back to Instance.directory", {
+            workdir: params.workdir,
+            error: { code: err.code, message: err.message },
+            fallback: Instance.directory,
+          })
+        }
+
+        // If symlink resolution succeeded, validate the resolved path
+        if (resolvedWorkdir) {
+          // Normalize path on Windows for case-sensitivity
+          resolvedWorkdir = Filesystem.normalizePath(resolvedWorkdir)
+
+          if (await Filesystem.isDir(resolvedWorkdir)) {
+            if (Instance.containsPath(resolvedWorkdir)) {
+              cwd = resolvedWorkdir
+            } else {
+              log.warn("workdir is outside project boundary, falling back to Instance.directory", {
+                workdir: params.workdir,
+                resolved: resolvedWorkdir,
+                fallback: Instance.directory,
+              })
+            }
+          } else {
+            log.warn("workdir does not exist or is not a directory, falling back to Instance.directory", {
+              workdir: params.workdir,
+              resolved: resolvedWorkdir,
+              fallback: Instance.directory,
+            })
+          }
+        }
+      } else if (params.workdir) {
+        log.warn("workdir is empty or whitespace, falling back to Instance.directory", {
+          workdir: params.workdir,
+          fallback: Instance.directory,
+        })
+      }
+
       if (params.timeout !== undefined && params.timeout < 0) {
         throw new Error(`Invalid timeout value: ${params.timeout}. Timeout must be a positive number.`)
       }
