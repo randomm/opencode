@@ -1,4 +1,5 @@
 import z from "zod"
+import os from "os"
 import fuzzysort from "fuzzysort"
 import { Config } from "../config/config"
 import { mapValues, mergeDeep, omit, pickBy, sortBy } from "remeda"
@@ -13,11 +14,33 @@ import { Env } from "../env"
 import { Instance } from "../project/instance"
 import { Flag } from "../flag/flag"
 import { iife } from "@/util/iife"
+import { Global } from "../global"
+import path from "path"
 
-// Type imports only (lazy loading via dynamic imports)
-import type { AmazonBedrockProviderSettings } from "@ai-sdk/amazon-bedrock"
-import type { LanguageModelV2 } from "@openrouter/ai-sdk-provider"
+// Direct imports for bundled providers
+import { createAmazonBedrock, type AmazonBedrockProviderSettings } from "@ai-sdk/amazon-bedrock"
+import { createAnthropic } from "@ai-sdk/anthropic"
+import { createAzure } from "@ai-sdk/azure"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createVertex } from "@ai-sdk/google-vertex"
+import { createVertexAnthropic } from "@ai-sdk/google-vertex/anthropic"
+import { createOpenAI } from "@ai-sdk/openai"
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
+import { createOpenRouter, type LanguageModelV2 } from "@openrouter/ai-sdk-provider"
+import { createOpenaiCompatible as createGitHubCopilotOpenAICompatible } from "./sdk/copilot"
+import { createXai } from "@ai-sdk/xai"
+import { createMistral } from "@ai-sdk/mistral"
+import { createGroq } from "@ai-sdk/groq"
+import { createDeepInfra } from "@ai-sdk/deepinfra"
+import { createCerebras } from "@ai-sdk/cerebras"
+import { createCohere } from "@ai-sdk/cohere"
+import { createGateway } from "@ai-sdk/gateway"
+import { createTogetherAI } from "@ai-sdk/togetherai"
+import { createPerplexity } from "@ai-sdk/perplexity"
+import { createVercel } from "@ai-sdk/vercel"
+import { createGitLab, VERSION as GITLAB_PROVIDER_VERSION } from "@gitlab/gitlab-ai-provider"
 import { ProviderTransform } from "./transform"
+import { Installation } from "../installation"
 
 export namespace Provider {
   const log = Log.create({ service: "provider" })
@@ -34,29 +57,53 @@ export namespace Provider {
     return isGpt5OrLater(modelID) && !modelID.startsWith("gpt-5-mini")
   }
 
-  const BUNDLED_PROVIDERS: Record<string, () => Promise<Function>> = {
-    "@ai-sdk/amazon-bedrock": () => import("@ai-sdk/amazon-bedrock").then((m) => m.createAmazonBedrock),
-    "@ai-sdk/anthropic": () => import("@ai-sdk/anthropic").then((m) => m.createAnthropic),
-    "@ai-sdk/azure": () => import("@ai-sdk/azure").then((m) => m.createAzure),
-    "@ai-sdk/google": () => import("@ai-sdk/google").then((m) => m.createGoogleGenerativeAI),
-    "@ai-sdk/google-vertex": () => import("@ai-sdk/google-vertex").then((m) => m.createVertex),
-    "@ai-sdk/google-vertex/anthropic": () =>
-      import("@ai-sdk/google-vertex/anthropic").then((m) => m.createVertexAnthropic),
-    "@ai-sdk/openai": () => import("@ai-sdk/openai").then((m) => m.createOpenAI),
-    "@ai-sdk/openai-compatible": () => import("@ai-sdk/openai-compatible").then((m) => m.createOpenAICompatible),
-    "@openrouter/ai-sdk-provider": () => import("@openrouter/ai-sdk-provider").then((m) => m.createOpenRouter),
-    "@ai-sdk/xai": () => import("@ai-sdk/xai").then((m) => m.createXai),
-    "@ai-sdk/mistral": () => import("@ai-sdk/mistral").then((m) => m.createMistral),
-    "@ai-sdk/groq": () => import("@ai-sdk/groq").then((m) => m.createGroq),
-    "@ai-sdk/deepinfra": () => import("@ai-sdk/deepinfra").then((m) => m.createDeepInfra),
-    "@ai-sdk/cerebras": () => import("@ai-sdk/cerebras").then((m) => m.createCerebras),
-    "@ai-sdk/cohere": () => import("@ai-sdk/cohere").then((m) => m.createCohere),
-    "@ai-sdk/gateway": () => import("@ai-sdk/gateway").then((m) => m.createGateway),
-    "@ai-sdk/togetherai": () => import("@ai-sdk/togetherai").then((m) => m.createTogetherAI),
-    "@ai-sdk/perplexity": () => import("@ai-sdk/perplexity").then((m) => m.createPerplexity),
-    "@ai-sdk/vercel": () => import("@ai-sdk/vercel").then((m) => m.createVercel),
-    "@gitlab/gitlab-ai-provider": () => import("@gitlab/gitlab-ai-provider").then((m) => m.createGitLab),
-    "@ai-sdk/github-copilot": () => import("./sdk/copilot").then((m) => m.createOpenaiCompatible),
+  function googleVertexVars(options: Record<string, any>) {
+    const project =
+      options["project"] ?? Env.get("GOOGLE_CLOUD_PROJECT") ?? Env.get("GCP_PROJECT") ?? Env.get("GCLOUD_PROJECT")
+    const location =
+      options["location"] ?? Env.get("GOOGLE_CLOUD_LOCATION") ?? Env.get("VERTEX_LOCATION") ?? "us-central1"
+    const endpoint = location === "global" ? "aiplatform.googleapis.com" : `${location}-aiplatform.googleapis.com`
+
+    return {
+      GOOGLE_VERTEX_PROJECT: project,
+      GOOGLE_VERTEX_LOCATION: location,
+      GOOGLE_VERTEX_ENDPOINT: endpoint,
+    }
+  }
+
+  function loadBaseURL(model: Model, options: Record<string, any>) {
+    const raw = options["baseURL"] ?? model.api.url
+    if (typeof raw !== "string") return raw
+    const vars = model.providerID === "google-vertex" ? googleVertexVars(options) : undefined
+    return raw.replace(/\$\{([^}]+)\}/g, (match, key) => {
+      const val = Env.get(String(key)) ?? vars?.[String(key) as keyof typeof vars]
+      return val ?? match
+    })
+  }
+
+  const BUNDLED_PROVIDERS: Record<string, (options: any) => SDK> = {
+    "@ai-sdk/amazon-bedrock": createAmazonBedrock,
+    "@ai-sdk/anthropic": createAnthropic,
+    "@ai-sdk/azure": createAzure,
+    "@ai-sdk/google": createGoogleGenerativeAI,
+    "@ai-sdk/google-vertex": createVertex,
+    "@ai-sdk/google-vertex/anthropic": createVertexAnthropic,
+    "@ai-sdk/openai": createOpenAI,
+    "@ai-sdk/openai-compatible": createOpenAICompatible,
+    "@openrouter/ai-sdk-provider": createOpenRouter,
+    "@ai-sdk/xai": createXai,
+    "@ai-sdk/mistral": createMistral,
+    "@ai-sdk/groq": createGroq,
+    "@ai-sdk/deepinfra": createDeepInfra,
+    "@ai-sdk/cerebras": createCerebras,
+    "@ai-sdk/cohere": createCohere,
+    "@ai-sdk/gateway": createGateway,
+    "@ai-sdk/togetherai": createTogetherAI,
+    "@ai-sdk/perplexity": createPerplexity,
+    "@ai-sdk/vercel": createVercel,
+    "@gitlab/gitlab-ai-provider": createGitLab,
+    // @ts-ignore (TODO: kill this code so we dont have to maintain it)
+    "@ai-sdk/github-copilot": createGitHubCopilotOpenAICompatible,
   }
 
   type CustomModelLoader = (sdk: any, modelID: string, options?: Record<string, any>) => Promise<any>
@@ -113,6 +160,7 @@ export namespace Provider {
       return {
         autoload: false,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
+          if (sdk.responses === undefined && sdk.chat === undefined) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
         options: {},
@@ -122,6 +170,7 @@ export namespace Provider {
       return {
         autoload: false,
         async getModel(sdk: any, modelID: string, _options?: Record<string, any>) {
+          if (sdk.responses === undefined && sdk.chat === undefined) return sdk.languageModel(modelID)
           return shouldUseCopilotResponsesApi(modelID) ? sdk.responses(modelID) : sdk.chat(modelID)
         },
         options: {},
@@ -174,11 +223,13 @@ export namespace Provider {
 
       const awsAccessKeyId = Env.get("AWS_ACCESS_KEY_ID")
 
+      // TODO: Using process.env directly because Env.set only updates a process.env shallow copy,
+      // until the scope of the Env API is clarified (test only or runtime?)
       const awsBearerToken = iife(() => {
-        const envToken = Env.get("AWS_BEARER_TOKEN_BEDROCK")
+        const envToken = process.env.AWS_BEARER_TOKEN_BEDROCK
         if (envToken) return envToken
         if (auth?.type === "api") {
-          Env.set("AWS_BEARER_TOKEN_BEDROCK", auth.key)
+          process.env.AWS_BEARER_TOKEN_BEDROCK = auth.key
           return auth.key
         }
         return undefined
@@ -186,7 +237,12 @@ export namespace Provider {
 
       const awsWebIdentityTokenFile = Env.get("AWS_WEB_IDENTITY_TOKEN_FILE")
 
-      if (!profile && !awsAccessKeyId && !awsBearerToken && !awsWebIdentityTokenFile) return { autoload: false }
+      const containerCreds = Boolean(
+        process.env.AWS_CONTAINER_CREDENTIALS_RELATIVE_URI || process.env.AWS_CONTAINER_CREDENTIALS_FULL_URI,
+      )
+
+      if (!profile && !awsAccessKeyId && !awsBearerToken && !awsWebIdentityTokenFile && !containerCreds)
+        return { autoload: false }
 
       const providerOptions: AmazonBedrockProviderSettings = {
         region: defaultRegion,
@@ -321,9 +377,16 @@ export namespace Provider {
         },
       }
     },
-    "google-vertex": async () => {
-      const project = Env.get("GOOGLE_CLOUD_PROJECT") ?? Env.get("GCP_PROJECT") ?? Env.get("GCLOUD_PROJECT")
-      const location = Env.get("GOOGLE_CLOUD_LOCATION") ?? Env.get("VERTEX_LOCATION") ?? "us-east5"
+    "google-vertex": async (provider) => {
+      const project =
+        provider.options?.project ??
+        Env.get("GOOGLE_CLOUD_PROJECT") ??
+        Env.get("GCP_PROJECT") ??
+        Env.get("GCLOUD_PROJECT")
+
+      const location =
+        provider.options?.location ?? Env.get("GOOGLE_CLOUD_LOCATION") ?? Env.get("VERTEX_LOCATION") ?? "us-central1"
+
       const autoload = Boolean(project)
       if (!autoload) return { autoload: false }
       return {
@@ -331,6 +394,18 @@ export namespace Provider {
         options: {
           project,
           location,
+          fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+            const { GoogleAuth } = await import(await BunProc.install("google-auth-library"))
+            const auth = new GoogleAuth()
+            const client = await auth.getApplicationDefault()
+            const credentials = await client.credential
+            const token = await credentials.getAccessToken()
+
+            const headers = new Headers(init?.headers)
+            headers.set("Authorization", `Bearer ${token.token}`)
+
+            return fetch(input, { ...init, headers })
+          },
         },
         async getModel(sdk: any, modelID: string) {
           const id = String(modelID).trim()
@@ -357,17 +432,19 @@ export namespace Provider {
     },
     "sap-ai-core": async () => {
       const auth = await Auth.get("sap-ai-core")
+      // TODO: Using process.env directly because Env.set only updates a shallow copy (not process.env),
+      // until the scope of the Env API is clarified (test only or runtime?)
       const envServiceKey = iife(() => {
-        const envAICoreServiceKey = Env.get("AICORE_SERVICE_KEY")
+        const envAICoreServiceKey = process.env.AICORE_SERVICE_KEY
         if (envAICoreServiceKey) return envAICoreServiceKey
         if (auth?.type === "api") {
-          Env.set("AICORE_SERVICE_KEY", auth.key)
+          process.env.AICORE_SERVICE_KEY = auth.key
           return auth.key
         }
         return undefined
       })
-      const deploymentId = Env.get("AICORE_DEPLOYMENT_ID")
-      const resourceGroup = Env.get("AICORE_RESOURCE_GROUP")
+      const deploymentId = process.env.AICORE_DEPLOYMENT_ID
+      const resourceGroup = process.env.AICORE_RESOURCE_GROUP
 
       return {
         autoload: !!envServiceKey,
@@ -401,19 +478,26 @@ export namespace Provider {
       const config = await Config.get()
       const providerConfig = config.provider?.["gitlab"]
 
+      const aiGatewayHeaders = {
+        "User-Agent": `opencode/${Installation.VERSION} gitlab-ai-provider/${GITLAB_PROVIDER_VERSION} (${os.platform()} ${os.release()}; ${os.arch()})`,
+        ...(providerConfig?.options?.aiGatewayHeaders || {}),
+      }
+
       return {
         autoload: !!apiKey,
         options: {
           instanceUrl,
           apiKey,
+          aiGatewayHeaders,
           featureFlags: {
             duo_agent_platform_agentic_chat: true,
             duo_agent_platform: true,
             ...(providerConfig?.options?.featureFlags || {}),
           },
         },
-        async getModel(sdk: any, modelID: string) {
+        async getModel(sdk: ReturnType<typeof createGitLab>, modelID: string) {
           return sdk.agenticChat(modelID, {
+            aiGatewayHeaders,
             featureFlags: {
               duo_agent_platform_agentic_chat: true,
               duo_agent_platform: true,
@@ -590,11 +674,8 @@ export namespace Provider {
       family: model.family,
       api: {
         id: model.id,
-        url: provider.api!,
-        npm: iife(() => {
-          if (provider.id.startsWith("github-copilot")) return "@ai-sdk/github-copilot"
-          return model.provider?.npm ?? provider.npm ?? "@ai-sdk/openai-compatible"
-        }),
+        url: model.provider?.api ?? provider.api!,
+        npm: model.provider?.npm ?? provider.npm ?? "@ai-sdk/openai-compatible",
       },
       status: model.status ?? "active",
       headers: model.headers ?? {},
@@ -745,7 +826,7 @@ export namespace Provider {
               existingModel?.api.npm ??
               modelsDev[providerID]?.npm ??
               "@ai-sdk/openai-compatible",
-            url: provider?.api ?? existingModel?.api.url ?? modelsDev[providerID]?.api,
+            url: model.provider?.api ?? provider?.api ?? existingModel?.api.url ?? modelsDev[providerID]?.api,
           },
           status: model.status ?? existingModel?.status ?? "active",
           name,
@@ -845,11 +926,7 @@ export namespace Provider {
       if (auth) {
         const options = await plugin.auth.loader(() => Auth.get(providerID) as any, database[plugin.auth.provider])
         const opts = options ?? {}
-        const patch: Partial<Info> = providers[providerID]
-          ? Object.keys(opts).length > 0
-            ? { options: opts }
-            : {}
-          : { source: "custom", options: opts }
+        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
         mergeProvider(providerID, patch)
       }
 
@@ -865,9 +942,7 @@ export namespace Provider {
             )
             const opts = enterpriseOptions ?? {}
             const patch: Partial<Info> = providers[enterpriseProviderID]
-              ? Object.keys(opts).length > 0
-                ? { options: opts }
-                : {}
+              ? { options: opts }
               : { source: "custom", options: opts }
             mergeProvider(enterpriseProviderID, patch)
           }
@@ -886,11 +961,7 @@ export namespace Provider {
       if (result && (result.autoload || providers[providerID])) {
         if (result.getModel) modelLoaders[providerID] = result.getModel
         const opts = result.options ?? {}
-        const patch: Partial<Info> = providers[providerID]
-          ? Object.keys(opts).length > 0
-            ? { options: opts }
-            : {}
-          : { source: "custom", options: opts }
+        const patch: Partial<Info> = providers[providerID] ? { options: opts } : { source: "custom", options: opts }
         mergeProvider(providerID, patch)
       }
     }
@@ -923,6 +994,8 @@ export namespace Provider {
           (configProvider?.whitelist && !configProvider.whitelist.includes(modelID))
         )
           delete provider.models[modelID]
+
+        model.variants = mapValues(ProviderTransform.variants(model), (v) => v)
 
         // Filter out disabled variants from config
         const configVariants = configProvider?.models?.[modelID]?.variants
@@ -964,11 +1037,16 @@ export namespace Provider {
       const provider = s.providers[model.providerID]
       const options = { ...provider.options }
 
+      if (model.providerID === "google-vertex" && !model.api.npm.includes("@ai-sdk/openai-compatible")) {
+        delete options.fetch
+      }
+
       if (model.api.npm.includes("@ai-sdk/openai-compatible") && options["includeUsage"] !== false) {
         options["includeUsage"] = true
       }
 
-      if (!options["baseURL"]) options["baseURL"] = model.api.url
+      const baseURL = loadBaseURL(model, options)
+      if (baseURL !== undefined) options["baseURL"] = baseURL
       if (options["apiKey"] === undefined && provider.key) options["apiKey"] = provider.key
       if (model.headers)
         options["headers"] = {
@@ -976,7 +1054,7 @@ export namespace Provider {
           ...model.headers,
         }
 
-      const key = Bun.hash.xxHash32(JSON.stringify({ npm: model.api.npm, options }))
+      const key = Bun.hash.xxHash32(JSON.stringify({ providerID: model.providerID, npm: model.api.npm, options }))
       const existing = s.sdk.get(key)
       if (existing) return existing
 
@@ -1022,14 +1100,10 @@ export namespace Provider {
         })
       }
 
-      // Special case: google-vertex-anthropic uses a subpath import
-      const bundledKey =
-        model.providerID === "google-vertex-anthropic" ? "@ai-sdk/google-vertex/anthropic" : model.api.npm
-      const bundledLoader = BUNDLED_PROVIDERS[bundledKey]
-      if (bundledLoader) {
-        log.info("using bundled provider", { providerID: model.providerID, pkg: bundledKey })
-        const bundledFn = await bundledLoader()
-        const loaded = (bundledFn as any)({
+      const bundledFn = BUNDLED_PROVIDERS[model.api.npm]
+      if (bundledFn) {
+        log.info("using bundled provider", { providerID: model.providerID, pkg: model.api.npm })
+        const loaded = bundledFn({
           name: model.providerID,
           ...options,
         })
@@ -1205,9 +1279,19 @@ export namespace Provider {
     const cfg = await Config.get()
     if (cfg.model) return parseModel(cfg.model)
 
-    const provider = await list()
-      .then((val) => Object.values(val))
-      .then((x) => x.find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id)))
+    const providers = await list()
+    const recent = (await Bun.file(path.join(Global.Path.state, "model.json"))
+      .json()
+      .then((x) => (Array.isArray(x.recent) ? x.recent : []))
+      .catch(() => [])) as { providerID: string; modelID: string }[]
+    for (const entry of recent) {
+      const provider = providers[entry.providerID]
+      if (!provider) continue
+      if (!provider.models[entry.modelID]) continue
+      return { providerID: entry.providerID, modelID: entry.modelID }
+    }
+
+    const provider = Object.values(providers).find((p) => !cfg.provider || Object.keys(cfg.provider).includes(p.id))
     if (!provider) throw new Error("no providers found")
     const [model] = sort(Object.values(provider.models))
     if (!model) throw new Error("no models found")

@@ -1,5 +1,6 @@
 import type { Argv } from "yargs"
 import path from "path"
+import { pathToFileURL } from "bun"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
 import { Flag } from "../../flag/flag"
@@ -11,7 +12,8 @@ import { Provider } from "../../provider/provider"
 import { Agent } from "../../agent/agent"
 import { PermissionNext } from "../../permission/next"
 import { Tool } from "../../tool/tool"
-import { RgTool } from "../../tool/rg"
+import { GlobTool } from "../../tool/glob"
+import { GrepTool } from "../../tool/grep"
 import { ListTool } from "../../tool/ls"
 import { ReadTool } from "../../tool/read"
 import { WebFetchTool } from "../../tool/webfetch"
@@ -71,11 +73,23 @@ function fallback(part: ToolPart) {
   })
 }
 
-function rg(info: ToolProps<typeof RgTool>) {
+function glob(info: ToolProps<typeof GlobTool>) {
   const root = info.input.path ?? ""
-  const isFilesOnly = info.input.files_only === true
-  const mode = isFilesOnly ? "List" : "Search"
-  const title = `${mode} "${info.input.pattern}"`
+  const title = `Glob "${info.input.pattern}"`
+  const suffix = root ? `in ${normalizePath(root)}` : ""
+  const num = info.metadata.count
+  const description =
+    num === undefined ? suffix : `${suffix}${suffix ? " · " : ""}${num} ${num === 1 ? "match" : "matches"}`
+  inline({
+    icon: "✱",
+    title,
+    ...(description && { description }),
+  })
+}
+
+function grep(info: ToolProps<typeof GrepTool>) {
+  const root = info.input.path ?? ""
+  const title = `Grep "${info.input.pattern}"`
   const suffix = root ? `in ${normalizePath(root)}` : ""
   const num = info.metadata.matches
   const description =
@@ -223,6 +237,10 @@ export const RunCommand = cmd({
         describe: "session id to continue",
         type: "string",
       })
+      .option("fork", {
+        describe: "fork the session before continuing (requires --continue or --session)",
+        type: "boolean",
+      })
       .option("share", {
         type: "boolean",
         describe: "share the session",
@@ -256,6 +274,10 @@ export const RunCommand = cmd({
         type: "string",
         describe: "attach to a running opencode server (e.g., http://localhost:4096)",
       })
+      .option("dir", {
+        type: "string",
+        describe: "directory to run in, path on remote server if attaching",
+      })
       .option("port", {
         type: "number",
         describe: "port for the local server (defaults to random port if no value provided)",
@@ -274,6 +296,18 @@ export const RunCommand = cmd({
     let message = [...args.message, ...(args["--"] || [])]
       .map((arg) => (arg.includes(" ") ? `"${arg.replace(/"/g, '\\"')}"` : arg))
       .join(" ")
+
+    const directory = (() => {
+      if (!args.dir) return undefined
+      if (args.attach) return args.dir
+      try {
+        process.chdir(args.dir)
+        return process.cwd()
+      } catch {
+        UI.error("Failed to change directory to " + args.dir)
+        process.exit(1)
+      }
+    })()
 
     const files: { type: "file"; url: string; filename: string; mime: string }[] = []
     if (args.file) {
@@ -297,7 +331,7 @@ export const RunCommand = cmd({
 
         files.push({
           type: "file",
-          url: `file://${resolvedPath}`,
+          url: pathToFileURL(resolvedPath).href,
           filename: path.basename(resolvedPath),
           mime,
         })
@@ -308,6 +342,11 @@ export const RunCommand = cmd({
 
     if (message.trim().length === 0 && !args.command) {
       UI.error("You must provide a message or a command")
+      process.exit(1)
+    }
+
+    if (args.fork && !args.continue && !args.session) {
+      UI.error("--fork requires --continue or --session")
       process.exit(1)
     }
 
@@ -336,11 +375,15 @@ export const RunCommand = cmd({
     }
 
     async function session(sdk: OpencodeClient) {
-      if (args.continue) {
-        const result = await sdk.session.list()
-        return result.data?.find((s) => !s.parentID)?.id
+      const baseID = args.continue ? (await sdk.session.list()).data?.find((s) => !s.parentID)?.id : args.session
+
+      if (baseID && args.fork) {
+        const forked = await sdk.session.fork({ sessionID: baseID })
+        return forked.data?.id
       }
-      if (args.session) return args.session
+
+      if (baseID) return baseID
+
       const name = title()
       const result = await sdk.session.create({ title: name, permission: rules })
       return result.data?.id
@@ -363,19 +406,24 @@ export const RunCommand = cmd({
 
     async function execute(sdk: OpencodeClient) {
       function tool(part: ToolPart) {
-        if (part.tool === "bash") return bash(props<typeof BashTool>(part))
-        if (part.tool === "rg") return rg(props<typeof RgTool>(part))
-        if (part.tool === "list") return list(props<typeof ListTool>(part))
-        if (part.tool === "read") return read(props<typeof ReadTool>(part))
-        if (part.tool === "write") return write(props<typeof WriteTool>(part))
-        if (part.tool === "webfetch") return webfetch(props<typeof WebFetchTool>(part))
-        if (part.tool === "edit") return edit(props<typeof EditTool>(part))
-        if (part.tool === "codesearch") return codesearch(props<typeof CodeSearchTool>(part))
-        if (part.tool === "websearch") return websearch(props<typeof WebSearchTool>(part))
-        if (part.tool === "task") return task(props<typeof TaskTool>(part))
-        if (part.tool === "todowrite") return todo(props<typeof TodoWriteTool>(part))
-        if (part.tool === "skill") return skill(props<typeof SkillTool>(part))
-        return fallback(part)
+        try {
+          if (part.tool === "bash") return bash(props<typeof BashTool>(part))
+          if (part.tool === "glob") return glob(props<typeof GlobTool>(part))
+          if (part.tool === "grep") return grep(props<typeof GrepTool>(part))
+          if (part.tool === "list") return list(props<typeof ListTool>(part))
+          if (part.tool === "read") return read(props<typeof ReadTool>(part))
+          if (part.tool === "write") return write(props<typeof WriteTool>(part))
+          if (part.tool === "webfetch") return webfetch(props<typeof WebFetchTool>(part))
+          if (part.tool === "edit") return edit(props<typeof EditTool>(part))
+          if (part.tool === "codesearch") return codesearch(props<typeof CodeSearchTool>(part))
+          if (part.tool === "websearch") return websearch(props<typeof WebSearchTool>(part))
+          if (part.tool === "task") return task(props<typeof TaskTool>(part))
+          if (part.tool === "todowrite") return todo(props<typeof TodoWriteTool>(part))
+          if (part.tool === "skill") return skill(props<typeof SkillTool>(part))
+          return fallback(part)
+        } catch {
+          return fallback(part)
+        }
       }
 
       function emit(type: string, data: Record<string, unknown>) {
@@ -554,7 +602,7 @@ export const RunCommand = cmd({
     }
 
     if (args.attach) {
-      const sdk = createOpencodeClient({ baseUrl: args.attach })
+      const sdk = createOpencodeClient({ baseUrl: args.attach, directory })
       return await execute(sdk)
     }
 
