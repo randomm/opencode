@@ -164,7 +164,7 @@ export namespace SessionPrompt {
     const completedTasks = getAndClearCompletedTasks(input.sessionID)
     if (completedTasks.length > 0) {
       const injectionText = formatCompletedTasksForInjection(completedTasks)
-      input = { ...input, parts: [...input.parts, { type: "text", text: injectionText }] }
+      input = { ...input, parts: [...input.parts, { type: "text", text: injectionText, synthetic: true }] }
     }
 
     const message = await createUserMessage(input)
