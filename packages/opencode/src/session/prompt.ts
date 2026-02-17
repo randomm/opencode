@@ -8,6 +8,7 @@ import { Log } from "../util/log"
 import { SessionRevert } from "./revert"
 import { Session } from "."
 import { Agent } from "../agent/agent"
+import { getAndClearCompletedTasks, formatCompletedTasksForInjection } from "./async-tasks"
 import { Provider } from "../provider/provider"
 import { type Tool as AITool, tool, jsonSchema, type ToolCallOptions, asSchema } from "ai"
 import { SessionCompaction } from "./compaction"
@@ -158,6 +159,13 @@ export namespace SessionPrompt {
   export const prompt = fn(PromptInput, async (input) => {
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
+
+    // Inject completed async task results into the prompt
+    const completedTasks = getAndClearCompletedTasks(input.sessionID)
+    if (completedTasks.length > 0) {
+      const injectionText = formatCompletedTasksForInjection(completedTasks)
+      input = { ...input, parts: [...input.parts, { type: "text", text: injectionText }] }
+    }
 
     const message = await createUserMessage(input)
     await Session.touch(input.sessionID)

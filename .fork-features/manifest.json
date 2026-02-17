@@ -13,7 +13,6 @@
       "issue": "https://github.com/randomm/opencode/issues/159",
       "newFiles": [
         "packages/opencode/src/session/async-tasks.ts",
-        "packages/opencode/src/session/prompt-async.ts",
         "packages/opencode/src/tool/task.ts",
         "packages/opencode/src/tool/task.txt",
         "packages/opencode/src/tool/check_task.ts",
@@ -44,7 +43,12 @@
         "Session ownership filtering",
         "filter to caller's session",
         "Sync mode: execute synchronously",
-        "params.sync"
+        "params.sync",
+        "enableAutoWakeup",
+        "triggerWakeup",
+        "autoWakeupSubscribers",
+        "hasUndeliveredCompletedTasks",
+        "getAndClearCompletedTasks"
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
