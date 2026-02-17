@@ -221,6 +221,35 @@
           "explicit.*agent.*permission"
         ]
       }
+    },
+    "bash-workdir-validation": {
+      "status": "active",
+      "description": "Validates bash tool workdir exists and is within project boundary before spawning shell. Resolves symlinks, normalizes paths, checks existence via Filesystem.isDir(), validates path containment via Instance.containsPath(). Falls back to Instance.directory with warnings for invalid paths. Rejects empty/whitespace workdir at Zod schema level.",
+      "issue": "https://github.com/randomm/opencode/issues/189",
+      "newFiles": [],
+      "modifiedFiles": ["packages/opencode/src/tool/bash.ts"],
+      "deletedFiles": [],
+      "criticalCode": [
+        "realpathSync.native",
+        "Filesystem.normalizePath",
+        "Filesystem.isDir",
+        "Instance.containsPath",
+        "workdir cannot be empty or whitespace only",
+        "workdir does not exist or is not a directory",
+        "workdir is outside project boundary",
+        "falling back to Instance.directory"
+      ],
+      "tests": ["packages/opencode/test/tool/bash-workdir.test.ts"],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "realpathSync.native",
+          "Filesystem.normalizePath",
+          "Instance.containsPath",
+          "workdir validation",
+          "path containment check",
+          "symlink resolution"
+        ]
+      }
     }
   }
 }

@@ -121,30 +121,22 @@ describe("tool.bash permissions", () => {
     })
   })
 
-  test("asks for external_directory permission when workdir is outside project", async () => {
+  test("falls back to Instance.directory when workdir is outside project boundary", async () => {
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const bash = await BashTool.init()
-        const requests: Array<Omit<PermissionNext.Request, "id" | "sessionID" | "tool">> = []
-        const testCtx = {
-          ...ctx,
-          ask: async (req: Omit<PermissionNext.Request, "id" | "sessionID" | "tool">) => {
-            requests.push(req)
-          },
-        }
-        await bash.execute(
+        const result = await bash.execute(
           {
-            command: "ls",
+            command: "pwd",
             workdir: "/tmp",
             description: "List /tmp",
           },
-          testCtx,
+          ctx,
         )
-        const extDirReq = requests.find((r) => r.permission === "external_directory")
-        expect(extDirReq).toBeDefined()
-        expect(extDirReq!.patterns).toContain("/tmp/*")
+        expect(result.metadata.exit).toBe(0)
+        expect(result.metadata.output).toContain(tmp.path)
       },
     })
   })
