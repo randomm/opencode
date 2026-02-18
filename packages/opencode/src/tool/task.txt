@@ -62,7 +62,7 @@ Response Output:
    { "task_id": "task_123", "status": "started", "message": "Task dispatched to @agent" }
    ```
    
-Note: Both modes respect the 5-task limit per session and 10-minute timeout.
+Note: Both modes respect the 5-task limit per session and 30-minute timeout.
 
 Task lifecycle management:
 - If new information makes a running task obsolete, cancel it with cancel_task before launching a replacement. Do not leave stale tasks running.

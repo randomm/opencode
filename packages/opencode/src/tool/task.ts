@@ -380,8 +380,9 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
 
 const taskTimeoutMs = 30 * 60 * 1000
 const syncAbortController = new AbortController()
+let timeoutTimer: Timer
 const timeoutPromise = new Promise<never>((_, reject) => {
-  setTimeout(() => {
+  timeoutTimer = setTimeout(() => {
     SessionPrompt.cancel(session.id)
     syncAbortController.abort()
     reject(new Error("Task timeout after 30 minutes"))
@@ -428,6 +429,7 @@ const timeoutPromise = new Promise<never>((_, reject) => {
             }),
             timeoutPromise,
           ])
+          clearTimeout(timeoutTimer!)
           const textPart = promptResult.parts.find((p) => p.type === "text" && !p.synthetic)
           const textResult = textPart && "text" in textPart ? textPart.text : undefined
           if (result.releaseSlot) {
@@ -444,6 +446,7 @@ const timeoutPromise = new Promise<never>((_, reject) => {
             metadata: { sessionId: session.id } as TaskResultMetadata,
           }
         } catch (e) {
+          clearTimeout(timeoutTimer!)
           if (!slotReleased && result.releaseSlot) {
             result.releaseSlot()
             slotReleased = true
