@@ -378,15 +378,15 @@ export const TaskTool = Tool.define("task", async (initCtx) => {
         release_slot: result.releaseSlot,
       }
 
-      const taskTimeoutMs = 10 * 60 * 1000
-      const syncAbortController = new AbortController()
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          SessionPrompt.cancel(session.id)
-          syncAbortController.abort()
-          reject(new Error("Task timeout after 10 minutes"))
-        }, taskTimeoutMs)
-      })
+const taskTimeoutMs = 30 * 60 * 1000
+const syncAbortController = new AbortController()
+const timeoutPromise = new Promise<never>((_, reject) => {
+  setTimeout(() => {
+    SessionPrompt.cancel(session.id)
+    syncAbortController.abort()
+    reject(new Error("Task timeout after 30 minutes"))
+  }, taskTimeoutMs)
+})
 
       // Check for abort before sync execution to prevent race condition
       if (ctx.abort.aborted) {

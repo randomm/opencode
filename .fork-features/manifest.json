@@ -165,12 +165,18 @@
     },
     "task-timeout": {
       "status": "active",
-      "description": "Increased default subagent task timeout from 5 minutes to 10 minutes. Upstream default is 5 minutes which is too short for complex tasks like sync operations and multi-file implementations.",
-      "issue": "https://github.com/randomm/opencode/issues/176",
+      "description": "Increased default subagent task timeout from upstream default of 5 minutes to 30 minutes. Both independent timeout constants updated: DEFAULT_TASK_TIMEOUT in async-tasks.ts (background tasks) and taskTimeoutMs in tool/task.ts (sync task execution). 30 minutes needed for complex agentic tasks like multi-file implementations and upstream syncs.",
+      "issue": "https://github.com/randomm/opencode/issues/198",
       "newFiles": [],
       "deletedFiles": [],
-      "modifiedFiles": ["packages/opencode/src/session/async-tasks.ts"],
-      "criticalCode": ["DEFAULT_TASK_TIMEOUT = 10 * 60 * 1000"],
+      "modifiedFiles": [
+        "packages/opencode/src/session/async-tasks.ts",
+        "packages/opencode/src/tool/task.ts"
+      ],
+      "criticalCode": [
+        "DEFAULT_TASK_TIMEOUT = 30 * 60 * 1000",
+        "taskTimeoutMs = 30 * 60 * 1000"
+      ],
       "tests": [],
       "upstreamTracking": {
         "absorptionSignals": ["TASK_TIMEOUT.*config", "task.*timeout.*env", "task_timeout"]
