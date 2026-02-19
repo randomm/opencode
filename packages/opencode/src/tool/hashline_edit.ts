@@ -5,14 +5,7 @@ import { FileTime } from "../file/time"
 import DESCRIPTION from "./hashline_edit.txt"
 import { Instance } from "../project/instance"
 import { assertExternalDirectory } from "./external-directory"
-import {
-  applyHashlineEdits,
-  HashlineMismatchError,
-  HashlineNoOpError,
-  type HashlineEdit,
-  parseAnchor,
-  type Anchor,
-} from "./hashline"
+import { applyHashlineEdits, type HashlineEdit, parseAnchor } from "./hashline"
 
 export const HashlineEditTool = Tool.define("hashline_edit", {
   description: DESCRIPTION,
@@ -71,8 +64,6 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
       return { op: edit.op, anchor: parseAnchor(edit.anchor), text: edit.text }
     })
 
-    let contentOld = ""
-    let contentNew = ""
     await FileTime.withLock(filepath, async () => {
       const file = Bun.file(filepath)
       const stats = await file.stat().catch(() => {})
@@ -80,20 +71,8 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
       if (stats.isDirectory()) throw new Error(`Path is a directory: ${filepath}`)
       await FileTime.assert(ctx.sessionID, filepath)
 
-      contentOld = await file.text()
-
-      try {
-        contentNew = applyHashlineEdits(contentOld, parsedEdits)
-      } catch (error) {
-        if (error instanceof HashlineMismatchError) {
-          throw error
-        }
-        if (error instanceof HashlineNoOpError) {
-          throw error
-        }
-        throw error
-      }
-
+      const contentOld = await file.text()
+      const contentNew = applyHashlineEdits(contentOld, parsedEdits)
       await Bun.write(filepath, contentNew)
       FileTime.read(ctx.sessionID, filepath)
     })
