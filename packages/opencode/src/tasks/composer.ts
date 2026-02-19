@@ -2,6 +2,8 @@ import z from "zod"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/prompt"
 import { MessageV2 } from "../session/message-v2"
+import { BackgroundTaskEvent } from "../session/async-tasks"
+import { Bus } from "../bus"
 import { Store } from "./store"
 import { Validation } from "./validation"
 import { generateUniqueSlug, slugify } from "./tool"
@@ -39,20 +41,35 @@ async function defaultSpawnComposerFn(
 
   await SessionPrompt.prompt({ sessionID: session.id, agent: "composer", parts: [{ type: "text", text: prompt }] })
 
-  const timeout = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), timeoutMs))
+  const finalText = await new Promise<string | undefined>((resolve) => {
+    const timer = setTimeout(() => {
+      cleanup()
+      resolve(undefined)
+    }, timeoutMs)
 
-  const messages = Promise.resolve().then(async () => {
-    let lastAssistantText: string | undefined
-    for await (const msg of MessageV2.stream(session.id)) {
-      if (msg.info.role === "assistant") {
-        const textPart = msg.parts.find((p) => p.type === "text" && !p.synthetic)
-        if (textPart && "text" in textPart) lastAssistantText = textPart.text
-      }
+    const cleanup = () => {
+      unsub1()
+      unsub2()
+      clearTimeout(timer)
     }
-    return lastAssistantText
+
+    const handler = (event: { properties: { parentSessionID?: string } }) => {
+      if (event.properties.parentSessionID !== sessionID) return
+      cleanup()
+      // Stream is descending order (newest first) — .find() gets the NEWEST assistant message
+      ;(async () => {
+        const msgs = await Array.fromAsync(MessageV2.stream(session.id))
+        const last = msgs.find((m) => m.info.role === "assistant")
+        const textPart = last?.parts.find((p) => p.type === "text" && !p.synthetic)
+        resolve(textPart && "text" in textPart ? textPart.text : undefined)
+      })().catch(() => resolve(undefined))
+    }
+
+    const unsub1 = Bus.subscribe(BackgroundTaskEvent.Completed, handler)
+    const unsub2 = Bus.subscribe(BackgroundTaskEvent.Failed, handler)
   })
 
-  return await Promise.race([messages, timeout])
+  return finalText
 }
 
 export async function runComposer(
@@ -82,7 +99,7 @@ Decompose this issue into a dependency-ordered list of implementation tasks. Ret
   try {
     parsed = JSON.parse(output)
   } catch {
-    throw new Error("Composer agent returned invalid JSON")
+    throw new Error(`Composer agent returned invalid JSON. Raw (first 500 chars): ${output.substring(0, 500)}`)
   }
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || parsed === null) {
