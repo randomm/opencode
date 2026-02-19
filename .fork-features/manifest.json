@@ -263,21 +263,23 @@
     },
     "taskctl": {
       "status": "active",
-      "description": "Autonomous pipeline for managing task graphs with dependencies, priority ordering, conflict detection, and adversarial workflow. Phase 1 includes types, store, scheduler, validation, and CLI tool. Tasks are JSON files stored in Global.Path.data/tasks/{projectId}/ with atomic writes and append-only activity logging. LIMITATIONS.md documents known Phase 2 requirements (file locking, transaction safety).",
-      "issue": "https://github.com/randomm/opencode/issues/200",
+      "description": "Autonomous pipeline for managing task graphs with dependencies, priority ordering, conflict detection, and adversarial workflow. Phase 1 includes types, store, scheduler, validation, and CLI tool. Phase 2 adds Composer agent for automatic issue decomposition, taskctl start command for spawning full pipeline. Phase 3 adds Pulse execution engine. Tasks are JSON files stored in Global.Path.data/tasks/{projectId}/ with atomic writes and append-only activity logging.",
+      "issue": "https://github.com/randomm/opencode/issues/203",
       "newFiles": [
         "packages/opencode/src/tasks/types.ts",
         "packages/opencode/src/tasks/store.ts",
         "packages/opencode/src/tasks/scheduler.ts",
         "packages/opencode/src/tasks/validation.ts",
+        "packages/opencode/src/tasks/composer.ts",
         "packages/opencode/src/tasks/tool.ts",
         "packages/opencode/src/tasks/index.ts",
         "packages/opencode/src/tasks/LIMITATIONS.md",
         "packages/opencode/test/tasks/store.test.ts",
         "packages/opencode/test/tasks/scheduler.test.ts",
-        "packages/opencode/test/tasks/validation.test.ts"
+        "packages/opencode/test/tasks/validation.test.ts",
+        "packages/opencode/test/tasks/composer.test.ts"
       ],
-      "modifiedFiles": ["packages/opencode/src/tool/registry.ts"],
+      "modifiedFiles": ["packages/opencode/src/tool/registry.ts", "packages/opencode/src/agent/agent.ts"],
       "deletedFiles": [],
       "criticalCode": [
         "sanitizeProjectId",
@@ -300,8 +302,10 @@
         "Store.updateJob",
         "Store.addComment",
         "Store.addPipelineEvent",
+        "Store.findJobByIssue",
         "Scheduler.getNextTasks",
         "Validation.validateGraph",
+        "Validation.validateGraphFromMap",
         "TaskctlTool",
         "taskctl create",
         "taskctl list",
@@ -313,6 +317,10 @@
         "taskctl split",
         "taskctl next",
         "taskctl validate",
+        "taskctl start",
+        "taskctl start-skip",
+        "composer agent",
+        "runComposer",
         "Circular dependency detection",
         "Missing dependency detection",
         "Acceptance criteria warning",
@@ -333,14 +341,18 @@
       "tests": [
         "packages/opencode/test/tasks/store.test.ts",
         "packages/opencode/test/tasks/scheduler.test.ts",
-        "packages/opencode/test/tasks/validation.test.ts"
+        "packages/opencode/test/tasks/validation.test.ts",
+        "packages/opencode/test/tasks/composer.test.ts"
       ],
       "upstreamTracking": {
         "absorptionSignals": [
           "TASKS_DIR",
           "taskctl",
+          "Composer",
+          "runComposer",
           "Scheduler.getNextTasks",
           "Validation.validateGraph",
+          "Validation.validateGraphFromMap",
           "sanitizeProjectId",
           "sanitizeTaskId",
           "IMMUTABLE_FIELDS",

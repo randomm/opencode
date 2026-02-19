@@ -4,6 +4,8 @@ import { Instance } from "../project/instance"
 import { Store } from "./store"
 import { Scheduler } from "./scheduler"
 import { Validation } from "./validation"
+import { runComposer } from "./composer"
+import { enableAutoWakeup } from "../session/async-tasks"
 import type { Task, Job } from "./types"
 
 const MAX_COMMENT_LENGTH = 100 * 1024
@@ -17,16 +19,16 @@ function validateLabel(label: string): void {
   }
 }
 
-function slugify(title: string): string {
+export const slugify = (title: string): string => {
   const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 100)
-  return slug || "task"
+  return slug || "entry"
 }
 
-async function generateUniqueSlug(projectId: string, title: string): Promise<string> {
+export async function generateUniqueSlug(projectId: string, title: string): Promise<string> {
   const baseSlug = slugify(title)
   let slug = baseSlug
   let counter = 2
@@ -56,6 +58,9 @@ Commands:
 - split: Split task into two new tasks, close original
 - next: Get next tasks ready for work (respecting dependencies and conflicts)
 - validate: Validate task graph for cycles and other issues
+- start: Start autonomous pipeline for a GitHub issue (decomposes issue into tasks via Composer agent)
+- start-skip: Start pipeline skipping Composer (requires existing tasks for issue)
+- status: Show job status for a GitHub issue
 
 Task labels:
 - module:<name>: Prevent conflicts with tasks in same module
@@ -63,13 +68,13 @@ Task labels:
 
   parameters: z.object({
     command: z
-      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate"])
+      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip"])
       .describe("Command to execute"),
     taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split)"),
     title: z.string().optional().describe("Task title (for create)"),
     description: z.string().optional().describe("Task description (for create)"),
     acceptanceCriteria: z.string().optional().describe("Acceptance criteria (for create)"),
-    parentIssue: z.number().optional().describe("GitHub issue number (for create)"),
+    parentIssue: z.number().optional().describe("GitHub issue number (for create, start)"),
     jobId: z.string().optional().describe("Job ID (for create)"),
     priority: z.number().min(0).max(4).optional().describe("Priority 0-4, 0 is highest (for create, update)"),
     taskType: z.enum(["implementation", "test", "research"]).optional().describe("Task type (for create)"),
@@ -80,6 +85,7 @@ Task labels:
     dependencyId: z.string().optional().describe("Dependency task ID to add (for depends)"),
     count: z.number().min(1).max(10).optional().describe("Number of tasks to return (for next)"),
     updates: z.object({}).passthrough().optional().describe("Field updates for task (for update, e.g. {status: 'in_progress'})"),
+    issueNumber: z.number().optional().describe("GitHub issue number (for start, start-skip)"),
   }),
 
   async execute(params, ctx) {
@@ -101,6 +107,18 @@ Task labels:
 
       const labels = (params.labels ?? []).filter((l) => l.trim())
       labels.forEach(validateLabel)
+
+      if (params.dependsOn) {
+        for (const depId of params.dependsOn) {
+          if (!depId || typeof depId !== "string") {
+            throw new Error(`Invalid dependency ID: ${depId}`)
+          }
+          const depExists = await Store.getTask(projectId, depId)
+          if (!depExists) {
+            throw new Error(`Dependency task not found: ${depId}`)
+          }
+        }
+      }
 
       const taskId = await generateUniqueSlug(projectId, params.title)
       const now = new Date().toISOString()
@@ -453,6 +471,122 @@ if (params.command === "close") {
       return {
         title: "Validation result",
         output: lines.join("\n"),
+        metadata: {},
+      }
+    }
+
+    if (params.command === "start") {
+      if (!params.issueNumber) throw new Error("start requires issueNumber")
+
+      const existingJob = await Store.findJobByIssue(projectId, params.issueNumber)
+      if (existingJob) {
+        return {
+          title: "Job already running",
+          output: `Job already running. Use taskctl status <issueNumber> to monitor.`,
+          metadata: {},
+        }
+      }
+
+      const jobId = `job-${Date.now()}`
+      await Store.createJob(projectId, {
+        id: jobId,
+        parent_issue: params.issueNumber,
+        status: "running",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: ctx.sessionID,
+      })
+
+      enableAutoWakeup(ctx.sessionID)
+
+      const repo = "randomm/opencode"
+
+      let issueOutput: { title: string; body: string } | null = null
+      const proc = Bun.spawn(["gh", "issue", "view", params.issueNumber.toString(), "--repo", repo, "--json", "title,body"], {
+        stdout: "pipe",
+        stderr: "pipe",
+      })
+
+      const reader = proc.stdout.getReader()
+      const decoder = new TextDecoder()
+      let output = ""
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        output += decoder.decode(value)
+      }
+
+      const exitCode = await proc.exited
+      if (exitCode !== 0 || !output) {
+        const errorReader = proc.stderr.getReader()
+        let errorOutput = ""
+        while (true) {
+          const { done, value } = await errorReader.read()
+          if (done) break
+          errorOutput += decoder.decode(value)
+        }
+        await Store.updateJob(projectId, jobId, { status: "failed" })
+        throw new Error(`Failed to fetch GitHub issue #${params.issueNumber}: ${errorOutput || "Unknown error"}`)
+      }
+
+      try {
+        issueOutput = JSON.parse(output) as { title: string; body: string }
+        if (!issueOutput || typeof issueOutput !== "object") {
+          throw new Error("Invalid response format")
+        }
+      } catch {
+        await Store.updateJob(projectId, jobId, { status: "failed" })
+        throw new Error(`Failed to parse GitHub issue #${params.issueNumber} output`)
+      }
+
+      const issueTitle = issueOutput.title || ""
+      const issueBody = issueOutput.body || ""
+
+      const composerResult = await runComposer({
+        jobId,
+        projectId,
+        pmSessionId: ctx.sessionID,
+        issueNumber: params.issueNumber,
+        issueTitle,
+        issueBody,
+      })
+
+      if (composerResult.status === "needs_clarification") {
+        await Store.updateJob(projectId, jobId, { status: "failed" })
+        const questionLines = ["Composer needs clarification:", ...composerResult.questions.map((q) => `${q.id}. ${q.question}`)]
+        return {
+          title: "Composer needs clarification",
+          output: questionLines.join("\n"),
+          metadata: {},
+        }
+      }
+
+      return {
+        title: "Job started",
+        output: `Job ${jobId} started: ${composerResult.taskCount} tasks queued. Pulse integration comes in Phase 3.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "start-skip") {
+      if (!params.issueNumber) throw new Error("start-skip requires issueNumber")
+
+      const tasks = await Store.listTasks(projectId)
+      const tasksWithIssue = tasks.filter((t) => t.parent_issue === params.issueNumber)
+      if (tasksWithIssue.length === 0) {
+        return {
+          title: "No tasks found",
+          output: `No tasks found for issue #${params.issueNumber}. Use taskctl start to create tasks first.`,
+          metadata: {},
+        }
+      }
+
+      return {
+        title: "Tasks found",
+        output: `Tasks found: ${tasksWithIssue.length}. Pulse integration comes in Phase 3.`,
         metadata: {},
       }
     }

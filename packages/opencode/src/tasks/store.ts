@@ -262,4 +262,33 @@ export const Store = {
     }
     await this.updateTask(projectId, taskId, updated, true)
   },
+
+  async findJobByIssue(projectId: string, issueNumber: number): Promise<Job | null> {
+    const tasksDir = await getTasksDir(projectId)
+    const jobPattern = /^job-(.+)\.json$/
+    const jobFiles = [];
+
+    try {
+      const entries = await fs.readdir(tasksDir);
+      for (const entry of entries) {
+        const match = jobPattern.exec(entry);
+        if (match) {
+          const jobPath = path.join(tasksDir, entry);
+          const content = await Bun.file(jobPath).text().catch(() => null);
+          if (content) {
+            try {
+              const job = JSON.parse(content) as Job;
+              if (job.parent_issue === issueNumber && job.status === "running") {
+                return job;
+              }
+            } catch {}
+          }
+        }
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  },
 }

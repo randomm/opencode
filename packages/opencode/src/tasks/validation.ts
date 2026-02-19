@@ -74,4 +74,22 @@ export const Validation = {
       warnings,
     }
   },
+
+  validateGraphFromMap(taskMap: Map<string, { depends_on: string[] }>): string[] {
+    const errors: string[] = []
+    const cycleErrors = detectCycle(taskMap)
+    errors.push(...cycleErrors)
+
+    const taskSet = new Set(taskMap.keys())
+
+    for (const [taskId, task] of taskMap.entries()) {
+      for (const depId of task.depends_on) {
+        if (!taskSet.has(depId)) {
+          errors.push(`Task "${taskId}" depends on non-existent task "${depId}"`)
+        }
+      }
+    }
+
+    return errors
+  },
 }
