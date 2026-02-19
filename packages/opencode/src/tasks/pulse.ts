@@ -631,6 +631,7 @@ taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>
       status: "open",
       assignee: null,
       assignee_pid: null,
+      pipeline: { ...task.pipeline, stage: "idle" },
     }, true)
     await Store.addComment(projectId, task.id, {
       author: "system",
