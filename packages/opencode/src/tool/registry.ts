@@ -29,6 +29,7 @@ import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
 import { CancelTaskTool } from "./cancel_task"
+import { TaskctlTool } from "../tasks/tool"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -128,6 +129,7 @@ export namespace ToolRegistry {
       WebSearchTool,
       CodeSearchTool,
       SkillTool,
+      TaskctlTool,
       ApplyPatchTool,
       ...(Flag.OPENCODE_EXPERIMENTAL_LSP_TOOL ? [LspTool] : []),
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
