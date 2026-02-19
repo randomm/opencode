@@ -29,6 +29,7 @@ export namespace Flag {
   export const OPENCODE_SERVER_PASSWORD = process.env["OPENCODE_SERVER_PASSWORD"]
   export const OPENCODE_SERVER_USERNAME = process.env["OPENCODE_SERVER_USERNAME"]
   export const OPENCODE_ENABLE_QUESTION_TOOL = truthy("OPENCODE_ENABLE_QUESTION_TOOL")
+  export declare const OPENCODE_EXPERIMENTAL_HASHLINE: boolean
 
   // Experimental
   export const OPENCODE_EXPERIMENTAL = truthy("OPENCODE_EXPERIMENTAL")
@@ -139,12 +140,23 @@ Object.defineProperty(Flag, "OPENCODE_CONFIG_DIR", {
 })
 
 // Dynamic getter for OPENCODE_CLIENT
-// This must be evaluated at access time, not module load time,
-// because some commands override the client at runtime
-Object.defineProperty(Flag, "OPENCODE_CLIENT", {
-  get() {
-    return process.env["OPENCODE_CLIENT"] ?? "cli"
-  },
-  enumerable: true,
-  configurable: false,
-})
+  // This must be evaluated at access time, not module load time,
+  // because some commands override the client at runtime
+  Object.defineProperty(Flag, "OPENCODE_CLIENT", {
+    get() {
+      return process.env["OPENCODE_CLIENT"] ?? "cli"
+    },
+    enumerable: true,
+    configurable: false,
+  })
+
+  // Dynamic getter for OPENCODE_EXPERIMENTAL_HASHLINE
+  // This must be evaluated at access time, not module load time,
+  // to allow tests to control hashline features
+  Object.defineProperty(Flag, "OPENCODE_EXPERIMENTAL_HASHLINE", {
+    get() {
+      return truthy("OPENCODE_EXPERIMENTAL_HASHLINE")
+    },
+    enumerable: true,
+    configurable: false,
+  })
