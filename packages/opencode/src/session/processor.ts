@@ -195,7 +195,23 @@ export namespace SessionProcessor {
                         attachments: value.output.attachments,
                       },
                     })
-
+                    delete toolcalls[value.toolCallId]
+                  } else if (match && match.state.status === "pending") {
+                    await Session.updatePart({
+                      ...match,
+                      state: {
+                        status: "completed",
+                        input: value.input ?? match.state.input,
+                        output: value.output.output,
+                        metadata: value.output.metadata,
+                        title: value.output.title,
+                        time: {
+                          start: Date.now(),
+                          end: Date.now(),
+                        },
+                        attachments: value.output.attachments,
+                      },
+                    })
                     delete toolcalls[value.toolCallId]
                   }
                   break
@@ -203,20 +219,40 @@ export namespace SessionProcessor {
 
                 case "tool-error": {
                   const match = toolcalls[value.toolCallId]
+                  const errorMsg = value.error instanceof Error ? value.error.message : String(value.error)
                   if (match && match.state.status === "running") {
                     await Session.updatePart({
                       ...match,
                       state: {
                         status: "error",
                         input: value.input ?? match.state.input,
-                        error: (value.error as any).toString(),
+                        error: errorMsg,
                         time: {
                           start: match.state.time.start,
                           end: Date.now(),
                         },
                       },
                     })
-
+                    if (
+                      value.error instanceof PermissionNext.RejectedError ||
+                      value.error instanceof Question.RejectedError
+                    ) {
+                      blocked = shouldBreak
+                    }
+                    delete toolcalls[value.toolCallId]
+                  } else if (match && match.state.status === "pending") {
+                    await Session.updatePart({
+                      ...match,
+                      state: {
+                        status: "error",
+                        input: value.input ?? match.state.input,
+                        error: errorMsg,
+                        time: {
+                          start: Date.now(),
+                          end: Date.now(),
+                        },
+                      },
+                    })
                     if (
                       value.error instanceof PermissionNext.RejectedError ||
                       value.error instanceof Question.RejectedError
