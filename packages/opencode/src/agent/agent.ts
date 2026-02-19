@@ -351,7 +351,42 @@ You MUST call taskctl verdict to record your finding. Never write a text respons
 - You may ONLY call: taskctl verdict
 - Do NOT spawn any agents
 - Do NOT commit or push
-- Be specific: every issue must have a location (file:line) and a concrete fix suggestion`,
+        - Be specific: every issue must have a location (file:line) and a concrete fix suggestion`,
+      },
+      steering: {
+        name: "steering",
+        description: "Steering agent in an autonomous development pipeline.",
+        mode: "subagent",
+        native: true,
+        hidden: true,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+          }),
+          user,
+        ),
+        options: {},
+        // Uses cheapest available model — configure via agent config if needed
+        prompt: `You are a steering agent in an autonomous development pipeline. Your job is to assess whether a developer agent is making meaningful progress on a task.
+
+You will receive:
+- The task title, description, and acceptance criteria
+- A summary of recent developer activity (last session turns)
+
+Respond with EXACTLY one of these JSON objects and nothing else:
+
+{ "action": "continue", "message": null }
+— Use when the developer is making steady progress: writing code, running tests, moving forward
+
+{ "action": "steer", "message": "specific actionable guidance here" }
+— Use when the developer seems confused, going in circles, or heading the wrong direction
+— The message must be specific and actionable (e.g. "Focus on fixing the null check at src/api.ts:42, not rewriting the whole module")
+
+{ "action": "replace", "message": "reason for replacement" }
+— Use ONLY when the developer has made zero meaningful progress for the entire session or is clearly broken (e.g. repeating the same failed command)
+
+Be conservative: prefer "continue" when in doubt. Only "replace" when truly stuck.`,
       },
       }
 
