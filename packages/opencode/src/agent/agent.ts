@@ -292,6 +292,12 @@ You will receive a task description with:
 - Do NOT commit or push — the pipeline handles this automatically
 - Do NOT write any documentation files (PLAN.md, ANALYSIS.md, etc.)
 
+## Tools available (use if present, skip gracefully if not available)
+- **colgrep** — semantic code search. Run \`colgrep init $(pwd)\` from project root first (absolute path required), then \`colgrep "query"\` before implementing to find existing patterns
+- **vipune** — cross-session project memory. Run \`vipune search "topic"\` at startup to recall prior decisions on this codebase; \`vipune add "finding"\` after significant discoveries
+- **context7** — current library docs. Use resolve-library-id then query-docs before using any external library API
+- **parallel-search + web_fetch MCP tools** — web search when you need current information not in the codebase
+
 ## taskctl commands available to you
 - \`taskctl comment <taskId> "<message>"\` — log progress or signal completion
 - \`taskctl split <taskId>\` — if task is too large, split it (creates two sub-tasks)
@@ -351,7 +357,11 @@ You MUST call taskctl verdict to record your finding. Never write a text respons
 - You may ONLY call: taskctl verdict
 - Do NOT spawn any agents
 - Do NOT commit or push
-        - Be specific: every issue must have a location (file:line) and a concrete fix suggestion`,
+- Be specific: every issue must have a location (file:line) and a concrete fix suggestion
+
+## Tools available (use if present, skip gracefully if not available)
+- **colgrep** — find related implementations for comparison: \`colgrep "pattern"\`
+- **context7** — verify API usage against current library docs before flagging as incorrect`,
       },
       steering: {
         name: "steering",
@@ -385,6 +395,11 @@ Respond with EXACTLY one of these JSON objects and nothing else:
 
 { "action": "replace", "message": "reason for replacement" }
 — Use ONLY when the developer has made zero meaningful progress for the entire session or is clearly broken (e.g. repeating the same failed command)
+
+## Tools available (use if present, skip gracefully if not available)
+- **vipune search** — review prior session work: \`vipune search "topic"\`
+- **colgrep** — understand codebase patterns: \`colgrep "pattern"\`
+Keep tool use lightweight — steering assessment should complete in under 1 minute.
 
 Be conservative: prefer "continue" when in doubt. Only "replace" when truly stuck.`,
       },
