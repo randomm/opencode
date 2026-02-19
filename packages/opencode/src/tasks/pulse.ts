@@ -68,8 +68,9 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
       }
       await heartbeatActiveAgents(jobId, projectId)
       await processAdversarialVerdicts(jobId, projectId, pmSessionId)
-      await scheduleReadyTasks(jobId, projectId, pmSessionId)
       await checkTimeouts(jobId, projectId)
+      await checkSteering(jobId, projectId, pmSessionId)
+      await scheduleReadyTasks(jobId, projectId, pmSessionId)
       await checkCompletion(jobId, projectId, pmSessionId, interval)
     } catch (e) {
       log.error("tick failed with unrecoverable error", { jobId, error: String(e) })
@@ -355,6 +356,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
   const allTasks = await Store.listTasks(projectId)
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
   const now = Date.now()
+  const ADVERSARIAL_TIMEOUT_MS = 60 * 60 * 1000
 
   for (const task of jobTasks) {
     if (task.status === "in_progress") {
@@ -401,6 +403,26 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
           message: worktreeRemoved
             ? `Timed out after 30 minutes with no activity. Worktree cleaned up.`
             : `Timed out after 30 minutes with no activity.`,
+          created_at: new Date().toISOString(),
+        })
+      }
+    }
+
+    if (task.status === "in_progress" && task.pipeline.stage === "adversarial-running") {
+      const lastActivity = task.pipeline.last_activity
+        ? new Date(task.pipeline.last_activity).getTime()
+        : 0
+
+      if (lastActivity > 0 && now - lastActivity > ADVERSARIAL_TIMEOUT_MS) {
+        log.info("adversarial stage timed out — resetting to reviewing", { taskId: task.id })
+
+        await Store.updateTask(projectId, task.id, {
+          pipeline: { ...task.pipeline, stage: "reviewing" }
+        }, true)
+
+        await Store.addComment(projectId, task.id, {
+          author: "system",
+          message: "Adversarial agent timed out after 60 minutes. Will retry on next Pulse tick.",
           created_at: new Date().toISOString(),
         })
       }
@@ -722,6 +744,152 @@ Read the changed files in the worktree, run typecheck, and record your verdict w
       branch: null,
       pipeline: { ...task.pipeline, stage: "idle" }
     }, true)
+  }
+}
+
+async function getRecentActivity(sessionId: string): Promise<string> {
+  try {
+    const msgs = await Session.messages({ sessionID: sessionId, limit: 10 })
+    if (!msgs || msgs.length === 0) {
+      return `Session ${sessionId} is active. No message history available.`
+    }
+
+    const assistantMsgs = msgs.filter((m) => m.info.role === "assistant")
+    if (assistantMsgs.length === 0) {
+      return `Session ${sessionId} is active. Developer has not yet responded.`
+    }
+
+    const summary = assistantMsgs.map((_, i) => `${i + 1}. [assistant response]`).join("\n")
+    return `Recent developer activity:\n${summary}`
+  } catch {
+    return "Unable to retrieve session history."
+  }
+}
+
+async function spawnSteering(task: Task, history: string, pmSessionId: string): Promise<{ action: string; message: string | null } | null> {
+  const parentSession = await Session.get(pmSessionId).catch(() => null)
+  if (!parentSession?.directory) return null
+
+  let steeringSession
+  try {
+    steeringSession = await Session.createNext({
+      parentID: pmSessionId,
+      directory: parentSession.directory,
+      title: `Steering: ${task.title}`,
+      permission: [],
+    })
+  } catch (e) {
+    log.error("failed to create steering session", { taskId: task.id, error: String(e) })
+    return null
+  }
+
+  const prompt = `Task: ${task.title}
+Description: ${task.description}
+Acceptance criteria: ${task.acceptance_criteria}
+
+Recent developer activity:
+${history}
+
+Assess the developer's progress and respond with the appropriate JSON action.`
+
+  try {
+    await SessionPrompt.prompt({
+      sessionID: steeringSession.id,
+      agent: "steering",
+      parts: [{ type: "text", text: prompt }],
+    })
+  } catch (e) {
+    log.error("failed to prompt steering agent", { taskId: task.id, error: String(e) })
+    return null
+  }
+
+  const maxWait = 2 * 60 * 1000
+  const pollMs = 3000
+  const start = Date.now()
+
+  while (Date.now() - start < maxWait) {
+    await new Promise(r => setTimeout(r, pollMs))
+    const alive = await isSessionAlive(steeringSession.id)
+    if (!alive) break
+  }
+
+  return { action: "continue", message: null }
+}
+
+async function checkSteering(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
+  const allTasks = await Store.listTasks(projectId)
+  const jobTasks = allTasks.filter((t) => t.job_id === jobId)
+  const now = new Date()
+
+  for (const task of jobTasks) {
+    if (task.status !== "in_progress") continue
+    if (task.pipeline.stage === "adversarial-running" || task.pipeline.stage === "reviewing") continue
+
+    const lastSteering = task.pipeline.last_steering
+      ? new Date(task.pipeline.last_steering)
+      : new Date(0)
+    const minutesSince = (now.getTime() - lastSteering.getTime()) / 60_000
+    if (minutesSince < 15) continue
+
+    if (!task.assignee) continue
+
+    const sessionAlive = await isSessionAlive(task.assignee)
+    if (!sessionAlive) continue
+
+    const history = await getRecentActivity(task.assignee)
+
+    const result = await spawnSteering(task, history, pmSessionId)
+    if (!result) {
+      await Store.updateTask(projectId, task.id, {
+        pipeline: { ...task.pipeline, last_steering: now.toISOString() }
+      }, true)
+      continue
+    }
+
+    await Store.updateTask(projectId, task.id, {
+      pipeline: { ...task.pipeline, last_steering: now.toISOString() }
+    }, true)
+
+    if (result.action === "continue") {
+      log.info("steering: continue", { taskId: task.id })
+    } else if (result.action === "steer") {
+      log.info("steering: sending guidance", { taskId: task.id, message: result.message })
+      await SessionPrompt.prompt({
+        sessionID: task.assignee,
+        agent: "developer-pipeline",
+        parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
+      }).catch(e => log.error("failed to send steering message", { taskId: task.id, error: String(e) }))
+
+      await Store.addComment(projectId, task.id, {
+        author: "system",
+        message: `Steering guidance sent: ${result.message}`,
+        created_at: now.toISOString(),
+      })
+    } else if (result.action === "replace") {
+      log.info("steering: replacing developer", { taskId: task.id, reason: result.message })
+
+      if (task.assignee) {
+        try { SessionPrompt.cancel(task.assignee) } catch {}
+      }
+
+      await Store.updateTask(projectId, task.id, {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        pipeline: {
+          ...task.pipeline,
+          stage: "idle",
+          last_activity: null,
+          last_steering: now.toISOString(),
+        }
+      }, true)
+
+      await Store.addComment(projectId, task.id, {
+        author: "system",
+        message: `Developer replaced by steering agent: ${result.message}. Task reset to open — Pulse will reschedule.`,
+        created_at: now.toISOString(),
+      })
+    }
   }
 }
 
