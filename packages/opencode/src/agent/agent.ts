@@ -199,7 +199,7 @@ export namespace Agent {
         ),
         prompt: PROMPT_SUMMARY,
       },
-composer: {
+      "composer": {
         name: "composer",
         mode: "subagent",
         hidden: true,
@@ -353,7 +353,7 @@ You MUST call taskctl verdict to record your finding. Never write a text respons
 - Do NOT commit or push
 - Be specific: every issue must have a location (file:line) and a concrete fix suggestion`,
       },
-      }
+    }
 
     for (const [key, value] of Object.entries(cfg.agent ?? {})) {
       if (value.disable) {
