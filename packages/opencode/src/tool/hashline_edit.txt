@@ -1,0 +1,12 @@
+Apply precise line edits to a file using content-addressable anchors from hashline_read.
+
+Each edit references a line by its anchor (line number + CJK hash character). The tool validates
+all anchors before applying any edits — if any anchor doesn't match, no changes are made.
+
+Supports three operations:
+- set_line: Replace or delete a single line
+- replace_lines: Replace or delete a contiguous range of lines
+- insert_after: Insert new lines after an anchor line
+
+If lines have moved since last read, anchors are automatically relocated by hash.
+Always use hashline_read to get current anchors before editing.
