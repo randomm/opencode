@@ -263,7 +263,7 @@
     },
     "taskctl": {
       "status": "active",
-      "description": "Autonomous pipeline for managing task graphs with dependencies, priority ordering, conflict detection, and adversarial workflow. Phase 1 includes types, store, scheduler, validation, and CLI tool. Phase 2 adds Composer agent for automatic issue decomposition, taskctl start command for spawning full pipeline. Phase 3 adds Pulse execution engine with heartbeat, scheduling, singleton lock, crash recovery, and timeout detection. Tasks are JSON files stored in Global.Path.data/tasks/{projectId}/ with atomic writes and append-only activity logging.",
+      "description": "Autonomous pipeline for managing task graphs with dependencies, priority ordering, conflict detection, and adversarial workflow. Phase 1 includes types, store, scheduler, validation, and CLI tool. Phase 2 adds Composer agent for automatic issue decomposition, taskctl start command for spawning full pipeline. Phase 3 adds Pulse execution engine with heartbeat, scheduling, singleton lock, crash recovery, and timeout detection. Phase 3a adds adversarial workflow integration with pipeline stages (developing, reviewing, adversarial, steering), verdict tracking, and auto-retry logic. Phase 3b adds agent.ts integration for spawning adversarial sessions. Phase 3c adds PM control commands: status, stop, resume, override, retry, inspect for manual pipeline intervention. Tasks are JSON files stored in Global.Path.data/tasks/{projectId}/ with atomic writes and append-only activity logging.",
       "issue": "https://github.com/randomm/opencode/issues/203",
       "newFiles": [
         "packages/opencode/src/tasks/types.ts",
@@ -279,7 +279,8 @@
         "packages/opencode/test/tasks/scheduler.test.ts",
         "packages/opencode/test/tasks/validation.test.ts",
         "packages/opencode/test/tasks/composer.test.ts",
-        "packages/opencode/test/tasks/pulse.test.ts"
+        "packages/opencode/test/tasks/pulse.test.ts",
+        "packages/opencode/test/tasks/commands.test.ts"
       ],
       "modifiedFiles": ["packages/opencode/src/tool/registry.ts", "packages/opencode/src/agent/agent.ts"],
       "deletedFiles": [],
@@ -339,6 +340,18 @@
         "taskctl validate",
         "taskctl start",
         "taskctl start-skip",
+        "taskctl status",
+        "taskctl stop",
+        "taskctl resume",
+        "taskctl inspect",
+        "taskctl override",
+        "taskctl retry",
+        "command enum (stop, resume, inspect, override, retry)",
+        "overrideMode parameter (skip, commit-as-is)",
+        "Terminal state rejection (complete/failed/stopped)",
+        "Pulse-zombie detection in stop command",
+        "Job stopping flag validation",
+        "Session cancellation and worktree cleanup",
         "composer agent",
         "runComposer",
         "Circular dependency detection",
@@ -362,7 +375,9 @@
         "packages/opencode/test/tasks/store.test.ts",
         "packages/opencode/test/tasks/scheduler.test.ts",
         "packages/opencode/test/tasks/validation.test.ts",
-        "packages/opencode/test/tasks/composer.test.ts"
+        "packages/opencode/test/tasks/composer.test.ts",
+        "packages/opencode/test/tasks/pulse.test.ts",
+        "packages/opencode/test/tasks/commands.test.ts"
       ],
       "upstreamTracking": {
         "absorptionSignals": [

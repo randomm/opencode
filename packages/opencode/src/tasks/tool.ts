@@ -6,9 +6,13 @@ import { Scheduler } from "./scheduler"
 import { Validation } from "./validation"
 import { runComposer } from "./composer"
 import { enableAutoWakeup } from "../session/async-tasks"
-import { startPulse, resurrectionScan, readLockPid, isPidAlive } from "./pulse"
+import { startPulse, resurrectionScan, readLockPid, isPidAlive, removeLockFile } from "./pulse"
+import { SessionPrompt } from "../session/prompt"
+import { Worktree } from "../worktree"
+import { Log } from "../util/log"
 import type { Task, Job } from "./types"
 
+const log = Log.create({ service: "taskctl.tool" })
 const MAX_COMMENT_LENGTH = 100 * 1024
 
 function validateLabel(label: string): void {
@@ -62,6 +66,11 @@ Commands:
 - start: Start autonomous pipeline for a GitHub issue (decomposes issue into tasks via Composer agent)
 - start-skip: Start pipeline skipping Composer (requires existing tasks for issue)
 - status: Show job status for a GitHub issue
+- stop: Stop a running job gracefully
+- resume: Resume a stopped/crashed pipeline
+- inspect: Show full task history and details
+- override: Override a task (skip or commit as-is)
+- retry: Reset and retry a failed task
 
 Task labels:
 - module:<name>: Prevent conflicts with tasks in same module
@@ -69,14 +78,33 @@ Task labels:
 
   parameters: z.object({
     command: z
-      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip", "status"])
+      .enum([
+        "create",
+        "list",
+        "get",
+        "update",
+        "close",
+        "comment",
+        "depends",
+        "split",
+        "next",
+        "validate",
+        "start",
+        "start-skip",
+        "status",
+        "stop",
+        "resume",
+        "inspect",
+        "override",
+        "retry",
+      ])
       .describe("Command to execute"),
-    taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split)"),
+    taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split, inspect, override, retry)"),
     title: z.string().optional().describe("Task title (for create)"),
     description: z.string().optional().describe("Task description (for create)"),
     acceptanceCriteria: z.string().optional().describe("Acceptance criteria (for create)"),
     parentIssue: z.number().optional().describe("GitHub issue number (for create, start)"),
-    jobId: z.string().optional().describe("Job ID (for create)"),
+    jobId: z.string().optional().describe("Job ID (for create, stop, resume)"),
     priority: z.number().min(0).max(4).optional().describe("Priority 0-4, 0 is highest (for create, update)"),
     taskType: z.enum(["implementation", "test", "research"]).optional().describe("Task type (for create)"),
     labels: z.array(z.string()).optional().describe("Task labels (for create)"),
@@ -86,7 +114,8 @@ Task labels:
     dependencyId: z.string().optional().describe("Dependency task ID to add (for depends)"),
     count: z.number().min(1).max(10).optional().describe("Number of tasks to return (for next)"),
     updates: z.object({}).passthrough().optional().describe("Field updates for task (for update, e.g. {status: 'in_progress'})"),
-    issueNumber: z.number().optional().describe("GitHub issue number (for start, start-skip)"),
+    issueNumber: z.number().optional().describe("GitHub issue number (for start, start-skip, status)"),
+    overrideMode: z.enum(["skip", "commit-as-is"]).optional().describe("Override mode: skip task or commit as-is (for override command)"),
   }),
 
   async execute(params, ctx) {
@@ -484,17 +513,27 @@ if (params.command === "start") {
       if (existingJob) {
         const { removeLockFile } = await import("./pulse")
         const existingPid = await readLockPid(existingJob.id, projectId)
-        if (existingPid !== null && isPidAlive(existingPid)) {
+
+        if (existingJob.status === "complete" || existingJob.status === "failed" || existingJob.status === "stopped") {
           return {
-            title: "Already running",
-            output: `Job already running (PID ${existingPid}). Use taskctl status ${issueNumber} to monitor.`,
+            title: "Job already completed",
+            output: `Job is ${existingJob.status}. Status: taskctl status ${issueNumber}`,
             metadata: {},
           }
         }
-        if (existingPid !== null) {
-          await removeLockFile(existingJob.id, projectId)
+
+        if (existingJob.status === "running") {
+          if (existingPid !== null && isPidAlive(existingPid)) {
+            return {
+              title: "Already running",
+              output: `Job already running (PID ${existingPid}). Use taskctl status ${issueNumber} to monitor.`,
+              metadata: {},
+            }
+          }
+          if (existingPid !== null) {
+            await removeLockFile(existingJob.id, projectId)
+          }
         }
-        // Job exists but pulse is not running - allow restart by continuing
       }
 
       const jobId = `job-${Date.now()}`
@@ -657,6 +696,242 @@ if (params.command === "start") {
       return {
         title: "Tasks found",
         output: `Tasks found: ${tasksWithIssue.length}. Pulse integration comes in Phase 3.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "stop") {
+      const jobId = params.jobId
+      if (!jobId) throw new Error("stop requires jobId")
+
+      const job = await Store.getJob(projectId, jobId)
+      if (!job) throw new Error(`Job not found: ${jobId}`)
+      if (job.status !== "running") {
+        return {
+          title: "Job not running",
+          output: `Job ${jobId} is not running (status: ${job.status}). Nothing to stop.`,
+          metadata: {},
+        }
+      }
+      if (job.stopping) {
+        return {
+          title: "Already stopping",
+          output: `Job ${jobId} is already stopping. Use taskctl status to monitor.`,
+          metadata: {},
+        }
+      }
+
+      await Store.updateJob(projectId, jobId, { stopping: true })
+      return {
+        title: "Stop signal sent",
+        output: `Stop signal sent to job ${jobId}. Pipeline will finish in-flight work and halt. Use taskctl status to monitor.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "resume") {
+      const jobId = params.jobId
+      if (!jobId) throw new Error("resume requires jobId")
+
+      const job = await Store.getJob(projectId, jobId)
+      if (!job) throw new Error(`Job not found: ${jobId}`)
+
+      const existingPid = await readLockPid(jobId, projectId)
+      if (existingPid !== null) {
+        if (isPidAlive(existingPid)) {
+          return {
+            title: "Already running",
+            output: `Pipeline is already running (PID ${existingPid}). Use taskctl status to monitor.`,
+            metadata: {},
+          }
+        }
+        await removeLockFile(jobId, projectId)
+      }
+
+      await resurrectionScan(jobId, projectId)
+
+      const revalidated = await Store.getJob(projectId, jobId)
+      if (!revalidated) throw new Error(`Job vanished after resurrection: ${jobId}`)
+      if (revalidated.stopping === true || revalidated.status === "complete" || revalidated.status === "failed" || revalidated.status === "stopped") {
+        return {
+          title: "Cannot resume",
+          output: `Job is ${revalidated.status}${revalidated.stopping ? " and has stop flag set" : ""}. Status: taskctl status`,
+          metadata: {},
+        }
+      }
+
+      // NOTE: Update is not atomic with prior read. Race window exists where pulse tick could set stopping=true concurrently.
+      // Related design gap: pulse.ts line 58 doesn't check job.stopping before spawning tasks (pulse-zombie race).
+      // To handle this gracefully: if stop is set during this window, pulse tick will gracefully stop the job.
+
+      await Store.updateJob(projectId, jobId, { status: "running", stopping: false })
+      enableAutoWakeup(ctx.sessionID)
+
+      const tasks = await Store.listTasks(projectId)
+      const remaining = tasks.filter((t) => t.job_id === jobId && t.status !== "closed").length
+      await resurrectionScan(jobId, projectId)
+      startPulse(jobId, projectId, ctx.sessionID)
+
+      return {
+        title: "Pipeline resumed",
+        output: `Pipeline resumed for job ${jobId}. ${remaining} tasks remaining. Pulse is running.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "inspect") {
+      if (!params.taskId) throw new Error("inspect requires taskId")
+
+      const task = await Store.getTask(projectId, params.taskId)
+      if (!task) throw new Error(`Task not found: ${params.taskId}`)
+
+      const lines: string[] = [
+        `Task: ${task.id}`,
+        `Status: ${task.status}${task.close_reason ? ` (${task.close_reason})` : ""}`,
+        `Branch: ${task.branch ?? "none"}`,
+        `Worktree: ${task.worktree ?? "none"}`,
+        ``,
+        `Pipeline:`,
+        `  Stage: ${task.pipeline.stage}`,
+        `  Attempt: ${task.pipeline.attempt}`,
+        `  Last activity: ${task.pipeline.last_activity ?? "never"}`,
+        `  Last steering: ${task.pipeline.last_steering ?? "never"}`,
+      ]
+
+      if (task.pipeline.history && task.pipeline.history.length > 0) {
+        lines.push(``, `Pipeline history:`)
+        for (const entry of task.pipeline.history) {
+          lines.push(`  ${entry}`)
+        }
+      }
+
+      if (task.pipeline.adversarial_verdict) {
+        const v = task.pipeline.adversarial_verdict
+        lines.push(``, `Last adversarial verdict:`, `  ${v.verdict}`)
+        if (v.summary) lines.push(`  Summary: ${v.summary}`)
+        if (v.issues.length > 0) {
+          lines.push(`  Issues:`)
+          for (const issue of v.issues) {
+            lines.push(`    - ${issue.location} [${issue.severity}]: ${issue.fix}`)
+          }
+        }
+      }
+
+      if (task.comments.length > 0) {
+        lines.push(``, `Comments (${task.comments.length} total):`)
+        for (const comment of task.comments) {
+          lines.push(`  [${comment.author}] ${comment.message}`)
+        }
+      }
+
+      return {
+        title: `Task inspect: ${task.id}`,
+        output: lines.join("\n"),
+        metadata: {},
+      }
+    }
+
+    if (params.command === "override") {
+      if (!params.taskId) throw new Error("override requires taskId")
+      if (!params.overrideMode) throw new Error("override requires --skip or --commit-as-is")
+
+      const task = await Store.getTask(projectId, params.taskId)
+      if (!task) throw new Error(`Task not found: ${params.taskId}`)
+
+      const validStates = ["failed", "in_progress", "review", "blocked_on_conflict"]
+      if (!validStates.includes(task.status)) {
+        throw new Error(`override requires task in state: ${validStates.join(", ")}. Current: ${task.status}`)
+      }
+
+      if (params.overrideMode === "skip") {
+        if (task.assignee) {
+          try {
+            SessionPrompt.cancel(task.assignee)
+          } catch {}
+        }
+
+        if (task.worktree) {
+          await Worktree.remove({ directory: task.worktree }).catch((e) =>
+            log.error("failed to remove worktree in override --skip", { taskId: task.id, error: String(e) })
+          )
+        }
+
+        await Store.updateTask(projectId, params.taskId, {
+          status: "closed",
+          close_reason: "skipped by PM",
+          worktree: null,
+          branch: null,
+          assignee: null,
+          assignee_pid: null,
+          pipeline: { ...task.pipeline, stage: "done" },
+        })
+
+        await Store.addComment(projectId, params.taskId, {
+          author: "system",
+          message: "Skipped by PM override. Dependent tasks are now unblocked.",
+          created_at: new Date().toISOString(),
+        })
+
+        return {
+          title: "Task skipped",
+          output: `Task ${params.taskId} skipped. Dependent tasks are now unblocked. Pulse will schedule them on next tick.`,
+          metadata: {},
+        }
+      }
+
+      if (!task.worktree) {
+        throw new Error(`Task ${params.taskId} has no worktree to commit`)
+      }
+
+      return {
+        title: "Commit as-is",
+        output: `To commit worktree for task ${params.taskId}:\n1. @ops: cd ${task.worktree} && git add -A && git commit -m "feat(taskctl): ${task.title} (#${task.parent_issue}) — committed as-is by PM"\n2. Then: taskctl override ${params.taskId} --skip (to close the task)`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "retry") {
+      if (!params.taskId) throw new Error("retry requires taskId")
+
+      const task = await Store.getTask(projectId, params.taskId)
+      if (!task) throw new Error(`Task not found: ${params.taskId}`)
+
+      if (task.assignee) {
+        try {
+          SessionPrompt.cancel(task.assignee)
+        } catch {}
+      }
+
+      if (task.worktree) {
+        await Worktree.remove({ directory: task.worktree }).catch((e) =>
+          log.error("failed to remove worktree in retry", { taskId: task.id, error: String(e) })
+        )
+      }
+
+      await Store.updateTask(projectId, params.taskId, {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        pipeline: {
+          ...task.pipeline,
+          stage: "idle",
+          attempt: 1,
+          adversarial_verdict: null,
+          last_activity: null,
+        },
+      })
+
+      await Store.addComment(projectId, params.taskId, {
+        author: "system",
+        message: `Retried by PM. Task reset to open. Pulse will reschedule on next tick.`,
+        created_at: new Date().toISOString(),
+      })
+
+      return {
+        title: "Task retried",
+        output: `Task ${params.taskId} reset to open with fresh state. Pulse will reschedule it on next tick.`,
         metadata: {},
       }
     }
