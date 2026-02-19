@@ -9,7 +9,7 @@ describe("taskctl pipeline: verdict data validation", () => {
   let testTask: Task
 
   beforeEach(async () => {
-    const testDir = "/tmp/taskctl-pipeline-test"
+    const testDir = `/tmp/taskctl-pipeline-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
     await Instance.provide({
       directory: testDir,
       fn: async () => {
