@@ -177,7 +177,7 @@ describe("taskctl inspect", () => {
               { location: "src/test.ts:42", severity: "HIGH", fix: "Add null check" },
             ],
             summary: "Missing null check",
-            timestamp: now,
+            created_at: new Date().toISOString(),
           },
         },
       }
@@ -292,7 +292,7 @@ describe("taskctl retry", () => {
             verdict: "CRITICAL_ISSUES_FOUND",
             issues: [],
             summary: "Critical issues",
-            timestamp: now,
+            created_at: new Date().toISOString(),
           },
         },
       }
@@ -300,19 +300,19 @@ describe("taskctl retry", () => {
       await Store.createTask(projectId, task)
 
       await Store.updateTask(projectId, "test-task", {
-        status: "open",
-        assignee: null,
-        assignee_pid: null,
-        worktree: null,
-        branch: null,
-        pipeline: {
-          ...task.pipeline,
-          stage: "idle",
-          attempt: 1,
-          adversarial_verdict: null,
-          last_activity: null,
-        },
-      })
+         status: "open",
+         assignee: null,
+         assignee_pid: null,
+         worktree: null,
+         branch: null,
+         pipeline: {
+           ...task.pipeline,
+           stage: "idle",
+           attempt: 1,
+           adversarial_verdict: null,
+           last_activity: null,
+         },
+       }, true)
 
       const retrieved = await Store.getTask(projectId, "test-task")
       expect(retrieved).not.toBeNull()

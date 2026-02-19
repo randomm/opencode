@@ -6,7 +6,7 @@ import { Scheduler } from "./scheduler"
 import { Validation } from "./validation"
 import { runComposer } from "./composer"
 import { enableAutoWakeup } from "../session/async-tasks"
-import { startPulse, resurrectionScan, readLockPid, isPidAlive, removeLockFile } from "./pulse"
+import { startPulse, resurrectionScan, readLockPid, isPidAlive, removeLockFile, sanitizeWorktree } from "./pulse"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
@@ -70,7 +70,6 @@ Commands:
 - resume: Resume a stopped/crashed pipeline
 - inspect: Show full task history and details
 - override: Override a task (skip or commit as-is)
-- retry: Reset and retry a failed task
 - retry: Reset and retry a failed task
 - verdict: Record adversarial pipeline verdict for a task
 
@@ -860,9 +859,12 @@ if (params.command === "start") {
         }
 
         if (task.worktree) {
-          await Worktree.remove({ directory: task.worktree }).catch((e) =>
-            log.error("failed to remove worktree in override --skip", { taskId: task.id, error: String(e) })
-          )
+          const safeWorktree = sanitizeWorktree(task.worktree)
+          if (safeWorktree) {
+            await Worktree.remove({ directory: safeWorktree }).catch((e) =>
+              log.error("failed to remove worktree in override --skip", { taskId: task.id, error: String(e) })
+            )
+          }
         }
 
         await Store.updateTask(projectId, params.taskId, {
@@ -912,9 +914,12 @@ if (params.command === "start") {
       }
 
       if (task.worktree) {
-        await Worktree.remove({ directory: task.worktree }).catch((e) =>
-          log.error("failed to remove worktree in retry", { taskId: task.id, error: String(e) })
-        )
+        const safeWorktree = sanitizeWorktree(task.worktree)
+        if (safeWorktree) {
+          await Worktree.remove({ directory: safeWorktree }).catch((e) =>
+            log.error("failed to remove worktree in retry", { taskId: task.id, error: String(e) })
+          )
+        }
       }
 
       await Store.updateTask(projectId, params.taskId, {
@@ -944,9 +949,6 @@ if (params.command === "start") {
         metadata: {},
       }
     }
-
-    throw new Error(`Unknown command: ${params.command}`)
-
 
     if (params.command === "verdict") {
       if (ctx.agent !== "adversarial-pipeline") {
