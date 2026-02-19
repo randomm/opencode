@@ -11,6 +11,7 @@ import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
 import { MessageV2 } from "../session/message-v2"
+import { SessionStatus } from "../session/status"
 import type { Task, Job, AdversarialVerdict } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse" })
@@ -77,8 +78,9 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
 
   for (const task of jobTasks) {
     if (task.status === "in_progress" || task.status === "review") {
-      const sessionAlive = task.assignee ? await isSessionAlive(task.assignee) : false
-      if (!sessionAlive) {
+      // Check: Is the session actively running?
+      const running = task.assignee ? isSessionActivelyRunning(task.assignee) : false
+      if (!running) {
         let worktreeRemoved = false
         const safeWorktree = sanitizeWorktree(task.worktree)
         if (safeWorktree) {
@@ -112,16 +114,11 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
   }
 }
 
-async function isSessionAlive(sessionId: string): Promise<boolean> {
+function isSessionActivelyRunning(sessionId: string): boolean {
   try {
-    const session = await Session.get(sessionId)
-    return session !== null && session !== undefined
-  } catch (e) {
-    const errorStr = String(e).toLowerCase()
-    const isNotFound = errorStr.includes("not found") || errorStr.includes("no such")
-    if (!isNotFound) {
-      log.error("session alive check failed with unexpected error", { sessionId, error: String(e) })
-    }
+    return SessionStatus.get(sessionId).type !== "idle"
+  } catch {
+    // Outside of Instance context (e.g., in tests), assume session is idle
     return false
   }
 }
@@ -322,8 +319,9 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
   const now = new Date().toISOString()
 
   for (const task of jobTasks) {
-    if (task.status === "in_progress" && task.assignee) {
-      const sessionAlive = await isSessionAlive(task.assignee)
+     if (task.status === "in_progress" && task.assignee) {
+       // Check: Session is actively running (prompt not finished)
+       const sessionAlive = isSessionActivelyRunning(task.assignee)
       const updated = await Store.getTask(projectId, task.id)
       if (!updated) continue
 
@@ -517,9 +515,10 @@ If there is nothing to commit, that is fine — report success.`
   const start = Date.now()
   let opsComplete = false
 
-  while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, pollInterval))
-    const alive = await isSessionAlive(opsSession.id)
+   while (Date.now() - start < maxWait) {
+     await new Promise(r => setTimeout(r, pollInterval))
+     // Check: Session is no longer actively running (ops commit completed)
+     const alive = isSessionActivelyRunning(opsSession.id)
     if (!alive) { opsComplete = true; break }
   }
 
@@ -619,11 +618,27 @@ ${issueLines}
 The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, then signal completion with:
 taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>"`
 
-  await SessionPrompt.prompt({
-    sessionID: devSession.id,
-    agent: "developer-pipeline",
-    parts: [{ type: "text", text: prompt }],
-  })
+  try {
+    await SessionPrompt.prompt({
+      sessionID: devSession.id,
+      agent: "developer-pipeline",
+      parts: [{ type: "text", text: prompt }],
+    })
+  } catch (e) {
+    log.error("failed to spawn respawn developer prompt", { taskId: task.id, sessionId: devSession.id, error: String(e) })
+    try { SessionPrompt.cancel(devSession.id) } catch {}
+    await Store.updateTask(projectId, task.id, {
+      status: "open",
+      assignee: null,
+      assignee_pid: null,
+    }, true)
+    await Store.addComment(projectId, task.id, {
+      author: "system",
+      message: `Respawn attempt ${attempt} failed: ${String(e)}. Task reset to open.`,
+      created_at: new Date().toISOString(),
+    })
+    return
+  }
 
   await Store.addComment(projectId, task.id, {
     author: "system",
@@ -820,9 +835,10 @@ Assess the developer's progress and respond with the appropriate JSON action.`
   const pollMs = 3000
   const start = Date.now()
 
-  while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, pollMs))
-    const alive = await isSessionAlive(steeringSession.id)
+   while (Date.now() - start < maxWait) {
+     await new Promise(r => setTimeout(r, pollMs))
+     // Check: Session is no longer actively running (steering agent finished)
+     const alive = isSessionActivelyRunning(steeringSession.id)
     if (!alive) break
   }
 
@@ -883,9 +899,10 @@ async function checkSteering(jobId: string, projectId: string, pmSessionId: stri
     const minutesSince = (now.getTime() - lastSteering.getTime()) / 60_000
     if (minutesSince < 15) continue
 
-    if (!task.assignee) continue
+     if (!task.assignee) continue
 
-    const sessionAlive = await isSessionAlive(task.assignee)
+     // Check: Session is actively running (developer still working)
+     const sessionAlive = isSessionActivelyRunning(task.assignee)
     if (!sessionAlive) continue
 
     const history = await getRecentActivity(task.assignee)
@@ -906,11 +923,18 @@ async function checkSteering(jobId: string, projectId: string, pmSessionId: stri
       log.info("steering: continue", { taskId: task.id })
     } else if (result.action === "steer") {
       log.info("steering: sending guidance", { taskId: task.id, message: result.message })
-      await SessionPrompt.prompt({
-        sessionID: task.assignee,
-        agent: "developer-pipeline",
-        parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
-      }).catch(e => log.error("failed to send steering message", { taskId: task.id, error: String(e) }))
+      if (task.assignee) {
+        const sessionId = task.assignee
+        try {
+          await SessionPrompt.prompt({
+            sessionID: sessionId,
+            agent: "developer-pipeline",
+            parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
+          })
+        } catch (e) {
+          log.error("failed to send steering message", { taskId: task.id, error: String(e) })
+        }
+      }
 
       await Store.addComment(projectId, task.id, {
         author: "system",
