@@ -6,6 +6,7 @@ import { Scheduler } from "./scheduler"
 import { Validation } from "./validation"
 import { runComposer } from "./composer"
 import { enableAutoWakeup } from "../session/async-tasks"
+import { startPulse, resurrectionScan, readLockPid, isPidAlive } from "./pulse"
 import type { Task, Job } from "./types"
 
 const MAX_COMMENT_LENGTH = 100 * 1024
@@ -68,7 +69,7 @@ Task labels:
 
   parameters: z.object({
     command: z
-      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip"])
+      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip", "status"])
       .describe("Command to execute"),
     taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split)"),
     title: z.string().optional().describe("Task title (for create)"),
@@ -475,22 +476,31 @@ if (params.command === "close") {
       }
     }
 
-    if (params.command === "start") {
-      if (!params.issueNumber) throw new Error("start requires issueNumber")
+if (params.command === "start") {
+      const issueNumber = params.issueNumber
+      if (!issueNumber) throw new Error("start requires issueNumber")
 
-      const existingJob = await Store.findJobByIssue(projectId, params.issueNumber)
+      const existingJob = await Store.findJobByIssue(projectId, issueNumber)
       if (existingJob) {
-        return {
-          title: "Job already running",
-          output: `Job already running. Use taskctl status <issueNumber> to monitor.`,
-          metadata: {},
+        const { removeLockFile } = await import("./pulse")
+        const existingPid = await readLockPid(existingJob.id, projectId)
+        if (existingPid !== null && isPidAlive(existingPid)) {
+          return {
+            title: "Already running",
+            output: `Job already running (PID ${existingPid}). Use taskctl status ${issueNumber} to monitor.`,
+            metadata: {},
+          }
         }
+        if (existingPid !== null) {
+          await removeLockFile(existingJob.id, projectId)
+        }
+        // Job exists but pulse is not running - allow restart by continuing
       }
 
       const jobId = `job-${Date.now()}`
       await Store.createJob(projectId, {
         id: jobId,
-        parent_issue: params.issueNumber,
+        parent_issue: issueNumber,
         status: "running",
         created_at: new Date().toISOString(),
         stopping: false,
@@ -504,7 +514,7 @@ if (params.command === "close") {
       const repo = "randomm/opencode"
 
       let issueOutput: { title: string; body: string } | null = null
-      const proc = Bun.spawn(["gh", "issue", "view", params.issueNumber.toString(), "--repo", repo, "--json", "title,body"], {
+      const proc = Bun.spawn(["gh", "issue", "view", issueNumber.toString(), "--repo", repo, "--json", "title,body"], {
         stdout: "pipe",
         stderr: "pipe",
       })
@@ -529,7 +539,7 @@ if (params.command === "close") {
           errorOutput += decoder.decode(value)
         }
         await Store.updateJob(projectId, jobId, { status: "failed" })
-        throw new Error(`Failed to fetch GitHub issue #${params.issueNumber}: ${errorOutput || "Unknown error"}`)
+        throw new Error(`Failed to fetch GitHub issue #${issueNumber}: ${errorOutput || "Unknown error"}`)
       }
 
       try {
@@ -539,7 +549,7 @@ if (params.command === "close") {
         }
       } catch {
         await Store.updateJob(projectId, jobId, { status: "failed" })
-        throw new Error(`Failed to parse GitHub issue #${params.issueNumber} output`)
+        throw new Error(`Failed to parse GitHub issue #${issueNumber} output`)
       }
 
       const issueTitle = issueOutput.title || ""
@@ -549,7 +559,7 @@ if (params.command === "close") {
         jobId,
         projectId,
         pmSessionId: ctx.sessionID,
-        issueNumber: params.issueNumber,
+        issueNumber,
         issueTitle,
         issueBody,
       })
@@ -564,22 +574,82 @@ if (params.command === "close") {
         }
       }
 
+      await resurrectionScan(jobId, projectId)
+      startPulse(jobId, projectId, ctx.sessionID)
+
       return {
-        title: "Job started",
-        output: `Job ${jobId} started: ${composerResult.taskCount} tasks queued. Pulse integration comes in Phase 3.`,
+        title: "Pipeline started",
+        output: `Job ${jobId} started: ${composerResult.taskCount} tasks queued. Pulse is running every 5 seconds. Use taskctl status ${issueNumber} to monitor.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "status") {
+      const issueNumber = params.issueNumber
+      if (!issueNumber) throw new Error("status requires issueNumber")
+
+      const job = await Store.findJobByIssue(projectId, issueNumber)
+      if (!job) {
+        const tasks = await Store.listTasks(projectId)
+        const historicalTasks = tasks.filter((t) => t.parent_issue === issueNumber)
+        if (historicalTasks.length > 0) {
+          return {
+            title: "Job completed",
+            output: `Job completed. Historical tasks: ${historicalTasks.length} tasks found.`,
+            metadata: {},
+          }
+        }
+        return {
+          title: "Job not found",
+          output: `No job found for issue #${issueNumber}. Use "taskctl start ${issueNumber}" to start the pipeline.`,
+          metadata: {},
+        }
+      }
+
+      const tasks = await Store.listTasks(projectId)
+      const jobTasks = tasks.filter((t) => t.job_id === job.id)
+
+      const lines = [
+        `Job: ${job.id}`,
+        `Status: ${job.status}`,
+        `Max Workers: ${job.max_workers}`,
+        `PM Session: ${job.pm_session_id}`,
+        `Created: ${job.created_at}`,
+        `Pulse PID: ${job.pulse_pid ?? "none"}`,
+        ``,
+        `Tasks (${jobTasks.length}):`,
+      ]
+
+      for (const task of jobTasks.sort((a, b) => a.id.localeCompare(b.id))) {
+        lines.push(`  ${task.id} [${task.status}] - ${task.title}`)
+        if (task.assignee) {
+          lines.push(`    Assignee: ${task.assignee}`)
+        }
+        if (task.worktree) {
+          lines.push(`    Worktree: ${task.worktree}`)
+        }
+        if (task.pipeline.stage !== "idle") {
+          lines.push(`    Pipeline: ${task.pipeline.stage} (attempt ${task.pipeline.attempt})`)
+        }
+      }
+
+      return {
+        title: `Job Status: #${issueNumber}`,
+        output: lines.join("\n"),
         metadata: {},
       }
     }
 
     if (params.command === "start-skip") {
-      if (!params.issueNumber) throw new Error("start-skip requires issueNumber")
+      const issueNumber = params.issueNumber
+      if (!issueNumber) throw new Error("start-skip requires issueNumber")
 
       const tasks = await Store.listTasks(projectId)
-      const tasksWithIssue = tasks.filter((t) => t.parent_issue === params.issueNumber)
+      const tasksWithIssue = tasks.filter((t) => t.parent_issue === issueNumber)
       if (tasksWithIssue.length === 0) {
         return {
           title: "No tasks found",
-          output: `No tasks found for issue #${params.issueNumber}. Use taskctl start to create tasks first.`,
+          output: `No tasks found for issue #${issueNumber}. Use taskctl start to create tasks first.`,
           metadata: {},
         }
       }
