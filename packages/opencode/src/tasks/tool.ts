@@ -71,6 +71,8 @@ Commands:
 - inspect: Show full task history and details
 - override: Override a task (skip or commit as-is)
 - retry: Reset and retry a failed task
+- retry: Reset and retry a failed task
+- verdict: Record adversarial pipeline verdict for a task
 
 Task labels:
 - module:<name>: Prevent conflicts with tasks in same module
@@ -97,9 +99,10 @@ Task labels:
         "inspect",
         "override",
         "retry",
+        "verdict",
       ])
       .describe("Command to execute"),
-    taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split, inspect, override, retry)"),
+    taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split, inspect, override, retry, verdict)"),
     title: z.string().optional().describe("Task title (for create)"),
     description: z.string().optional().describe("Task description (for create)"),
     acceptanceCriteria: z.string().optional().describe("Acceptance criteria (for create)"),
@@ -115,9 +118,15 @@ Task labels:
     count: z.number().min(1).max(10).optional().describe("Number of tasks to return (for next)"),
     updates: z.object({}).passthrough().optional().describe("Field updates for task (for update, e.g. {status: 'in_progress'})"),
     issueNumber: z.number().optional().describe("GitHub issue number (for start, start-skip, status)"),
-    overrideMode: z.enum(["skip", "commit-as-is"]).optional().describe("Override mode: skip task or commit as-is (for override command)"),
+    overrideMode: z.enum(["skip", "commit-as-is"]).optional().describe("Override mode: skip task or commit-as-is (for override command)"),
+    verdict: z.enum(["APPROVED", "ISSUES_FOUND", "CRITICAL_ISSUES_FOUND"]).optional().describe("Verdict for adversarial review (for verdict)"),
+    verdictIssues: z.array(z.object({
+      location: z.string(),
+      severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+      fix: z.string(),
+    })).optional().describe("Issues found in review (for verdict)"),
+    verdictSummary: z.string().optional().describe("Summary of verdict (for verdict)"),
   }),
-
   async execute(params, ctx) {
     const projectId = Instance.project.id
 
@@ -932,6 +941,54 @@ if (params.command === "start") {
       return {
         title: "Task retried",
         output: `Task ${params.taskId} reset to open with fresh state. Pulse will reschedule it on next tick.`,
+        metadata: {},
+      }
+    }
+
+    throw new Error(`Unknown command: ${params.command}`)
+
+
+    if (params.command === "verdict") {
+      if (ctx.agent !== "adversarial-pipeline") {
+        throw new Error("verdict command can only be called by adversarial-pipeline agent")
+      }
+
+      const taskId = params.taskId!
+      const verdict = params.verdict!
+      if (!taskId) throw new Error("verdict requires taskId")
+      if (!verdict) throw new Error("verdict requires verdict")
+
+      const task = await Store.getTask(projectId, taskId)
+      if (!task) throw new Error(`Task not found: ${taskId}`)
+
+      const issues = params.verdictIssues ?? []
+      const summary = params.verdictSummary ?? ""
+
+      const verdictData = {
+        verdict,
+        summary,
+        issues,
+        created_at: new Date().toISOString(),
+      }
+
+      await Store.updateTask(projectId, taskId, {
+        status: "review",
+        pipeline: {
+          ...task!.pipeline,
+          adversarial_verdict: verdictData,
+          stage: "reviewing",
+        }
+      })
+
+      await Store.addComment(projectId, taskId, {
+        author: "adversarial-pipeline",
+        message: `Verdict: ${verdict}${summary ? ` — ${summary}` : ""}`,
+        created_at: new Date().toISOString(),
+      })
+
+      return {
+        title: "Verdict recorded",
+        output: `Recorded ${verdict} verdict for task ${taskId}`,
         metadata: {},
       }
     }
