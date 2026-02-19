@@ -11,6 +11,7 @@ import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
 import { MessageV2 } from "../session/message-v2"
+import { SessionStatus } from "../session/status"
 import type { Task, Job, AdversarialVerdict } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse" })
@@ -34,7 +35,9 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
     if (existingPid && !isPidAlive(existingPid)) {
       log.warn("overwriting stale lock file", { jobId, oldPid: existingPid })
     }
-    writeLockFile(jobId, projectId, process.pid).catch((e) => log.error("failed to write lock file", { jobId, error: String(e) }))
+    writeLockFile(jobId, projectId, process.pid).catch((e) =>
+      log.error("failed to write lock file", { jobId, error: String(e) }),
+    )
   }
 
   startJob()
@@ -77,8 +80,9 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
 
   for (const task of jobTasks) {
     if (task.status === "in_progress" || task.status === "review") {
-      const sessionAlive = task.assignee ? await isSessionAlive(task.assignee) : false
-      if (!sessionAlive) {
+      // Check: Is the session actively running?
+      const running = task.assignee ? isSessionActivelyRunning(task.assignee) : false
+      if (!running) {
         let worktreeRemoved = false
         const safeWorktree = sanitizeWorktree(task.worktree)
         if (safeWorktree) {
@@ -91,18 +95,23 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
           }
         }
 
-        await Store.updateTask(projectId, task.id, {
-          status: "open",
-          assignee: null,
-          assignee_pid: null,
-          worktree: null,
-          branch: null,
-        }, true)
+        await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            status: "open",
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+          },
+          true,
+        )
 
         await Store.addComment(projectId, task.id, {
           author: "system",
-          message: worktreeRemoved 
-            ? "Resurrected: agent session not found on Pulse restart. Worktree cleaned up." 
+          message: worktreeRemoved
+            ? "Resurrected: agent session not found on Pulse restart. Worktree cleaned up."
             : "Resurrected: agent session not found on Pulse restart.",
           created_at: new Date().toISOString(),
         })
@@ -112,16 +121,11 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
   }
 }
 
-async function isSessionAlive(sessionId: string): Promise<boolean> {
+function isSessionActivelyRunning(sessionId: string): boolean {
   try {
-    const session = await Session.get(sessionId)
-    return session !== null && session !== undefined
-  } catch (e) {
-    const errorStr = String(e).toLowerCase()
-    const isNotFound = errorStr.includes("not found") || errorStr.includes("no such")
-    if (!isNotFound) {
-      log.error("session alive check failed with unexpected error", { sessionId, error: String(e) })
-    }
+    return SessionStatus.get(sessionId).type !== "idle"
+  } catch {
+    // Outside of Instance context (e.g., in tests), assume session is idle
     return false
   }
 }
@@ -154,7 +158,9 @@ async function removeLockFile(jobId: string, projectId: string): Promise<void> {
 
 async function readLockPid(jobId: string, projectId: string): Promise<number | null> {
   const lockPath = await lockFilePath(jobId, projectId)
-  const content = await Bun.file(lockPath).text().catch(() => null)
+  const content = await Bun.file(lockPath)
+    .text()
+    .catch(() => null)
   if (!content) return null
   const pid = parseInt(content, 10)
   if (isNaN(pid)) return null
@@ -171,17 +177,15 @@ function isPidAlive(pid: number): boolean {
       return false
     }
   }
-  try { process.kill(pid, 0); return true } catch { return false }
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
 }
 
-export {
-  isPidAlive,
-  writeLockFile,
-  removeLockFile,
-  readLockPid,
-  processAdversarialVerdicts,
-  spawnAdversarial,
-}
+export { isPidAlive, writeLockFile, removeLockFile, readLockPid, processAdversarialVerdicts, spawnAdversarial }
 
 async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const job = await Store.getJob(projectId, jobId)
@@ -206,11 +210,9 @@ async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId:
     await spawnDeveloper(task, jobId, projectId, pmSessionId)
   }
 
-  const reviewingTasks = jobTasks.filter((t) =>
-    t.pipeline.stage === "reviewing" &&
-    !t.pipeline.adversarial_verdict &&
-    !t.assignee &&
-    t.status === "in_progress"
+  const reviewingTasks = jobTasks.filter(
+    (t) =>
+      t.pipeline.stage === "reviewing" && !t.pipeline.adversarial_verdict && !t.assignee && t.status === "in_progress",
   )
 
   for (const task of reviewingTasks) {
@@ -232,7 +234,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
   const parentSession = await Session.get(pmSessionId).catch(() => null)
   if (!parentSession?.directory) {
     await Worktree.remove({ directory: worktreeInfo.directory }).catch((e) =>
-      log.error("failed to clean up worktree after PM session check failed", { taskId: task.id, error: String(e) })
+      log.error("failed to clean up worktree after PM session check failed", { taskId: task.id, error: String(e) }),
     )
     log.error("PM session not found", { pmSessionId, taskId: task.id })
     return
@@ -248,19 +250,24 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
     })
   } catch (e) {
     await Worktree.remove({ directory: worktreeInfo.directory }).catch((e) =>
-      log.error("failed to clean up worktree after session creation failed", { taskId: task.id, error: String(e) })
+      log.error("failed to clean up worktree after session creation failed", { taskId: task.id, error: String(e) }),
     )
     log.error("failed to create developer session", { taskId: task.id, error: String(e) })
     return
   }
 
-  await Store.updateTask(projectId, task.id, {
-    status: "in_progress",
-    assignee: devSession.id,
-    assignee_pid: process.pid,
-    worktree: worktreeInfo.directory,
-    branch: worktreeInfo.branch,
-  }, true)
+  await Store.updateTask(
+    projectId,
+    task.id,
+    {
+      status: "in_progress",
+      assignee: devSession.id,
+      assignee_pid: process.pid,
+      worktree: worktreeInfo.directory,
+      branch: worktreeInfo.branch,
+    },
+    true,
+  )
 
   const prompt = buildDeveloperPrompt(task)
   try {
@@ -279,16 +286,21 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
     }
 
     await Worktree.remove({ directory: worktreeInfo.directory }).catch((e) =>
-      log.error("failed to clean up worktree after developer prompt failed", { taskId: task.id, error: String(e) })
+      log.error("failed to clean up worktree after developer prompt failed", { taskId: task.id, error: String(e) }),
     )
 
-    await Store.updateTask(projectId, task.id, {
-      status: "open",
-      assignee: null,
-      assignee_pid: null,
-      worktree: null,
-      branch: null,
-    }, true)
+    await Store.updateTask(
+      projectId,
+      task.id,
+      {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+      },
+      true,
+    )
 
     await Store.addComment(projectId, task.id, {
       author: "system",
@@ -323,18 +335,19 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
 
   for (const task of jobTasks) {
     if (task.status === "in_progress" && task.assignee) {
-      const sessionAlive = await isSessionAlive(task.assignee)
+      // Check: Session is actively running (prompt not finished)
+      const sessionAlive = isSessionActivelyRunning(task.assignee)
       const updated = await Store.getTask(projectId, task.id)
       if (!updated) continue
 
       if (!sessionAlive) {
         log.info("developer session ended, transitioning to review stage", { taskId: task.id })
         await Store.updateTask(projectId, task.id, {
-          pipeline: { ...updated.pipeline, stage: "reviewing", last_activity: now }
+          pipeline: { ...updated.pipeline, stage: "reviewing", last_activity: now },
         })
       } else {
         await Store.updateTask(projectId, task.id, {
-          pipeline: { ...updated.pipeline, last_activity: now }
+          pipeline: { ...updated.pipeline, last_activity: now },
         })
       }
     }
@@ -350,9 +363,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
 
   for (const task of jobTasks) {
     if (task.status === "in_progress") {
-      const lastActivity = task.pipeline.last_activity
-        ? new Date(task.pipeline.last_activity).getTime()
-        : 0
+      const lastActivity = task.pipeline.last_activity ? new Date(task.pipeline.last_activity).getTime() : 0
 
       let timedOut = false
       if (lastActivity > 0 && now - lastActivity > TIMEOUT_MS) {
@@ -373,7 +384,6 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
       }
 
       if (timedOut) {
-
         let worktreeRemoved = false
         if (task.worktree) {
           try {
@@ -397,13 +407,18 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
           }
         }
 
-        await Store.updateTask(projectId, task.id, {
-          status: "open",
-          assignee: null,
-          assignee_pid: null,
-          worktree: null,
-          branch: null,
-        }, true)
+        await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            status: "open",
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+          },
+          true,
+        )
 
         await Store.addComment(projectId, task.id, {
           author: "system",
@@ -416,16 +431,19 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
     }
 
     if (task.status === "in_progress" && task.pipeline.stage === "adversarial-running") {
-      const lastActivity = task.pipeline.last_activity
-        ? new Date(task.pipeline.last_activity).getTime()
-        : 0
+      const lastActivity = task.pipeline.last_activity ? new Date(task.pipeline.last_activity).getTime() : 0
 
       if (lastActivity > 0 && now - lastActivity > ADVERSARIAL_TIMEOUT_MS) {
         log.info("adversarial stage timed out — resetting to reviewing", { taskId: task.id })
 
-        await Store.updateTask(projectId, task.id, {
-          pipeline: { ...task.pipeline, stage: "reviewing" }
-        }, true)
+        await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            pipeline: { ...task.pipeline, stage: "reviewing" },
+          },
+          true,
+        )
 
         await Store.addComment(projectId, task.id, {
           author: "system",
@@ -448,9 +466,14 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
     const verdict = task.pipeline.adversarial_verdict
 
     // Clear verdict immediately to prevent double-processing
-    await Store.updateTask(projectId, task.id, {
-      pipeline: { ...task.pipeline, adversarial_verdict: null, last_activity: new Date().toISOString() }
-    }, true)
+    await Store.updateTask(
+      projectId,
+      task.id,
+      {
+        pipeline: { ...task.pipeline, adversarial_verdict: null, last_activity: new Date().toISOString() },
+      },
+      true,
+    )
 
     if (verdict.verdict === "APPROVED") {
       await commitTask(task, projectId, pmSessionId)
@@ -518,9 +541,13 @@ If there is nothing to commit, that is fine — report success.`
   let opsComplete = false
 
   while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, pollInterval))
-    const alive = await isSessionAlive(opsSession.id)
-    if (!alive) { opsComplete = true; break }
+    await new Promise((r) => setTimeout(r, pollInterval))
+    // Check: Session is no longer actively running (ops commit completed)
+    const alive = isSessionActivelyRunning(opsSession.id)
+    if (!alive) {
+      opsComplete = true
+      break
+    }
   }
 
   if (!opsComplete) {
@@ -537,21 +564,26 @@ If there is nothing to commit, that is fine — report success.`
   if (task.worktree) {
     const safeWorktree = sanitizeWorktree(task.worktree)
     if (safeWorktree) {
-      await Worktree.remove({ directory: safeWorktree }).catch(e =>
-        log.error("failed to remove worktree after commit", { taskId: task.id, error: String(e) })
+      await Worktree.remove({ directory: safeWorktree }).catch((e) =>
+        log.error("failed to remove worktree after commit", { taskId: task.id, error: String(e) }),
       )
     }
   }
 
-  await Store.updateTask(projectId, task.id, {
-    status: "closed",
-    close_reason: "approved and committed",
-    worktree: null,
-    branch: null,
-    assignee: null,
-    assignee_pid: null,
-    pipeline: { ...task.pipeline, stage: "done" }
-  }, true)
+  await Store.updateTask(
+    projectId,
+    task.id,
+    {
+      status: "closed",
+      close_reason: "approved and committed",
+      worktree: null,
+      branch: null,
+      assignee: null,
+      assignee_pid: null,
+      pipeline: { ...task.pipeline, stage: "done" },
+    },
+    true,
+  )
 
   await Store.addComment(projectId, task.id, {
     author: "system",
@@ -568,7 +600,14 @@ If there is nothing to commit, that is fine — report success.`
   log.info("task committed and closed", { taskId: task.id })
 }
 
-async function respawnDeveloper(task: Task, jobId: string, projectId: string, pmSessionId: string, attempt: number, verdict: AdversarialVerdict): Promise<void> {
+async function respawnDeveloper(
+  task: Task,
+  jobId: string,
+  projectId: string,
+  pmSessionId: string,
+  attempt: number,
+  verdict: AdversarialVerdict,
+): Promise<void> {
   const parentSession = await Session.get(pmSessionId).catch(() => null)
   if (!parentSession?.directory) {
     log.error("PM session not found for respawn", { taskId: task.id })
@@ -593,16 +632,21 @@ async function respawnDeveloper(task: Task, jobId: string, projectId: string, pm
     return
   }
 
-  await Store.updateTask(projectId, task.id, {
-    status: "in_progress",
-    assignee: devSession.id,
-    pipeline: {
-      ...task.pipeline,
-      attempt,
-      stage: "developing",
-      last_activity: new Date().toISOString(),
-    }
-  }, true)
+  await Store.updateTask(
+    projectId,
+    task.id,
+    {
+      status: "in_progress",
+      assignee: devSession.id,
+      pipeline: {
+        ...task.pipeline,
+        attempt,
+        stage: "developing",
+        last_activity: new Date().toISOString(),
+      },
+    },
+    true,
+  )
 
   const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
   const prompt = `This is retry attempt ${attempt} of 3. The previous implementation had issues that must be fixed.
@@ -619,11 +663,39 @@ ${issueLines}
 The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, then signal completion with:
 taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>"`
 
-  await SessionPrompt.prompt({
-    sessionID: devSession.id,
-    agent: "developer-pipeline",
-    parts: [{ type: "text", text: prompt }],
-  })
+  try {
+    await SessionPrompt.prompt({
+      sessionID: devSession.id,
+      agent: "developer-pipeline",
+      parts: [{ type: "text", text: prompt }],
+    })
+  } catch (e) {
+    log.error("failed to spawn respawn developer prompt", {
+      taskId: task.id,
+      sessionId: devSession.id,
+      error: String(e),
+    })
+    try {
+      SessionPrompt.cancel(devSession.id)
+    } catch {}
+    await Store.updateTask(
+      projectId,
+      task.id,
+      {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        pipeline: { ...task.pipeline, stage: "idle" },
+      },
+      true,
+    )
+    await Store.addComment(projectId, task.id, {
+      author: "system",
+      message: `Respawn attempt ${attempt} failed: ${String(e)}. Task reset to open.`,
+      created_at: new Date().toISOString(),
+    })
+    return
+  }
 
   await Store.addComment(projectId, task.id, {
     author: "system",
@@ -633,10 +705,15 @@ taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>
 }
 
 async function escalateToPM(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
-  await Store.updateTask(projectId, task.id, {
-    status: "failed",
-    pipeline: { ...task.pipeline, stage: "failed" }
-  }, true)
+  await Store.updateTask(
+    projectId,
+    task.id,
+    {
+      status: "failed",
+      pipeline: { ...task.pipeline, stage: "failed" },
+    },
+    true,
+  )
 
   await Store.addComment(projectId, task.id, {
     author: "system",
@@ -653,11 +730,21 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
   log.error("task escalated to PM after 3 failures", { taskId: task.id, jobId })
 }
 
-async function escalateCommitFailure(task: Task, projectId: string, pmSessionId: string, reason: string): Promise<void> {
-  await Store.updateTask(projectId, task.id, {
-    status: "blocked_on_conflict",
-    pipeline: { ...task.pipeline, stage: "commit-failed" }
-  }, true)
+async function escalateCommitFailure(
+  task: Task,
+  projectId: string,
+  pmSessionId: string,
+  reason: string,
+): Promise<void> {
+  await Store.updateTask(
+    projectId,
+    task.id,
+    {
+      status: "blocked_on_conflict",
+      pipeline: { ...task.pipeline, stage: "commit-failed" },
+    },
+    true,
+  )
 
   await Store.addComment(projectId, task.id, {
     author: "system",
@@ -708,7 +795,7 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
   }
 
   await Store.updateTask(projectId, task.id, {
-    pipeline: { ...task.pipeline, stage: "adversarial-running" }
+    pipeline: { ...task.pipeline, stage: "adversarial-running" },
   })
 
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
@@ -743,20 +830,25 @@ Read the changed files in the worktree, run typecheck, and record your verdict w
     if (task.worktree) {
       const safeWorktree = sanitizeWorktree(task.worktree)
       if (safeWorktree) {
-        await Worktree.remove({ directory: safeWorktree }).catch(e =>
-          log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) })
+        await Worktree.remove({ directory: safeWorktree }).catch((e) =>
+          log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) }),
         )
       }
     }
 
-    await Store.updateTask(projectId, task.id, {
-      status: "open",
-      assignee: null,
-      assignee_pid: null,
-      worktree: null,
-      branch: null,
-      pipeline: { ...task.pipeline, stage: "idle" }
-    }, true)
+    await Store.updateTask(
+      projectId,
+      task.id,
+      {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        pipeline: { ...task.pipeline, stage: "idle" },
+      },
+      true,
+    )
   }
 }
 
@@ -779,7 +871,11 @@ async function getRecentActivity(sessionId: string): Promise<string> {
   }
 }
 
-async function spawnSteering(task: Task, history: string, pmSessionId: string): Promise<{ action: string; message: string | null } | null> {
+async function spawnSteering(
+  task: Task,
+  history: string,
+  pmSessionId: string,
+): Promise<{ action: string; message: string | null } | null> {
   const parentSession = await Session.get(pmSessionId).catch(() => null)
   if (!parentSession?.directory) return null
 
@@ -821,8 +917,9 @@ Assess the developer's progress and respond with the appropriate JSON action.`
   const start = Date.now()
 
   while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, pollMs))
-    const alive = await isSessionAlive(steeringSession.id)
+    await new Promise((r) => setTimeout(r, pollMs))
+    // Check: Session is no longer actively running (steering agent finished)
+    const alive = isSessionActivelyRunning(steeringSession.id)
     if (!alive) break
   }
 
@@ -846,7 +943,7 @@ Assess the developer's progress and respond with the appropriate JSON action.`
   }
 
   const responseText = textParts.map((p) => (p as MessageV2.TextPart).text).join("\n")
-  
+
   let response
   try {
     const jsonMatch = responseText.match(/\{[\s\S]*\}/)
@@ -877,40 +974,56 @@ async function checkSteering(jobId: string, projectId: string, pmSessionId: stri
     if (task.status !== "in_progress") continue
     if (task.pipeline.stage === "adversarial-running" || task.pipeline.stage === "reviewing") continue
 
-    const lastSteering = task.pipeline.last_steering
-      ? new Date(task.pipeline.last_steering)
-      : new Date(0)
+    const lastSteering = task.pipeline.last_steering ? new Date(task.pipeline.last_steering) : new Date(0)
     const minutesSince = (now.getTime() - lastSteering.getTime()) / 60_000
     if (minutesSince < 15) continue
 
     if (!task.assignee) continue
 
-    const sessionAlive = await isSessionAlive(task.assignee)
+    // Check: Session is actively running (developer still working)
+    const sessionAlive = isSessionActivelyRunning(task.assignee)
     if (!sessionAlive) continue
 
     const history = await getRecentActivity(task.assignee)
 
     const result = await spawnSteering(task, history, pmSessionId)
     if (!result) {
-      await Store.updateTask(projectId, task.id, {
-        pipeline: { ...task.pipeline, last_steering: now.toISOString() }
-      }, true)
+      await Store.updateTask(
+        projectId,
+        task.id,
+        {
+          pipeline: { ...task.pipeline, last_steering: now.toISOString() },
+        },
+        true,
+      )
       continue
     }
 
-    await Store.updateTask(projectId, task.id, {
-      pipeline: { ...task.pipeline, last_steering: now.toISOString() }
-    }, true)
+    await Store.updateTask(
+      projectId,
+      task.id,
+      {
+        pipeline: { ...task.pipeline, last_steering: now.toISOString() },
+      },
+      true,
+    )
 
     if (result.action === "continue") {
       log.info("steering: continue", { taskId: task.id })
     } else if (result.action === "steer") {
       log.info("steering: sending guidance", { taskId: task.id, message: result.message })
-      await SessionPrompt.prompt({
-        sessionID: task.assignee,
-        agent: "developer-pipeline",
-        parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
-      }).catch(e => log.error("failed to send steering message", { taskId: task.id, error: String(e) }))
+      if (task.assignee) {
+        const sessionId = task.assignee
+        try {
+          await SessionPrompt.prompt({
+            sessionID: sessionId,
+            agent: "developer-pipeline",
+            parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
+          })
+        } catch (e) {
+          log.error("failed to send steering message", { taskId: task.id, error: String(e) })
+        }
+      }
 
       await Store.addComment(projectId, task.id, {
         author: "system",
@@ -921,20 +1034,27 @@ async function checkSteering(jobId: string, projectId: string, pmSessionId: stri
       log.info("steering: replacing developer", { taskId: task.id, reason: result.message })
 
       if (task.assignee) {
-        try { SessionPrompt.cancel(task.assignee) } catch {}
+        try {
+          SessionPrompt.cancel(task.assignee)
+        } catch {}
       }
 
-      await Store.updateTask(projectId, task.id, {
-        status: "open",
-        assignee: null,
-        assignee_pid: null,
-        pipeline: {
-          ...task.pipeline,
-          stage: "idle",
-          last_activity: null,
-          last_steering: now.toISOString(),
-        }
-      }, true)
+      await Store.updateTask(
+        projectId,
+        task.id,
+        {
+          status: "open",
+          assignee: null,
+          assignee_pid: null,
+          pipeline: {
+            ...task.pipeline,
+            stage: "idle",
+            last_activity: null,
+            last_steering: now.toISOString(),
+          },
+        },
+        true,
+      )
 
       await Store.addComment(projectId, task.id, {
         author: "system",
@@ -945,7 +1065,12 @@ async function checkSteering(jobId: string, projectId: string, pmSessionId: stri
   }
 }
 
-export async function checkCompletion(jobId: string, projectId: string, pmSessionId: string, interval: ReturnType<typeof setInterval>): Promise<void> {
+export async function checkCompletion(
+  jobId: string,
+  projectId: string,
+  pmSessionId: string,
+  interval: ReturnType<typeof setInterval>,
+): Promise<void> {
   const allTasks = await Store.listTasks(projectId)
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
   const allClosed = jobTasks.every((t) => t.status === "closed")
@@ -998,19 +1123,22 @@ async function gracefulStop(jobId: string, projectId: string, interval: ReturnTy
         }
       }
 
-      await Store.updateTask(projectId, task.id, {
-        status: "open",
-        assignee: null,
-        assignee_pid: null,
-        worktree: null,
-        branch: null,
-      }, true)
+      await Store.updateTask(
+        projectId,
+        task.id,
+        {
+          status: "open",
+          assignee: null,
+          assignee_pid: null,
+          worktree: null,
+          branch: null,
+        },
+        true,
+      )
 
       await Store.addComment(projectId, task.id, {
         author: "system",
-        message: worktreeRemoved 
-          ? "Job stopped by PM. Worktree cleaned up." 
-          : "Job stopped by PM.",
+        message: worktreeRemoved ? "Job stopped by PM. Worktree cleaned up." : "Job stopped by PM.",
         created_at: new Date().toISOString(),
       })
     }
