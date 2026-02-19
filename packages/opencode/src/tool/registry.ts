@@ -30,6 +30,7 @@ import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
 import { CancelTaskTool } from "./cancel_task"
 import { HashlineReadTool } from "./hashline_read"
+import { HashlineEditTool } from "./hashline_edit"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -131,7 +132,7 @@ export namespace ToolRegistry {
       SkillTool,
       ApplyPatchTool,
       ...(Flag.OPENCODE_EXPERIMENTAL_LSP_TOOL ? [LspTool] : []),
-      ...(Flag.OPENCODE_EXPERIMENTAL_HASHLINE ? [HashlineReadTool] : []),
+...(Flag.OPENCODE_EXPERIMENTAL_HASHLINE ? [HashlineReadTool, HashlineEditTool] : []),
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       ...(Flag.OPENCODE_EXPERIMENTAL_PLAN_MODE && Flag.OPENCODE_CLIENT === "cli" ? [PlanExitTool, PlanEnterTool] : []),
       ...custom,
@@ -152,20 +153,21 @@ export namespace ToolRegistry {
     const tools = await all()
     const result = await Promise.all(
       tools
-        .filter((t) => {
-          // Enable websearch/codesearch for zen users OR via enable flag
-          if (t.id === "codesearch" || t.id === "websearch") {
-            return model.providerID === "opencode" || Flag.OPENCODE_ENABLE_EXA
-          }
+.filter((t) => {
+           // Enable websearch/codesearch for zen users OR via enable flag
+           if (t.id === "codesearch" || t.id === "websearch") {
+             return model.providerID === "opencode" || Flag.OPENCODE_ENABLE_EXA
+           }
 
-          // use apply tool in same format as codex
-          const usePatch =
-            model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
-          if (t.id === "apply_patch") return usePatch
-          if (t.id === "edit" || t.id === "write") return !usePatch
+           // use apply tool in same format as codex
+           const usePatch =
+             model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
+           if (t.id === "apply_patch") return usePatch
+if (t.id === "edit") return !usePatch && !Flag.OPENCODE_EXPERIMENTAL_HASHLINE
+           if (t.id === "write") return !usePatch
 
-          return true
-        })
+           return true
+         })
         .map(async (t) => {
           using _ = log.time(t.id)
           const tool = await t.init({ agent })
