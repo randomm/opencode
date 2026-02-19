@@ -219,13 +219,14 @@ export namespace SessionProcessor {
 
                 case "tool-error": {
                   const match = toolcalls[value.toolCallId]
+                  const errorMsg = value.error instanceof Error ? value.error.message : String(value.error)
                   if (match && match.state.status === "running") {
                     await Session.updatePart({
                       ...match,
                       state: {
                         status: "error",
                         input: value.input ?? match.state.input,
-                        error: (value.error as any).toString(),
+                        error: errorMsg,
                         time: {
                           start: match.state.time.start,
                           end: Date.now(),
@@ -245,7 +246,7 @@ export namespace SessionProcessor {
                       state: {
                         status: "error",
                         input: value.input ?? match.state.input,
-                        error: (value.error as any).toString(),
+                        error: errorMsg,
                         time: {
                           start: Date.now(),
                           end: Date.now(),
