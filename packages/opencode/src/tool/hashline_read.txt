@@ -1,0 +1,10 @@
+Read a file and return its contents with each line prefixed by a content-addressable anchor.
+
+Each line is formatted as: {lineNumber}{CJK_HASH_CHAR}{content}
+Example: "14丐  const foo = 1"
+
+The CJK hash character is derived from the line content using xxHash32. Use these line anchors
+when calling hashline_edit — they allow the model to reference specific lines precisely even
+after the file has changed.
+
+Supports the same offset/limit/maxTokens parameters as the read tool.

@@ -29,6 +29,7 @@ import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
 import { CancelTaskTool } from "./cancel_task"
+import { HashlineReadTool } from "./hashline_read"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -130,6 +131,7 @@ export namespace ToolRegistry {
       SkillTool,
       ApplyPatchTool,
       ...(Flag.OPENCODE_EXPERIMENTAL_LSP_TOOL ? [LspTool] : []),
+      ...(Flag.OPENCODE_EXPERIMENTAL_HASHLINE ? [HashlineReadTool] : []),
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       ...(Flag.OPENCODE_EXPERIMENTAL_PLAN_MODE && Flag.OPENCODE_CLIENT === "cli" ? [PlanExitTool, PlanEnterTool] : []),
       ...custom,
