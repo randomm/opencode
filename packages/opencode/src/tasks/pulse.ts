@@ -14,7 +14,7 @@ import { MessageV2 } from "../session/message-v2"
 import type { Task, Job, AdversarialVerdict } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse" })
-const tickLock = new Map<string, Promise<void>>()
+const activeTicks = new Map<string, Set<string>>()
 
 const TIMEOUT_MS = 30 * 60 * 1000
 
@@ -40,26 +40,15 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
   startJob()
 
   const interval = setInterval(async () => {
-    const prevTick = tickLock.get(jobId)
-    const done = new Promise<void>((resolve) => {
-      resolve()
-    })
-    tickLock.set(jobId, done)
-
-    if (prevTick) {
-      try {
-        await prevTick
-        return
-      } catch {
-        return
-      }
-    }
-
+    const projectTicks = activeTicks.get(projectId) ?? new Set<string>()
+    activeTicks.set(projectId, projectTicks)
+    if (projectTicks.has(jobId)) return
+    projectTicks.add(jobId)
     try {
       const job = await Store.getJob(projectId, jobId)
       if (!job) {
         clearInterval(interval)
-        tickLock.delete(jobId)
+        projectTicks.delete(jobId)
         return
       }
       if (job.stopping) {
@@ -75,7 +64,7 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
     } catch (e) {
       log.error("tick failed with unrecoverable error", { jobId, error: String(e) })
     } finally {
-      tickLock.delete(jobId)
+      projectTicks.delete(jobId)
     }
   }, 5_000)
 
@@ -965,12 +954,12 @@ export async function checkCompletion(jobId: string, projectId: string, pmSessio
     log.info("all tasks completed", { jobId })
     try {
       clearInterval(interval)
-      tickLock.delete(jobId)
+      activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId)
       await Store.updateJob(projectId, jobId, { status: "complete" })
       Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: undefined })
     } catch (e) {
-      tickLock.delete(jobId)
+      activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId).catch(() => {})
     }
   }
@@ -979,56 +968,61 @@ export async function checkCompletion(jobId: string, projectId: string, pmSessio
 async function gracefulStop(jobId: string, projectId: string, interval: ReturnType<typeof setInterval>): Promise<void> {
   log.info("graceful stop requested", { jobId })
 
-  const allTasks = await Store.listTasks(projectId)
-  const jobTasks = allTasks.filter((t) => t.job_id === jobId)
-  const inProgressTasks = jobTasks.filter((t) => t.status === "in_progress" || t.status === "review")
+  try {
+    const allTasks = await Store.listTasks(projectId)
+    const jobTasks = allTasks.filter((t) => t.job_id === jobId)
+    const inProgressTasks = jobTasks.filter((t) => t.status === "in_progress" || t.status === "review")
 
-  for (const task of inProgressTasks) {
-    if (task.assignee) {
-      await Session.get(task.assignee).catch(() => {})
-      try {
-        SessionPrompt.cancel(task.assignee)
-      } catch (e: any) {
-        log.error("failed to cancel session during graceful stop", { taskId: task.id, error: String(e) })
-      }
-    }
-
-    let worktreeRemoved = false
-    if (task.worktree) {
-      try {
-        const safeWorktree = sanitizeWorktree(task.worktree)
-        if (!safeWorktree) {
-          log.error("worktree sanitization failed during graceful stop", { taskId: task.id, worktree: task.worktree })
-        } else {
-          await Worktree.remove({ directory: safeWorktree })
-          worktreeRemoved = true
+    for (const task of inProgressTasks) {
+      if (task.assignee) {
+        await Session.get(task.assignee).catch(() => {})
+        try {
+          SessionPrompt.cancel(task.assignee)
+        } catch (e: any) {
+          log.error("failed to cancel session during graceful stop", { taskId: task.id, error: String(e) })
         }
-      } catch (e) {
-        log.error("failed to remove worktree during graceful stop", { taskId: task.id, error: String(e) })
       }
+
+      let worktreeRemoved = false
+      if (task.worktree) {
+        try {
+          const safeWorktree = sanitizeWorktree(task.worktree)
+          if (!safeWorktree) {
+            log.error("worktree sanitization failed during graceful stop", { taskId: task.id, worktree: task.worktree })
+          } else {
+            await Worktree.remove({ directory: safeWorktree })
+            worktreeRemoved = true
+          }
+        } catch (e) {
+          log.error("failed to remove worktree during graceful stop", { taskId: task.id, error: String(e) })
+        }
+      }
+
+      await Store.updateTask(projectId, task.id, {
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+      }, true)
+
+      await Store.addComment(projectId, task.id, {
+        author: "system",
+        message: worktreeRemoved 
+          ? "Job stopped by PM. Worktree cleaned up." 
+          : "Job stopped by PM.",
+        created_at: new Date().toISOString(),
+      })
     }
 
-    await Store.updateTask(projectId, task.id, {
-      status: "open",
-      assignee: null,
-      assignee_pid: null,
-      worktree: null,
-      branch: null,
-    }, true)
-
-    await Store.addComment(projectId, task.id, {
-      author: "system",
-      message: worktreeRemoved 
-        ? "Job stopped by PM. Worktree cleaned up." 
-        : "Job stopped by PM.",
-      created_at: new Date().toISOString(),
-    })
+    clearInterval(interval)
+    await removeLockFile(jobId, projectId)
+    await Store.updateJob(projectId, jobId, { status: "stopped" })
+  } catch (e) {
+    log.error("graceful stop encountered error", { jobId, error: String(e) })
+  } finally {
+    activeTicks.get(projectId)?.delete(jobId)
   }
 
-  clearInterval(interval)
-  tickLock.delete(jobId)
-  await removeLockFile(jobId, projectId)
-
-  await Store.updateJob(projectId, jobId, { status: "stopped" })
   log.info("graceful stop completed", { jobId })
 }
