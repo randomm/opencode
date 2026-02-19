@@ -199,7 +199,7 @@ export namespace Agent {
         ),
         prompt: PROMPT_SUMMARY,
       },
-composer: {
+      "composer": {
         name: "composer",
         mode: "subagent",
         hidden: true,
@@ -388,7 +388,7 @@ Respond with EXACTLY one of these JSON objects and nothing else:
 
 Be conservative: prefer "continue" when in doubt. Only "replace" when truly stuck.`,
       },
-      }
+    }
 
     for (const [key, value] of Object.entries(cfg.agent ?? {})) {
       if (value.disable) {
