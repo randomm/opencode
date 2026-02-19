@@ -502,7 +502,7 @@ export async function cancelBackgroundTask(id: string, requestingSessionID?: str
   const metadata = pendingTaskMetadata.get(id)
 
   // If requestingSessionID provided, verify authorization
-  if (requestingSessionID && metadata && metadata.session_id !== requestingSessionID) {
+  if (requestingSessionID && metadata && metadata.parent_session_id !== requestingSessionID) {
     return false
   }
 
@@ -579,7 +579,7 @@ export async function tryCancel(id: string, sessionID: string): Promise<CancelTa
 
   // Check authorization - task must belong to the same session
   const metadata = pendingTaskMetadata.get(id)
-  if (metadata && metadata.session_id !== sessionID) {
+  if (metadata && metadata.parent_session_id !== sessionID) {
     return {
       status: "unauthorized",
       message: `Cannot cancel task from a different session`,

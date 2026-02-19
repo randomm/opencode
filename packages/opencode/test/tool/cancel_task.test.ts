@@ -132,6 +132,38 @@ describe("tool.cancel_task", () => {
     })
   })
 
+  test("cancels child session task when parent_session_id matches", async () => {
+    await using tmp = await tmpdir({ git: true })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await CancelTaskTool.init()
+        const taskId = "test-task-child-session"
+
+        const promise = new Promise<string>((resolve) => {
+          setTimeout(() => resolve("Should be cancelled"), 10000)
+        })
+
+        trackBackgroundTask(taskId, promise, undefined, {
+          agent_type: "test",
+          description: "Test task",
+          session_id: "child-session-id",
+          parent_session_id: "test",
+          start_time: Date.now(),
+        })
+
+        await new Promise((r) => setTimeout(r, 50))
+
+        const result = await tool.execute({ task_id: taskId }, ctx)
+
+        const output = JSON.parse(result.output)
+        expect(output.status).toBe("cancelled")
+        expect(output.task_id).toBe(taskId)
+        expect(result.metadata.status).toBe("cancelled")
+      },
+    })
+  })
+
   test("validates input with Zod schema", async () => {
     await Instance.provide({
       directory: "/tmp/test",

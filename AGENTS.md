@@ -270,6 +270,44 @@ bun test:e2e:local       # Run Playwright E2E tests
 
 ---
 
+## taskctl: Autonomous Task Pipeline
+
+`taskctl` is a built-in tool that automates the development loop for GitHub issues.
+PM calls `taskctl start <issueNumber>` and the pipeline handles decomposition, development, review, and committing automatically.
+
+### How it works
+
+1. **Composer** — decomposes the GitHub issue into a dependency graph of tasks
+2. **Pulse** — a 5-second deterministic loop that schedules developer agents, monitors progress, and processes review verdicts
+3. **developer-pipeline** — implements tasks with TDD, signals completion via `taskctl comment`
+4. **adversarial-pipeline** — reviews code and writes structured verdict via `taskctl verdict`
+5. **Steering** — assessed every 15 minutes: sends guidance or replaces stuck developers
+6. **@ops** — commits approved work to the feature branch
+
+PM is only interrupted when a task fails after 3 adversarial cycles, or when all tasks complete.
+
+### PM workflow with taskctl
+
+```bash
+taskctl start <issueNumber>           # Decompose issue and start pipeline
+taskctl status <issueNumber>          # Live dashboard — tasks, states, Pulse health
+taskctl inspect <taskId>              # Full history of a specific task
+taskctl stop <jobId>                  # Gracefully halt pipeline (work preserved)
+taskctl resume <jobId>                # Resume a stopped or crashed pipeline
+taskctl retry <taskId>                # Reset a stuck task for fresh attempt
+taskctl override <taskId> --skip      # Skip a task, unblock dependents
+taskctl override <taskId> --commit-as-is   # Commit despite issues (PM responsibility)
+```
+
+### Source locations
+
+- Tool commands: `packages/opencode/src/tasks/tool.ts`
+- Pipeline engine: `packages/opencode/src/tasks/pulse.ts`
+- Agent definitions: `packages/opencode/src/agent/agent.ts`
+- Design document: `lievo/plan-v2.md` (git-ignored, local only)
+
+---
+
 ## Build & Install Binaries
 
 ### Main opencode TUI
