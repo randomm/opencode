@@ -17,11 +17,10 @@ const tickLock = new Map<string, Promise<void>>()
 
 const TIMEOUT_MS = 30 * 60 * 1000
 
-function sanitizeWorktree(path: string | null | undefined): string | null {
-  if (!path || typeof path !== "string") return null
-  const sanitized = path.replace(/[^\w\-./]/g, "").replace(/^(\.\.+[\/\\])+/g, "")
-  if (!sanitized.length) return null
-  return sanitized
+export function sanitizeWorktree(worktree: string | null | undefined): string | null {
+  if (!worktree || typeof worktree !== "string") return null
+  if (worktree.includes("..")) return null
+  return path.resolve(worktree)
 }
 
 export function startPulse(jobId: string, projectId: string, pmSessionId: string): ReturnType<typeof setInterval> {
@@ -528,9 +527,12 @@ If there is nothing to commit, that is fine — report success.`
   }
 
   if (task.worktree) {
-    await Worktree.remove({ directory: task.worktree }).catch(e =>
-      log.error("failed to remove worktree after commit", { taskId: task.id, error: String(e) })
-    )
+    const safeWorktree = sanitizeWorktree(task.worktree)
+    if (safeWorktree) {
+      await Worktree.remove({ directory: safeWorktree }).catch(e =>
+        log.error("failed to remove worktree after commit", { taskId: task.id, error: String(e) })
+      )
+    }
   }
 
   await Store.updateTask(projectId, task.id, {
@@ -731,9 +733,12 @@ Read the changed files in the worktree, run typecheck, and record your verdict w
 
     // Remove worktree before resetting status to prevent orphaned worktrees
     if (task.worktree) {
-      await Worktree.remove({ directory: task.worktree }).catch(e =>
-        log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) })
-      )
+      const safeWorktree = sanitizeWorktree(task.worktree)
+      if (safeWorktree) {
+        await Worktree.remove({ directory: safeWorktree }).catch(e =>
+          log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) })
+        )
+      }
     }
 
     await Store.updateTask(projectId, task.id, {
