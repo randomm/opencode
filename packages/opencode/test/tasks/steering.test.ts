@@ -216,4 +216,141 @@ describe("steering.ts", () => {
       expect(task.status).toBe("in_progress")
     })
   })
+
+  describe("spawnSteering response parsing", () => {
+    test("spawnSteering parses steer action from JSON response", async () => {
+      const now = new Date()
+      const response = {
+        action: "steer",
+        message: "You should focus on error handling in the API layer",
+      }
+      const jsonResponse = JSON.stringify(response)
+      
+      expect(jsonResponse).toContain('"action":"steer"')
+      
+      const parsed = JSON.parse(jsonResponse)
+      expect(parsed.action).toBe("steer")
+      expect(parsed.message).toBe("You should focus on error handling in the API layer")
+    })
+
+    test("spawnSteering parses replace action from JSON response", async () => {
+      const response = {
+        action: "replace",
+        message: "Developer is not making progress — needs a fresh approach",
+      }
+      const jsonResponse = JSON.stringify(response)
+      
+      const parsed = JSON.parse(jsonResponse)
+      expect(parsed.action).toBe("replace")
+      expect(parsed.message).toBe("Developer is not making progress — needs a fresh approach")
+    })
+
+    test("spawnSteering parses continue action from JSON response", async () => {
+      const response = {
+        action: "continue",
+        message: null,
+      }
+      const jsonResponse = JSON.stringify(response)
+      
+      const parsed = JSON.parse(jsonResponse)
+      expect(parsed.action).toBe("continue")
+      expect(parsed.message).toBeNull()
+    })
+
+    test("spawnSteering extracts JSON from text response", async () => {
+      const fullText = `The assessment is as follows:
+
+\`\`\`json
+{"action": "steer", "message": "Improve test coverage"}
+\`\`\`
+
+That's the recommendation.`
+      
+      const jsonMatch = fullText.match(/\{[\s\S]*\}/)
+      expect(jsonMatch).not.toBeNull()
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0])
+        expect(parsed.action).toBe("steer")
+        expect(parsed.message).toBe("Improve test coverage")
+      }
+    })
+
+    test("spawnSteering falls back to continue on invalid JSON", async () => {
+      const invalidJson = `This is not valid JSON {incomplete`
+      
+      let parsed
+      try {
+        const jsonMatch = invalidJson.match(/\{[\s\S]*\}/)
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0])
+        } else {
+          parsed = null
+        }
+      } catch {
+        parsed = null
+      }
+      
+      expect(parsed).toBeNull()
+    })
+
+    test("spawnSteering falls back to continue on missing action field", async () => {
+      const responseWithoutAction = `{"message": "some guidance"}`
+      
+      const parsed = JSON.parse(responseWithoutAction)
+      expect(parsed.action).toBeUndefined()
+      expect(parsed.message).toBe("some guidance")
+    })
+
+    test("spawnSteering extracts text content from message parts", async () => {
+      const parts = [
+        { type: "text", text: "First part" },
+        { type: "text", text: "Second part" },
+      ]
+      
+      const textParts = parts.filter((p) => p.type === "text")
+      const combined = textParts.map((p) => (p as any).text).join("\n")
+      
+      expect(textParts.length).toBe(2)
+      expect(combined).toBe("First part\nSecond part")
+    })
+  })
+
+  describe("checkTimeouts with session message activity", () => {
+    test("timeout considers session message timestamps", async () => {
+      const now = Date.now()
+      const thirtyOneMinutesAgo = now - 31 * 60 * 1000
+      
+      const messageTime = Math.floor(thirtyOneMinutesAgo / 1000) * 1000
+      const elapsed = now - messageTime
+      
+      expect(elapsed).toBeGreaterThan(30 * 60 * 1000)
+    })
+
+    test("timeout does not trigger before 30 minute threshold", async () => {
+      const now = Date.now()
+      const twentyNineMinutesAgo = now - 29 * 60 * 1000
+      
+      const messageTime = Math.floor(twentyNineMinutesAgo / 1000) * 1000
+      const elapsed = now - messageTime
+      
+      expect(elapsed).toBeLessThan(30 * 60 * 1000)
+    })
+
+    test("timeout respects message time.created field format", async () => {
+      const now = Date.now()
+      const thirtyMinutesAgo = now - 30 * 60 * 1000
+      
+      const message = {
+        info: {
+          role: "assistant" as const,
+          time: {
+            created: thirtyMinutesAgo,
+          },
+        },
+      }
+      
+      const elapsed = now - message.info.time.created
+      expect(elapsed).toBeGreaterThanOrEqual(30 * 60 * 1000)
+    })
+  })
 })

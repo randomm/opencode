@@ -356,6 +356,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
   const now = Date.now()
   const ADVERSARIAL_TIMEOUT_MS = 60 * 60 * 1000
+  const SESSION_MESSAGE_TIMEOUT_MS = 30 * 60 * 1000
 
   for (const task of jobTasks) {
     if (task.status === "in_progress") {
@@ -363,8 +364,25 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
         ? new Date(task.pipeline.last_activity).getTime()
         : 0
 
+      let timedOut = false
       if (lastActivity > 0 && now - lastActivity > TIMEOUT_MS) {
-        log.info("task timed out", { taskId: task.id, lastActivity, now })
+        timedOut = true
+        log.info("task timed out by pipeline.last_activity", { taskId: task.id, lastActivity, now })
+      }
+
+      if (!timedOut && task.assignee) {
+        const msgs = await Session.messages({ sessionID: task.assignee }).catch(() => [])
+        if (msgs.length > 0) {
+          const lastMsg = msgs[msgs.length - 1]
+          const lastMsgTime = lastMsg.info.time.created
+          if (lastMsgTime && now - lastMsgTime > SESSION_MESSAGE_TIMEOUT_MS) {
+            timedOut = true
+            log.info("task timed out by session message activity", { taskId: task.id, lastMsgTime, now })
+          }
+        }
+      }
+
+      if (timedOut) {
 
         let worktreeRemoved = false
         if (task.worktree) {
@@ -818,7 +836,46 @@ Assess the developer's progress and respond with the appropriate JSON action.`
     if (!alive) break
   }
 
-  return { action: "continue", message: null }
+  const msgs = await Session.messages({ sessionID: steeringSession.id })
+  if (!msgs || msgs.length === 0) {
+    log.warn("steering session produced no messages", { taskId: task.id })
+    return { action: "continue", message: null }
+  }
+
+  const assistantMsgs = msgs.filter((m) => m.info.role === "assistant")
+  if (assistantMsgs.length === 0) {
+    log.warn("steering session has no assistant response", { taskId: task.id })
+    return { action: "continue", message: null }
+  }
+
+  const lastMsg = assistantMsgs[assistantMsgs.length - 1]
+  const textParts = lastMsg.parts.filter((p) => p.type === "text")
+  if (textParts.length === 0) {
+    log.warn("steering agent response has no text parts", { taskId: task.id })
+    return { action: "continue", message: null }
+  }
+
+  const responseText = textParts.map((p) => (p as any).text).join("\n")
+  
+  let response
+  try {
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      log.warn("steering agent response contains no JSON", { taskId: task.id })
+      return { action: "continue", message: null }
+    }
+    response = JSON.parse(jsonMatch[0])
+  } catch (e) {
+    log.warn("failed to parse steering agent JSON response", { taskId: task.id, error: String(e) })
+    return { action: "continue", message: null }
+  }
+
+  if (!response.action || typeof response.action !== "string") {
+    log.warn("steering response missing action field", { taskId: task.id })
+    return { action: "continue", message: null }
+  }
+
+  return { action: response.action, message: response.message ?? null }
 }
 
 async function checkSteering(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
