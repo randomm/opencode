@@ -10,6 +10,7 @@ import { Bus } from "../bus"
 import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
+import { MessageV2 } from "../session/message-v2"
 import type { Task, Job, AdversarialVerdict } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse" })
@@ -855,7 +856,7 @@ Assess the developer's progress and respond with the appropriate JSON action.`
     return { action: "continue", message: null }
   }
 
-  const responseText = textParts.map((p) => (p as any).text).join("\n")
+  const responseText = textParts.map((p) => (p as MessageV2.TextPart).text).join("\n")
   
   let response
   try {
