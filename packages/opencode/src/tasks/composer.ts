@@ -2,8 +2,6 @@ import z from "zod"
 import { Session } from "../session"
 import { SessionPrompt } from "../session/prompt"
 import { MessageV2 } from "../session/message-v2"
-import { BackgroundTaskEvent } from "../session/async-tasks"
-import { Bus } from "../bus"
 import { Store } from "./store"
 import { Validation } from "./validation"
 import { generateUniqueSlug, slugify } from "./tool"
@@ -39,37 +37,30 @@ async function defaultSpawnComposerFn(
     permission: [],
   })
 
-  await SessionPrompt.prompt({ sessionID: session.id, agent: "composer", parts: [{ type: "text", text: prompt }] })
-
-  const finalText = await new Promise<string | undefined>((resolve) => {
-    const timer = setTimeout(() => {
-      cleanup()
+  // prompt() blocks until the agent finishes
+  // Race with timeout — if timeout fires, cancel the session cleanly
+  let timedOut = false
+  const timeoutPromise = new Promise<undefined>((resolve) =>
+    setTimeout(() => {
+      timedOut = true
+      SessionPrompt.cancel(session.id)
       resolve(undefined)
-    }, timeoutMs)
+    }, timeoutMs),
+  )
 
-    const cleanup = () => {
-      unsub1()
-      unsub2()
-      clearTimeout(timer)
-    }
+  await Promise.race([
+    SessionPrompt.prompt({ sessionID: session.id, agent: "composer", parts: [{ type: "text", text: prompt }] }),
+    timeoutPromise,
+  ])
 
-    const handler = (event: { properties: { parentSessionID?: string } }) => {
-      if (event.properties.parentSessionID !== sessionID) return
-      cleanup()
-      // Stream is descending order (newest first) — .find() gets the NEWEST assistant message
-      ;(async () => {
-        const msgs = await Array.fromAsync(MessageV2.stream(session.id))
-        const last = msgs.find((m) => m.info.role === "assistant")
-        const textPart = last?.parts.find((p) => p.type === "text" && !p.synthetic)
-        resolve(textPart && "text" in textPart ? textPart.text : undefined)
-      })().catch(() => resolve(undefined))
-    }
+  if (timedOut) return undefined
 
-    const unsub1 = Bus.subscribe(BackgroundTaskEvent.Completed, handler)
-    const unsub2 = Bus.subscribe(BackgroundTaskEvent.Failed, handler)
-  })
-
-  return finalText
+  // Agent finished — read final assistant message directly from DB
+  // MessageV2.stream() is descending order — .find() gets the newest assistant message
+  const msgs = await Array.fromAsync(MessageV2.stream(session.id))
+  const last = msgs.find((m) => m.info.role === "assistant")
+  const textPart = last?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && !p.synthetic)
+  return textPart?.text
 }
 
 export async function runComposer(
