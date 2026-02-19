@@ -86,9 +86,11 @@ Decompose this issue into a dependency-ordered list of implementation tasks. Ret
   const output = await spawn(composerPrompt)
   if (!output) throw new Error("Composer agent timed out or returned no response")
 
+  // Strip markdown code fences if present — anchored to string start/end, no multiline flag
+  const cleaned = output.replace(/^```(?:json)?\r?\n([\s\S]*?)\r?\n```\s*$/, "$1").trim()
   let parsed: unknown
   try {
-    parsed = JSON.parse(output)
+    parsed = JSON.parse(cleaned)
   } catch {
     throw new Error(`Composer agent returned invalid JSON. Raw (first 500 chars): ${output.substring(0, 500)}`)
   }
