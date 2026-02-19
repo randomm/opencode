@@ -10,12 +10,19 @@ import { Bus } from "../bus"
 import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
-import type { Task, Job } from "./types"
+import type { Task, Job, AdversarialVerdict } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const tickLock = new Map<string, Promise<void>>()
 
 const TIMEOUT_MS = 30 * 60 * 1000
+
+function sanitizeWorktree(path: string | null | undefined): string | null {
+  if (!path || typeof path !== "string") return null
+  const sanitized = path.replace(/[^\w\-./]/g, "").replace(/^(\.\.+[\/\\])+/g, "")
+  if (!sanitized.length) return null
+  return sanitized
+}
 
 export function startPulse(jobId: string, projectId: string, pmSessionId: string): ReturnType<typeof setInterval> {
   const startJob = async (): Promise<void> => {
@@ -60,6 +67,7 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
         return
       }
       await heartbeatActiveAgents(jobId, projectId)
+      await processAdversarialVerdicts(jobId, projectId, pmSessionId)
       await scheduleReadyTasks(jobId, projectId, pmSessionId)
       await checkTimeouts(jobId, projectId)
       await checkCompletion(jobId, projectId, pmSessionId, interval)
@@ -82,11 +90,12 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
       const sessionAlive = task.assignee ? await isSessionAlive(task.assignee) : false
       if (!sessionAlive) {
         let worktreeRemoved = false
-        if (task.worktree) {
+        const safeWorktree = sanitizeWorktree(task.worktree)
+        if (safeWorktree) {
           try {
-            await Worktree.remove({ directory: task.worktree })
+            await Worktree.remove({ directory: safeWorktree })
             worktreeRemoved = true
-            log.info("removed worktree during resurrection", { taskId: task.id, worktree: task.worktree })
+            log.info("removed worktree during resurrection", { taskId: task.id, worktree: safeWorktree })
           } catch (e) {
             log.error("failed to remove worktree during resurrection", { taskId: task.id, error: String(e) })
           }
@@ -180,6 +189,8 @@ export {
   writeLockFile,
   removeLockFile,
   readLockPid,
+  processAdversarialVerdicts,
+  spawnAdversarial,
 }
 
 async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
@@ -188,7 +199,7 @@ async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId:
 
   const allTasks = await Store.listTasks(projectId)
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
-  const inProgressCount = jobTasks.filter((t) => t.status === "in_progress" || t.status === "review").length
+  const inProgressCount = jobTasks.filter((t) => t.status === "in_progress").length
 
   if (inProgressCount >= job.max_workers) return
 
@@ -203,6 +214,17 @@ async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId:
       continue
     }
     await spawnDeveloper(task, jobId, projectId, pmSessionId)
+  }
+
+  const reviewingTasks = jobTasks.filter((t) =>
+    t.pipeline.stage === "reviewing" &&
+    !t.pipeline.adversarial_verdict &&
+    !t.assignee &&
+    t.status === "in_progress"
+  )
+
+  for (const task of reviewingTasks) {
+    await spawnAdversarial(task, jobId, projectId, pmSessionId)
   }
 }
 
@@ -231,7 +253,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
     devSession = await Session.createNext({
       parentID: pmSessionId,
       directory: worktreeInfo.directory,
-      title: `Developer: ${task.title} (@developer subagent)`,
+      title: `Developer: ${task.title} (developer-pipeline)`,
       permission: [],
     })
   } catch (e) {
@@ -254,7 +276,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
   try {
     await SessionPrompt.prompt({
       sessionID: devSession.id,
-      agent: "developer",
+      agent: "developer-pipeline",
       parts: [{ type: "text", text: prompt }],
     })
   } catch (e) {
@@ -316,12 +338,15 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
       if (!updated) continue
 
       if (!sessionAlive) {
-        log.info("developer session ended, awaiting adversarial", { taskId: task.id })
-        updated.pipeline.stage = "reviewing"
+        log.info("developer session ended, transitioning to review stage", { taskId: task.id })
+        await Store.updateTask(projectId, task.id, {
+          pipeline: { ...updated.pipeline, stage: "reviewing", last_activity: now }
+        })
+      } else {
+        await Store.updateTask(projectId, task.id, {
+          pipeline: { ...updated.pipeline, last_activity: now }
+        })
       }
-
-      updated.pipeline.last_activity = now
-      await Store.updateTask(projectId, task.id, updated, true)
     }
   }
 }
@@ -343,8 +368,13 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
         let worktreeRemoved = false
         if (task.worktree) {
           try {
-            await Worktree.remove({ directory: task.worktree })
-            worktreeRemoved = true
+            const safeWorktree = sanitizeWorktree(task.worktree)
+            if (!safeWorktree) {
+              log.error("worktree sanitization failed for timed out task", { taskId: task.id, worktree: task.worktree })
+            } else {
+              await Worktree.remove({ directory: safeWorktree })
+              worktreeRemoved = true
+            }
           } catch (e) {
             log.error("failed to remove worktree for timed out task", { taskId: task.id, error: String(e) })
           }
@@ -375,6 +405,323 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
         })
       }
     }
+  }
+}
+
+async function processAdversarialVerdicts(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
+  const allTasks = await Store.listTasks(projectId)
+  const jobTasks = allTasks.filter((t) => t.job_id === jobId)
+
+  for (const task of jobTasks) {
+    if (task.status !== "review") continue
+    if (!task.pipeline.adversarial_verdict) continue
+
+    const verdict = task.pipeline.adversarial_verdict
+
+    // Clear verdict immediately to prevent double-processing
+    await Store.updateTask(projectId, task.id, {
+      pipeline: { ...task.pipeline, adversarial_verdict: null, last_activity: new Date().toISOString() }
+    }, true)
+
+    if (verdict.verdict === "APPROVED") {
+      await commitTask(task, projectId, pmSessionId)
+    } else {
+      const newAttempt = (task.pipeline.attempt || 0) + 1
+      if (newAttempt >= 3) {
+        await escalateToPM(task, jobId, projectId, pmSessionId)
+      } else {
+        await respawnDeveloper(task, jobId, projectId, pmSessionId, newAttempt, verdict)
+      }
+    }
+  }
+}
+
+async function commitTask(task: Task, projectId: string, pmSessionId: string): Promise<void> {
+  const parentSession = await Session.get(pmSessionId).catch(() => null)
+  if (!parentSession?.directory) {
+    log.error("PM session not found for commit", { taskId: task.id })
+    await escalateCommitFailure(task, projectId, pmSessionId, "PM session not found")
+    return
+  }
+
+  if (!task.worktree) {
+    log.error("Task has no worktree for commit", { taskId: task.id })
+    await escalateCommitFailure(task, projectId, pmSessionId, "No worktree available")
+    return
+  }
+
+  let opsSession
+  try {
+    opsSession = await Session.createNext({
+      parentID: pmSessionId,
+      directory: task.worktree,
+      title: `@ops commit: ${task.title}`,
+      permission: [],
+    })
+  } catch (e) {
+    log.error("failed to create @ops session for commit", { taskId: task.id, error: String(e) })
+    await escalateCommitFailure(task, projectId, pmSessionId, String(e))
+    return
+  }
+
+  const commitMsg = `feat(taskctl): ${task.title} (#${task.parent_issue})`
+  const opsPrompt = `Commit all changes in the current directory.
+Commit message: "${commitMsg}"
+Do NOT push to remote. Only commit locally.
+Run: git add -A && git commit -m "${commitMsg}"
+If there is nothing to commit, that is fine — report success.`
+
+  try {
+    await SessionPrompt.prompt({
+      sessionID: opsSession.id,
+      agent: "ops",
+      parts: [{ type: "text", text: opsPrompt }],
+    })
+  } catch (e) {
+    log.error("@ops commit prompt failed", { taskId: task.id, error: String(e) })
+    await escalateCommitFailure(task, projectId, pmSessionId, `Commit prompt failed: ${String(e)}`)
+    return
+  }
+
+  const maxWait = 5 * 60 * 1000
+  const pollInterval = 2000
+  const start = Date.now()
+  let opsComplete = false
+
+  while (Date.now() - start < maxWait) {
+    await new Promise(r => setTimeout(r, pollInterval))
+    const alive = await isSessionAlive(opsSession.id)
+    if (!alive) { opsComplete = true; break }
+  }
+
+  if (!opsComplete) {
+    log.error("@ops commit timed out", { taskId: task.id })
+    try {
+      SessionPrompt.cancel(opsSession.id)
+    } catch (e: any) {
+      log.error("failed to cancel timed-out ops session", { sessionId: opsSession.id, error: String(e) })
+    }
+    await escalateCommitFailure(task, projectId, pmSessionId, "Commit timed out after 5 minutes")
+    return
+  }
+
+  if (task.worktree) {
+    await Worktree.remove({ directory: task.worktree }).catch(e =>
+      log.error("failed to remove worktree after commit", { taskId: task.id, error: String(e) })
+    )
+  }
+
+  await Store.updateTask(projectId, task.id, {
+    status: "closed",
+    close_reason: "approved and committed",
+    worktree: null,
+    branch: null,
+    assignee: null,
+    assignee_pid: null,
+    pipeline: { ...task.pipeline, stage: "done" }
+  }, true)
+
+  await Store.addComment(projectId, task.id, {
+    author: "system",
+    message: `Committed to branch by @ops. Task closed.`,
+    created_at: new Date().toISOString(),
+  })
+
+  Bus.publish(BackgroundTaskEvent.Completed, {
+    taskID: task.id,
+    sessionID: pmSessionId,
+    parentSessionID: undefined,
+  })
+
+  log.info("task committed and closed", { taskId: task.id })
+}
+
+async function respawnDeveloper(task: Task, jobId: string, projectId: string, pmSessionId: string, attempt: number, verdict: AdversarialVerdict): Promise<void> {
+  const parentSession = await Session.get(pmSessionId).catch(() => null)
+  if (!parentSession?.directory) {
+    log.error("PM session not found for respawn", { taskId: task.id })
+    return
+  }
+
+  if (!task.worktree) {
+    log.error("Task has no worktree for respawn", { taskId: task.id })
+    return
+  }
+
+  let devSession
+  try {
+    devSession = await Session.createNext({
+      parentID: pmSessionId,
+      directory: task.worktree,
+      title: `Developer retry #${attempt}: ${task.title}`,
+      permission: [],
+    })
+  } catch (e) {
+    log.error("failed to respawn developer", { taskId: task.id, error: String(e) })
+    return
+  }
+
+  await Store.updateTask(projectId, task.id, {
+    status: "in_progress",
+    assignee: devSession.id,
+    pipeline: {
+      ...task.pipeline,
+      attempt,
+      stage: "developing",
+      last_activity: new Date().toISOString(),
+    }
+  }, true)
+
+  const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
+  const prompt = `This is retry attempt ${attempt} of 3. The previous implementation had issues that must be fixed.
+
+**Task:** ${task.title}
+**Description:** ${task.description}
+**Acceptance Criteria:** ${task.acceptance_criteria}
+
+**Adversarial feedback — fix these before signaling complete:**
+Summary: ${verdict.summary}
+Issues:
+${issueLines}
+
+The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, then signal completion with:
+taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>"`
+
+  await SessionPrompt.prompt({
+    sessionID: devSession.id,
+    agent: "developer-pipeline",
+    parts: [{ type: "text", text: prompt }],
+  })
+
+  await Store.addComment(projectId, task.id, {
+    author: "system",
+    message: `Developer respawned for attempt ${attempt}. Adversarial feedback provided.`,
+    created_at: new Date().toISOString(),
+  })
+}
+
+async function escalateToPM(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
+  await Store.updateTask(projectId, task.id, {
+    status: "failed",
+    pipeline: { ...task.pipeline, stage: "failed" }
+  }, true)
+
+  await Store.addComment(projectId, task.id, {
+    author: "system",
+    message: `Failed after 3 adversarial review cycles. Last verdict: ${task.pipeline.adversarial_verdict?.summary ?? "unknown"}. Worktree preserved for PM inspection.`,
+    created_at: new Date().toISOString(),
+  })
+
+  Bus.publish(BackgroundTaskEvent.Completed, {
+    taskID: `escalation-${task.id}`,
+    sessionID: pmSessionId,
+    parentSessionID: undefined,
+  })
+
+  log.error("task escalated to PM after 3 failures", { taskId: task.id, jobId })
+}
+
+async function escalateCommitFailure(task: Task, projectId: string, pmSessionId: string, reason: string): Promise<void> {
+  await Store.updateTask(projectId, task.id, {
+    status: "blocked_on_conflict",
+    pipeline: { ...task.pipeline, stage: "commit-failed" }
+  }, true)
+
+  await Store.addComment(projectId, task.id, {
+    author: "system",
+    message: `Commit failed: ${reason}. Worktree preserved. Use taskctl override ${task.id} --commit-as-is to force commit or taskctl retry to reset.`,
+    created_at: new Date().toISOString(),
+  })
+
+  Bus.publish(BackgroundTaskEvent.Completed, {
+    taskID: `commit-failure-${task.id}`,
+    sessionID: pmSessionId,
+    parentSessionID: undefined,
+  })
+}
+
+async function spawnAdversarial(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
+  if (task.assignee) {
+    log.warn("refusing to spawn adversarial: task already has assignee", { taskId: task.id, assignee: task.assignee })
+    return
+  }
+
+  const parentSession = await Session.get(pmSessionId).catch(() => null)
+  if (!parentSession?.directory) {
+    log.error("PM session not found for adversarial spawn", { taskId: task.id })
+    return
+  }
+
+  if (!task.worktree || typeof task.worktree !== "string") {
+    log.error("invalid worktree for adversarial spawn", { taskId: task.id, worktree: task.worktree })
+    return
+  }
+  const safeWorktree = task.worktree.replace(/[^\w\-./]/g, "")
+  if (!safeWorktree) {
+    log.error("worktree sanitization resulted in empty string", { taskId: task.id, worktree: task.worktree })
+    return
+  }
+
+  let adversarialSession
+  try {
+    adversarialSession = await Session.createNext({
+      parentID: pmSessionId,
+      directory: parentSession.directory,
+      title: `Adversarial: ${task.title}`,
+      permission: [],
+    })
+  } catch (e) {
+    log.error("failed to create adversarial session", { taskId: task.id, error: String(e) })
+    return
+  }
+
+  await Store.updateTask(projectId, task.id, {
+    pipeline: { ...task.pipeline, stage: "adversarial-running" }
+  })
+
+  const prompt = `Review the implementation in worktree at: ${safeWorktree}
+
+Task ID: ${task.id}
+Title: ${task.title}
+Description: ${task.description}
+Acceptance Criteria: ${task.acceptance_criteria}
+
+Read the changed files in the worktree, run typecheck, and record your verdict with taskctl verdict.`
+
+  try {
+    await SessionPrompt.prompt({
+      sessionID: adversarialSession.id,
+      agent: "adversarial-pipeline",
+      parts: [{ type: "text", text: prompt }],
+    })
+  } catch (e) {
+    log.error("adversarial session failed to start", { taskId: task.id, error: String(e) })
+    try {
+      SessionPrompt.cancel(adversarialSession.id)
+    } catch (e: any) {
+      log.error("failed to cancel orphaned adversarial session", { sessionId: adversarialSession.id, error: String(e) })
+      await Store.addComment(projectId, task.id, {
+        author: "system",
+        message: `⚠️ Failed to cancel orphaned adversarial session: ${adversarialSession.id}. Manual cleanup may be required.`,
+        created_at: new Date().toISOString(),
+      })
+    }
+
+    // Remove worktree before resetting status to prevent orphaned worktrees
+    if (task.worktree) {
+      await Worktree.remove({ directory: task.worktree }).catch(e =>
+        log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) })
+      )
+    }
+
+    await Store.updateTask(projectId, task.id, {
+      status: "open",
+      assignee: null,
+      assignee_pid: null,
+      worktree: null,
+      branch: null,
+      pipeline: { ...task.pipeline, stage: "idle" }
+    }, true)
   }
 }
 
@@ -418,8 +765,13 @@ async function gracefulStop(jobId: string, projectId: string, interval: ReturnTy
     let worktreeRemoved = false
     if (task.worktree) {
       try {
-        await Worktree.remove({ directory: task.worktree })
-        worktreeRemoved = true
+        const safeWorktree = sanitizeWorktree(task.worktree)
+        if (!safeWorktree) {
+          log.error("worktree sanitization failed during graceful stop", { taskId: task.id, worktree: task.worktree })
+        } else {
+          await Worktree.remove({ directory: safeWorktree })
+          worktreeRemoved = true
+        }
       } catch (e) {
         log.error("failed to remove worktree during graceful stop", { taskId: task.id, error: String(e) })
       }

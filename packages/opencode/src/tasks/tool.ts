@@ -69,7 +69,7 @@ Task labels:
 
   parameters: z.object({
     command: z
-      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip", "status"])
+      .enum(["create", "list", "get", "update", "close", "comment", "depends", "split", "next", "validate", "start", "start-skip", "status", "verdict"])
       .describe("Command to execute"),
     taskId: z.string().optional().describe("Task ID (for get, update, close, comment, depends, split)"),
     title: z.string().optional().describe("Task title (for create)"),
@@ -87,6 +87,13 @@ Task labels:
     count: z.number().min(1).max(10).optional().describe("Number of tasks to return (for next)"),
     updates: z.object({}).passthrough().optional().describe("Field updates for task (for update, e.g. {status: 'in_progress'})"),
     issueNumber: z.number().optional().describe("GitHub issue number (for start, start-skip)"),
+    verdict: z.enum(["APPROVED", "ISSUES_FOUND", "CRITICAL_ISSUES_FOUND"]).optional().describe("Verdict for adversarial review (for verdict)"),
+    verdictIssues: z.array(z.object({
+      location: z.string(),
+      severity: z.enum(["CRITICAL", "HIGH", "MEDIUM", "LOW"]),
+      fix: z.string(),
+    })).optional().describe("Issues found in review (for verdict)"),
+    verdictSummary: z.string().optional().describe("Summary of verdict (for verdict)"),
   }),
 
   async execute(params, ctx) {
@@ -657,6 +664,49 @@ if (params.command === "start") {
       return {
         title: "Tasks found",
         output: `Tasks found: ${tasksWithIssue.length}. Pulse integration comes in Phase 3.`,
+        metadata: {},
+      }
+    }
+
+    if (params.command === "verdict") {
+      if (ctx.agent !== "adversarial-pipeline") {
+        throw new Error("verdict command can only be called by adversarial-pipeline agent")
+      }
+
+      if (!params.taskId) throw new Error("verdict requires taskId")
+      if (!params.verdict) throw new Error("verdict requires verdict")
+
+      const task = await Store.getTask(projectId, params.taskId)
+      if (!task) throw new Error(`Task not found: ${params.taskId}`)
+
+      const issues = params.verdictIssues ?? []
+      const summary = params.verdictSummary ?? ""
+
+      const verdictData = {
+        verdict: params.verdict,
+        summary,
+        issues,
+        created_at: new Date().toISOString(),
+      }
+
+      await Store.updateTask(projectId, params.taskId, {
+        status: "review",
+        pipeline: {
+          ...task.pipeline,
+          adversarial_verdict: verdictData,
+          stage: "reviewing",
+        }
+      })
+
+      await Store.addComment(projectId, params.taskId, {
+        author: "adversarial-pipeline",
+        message: `Verdict: ${params.verdict}${summary ? ` — ${summary}` : ""}`,
+        created_at: new Date().toISOString(),
+      })
+
+      return {
+        title: "Verdict recorded",
+        output: `Recorded ${params.verdict} verdict for task ${params.taskId}`,
         metadata: {},
       }
     }

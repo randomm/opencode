@@ -19,7 +19,7 @@ export type Task = {
   close_reason: string | null
   comments: Comment[]
   pipeline: {
-    stage: "idle" | "developing" | "reviewing" | "committing" | "done" | "failed" | "stopped"
+    stage: "idle" | "developing" | "reviewing" | "adversarial-running" | "committing" | "done" | "failed" | "stopped" | "commit-failed"
     attempt: number
     last_activity: string | null
     last_steering: string | null
@@ -50,7 +50,7 @@ export type AdversarialVerdict = {
     fix: string
   }>
   summary: string
-  timestamp: string
+  created_at: string
 }
 
 export type Job = {
