@@ -529,6 +529,24 @@ feature/* <- feature branches
 fix/* <- bug fix branches
 ```
 
+### Worktree and PR Policy
+
+**Multiple worktrees, single PR.**
+
+Use git worktrees to develop multiple related fixes in parallel — one worktree per fix. When done, consolidate all changes into **one branch** and open **one PR**.
+
+- ✅ Multiple worktrees for parallel development
+- ✅ One PR per logical unit of work (e.g. one feature, one batch of related bug fixes)
+- ❌ Multiple PRs touching the same module — causes rebase conflicts and ordering issues
+
+**When to use a separate PR:**
+- Fixes are in completely unrelated modules with no shared files
+- One fix is a prerequisite that must merge before the other can be written
+
+**When to consolidate into one PR:**
+- Fixes touch the same files or tightly coupled modules
+- Fixes are part of the same feature or bug-fix batch
+
 ### Standard Flow
 
 ```bash

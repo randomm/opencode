@@ -107,7 +107,8 @@
         "Context7 Protocol",
         "Pre-Push Verification",
         "Minimalist Engineering",
-        "Auto-Merge Policy"
+        "Auto-Merge Policy",
+        "Worktree and PR Policy"
       ],
       "tests": [],
       "upstreamTracking": {
