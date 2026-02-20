@@ -37,58 +37,64 @@ describe("pulse.ts", () => {
   describe("lock file management", () => {
     test("lock file written on start, removed on completion", async () => {
       const { startPulse, readLockPid } = await import("../../src/tasks/pulse")
+      const { Instance } = await import("../../src/project/instance")
 
-      const mockTask: any = {
-        id: "task-1",
-        job_id: TEST_JOB_ID,
-        status: "closed",
-        priority: 2,
-        task_type: "implementation",
-        parent_issue: 123,
-        labels: [],
-        depends_on: [],
-        assignee: null,
-        assignee_pid: null,
-        worktree: null,
-        branch: null,
-        title: "Test task",
-        description: "Test description",
-        acceptance_criteria: "Test criteria",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        close_reason: null,
-        comments: [],
-        pipeline: {
-          stage: "done",
-          attempt: 0,
-          last_activity: null,
-          last_steering: null,
-          history: [],
-          adversarial_verdict: null,
+      await Instance.provide({
+        directory: testDataDir,
+        fn: async () => {
+          const mockTask: any = {
+            id: "task-1",
+            job_id: TEST_JOB_ID,
+            status: "closed",
+            priority: 2,
+            task_type: "implementation",
+            parent_issue: 123,
+            labels: [],
+            depends_on: [],
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+            title: "Test task",
+            description: "Test description",
+            acceptance_criteria: "Test criteria",
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            close_reason: null,
+            comments: [],
+            pipeline: {
+              stage: "done",
+              attempt: 0,
+              last_activity: null,
+              last_steering: null,
+              history: [],
+              adversarial_verdict: null,
+            },
+          }
+
+          await Store.createJob(TEST_PROJECT_ID, {
+            id: TEST_JOB_ID,
+            parent_issue: 123,
+            status: "running",
+            created_at: new Date().toISOString(),
+            stopping: false,
+            pulse_pid: null,
+            max_workers: 1,
+            pm_session_id: TEST_PM_SESSION_ID,
+          })
+
+          await Store.createTask(TEST_PROJECT_ID, mockTask)
+
+          const interval = startPulse(TEST_JOB_ID, TEST_PROJECT_ID, TEST_PM_SESSION_ID)
+
+          await new Promise((resolve) => setTimeout(resolve, 100))
+
+          const lockPid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
+          expect(lockPid).toBe(process.pid)
+
+          clearInterval(interval)
         },
-      }
-
-      await Store.createJob(TEST_PROJECT_ID, {
-        id: TEST_JOB_ID,
-        parent_issue: 123,
-        status: "running",
-        created_at: new Date().toISOString(),
-        stopping: false,
-        pulse_pid: null,
-        max_workers: 1,
-        pm_session_id: TEST_PM_SESSION_ID,
       })
-
-      await Store.createTask(TEST_PROJECT_ID, mockTask)
-
-      const interval = startPulse(TEST_JOB_ID, TEST_PROJECT_ID, TEST_PM_SESSION_ID)
-
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      const lockPid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
-      expect(lockPid).toBe(process.pid)
-
-      clearInterval(interval)
     })
   })
 
