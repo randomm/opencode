@@ -1,12 +1,27 @@
 import { describe, expect, test } from "bun:test"
 import { Store } from "../../src/tasks/store"
-import type { Task } from "../../src/tasks/types"
+import type { Task, Job } from "../../src/tasks/types"
 import { tmpdir } from "../fixture/fixture"
 import path from "path"
 import { randomUUID } from "crypto"
+import fs from "fs/promises"
 
 function getProjectId(): string {
   return `test-store-${randomUUID()}`
+}
+
+function createJob(override: Partial<Job>): Job {
+  return {
+    id: `job-${randomUUID()}`,
+    parent_issue: 1,
+    status: "running",
+    created_at: new Date().toISOString(),
+    stopping: false,
+    pulse_pid: null,
+    max_workers: 4,
+    pm_session_id: randomUUID(),
+    ...override,
+  }
 }
 
 function isValidISODate(dateStr: string): boolean {
@@ -230,5 +245,169 @@ describe("store: task operations", () => {
     if (!updated.comments[0]) throw new Error("Comment not found")
     expect(updated.comments[0].author).toBe("test-agent")
     expect(updated.comments[0].message).toBe("Test comment")
+  })
+})
+
+describe("store: findJobByIssue", () => {
+  test("returns most recent running job when multiple jobs exist", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const olderDate = new Date(Date.now() - 60000).toISOString()
+    const newerDate = new Date(Date.now() - 30000).toISOString()
+
+    const olderJob = createJob({ parent_issue: 1, status: "running", created_at: olderDate })
+    const newerJob = createJob({ parent_issue: 1, status: "running", created_at: newerDate })
+
+    await Store.createJob(projectId, olderJob)
+    await Store.createJob(projectId, newerJob)
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(newerJob.id)
+    expect(found!.created_at).toBe(newerDate)
+  })
+
+  test("returns most recently created stopped job if no running job", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const olderDate = new Date(Date.now() - 60000).toISOString()
+    const newerDate = new Date(Date.now() - 30000).toISOString()
+
+    const olderJob = createJob({ parent_issue: 1, status: "stopped", created_at: olderDate })
+    const newerJob = createJob({ parent_issue: 1, status: "stopped", created_at: newerDate })
+
+    await Store.createJob(projectId, olderJob)
+    await Store.createJob(projectId, newerJob)
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(newerJob.id)
+    expect(found!.status).toBe("stopped")
+  })
+
+  test("prefers running job over newer stopped job", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const olderDate = new Date(Date.now() - 60000).toISOString()
+    const newerDate = new Date(Date.now() - 30000).toISOString()
+
+    const runningJob = createJob({ parent_issue: 1, status: "running", created_at: olderDate })
+    const stoppedJob = createJob({ parent_issue: 1, status: "stopped", created_at: newerDate })
+
+    await Store.createJob(projectId, runningJob)
+    await Store.createJob(projectId, stoppedJob)
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(runningJob.id)
+    expect(found!.status).toBe("running")
+  })
+
+  test("returns null when no jobs exist for issue", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+
+    const found = await Store.findJobByIssue(projectId, 999)
+    expect(found).toBeNull()
+  })
+
+  test("ignores jobs for different issue numbers", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+
+    const job1 = createJob({ parent_issue: 1, status: "running" })
+    const job2 = createJob({ parent_issue: 2, status: "running" })
+
+    await Store.createJob(projectId, job1)
+    await Store.createJob(projectId, job2)
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(job1.id)
+    expect(found!.parent_issue).toBe(1)
+  })
+
+  test("handles malformed job file gracefully", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const validJob = createJob({ parent_issue: 1, status: "running" })
+
+    await Store.createJob(projectId, validJob)
+    const tasksDir = path.join(tmp.path, "tasks", projectId)
+    await fs.mkdir(tasksDir, { recursive: true })
+    await Bun.write(path.join(tasksDir, "job-invalid.json"), "{ broken json")
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(validJob.id)
+  })
+
+  test("ignores job with missing required fields", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const validJob = createJob({ parent_issue: 1, status: "running" })
+    const tasksDir = path.join(tmp.path, "tasks", projectId)
+
+    await Store.createJob(projectId, validJob)
+    await fs.mkdir(tasksDir, { recursive: true })
+    await Bun.write(
+      path.join(tasksDir, "job-incomplete.json"),
+      JSON.stringify({ id: "incomplete", parent_issue: 1 }),
+    )
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(validJob.id)
+  })
+
+  test("ignores job with invalid created_at date", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const validJob = createJob({ parent_issue: 1, status: "running" })
+    const invalidJob = {
+      id: `job-${randomUUID()}`,
+      parent_issue: 1,
+      status: "running" as const,
+      created_at: "not-a-date",
+      stopping: false,
+      pulse_pid: null,
+      max_workers: 4,
+      pm_session_id: randomUUID(),
+    }
+
+    await Store.createJob(projectId, validJob)
+    await Store.createJob(projectId, invalidJob as Job)
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(validJob.id)
+  })
+
+  test("ignores job with invalid status", async () => {
+    await using tmp = await tmpdir()
+    const projectId = getProjectId()
+    const validJob = createJob({ parent_issue: 1, status: "running" })
+    const tasksDir = path.join(tmp.path, "tasks", projectId)
+
+    await Bun.write(
+      path.join(tasksDir, "job-invalid-status.json"),
+      JSON.stringify({
+        id: `job-${randomUUID()}`,
+        parent_issue: 1,
+        status: "invalidStatus",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 4,
+        pm_session_id: randomUUID(),
+      }),
+    )
+
+    await Store.createJob(projectId, validJob)
+    await fs.mkdir(tasksDir, { recursive: true })
+
+    const found = await Store.findJobByIssue(projectId, 1)
+    expect(found).not.toBeNull()
+    expect(found!.id).toBe(validJob.id)
   })
 })

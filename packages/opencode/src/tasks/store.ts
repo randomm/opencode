@@ -87,6 +87,18 @@ function validateTaskUpdates(updates: Partial<Task>, allowImmutable: boolean = f
   }
 }
 
+function isValidJob(job: unknown): job is Job {
+  if (!job || typeof job !== "object") return false
+  const j = job as Partial<Job>
+  if (typeof j.id !== "string") return false
+  if (typeof j.parent_issue !== "number") return false
+  if (typeof j.created_at !== "string") return false
+  const time = new Date(j.created_at).getTime()
+  if (isNaN(time)) return false
+  if (!["running", "stopped", "complete", "failed"].includes(j.status as string)) return false
+  return true
+}
+
 export const Store = {
   async createTask(projectId: string, task: Task): Promise<void> {
     sanitizeTaskId(task.id)
@@ -265,30 +277,21 @@ export const Store = {
 
   async findJobByIssue(projectId: string, issueNumber: number): Promise<Job | null> {
     const tasksDir = await getTasksDir(projectId)
-    const jobPattern = /^job-(.+)\.json$/
-    const jobFiles = [];
-
-    try {
-      const entries = await fs.readdir(tasksDir);
-      for (const entry of entries) {
-        const match = jobPattern.exec(entry);
-        if (match) {
-          const jobPath = path.join(tasksDir, entry);
-          const content = await Bun.file(jobPath).text().catch(() => null);
-          if (content) {
-            try {
-              const job = JSON.parse(content) as Job;
-              if (job.parent_issue === issueNumber && job.status === "running") {
-                return job;
-              }
-            } catch {}
-          }
-        }
-      }
-    } catch {
-      return null;
+    const entries = await fs.readdir(tasksDir).catch(() => [] as string[])
+    const jobs: Job[] = []
+    for (const entry of entries) {
+      if (!/^job-(.+)\.json$/.test(entry)) continue
+      const content = await Bun.file(path.join(tasksDir, entry)).text().catch(() => null)
+      if (!content) continue
+      try {
+        const parsed = JSON.parse(content)
+        if (!isValidJob(parsed)) continue
+        if (parsed.parent_issue === issueNumber) jobs.push(parsed)
+      } catch {}
     }
-
-    return null;
+    if (jobs.length === 0) return null
+    const time = (j: Job) => new Date(j.created_at).getTime()
+    jobs.sort((a, b) => time(b) - time(a))
+    return jobs.find((j) => j.status === "running") ?? jobs[0]
   },
 }
