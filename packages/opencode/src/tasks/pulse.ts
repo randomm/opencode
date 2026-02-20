@@ -237,7 +237,7 @@ function isPidAlive(pid: number): boolean {
   }
 }
 
-export { isPidAlive, writeLockFile, removeLockFile, readLockPid, processAdversarialVerdicts, spawnAdversarial }
+export { isPidAlive, writeLockFile, removeLockFile, readLockPid, processAdversarialVerdicts, spawnAdversarial, scheduleReadyTasks, heartbeatActiveAgents }
 
 async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const job = await Store.getJob(projectId, jobId)
@@ -399,12 +399,14 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
       if (!alive) {
         log.info("developer session ended, transitioning to review stage", { taskId: task.id })
         await Store.updateTask(projectId, task.id, {
+          assignee: null,
+          assignee_pid: null,
           pipeline: { ...updated.pipeline, stage: "reviewing", last_activity: now },
-        })
+        }, true)
       } else {
         await Store.updateTask(projectId, task.id, {
           pipeline: { ...updated.pipeline, last_activity: now },
-        })
+        }, true)
       }
     }
   }
@@ -862,7 +864,7 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
 
   await Store.updateTask(projectId, task.id, {
     pipeline: { ...task.pipeline, stage: "adversarial-running", last_activity: new Date().toISOString() },
-  })
+  }, true)
 
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
 
