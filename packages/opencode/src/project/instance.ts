@@ -11,7 +11,7 @@ interface Context {
   worktree: string
   project: Project.Info
 }
-const context = Context.create<Context>("instance")
+export const context = Context.create<Context>("instance")
 const cache = new Map<string, Promise<Context>>()
 
 const disposal = {
