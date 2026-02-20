@@ -13,11 +13,23 @@ import { Log } from "../util/log"
 import { MessageV2 } from "../session/message-v2"
 import { SessionStatus } from "../session/status"
 import type { Task, Job, AdversarialVerdict } from "./types"
+import { Instance, context as instanceContext } from "../project/instance"
+import { GlobalBus } from "../bus/global"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const activeTicks = new Map<string, Set<string>>()
+const intervalListeners = new Map<ReturnType<typeof setInterval>, (event: { directory?: string | undefined; payload: any }) => void>()
 
 const TIMEOUT_MS = 30 * 60 * 1000
+
+function clearIntervalSafe(interval: ReturnType<typeof setInterval>) {
+  const listener = intervalListeners.get(interval)
+  if (listener) {
+    GlobalBus.off("event", listener)
+    intervalListeners.delete(interval)
+  }
+  clearInterval(interval)
+}
 
 export function sanitizeWorktree(worktree: string | null | undefined): string | null {
   if (!worktree || typeof worktree !== "string") return null
@@ -26,6 +38,14 @@ export function sanitizeWorktree(worktree: string | null | undefined): string | 
 }
 
 export function startPulse(jobId: string, projectId: string, pmSessionId: string): ReturnType<typeof setInterval> {
+  const capturedCtx = instanceContext.tryGet()
+  if (!capturedCtx) {
+    log.error("refusing to start pulse: no instance context", { jobId, projectId })
+    const noopInterval = setInterval(() => {}, 5_000)
+    clearInterval(noopInterval)
+    return noopInterval
+  }
+
   const startJob = async (): Promise<void> => {
     const existingPid = await readLockPid(jobId, projectId).catch(() => null)
     if (existingPid && isPidAlive(existingPid)) {
@@ -47,29 +67,43 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
     activeTicks.set(projectId, projectTicks)
     if (projectTicks.has(jobId)) return
     projectTicks.add(jobId)
-    try {
-      const job = await Store.getJob(projectId, jobId)
-      if (!job) {
-        clearInterval(interval)
+
+    await instanceContext.provide(capturedCtx, async () => {
+      try {
+        const job = await Store.getJob(projectId, jobId)
+        if (!job) {
+          clearIntervalSafe(interval)
+          projectTicks.delete(jobId)
+          return
+        }
+        if (job.stopping) {
+          await gracefulStop(jobId, projectId, interval)
+          return
+        }
+        await heartbeatActiveAgents(jobId, projectId)
+        await processAdversarialVerdicts(jobId, projectId, pmSessionId)
+        await checkTimeouts(jobId, projectId)
+        await checkSteering(jobId, projectId, pmSessionId)
+        await scheduleReadyTasks(jobId, projectId, pmSessionId)
+        await checkCompletion(jobId, projectId, pmSessionId, interval)
+      } catch (e) {
+        log.error("tick failed with unrecoverable error", { jobId, error: String(e) })
+      } finally {
         projectTicks.delete(jobId)
-        return
       }
-      if (job.stopping) {
-        await gracefulStop(jobId, projectId, interval)
-        return
-      }
-      await heartbeatActiveAgents(jobId, projectId)
-      await processAdversarialVerdicts(jobId, projectId, pmSessionId)
-      await checkTimeouts(jobId, projectId)
-      await checkSteering(jobId, projectId, pmSessionId)
-      await scheduleReadyTasks(jobId, projectId, pmSessionId)
-      await checkCompletion(jobId, projectId, pmSessionId, interval)
-    } catch (e) {
-      log.error("tick failed with unrecoverable error", { jobId, error: String(e) })
-    } finally {
-      projectTicks.delete(jobId)
-    }
+    })
   }, 5_000)
+
+  const disposeListener = (event: { directory?: string | undefined; payload: any }) => {
+    if (!intervalListeners.has(interval)) return
+    if (event.directory === capturedCtx.directory && event.payload?.type === "server.instance.disposed") {
+      log.info("instance disposed, clearing pulse interval", { jobId, projectId })
+      clearIntervalSafe(interval)
+      activeTicks.get(projectId)?.delete(jobId)
+    }
+  }
+  intervalListeners.set(interval, disposeListener)
+  GlobalBus.on("event", disposeListener)
 
   return interval
 }
@@ -1078,7 +1112,7 @@ export async function checkCompletion(
   if (allClosed) {
     log.info("all tasks completed", { jobId })
     try {
-      clearInterval(interval)
+      clearIntervalSafe(interval)
       activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId)
       await Store.updateJob(projectId, jobId, { status: "complete" })
@@ -1143,7 +1177,7 @@ async function gracefulStop(jobId: string, projectId: string, interval: ReturnTy
       })
     }
 
-    clearInterval(interval)
+    clearIntervalSafe(interval)
     await removeLockFile(jobId, projectId)
     await Store.updateJob(projectId, jobId, { status: "stopped" })
   } catch (e) {
