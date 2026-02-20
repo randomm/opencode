@@ -7,8 +7,8 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BINARY_SOURCE=""
 BIN_DIR="${HOME}/bin"
-BIN_DEST="${BIN_DIR}/opencode"
-BIN_BACKUP="${BIN_DIR}/opencode.backup"
+BIN_DEST="${BIN_DIR}/opencode-new"
+BIN_BACKUP="${BIN_DIR}/opencode-new.backup"
 TEMP_DEST=""
 
 # Cleanup temp files on exit
@@ -130,11 +130,11 @@ if [[ ! -w "$BIN_DIR" ]]; then
 fi
 log_success "Installation directory ready: $BIN_DIR"
 
-# Step 4: Backup existing binary (if present)
+# Step 4: Backup existing candidate binary (if present)
 if [[ -f "$BIN_DEST" ]]; then
-  log_info "Backing up existing binary..."
+  log_info "Backing up existing candidate binary..."
   if ! cp "$BIN_DEST" "$BIN_BACKUP"; then
-    log_error "Failed to backup existing binary"
+    log_error "Failed to backup existing candidate binary"
     exit 1
   fi
   log_success "Backed up to: $BIN_BACKUP"
@@ -194,9 +194,8 @@ fi
 
 # Step 7: Verify installation
 log_info "Verifying installation..."
-if ! command -v opencode &> /dev/null; then
-  log_error "opencode not found in PATH after installation"
-  log_info "Add $BIN_DIR to your PATH: export PATH=\"$BIN_DIR:\$PATH\""
+if [[ ! -f "$BIN_DEST" ]]; then
+  log_error "Binary not found at: $BIN_DEST"
   exit 1
 fi
 
@@ -220,6 +219,19 @@ fi
 
 log_success "Installation complete!"
 echo ""
-echo "Usage: opencode --help"
-echo "Path: $BIN_DEST"
-echo "Backup: $BIN_BACKUP"
+echo "Candidate binary installed at: $BIN_DEST"
+
+if [[ -f "${BIN_DIR}/opencode" ]]; then
+  echo "Stable binary preserved at: ${BIN_DIR}/opencode"
+  echo ""
+  echo "To promote the candidate:"
+else
+  echo ""
+  echo "This is your first opencode installation!"
+  echo ""
+  echo "To complete installation:"
+fi
+
+echo "  1. Test the new binary: $BIN_DEST --version"
+echo "  2. If satisfied: mv $BIN_DEST ${BIN_DIR}/opencode"
+echo ""
