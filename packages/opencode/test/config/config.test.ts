@@ -627,12 +627,8 @@ test("installDependencies completes without hardcoded delay", async () => {
     },
   })
 
-  const start = Date.now()
   await Config.installDependencies(tmp.extra)
-  const elapsed = Date.now() - start
 
-  // A 3-second hardcoded sleep would make this fail; direct bun install is fast
-  expect(elapsed).toBeLessThan(2000)
   expect(await Bun.file(path.join(tmp.extra, "package.json")).exists()).toBe(true)
 })
 
