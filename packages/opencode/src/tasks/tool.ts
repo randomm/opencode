@@ -980,7 +980,7 @@ if (params.command === "start") {
           adversarial_verdict: verdictData,
           stage: "reviewing",
         }
-      })
+      }, true)
 
       await Store.addComment(projectId, taskId, {
         author: "adversarial-pipeline",

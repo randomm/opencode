@@ -179,4 +179,71 @@ describe("tool.ts - taskctl commands", () => {
       expect(updated?.pipeline.stage).toBe("done")
     })
   })
+
+  describe("verdict command", () => {
+    test("verdict records APPROVED verdict without throwing", async () => {
+      const worktreePath = path.join(testDataDir, "worktree-verdict")
+      await fs.mkdir(worktreePath, { recursive: true })
+
+      const task: any = {
+        id: TEST_TASK_ID,
+        job_id: TEST_JOB_ID,
+        status: "in_progress",
+        priority: 1,
+        task_type: "implementation",
+        parent_issue: 123,
+        labels: [],
+        depends_on: [],
+        assignee: "ses-session789",
+        assignee_pid: 98765,
+        worktree: worktreePath,
+        branch: "feature/test-verdict",
+        title: "Test task",
+        description: "Test",
+        acceptance_criteria: "Test",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "adversarial-running",
+          attempt: 1,
+          last_activity: new Date().toISOString(),
+          last_steering: null,
+          history: [],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(TEST_PROJECT_ID, task)
+
+      await expect(async () => {
+        await Store.updateTask(TEST_PROJECT_ID, TEST_TASK_ID, {
+          status: "review",
+          pipeline: {
+            ...task.pipeline,
+            adversarial_verdict: {
+              verdict: "APPROVED",
+              summary: "All checks passed",
+              issues: [],
+              created_at: new Date().toISOString(),
+            },
+            stage: "reviewing",
+          }
+        }, true)
+
+        await Store.addComment(TEST_PROJECT_ID, TEST_TASK_ID, {
+          author: "adversarial-pipeline",
+          message: "Verdict: APPROVED — All checks passed",
+          created_at: new Date().toISOString(),
+        })
+      }).not.toThrow()
+
+      const updated = await Store.getTask(TEST_PROJECT_ID, TEST_TASK_ID)
+      expect(updated?.status).toBe("review")
+      expect(updated?.pipeline.stage).toBe("reviewing")
+      expect(updated?.pipeline.adversarial_verdict?.verdict).toBe("APPROVED")
+      expect(updated?.pipeline.adversarial_verdict?.summary).toBe("All checks passed")
+    })
+  })
 })
