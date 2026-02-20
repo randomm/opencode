@@ -138,6 +138,7 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
             assignee_pid: null,
             worktree: null,
             branch: null,
+            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
           },
           true,
         )
@@ -299,6 +300,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
       assignee_pid: process.pid,
       worktree: worktreeInfo.directory,
       branch: worktreeInfo.branch,
+      pipeline: { ...task.pipeline, stage: "developing", last_activity: now },
     },
     true,
   )
@@ -323,18 +325,19 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
       log.error("failed to clean up worktree after developer prompt failed", { taskId: task.id, error: String(e) }),
     )
 
-    await Store.updateTask(
-      projectId,
-      task.id,
-      {
-        status: "open",
-        assignee: null,
-        assignee_pid: null,
-        worktree: null,
-        branch: null,
-      },
-      true,
-    )
+await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            status: "open",
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
+          },
+          true,
+        )
 
     await Store.addComment(projectId, task.id, {
       author: "system",
@@ -397,6 +400,8 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
 
   for (const task of jobTasks) {
     if (task.status === "in_progress") {
+      // Note: null/undefined last_activity defaults to 0, causing immediate timeout
+      // This is safe because we only check tasks with status="in_progress", not "open" tasks that may have null timestamps
       const lastActivity = task.pipeline.last_activity ? new Date(task.pipeline.last_activity).getTime() : 0
 
       let timedOut = false
@@ -450,6 +455,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
             assignee_pid: null,
             worktree: null,
             branch: null,
+            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
           },
           true,
         )
@@ -474,7 +480,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
           projectId,
           task.id,
           {
-            pipeline: { ...task.pipeline, stage: "reviewing" },
+            pipeline: { ...task.pipeline, stage: "reviewing", last_activity: new Date().toISOString() },
           },
           true,
         )
@@ -614,7 +620,7 @@ If there is nothing to commit, that is fine — report success.`
       branch: null,
       assignee: null,
       assignee_pid: null,
-      pipeline: { ...task.pipeline, stage: "done" },
+      pipeline: { ...task.pipeline, stage: "done", last_activity: null },
     },
     true,
   )
@@ -719,7 +725,7 @@ taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>
         status: "open",
         assignee: null,
         assignee_pid: null,
-        pipeline: { ...task.pipeline, stage: "idle" },
+        pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
       },
       true,
     )
@@ -744,7 +750,7 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
     task.id,
     {
       status: "failed",
-      pipeline: { ...task.pipeline, stage: "failed" },
+      pipeline: { ...task.pipeline, stage: "failed", last_activity: null },
     },
     true,
   )
@@ -775,7 +781,7 @@ async function escalateCommitFailure(
     task.id,
     {
       status: "blocked_on_conflict",
-      pipeline: { ...task.pipeline, stage: "commit-failed" },
+      pipeline: { ...task.pipeline, stage: "commit-failed", last_activity: null },
     },
     true,
   )
@@ -829,7 +835,7 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
   }
 
   await Store.updateTask(projectId, task.id, {
-    pipeline: { ...task.pipeline, stage: "adversarial-running" },
+    pipeline: { ...task.pipeline, stage: "adversarial-running", last_activity: new Date().toISOString() },
   })
 
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
@@ -879,7 +885,7 @@ Read the changed files in the worktree, run typecheck, and record your verdict w
         assignee_pid: null,
         worktree: null,
         branch: null,
-        pipeline: { ...task.pipeline, stage: "idle" },
+        pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
       },
       true,
     )
@@ -1157,18 +1163,19 @@ async function gracefulStop(jobId: string, projectId: string, interval: ReturnTy
         }
       }
 
-      await Store.updateTask(
-        projectId,
-        task.id,
-        {
-          status: "open",
-          assignee: null,
-          assignee_pid: null,
-          worktree: null,
-          branch: null,
-        },
-        true,
-      )
+await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            status: "open",
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
+          },
+          true,
+        )
 
       await Store.addComment(projectId, task.id, {
         author: "system",
