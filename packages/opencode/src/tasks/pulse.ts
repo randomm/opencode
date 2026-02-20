@@ -114,43 +114,60 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
 
   for (const task of jobTasks) {
     if (task.status === "in_progress" || task.status === "review") {
-      // Check: Is the session actively running?
-      const running = task.assignee ? isSessionActivelyRunning(task.assignee) : false
-      if (!running) {
-        let worktreeRemoved = false
-        const safeWorktree = sanitizeWorktree(task.worktree)
-        if (safeWorktree) {
-          try {
-            await Worktree.remove({ directory: safeWorktree })
-            worktreeRemoved = true
-            log.info("removed worktree during resurrection", { taskId: task.id, worktree: safeWorktree })
-          } catch (e) {
-            log.error("failed to remove worktree during resurrection", { taskId: task.id, error: String(e) })
-          }
-        }
+      const pidAlive = task.assignee_pid ? isPidAlive(task.assignee_pid) : false
+      const sessionAlive = task.assignee ? isSessionActivelyRunning(task.assignee) : false
+      const alive = pidAlive || sessionAlive
 
-        await Store.updateTask(
-          projectId,
-          task.id,
-          {
-            status: "open",
+      if (!alive) {
+        if (task.pipeline.stage === "developing") {
+          // Developer finished before restart — advance to reviewing, preserve worktree/branch
+          await Store.updateTask(projectId, task.id, {
             assignee: null,
             assignee_pid: null,
-            worktree: null,
-            branch: null,
-            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
-          },
-          true,
-        )
+            pipeline: { ...task.pipeline, stage: "reviewing", last_activity: new Date().toISOString() },
+          }, true)
+          await Store.addComment(projectId, task.id, {
+            author: "system",
+            message: "Resurrected: developer session ended before restart. Advanced to reviewing.",
+            created_at: new Date().toISOString(),
+          })
+          log.info("resurrected developing task to reviewing", { taskId: task.id, jobId })
+        } else {
+          // Other stages — reset to idle (existing behavior)
+          let worktreeRemoved = false
+          const safeWorktree = sanitizeWorktree(task.worktree)
+          if (safeWorktree) {
+            try {
+              await Worktree.remove({ directory: safeWorktree })
+              worktreeRemoved = true
+              log.info("removed worktree during resurrection", { taskId: task.id, worktree: safeWorktree })
+            } catch (e) {
+              log.error("failed to remove worktree during resurrection", { taskId: task.id, error: String(e) })
+            }
+          }
+          await Store.updateTask(
+            projectId,
+            task.id,
+            {
+              status: "open",
+              assignee: null,
+              assignee_pid: null,
+              worktree: null,
+              branch: null,
+              pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
+            },
+            true,
+          )
 
-        await Store.addComment(projectId, task.id, {
-          author: "system",
-          message: worktreeRemoved
-            ? "Resurrected: agent session not found on Pulse restart. Worktree cleaned up."
-            : "Resurrected: agent session not found on Pulse restart.",
-          created_at: new Date().toISOString(),
-        })
-        log.info("resurrected task", { taskId: task.id, jobId, worktreeRemoved })
+          await Store.addComment(projectId, task.id, {
+            author: "system",
+            message: worktreeRemoved
+              ? "Resurrected: agent session not found on Pulse restart. Worktree cleaned up."
+              : "Resurrected: agent session not found on Pulse restart.",
+            created_at: new Date().toISOString(),
+          })
+          log.info("resurrected task", { taskId: task.id, jobId, worktreeRemoved })
+        }
       }
     }
   }
@@ -374,10 +391,12 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
     if (task.status === "in_progress" && task.assignee) {
       // Check: Session is actively running (prompt not finished)
       const sessionAlive = isSessionActivelyRunning(task.assignee)
+      const pidAlive = task.assignee_pid ? isPidAlive(task.assignee_pid) : true
+      const alive = sessionAlive && pidAlive
       const updated = await Store.getTask(projectId, task.id)
       if (!updated) continue
 
-      if (!sessionAlive) {
+      if (!alive) {
         log.info("developer session ended, transitioning to review stage", { taskId: task.id })
         await Store.updateTask(projectId, task.id, {
           pipeline: { ...updated.pipeline, stage: "reviewing", last_activity: now },
