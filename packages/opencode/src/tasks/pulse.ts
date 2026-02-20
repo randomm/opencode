@@ -583,11 +583,12 @@ async function commitTask(task: Task, projectId: string, pmSessionId: string): P
   }
 
   const commitMsg = `feat(taskctl): ${task.title} (#${task.parent_issue})`
-  const opsPrompt = `Commit all changes in the current directory.
+  const opsPrompt = `Commit all changes in the worktree directory: ${task.worktree}
 Commit message: "${commitMsg}"
 Do NOT push to remote. Only commit locally.
+Use ${task.worktree} as the working directory for all bash commands (workdir parameter).
 Run: git add -A && git commit -m "${commitMsg}"
-If there is nothing to commit, that is fine — report success.`
+If there is an error, report the full error output.`
 
   try {
     await SessionPrompt.prompt({
@@ -625,6 +626,31 @@ If there is nothing to commit, that is fine — report success.`
     }
     await escalateCommitFailure(task, projectId, pmSessionId, "Commit timed out after 5 minutes")
     return
+  }
+
+  // Read final ops session message to verify commit
+  const msgs = await Array.fromAsync(MessageV2.stream(opsSession.id))
+  const last = msgs.find((m) => m.info.role === "assistant")
+  const textPart = last?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && !p.synthetic)
+  const text = textPart?.text ?? ""
+
+  // Only verify if ops produced output — empty means no messages available, treat as success
+  if (text) {
+    const nothingToCommit = /nothing to commit/i.test(text)
+    const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+    const hasFatal = /fatal|error/i.test(text)
+
+    if (nothingToCommit) {
+      log.error("@ops reported nothing to commit", { taskId: task.id })
+      await escalateCommitFailure(task, projectId, pmSessionId, "Nothing to commit — developer changes not found in worktree")
+      return
+    }
+
+    if (hasFatal && !hasCommitHash) {
+      log.error("@ops commit failed", { taskId: task.id, output: text.substring(0, 200) })
+      await escalateCommitFailure(task, projectId, pmSessionId, `Commit failed: ${text.substring(0, 200)}`)
+      return
+    }
   }
 
   if (task.worktree) {

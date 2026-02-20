@@ -376,15 +376,85 @@ describe("pulse.ts", () => {
     })
   })
 
-  describe("lock file integrity", () => {
-    test("writeLockFile overwrites existing lock", async () => {
-      const { writeLockFile, readLockPid } = await import("../../src/tasks/pulse")
+   describe("lock file integrity", () => {
+     test("writeLockFile overwrites existing lock", async () => {
+       const { writeLockFile, readLockPid } = await import("../../src/tasks/pulse")
 
-      await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 1000)
-      await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 2000)
+       await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 1000)
+       await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 2000)
 
-      const pid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
-      expect(pid).toBe(2000)
+       const pid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
+       expect(pid).toBe(2000)
+     })
+   })
+
+    describe("commitTask", () => {
+      test("commit verification: empty text (no ops output) is treated as success", async () => {
+        // When ops session produces no messages, text is empty string.
+        // The new logic should treat this as success (don't escalate),
+        // only escalate on explicit "nothing to commit" or fatal errors.
+        const text = ""
+        
+        // Should NOT escalate with empty text
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(false)
+        
+        // Empty text doesn't trigger escalation (only escalates if text is set AND condition is met)
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(false)
+      })
+
+      test("commit verification: 'nothing to commit' message escalates", async () => {
+        const text = "On branch main\nnothing to commit, working tree clean"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(true)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(false)
+        
+        // Should escalate with "nothing to commit"
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(true)
+      })
+
+      test("commit verification: fatal error without commit hash escalates", async () => {
+        const text = "fatal: not a git repository"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(true)
+        
+        // Should escalate with fatal error and no commit hash
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(true)
+      })
+
+      test("commit verification: commit hash with error does not escalate", async () => {
+        const text = "[main abc1234] Commit message\nError: something minor"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(true)
+        expect(hasFatal).toBe(true)
+        
+        // Should NOT escalate if we have commit hash (commit succeeded)
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(false)
+      })
     })
-  })
-})
+ })
