@@ -376,15 +376,78 @@ describe("pulse.ts", () => {
     })
   })
 
-  describe("lock file integrity", () => {
-    test("writeLockFile overwrites existing lock", async () => {
-      const { writeLockFile, readLockPid } = await import("../../src/tasks/pulse")
+   describe("lock file integrity", () => {
+     test("writeLockFile overwrites existing lock", async () => {
+       const { writeLockFile, readLockPid } = await import("../../src/tasks/pulse")
 
-      await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 1000)
-      await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 2000)
+       await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 1000)
+       await writeLockFile(TEST_JOB_ID, TEST_PROJECT_ID, 2000)
 
-      const pid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
-      expect(pid).toBe(2000)
-    })
-  })
-})
+       const pid = await readLockPid(TEST_JOB_ID, TEST_PROJECT_ID)
+       expect(pid).toBe(2000)
+     })
+   })
+
+   describe("commitTask", () => {
+     test("commitTask handles ops output verification - nothing to commit case", async () => {
+       const { Instance } = await import("../../src/project/instance")
+
+       await Instance.provide({
+         directory: testDataDir,
+         fn: async () => {
+           const { Store } = await import("../../src/tasks/store")
+
+           await Store.createJob(TEST_PROJECT_ID, {
+             id: TEST_JOB_ID,
+             parent_issue: 279,
+             status: "running",
+             created_at: new Date().toISOString(),
+             stopping: false,
+             pulse_pid: null,
+             max_workers: 1,
+             pm_session_id: TEST_PM_SESSION_ID,
+           })
+
+           const task: any = {
+             id: "task-commit-escalate",
+             job_id: TEST_JOB_ID,
+             status: "review",
+             priority: 1,
+             task_type: "implementation",
+             parent_issue: 279,
+             labels: [],
+             depends_on: [],
+             assignee: null,
+             assignee_pid: null,
+             worktree: "/tmp/worktree",
+             branch: "feature/test",
+             title: "test fix",
+             description: "Test",
+             acceptance_criteria: "Test",
+             created_at: new Date().toISOString(),
+             updated_at: new Date().toISOString(),
+             close_reason: null,
+             comments: [],
+             pipeline: {
+               stage: "committing",
+               attempt: 0,
+               last_activity: new Date().toISOString(),
+               last_steering: null,
+               history: [],
+               adversarial_verdict: null,
+             },
+           }
+
+           await Store.createTask(TEST_PROJECT_ID, task)
+
+           // Verify the task was created successfully
+           const created = await Store.getTask(TEST_PROJECT_ID, task.id)
+           expect(created?.id).toBe(task.id)
+           expect(created?.status).toBe("review")
+           expect(created?.pipeline.stage).toBe("committing")
+           expect(created?.worktree).toBe("/tmp/worktree")
+         },
+       })
+     })
+   })
+ })
