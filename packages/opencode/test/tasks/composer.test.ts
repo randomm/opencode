@@ -853,3 +853,55 @@ test("runComposer rolls back tasks on partial creation failure", async () => {
 
   Store.createTask = originalCreate
 })
+
+test("runComposer rejects numeric depends_on values", async () => {
+  const mockSpawn = async () =>
+    JSON.stringify({
+      status: "ready",
+      tasks: [
+        {
+          title: "Task A",
+          description: "desc",
+          acceptance_criteria: "criteria",
+          task_type: "implementation" as const,
+          labels: ["module:test"],
+          depends_on: [],
+          priority: 0,
+        },
+        {
+          title: "Task B",
+          description: "desc",
+          acceptance_criteria: "criteria",
+          task_type: "implementation" as const,
+          labels: ["module:test"],
+          depends_on: [1],  // numeric — should be rejected
+          priority: 1,
+        },
+      ],
+    })
+
+  let threw = false
+  try {
+    await runComposer(
+      {
+        jobId: "job-1",
+        projectId: "test-project",
+        pmSessionId: "session-1",
+        issueNumber: 123,
+        issueTitle: "Add feature",
+        issueBody: "Please add a feature.",
+      },
+      mockSpawn,
+    )
+  } catch (e) {
+    threw = true
+    const msg = (e as Error).message
+    if (!msg.includes("validation failed")) {
+      throw new Error(`Expected validation error for numeric depends_on, got: ${msg}`)
+    }
+  }
+
+  if (!threw) {
+    throw new Error("Expected runComposer to throw validation error for numeric depends_on")
+  }
+})
