@@ -515,14 +515,21 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
       true,
     )
 
+    // Reload to get task without the cleared verdict
+    const updatedTask = await Store.getTask(projectId, task.id)
+    if (!updatedTask) {
+      log.error("task disappeared after clearing verdict", { taskId: task.id })
+      continue
+    }
+
     if (verdict.verdict === "APPROVED") {
-      await commitTask(task, projectId, pmSessionId)
+      await commitTask(updatedTask, projectId, pmSessionId)
     } else {
-      const newAttempt = (task.pipeline.attempt || 0) + 1
+      const newAttempt = (updatedTask.pipeline.attempt || 0) + 1
       if (newAttempt >= 3) {
-        await escalateToPM(task, jobId, projectId, pmSessionId)
+        await escalateToPM(updatedTask, jobId, projectId, pmSessionId)
       } else {
-        await respawnDeveloper(task, jobId, projectId, pmSessionId, newAttempt, verdict)
+        await respawnDeveloper(updatedTask, jobId, projectId, pmSessionId, newAttempt, verdict)
       }
     }
   }
