@@ -1,4 +1,4 @@
-import { describe, expect, test, mock } from "bun:test"
+import { describe, expect, test, spyOn, beforeEach, afterEach } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { Store } from "../../src/tasks/store"
 import type { Task, Job } from "../../src/tasks/types"
@@ -9,21 +9,6 @@ import { SessionPrompt } from "../../src/session/prompt"
 import { Worktree } from "../../src/worktree"
 import { Bus } from "../../src/bus"
 import { BackgroundTaskEvent } from "../../src/session/async-tasks"
-
-// Mock Session, SessionPrompt, Worktree at module level
-mock.module("../../src/session/prompt", () => ({
-  SessionPrompt: {
-    prompt: mock(async (opts: any) => Promise.resolve()),
-    cancel: mock(async (sessionId: string) => {}),
-  },
-}))
-
-mock.module("../../src/worktree", () => ({
-  Worktree: {
-    create: mock(async (opts: any) => ({ directory: "/mock-worktree", branch: "mock-branch" })),
-    remove: mock(async (opts: any) => {}),
-  },
-}))
 
 describe("taskctl pipeline: processAdversarialVerdicts state machine", () => {
   test("APPROVED verdict stores correctly", async () => {
@@ -429,6 +414,27 @@ describe("taskctl pipeline: processAdversarialVerdicts state machine", () => {
 })
 
 describe("taskctl pipeline: processAdversarialVerdicts state machine", () => {
+  let promptSpy: any
+  let cancelSpy: any
+  let removeSpy: any
+
+  beforeEach(() => {
+    // Mock SessionPrompt methods only for tests in this describe block
+    promptSpy = spyOn(SessionPrompt, "prompt").mockImplementation(() => Promise.resolve())
+    cancelSpy = spyOn(SessionPrompt, "cancel").mockImplementation(() => {})
+
+    // Mock Worktree.remove only for tests in this describe block
+    removeSpy = spyOn(Worktree, "remove")
+    removeSpy.mockImplementation(async () => true)
+  })
+
+  afterEach(() => {
+    // Restore original implementations
+    promptSpy.mockRestore()
+    cancelSpy.mockRestore()
+    removeSpy.mockRestore()
+  })
+
   test("APPROVED verdict closes task and fires BackgroundTaskEvent", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
