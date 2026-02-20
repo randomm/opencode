@@ -47,17 +47,13 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
   }
 
   const startJob = async (): Promise<void> => {
-    const existingPid = await readLockPid(jobId, projectId).catch(() => null)
-    if (existingPid && isPidAlive(existingPid)) {
-      log.error("job already running", { jobId, existingPid })
+    await writeLockFile(jobId, projectId, process.pid)
+    const lockPid = await readLockPid(jobId, projectId).catch(() => null)
+    if (lockPid !== process.pid) {
+      log.error("lost lock file race, aborting start", { jobId, lockPid, myPid: process.pid })
       return
     }
-    if (existingPid && !isPidAlive(existingPid)) {
-      log.warn("overwriting stale lock file", { jobId, oldPid: existingPid })
-    }
-    writeLockFile(jobId, projectId, process.pid).catch((e) =>
-      log.error("failed to write lock file", { jobId, error: String(e) }),
-    )
+    await Store.updateJob(projectId, jobId, { pulse_pid: process.pid })
   }
 
   startJob()
@@ -119,8 +115,8 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
       const alive = pidAlive || sessionAlive
 
       if (!alive) {
-        if (task.pipeline.stage === "developing") {
-          // Developer finished before restart — advance to reviewing, preserve worktree/branch
+        if (task.pipeline.stage === "developing" || task.pipeline.stage === "adversarial-running") {
+          // Developer or adversarial finished before restart — advance to reviewing, preserve worktree/branch
           await Store.updateTask(projectId, task.id, {
             assignee: null,
             assignee_pid: null,
@@ -128,10 +124,12 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
           }, true)
           await Store.addComment(projectId, task.id, {
             author: "system",
-            message: "Resurrected: developer session ended before restart. Advanced to reviewing.",
+            message: task.pipeline.stage === "developing"
+              ? "Resurrected: developer session ended before restart. Advanced to reviewing."
+              : "Resurrected: adversarial session ended before restart. Returned to reviewing.",
             created_at: new Date().toISOString(),
           })
-          log.info("resurrected developing task to reviewing", { taskId: task.id, jobId })
+          log.info("resurrected task to reviewing", { taskId: task.id, jobId, fromStage: task.pipeline.stage })
         } else {
           // Other stages — reset to idle (existing behavior)
           let worktreeRemoved = false
@@ -237,7 +235,7 @@ function isPidAlive(pid: number): boolean {
   }
 }
 
-export { isPidAlive, writeLockFile, removeLockFile, readLockPid, processAdversarialVerdicts, spawnAdversarial, scheduleReadyTasks, heartbeatActiveAgents }
+export { isPidAlive, writeLockFile, removeLockFile, readLockPid, checkTimeouts, processAdversarialVerdicts, spawnAdversarial, scheduleReadyTasks, heartbeatActiveAgents }
 
 async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const job = await Store.getJob(projectId, jobId)
@@ -416,7 +414,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
   const allTasks = await Store.listTasks(projectId)
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
   const now = Date.now()
-  const ADVERSARIAL_TIMEOUT_MS = 60 * 60 * 1000
+  const ADVERSARIAL_TIMEOUT_MS = 30 * 60 * 1000
   const SESSION_MESSAGE_TIMEOUT_MS = 30 * 60 * 1000
 
   for (const task of jobTasks) {
@@ -508,7 +506,7 @@ async function checkTimeouts(jobId: string, projectId: string): Promise<void> {
 
         await Store.addComment(projectId, task.id, {
           author: "system",
-          message: "Adversarial agent timed out after 60 minutes. Will retry on next Pulse tick.",
+          message: "Adversarial agent timed out after 30 minutes. Will retry on next Pulse tick.",
           created_at: new Date().toISOString(),
         })
       }
