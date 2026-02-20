@@ -875,7 +875,7 @@ if (params.command === "start") {
           assignee: null,
           assignee_pid: null,
           pipeline: { ...task.pipeline, stage: "done" },
-        })
+        }, true)
 
         await Store.addComment(projectId, params.taskId, {
           author: "system",
@@ -935,7 +935,7 @@ if (params.command === "start") {
           adversarial_verdict: null,
           last_activity: null,
         },
-      })
+      }, true)
 
       await Store.addComment(projectId, params.taskId, {
         author: "system",
