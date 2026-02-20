@@ -261,6 +261,7 @@ RULES FOR GOOD TASK DECOMPOSITION:
           defaults,
           PermissionNext.fromConfig({
             task: "deny",
+            taskctl: "deny",
           }),
           user,
         ),
@@ -281,7 +282,7 @@ You will receive a task description with:
 3. Write minimal code to make tests pass
 4. Refactor for clarity following AGENTS.md style guide
 5. Run \`bun run typecheck && bun test\` — fix all errors
-6. When done: \`taskctl comment <taskId> "Implementation complete: <one-line summary of what was built>"\`
+6. When done: simply complete your work - the pulse system automatically detects completion
 
 ## Rules
 - ONLY implement what is explicitly in the task description
@@ -298,12 +299,7 @@ You will receive a task description with:
 - **context7** — current library docs. Use resolve-library-id then query-docs before using any external library API
 - **parallel-search + web_fetch MCP tools** — web search when you need current information not in the codebase
 
-## taskctl commands available to you
-- \`taskctl comment <taskId> "<message>"\` — log progress or signal completion
-- \`taskctl split <taskId>\` — if task is too large, split it (creates two sub-tasks)
-- \`taskctl depends <taskId> --on <otherId>\` — if you discover an undeclared dependency
-
-You may NOT call: taskctl start, taskctl stop, taskctl verdict, taskctl override, taskctl retry, taskctl resume`,
+NOTE: You do NOT have access to taskctl commands. The pipeline handles task state automatically.`,
       },
       "adversarial-pipeline": {
         name: "adversarial-pipeline",
@@ -315,6 +311,7 @@ You may NOT call: taskctl start, taskctl stop, taskctl verdict, taskctl override
           PermissionNext.fromConfig({
             "*": "deny",
             bash: "allow",
+            taskctl: "allow",
           }),
           user,
         ),
@@ -336,16 +333,31 @@ Your ONLY job is to review code changes in an assigned worktree and record a str
 5. Check: Does typecheck pass? (Run \`bun run typecheck\` in the worktree)
 
 ## Recording your verdict — MANDATORY
-You MUST call taskctl verdict to record your finding. Never write a text response instead.
+
+You MUST use the \`taskctl\` MCP tool to record your verdict. This is an MCP tool in your tool list — NOT a bash command. Never write a text response instead.
+
+Use the taskctl tool with these parameters:
 
 **If the code is good:**
-\`taskctl verdict <taskId> --verdict APPROVED\`
+- command: "verdict"
+- taskId: <the task ID you were given>
+- verdict: "APPROVED"
+- verdictSummary: "Brief summary of what you reviewed and why it passes"
+- verdictIssues: []
 
 **If there are fixable issues:**
-\`taskctl verdict <taskId> --verdict ISSUES_FOUND --summary "Brief summary" --issues '[{"location":"src/foo.ts:42","severity":"HIGH","fix":"Add null check before calling user.profile"}]'\`
+- command: "verdict"
+- taskId: <the task ID>
+- verdict: "ISSUES_FOUND"
+- verdictSummary: "Brief summary"
+- verdictIssues: [{"location":"src/foo.ts:42","severity":"HIGH","fix":"Add null check before calling user.profile"}]
 
 **If there are critical/blocking issues:**
-\`taskctl verdict <taskId> --verdict CRITICAL_ISSUES_FOUND --summary "Brief summary" --issues '[...]'\`
+- command: "verdict"
+- taskId: <the task ID>
+- verdict: "CRITICAL_ISSUES_FOUND"
+- verdictSummary: "Brief summary"
+- verdictIssues: [{"location":"...","severity":"CRITICAL","fix":"..."}]
 
 ## Severity guide
 - CRITICAL: Security vulnerability, data loss risk, or complete functional failure
@@ -354,7 +366,7 @@ You MUST call taskctl verdict to record your finding. Never write a text respons
 - LOW: Style or minor improvement suggestion
 
 ## Rules
-- You may ONLY call: taskctl verdict
+- You may ONLY use: the taskctl MCP tool (command: "verdict")
 - Do NOT spawn any agents
 - Do NOT commit or push
 - Be specific: every issue must have a location (file:line) and a concrete fix suggestion
