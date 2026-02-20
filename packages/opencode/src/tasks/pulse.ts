@@ -391,7 +391,7 @@ async function heartbeatActiveAgents(jobId: string, projectId: string): Promise<
     if (task.status === "in_progress" && task.assignee) {
       // Check: Session is actively running (prompt not finished)
       const sessionAlive = isSessionActivelyRunning(task.assignee)
-      const pidAlive = task.assignee_pid ? isPidAlive(task.assignee_pid) : true
+      const pidAlive = task.assignee_pid ? isPidAlive(task.assignee_pid) : false
       const alive = sessionAlive && pidAlive
       const updated = await Store.getTask(projectId, task.id)
       if (!updated) continue
