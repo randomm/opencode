@@ -509,8 +509,8 @@ describe("taskctl pipeline: processAdversarialVerdicts state machine", () => {
 
         // Verify BackgroundTaskEvent was fired
         expect(completedEvents).toHaveLength(1)
-        expect(completedEvents[0].taskID).toBe(testTask.id)
-        expect(completedEvents[0].sessionID).toBe(pmSession.id)
+        expect(completedEvents[0].properties.taskID).toBe(testTask.id)
+        expect(completedEvents[0].properties.sessionID).toBe(pmSession.id)
 
         unsubscribe()
       },
@@ -683,7 +683,7 @@ describe("taskctl pipeline: processAdversarialVerdicts state machine", () => {
 
         // Verify BackgroundTaskEvent was fired for escalation
         expect(completedEvents).toHaveLength(1)
-        expect(completedEvents[0].taskID).toBe(`escalation-${testTask.id}`)
+        expect(completedEvents[0].properties.taskID).toBe(`escalation-${testTask.id}`)
 
         unsubscribe()
       },
