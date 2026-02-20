@@ -18,7 +18,7 @@ import { GlobalBus } from "../bus/global"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const activeTicks = new Map<string, Set<string>>()
-const intervalListeners = new Map<ReturnType<typeof setInterval>, (event: { directory: string | undefined; payload: any }) => void>()
+const intervalListeners = new Map<ReturnType<typeof setInterval>, (event: { directory?: string | undefined; payload: any }) => void>()
 
 const TIMEOUT_MS = 30 * 60 * 1000
 
@@ -94,7 +94,7 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
     })
   }, 5_000)
 
-  const disposeListener = (event: { directory: string | undefined; payload: any }) => {
+  const disposeListener = (event: { directory?: string | undefined; payload: any }) => {
     if (!intervalListeners.has(interval)) return
     if (event.directory === capturedCtx.directory && event.payload?.type === "server.instance.disposed") {
       log.info("instance disposed, clearing pulse interval", { jobId, projectId })
