@@ -728,8 +728,7 @@ Summary: ${verdict.summary}
 Issues:
 ${issueLines}
 
-The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, then signal completion with:
-taskctl comment ${task.id} "Implementation complete: <summary of what was fixed>"`
+The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, and complete your work. The pulse system automatically detects completion.`
 
   try {
     await SessionPrompt.prompt({
