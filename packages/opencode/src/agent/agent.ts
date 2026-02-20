@@ -245,8 +245,8 @@ If the spec is clear enough to decompose:
       "acceptance_criteria": "Handler validates token, returns 401 on failure. Tests pass.",
       "task_type": "implementation",
       "labels": ["module:auth", "file:src/auth/login.ts"],
-      "depends_on": ["Add OAuth2 config schema"],
-      "priority": 1
+       "depends_on": ["Add OAuth2 config schema"],  // use exact title strings from this batch, never numeric indexes
+       "priority": 1
     }
   ]
 }
@@ -260,7 +260,7 @@ RULES FOR GOOD TASK DECOMPOSITION:
 6. Do not create tasks for work not explicitly required by the issue
 7. Validate your own output: check that no depends_on creates a cycle before responding
 8. Respond with ONLY the JSON object — no markdown, no explanation, no code blocks
-9. depends_on values must be exact task title strings — NOT numbers or indexes`,
+ 9. depends_on values must be the EXACT title string of another task in this batch — never use numbers, indexes, or abbreviations`,
       },
       "developer-pipeline": {
         name: "developer-pipeline",
