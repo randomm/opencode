@@ -618,6 +618,24 @@ test("does not try to install dependencies in read-only OPENCODE_CONFIG_DIR", as
   }
 })
 
+test("installDependencies completes without hardcoded delay", async () => {
+  await using tmp = await tmpdir<string>({
+    init: async (dir) => {
+      const cfg = path.join(dir, "configdir")
+      await fs.mkdir(cfg, { recursive: true })
+      return cfg
+    },
+  })
+
+  const start = Date.now()
+  await Config.installDependencies(tmp.extra)
+  const elapsed = Date.now() - start
+
+  // A 3-second hardcoded sleep would make this fail; direct bun install is fast
+  expect(elapsed).toBeLessThan(2000)
+  expect(await Bun.file(path.join(tmp.extra, "package.json")).exists()).toBe(true)
+})
+
 test("installs dependencies in writable OPENCODE_CONFIG_DIR", async () => {
   await using tmp = await tmpdir<string>({
     init: async (dir) => {
