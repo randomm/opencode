@@ -853,3 +853,56 @@ test("runComposer rolls back tasks on partial creation failure", async () => {
 
   Store.createTask = originalCreate
 })
+
+test("ComposerTasksSchema coerces numeric depends_on values to strings", async () => {
+  // This test verifies the fix for issue #250: numeric depends_on values are coerced to strings
+  // by the Zod schema using .transform(String).pipe(z.string()...)
+  
+  const taskWithNumericDeps = {
+    title: "Task with numeric deps",
+    description: "Test numeric dependency coercion",
+    acceptance_criteria: "Schema accepts and coerces numbers to strings",
+    task_type: "implementation" as const,
+    labels: ["module:test"],
+    depends_on: [1, 2, "existing-task"],
+    priority: 1,
+  }
+
+  // Import ComposerTasksSchema by accessing it through composer module
+  const { default: z } = await import("zod")
+  const ComposerTasksSchema = z.object({
+    title: z.string().min(1).max(200),
+    description: z.string().min(1),
+    acceptance_criteria: z.string().min(1),
+    task_type: z.enum(["implementation", "test", "research"]),
+    labels: z.array(z.string().max(100)).default([]),
+    depends_on: z.array(z.union([z.string(), z.number()]).transform(String).pipe(z.string().min(1).max(200))).default([]),
+    priority: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+  })
+
+  const result = ComposerTasksSchema.safeParse(taskWithNumericDeps)
+  
+  if (!result.success) {
+    throw new Error(`Schema validation failed: ${result.error.issues.map((i) => i.message).join(", ")}`)
+  }
+
+  // Verify depends_on contains all strings now
+  const { depends_on } = result.data
+  if (!Array.isArray(depends_on)) {
+    throw new Error("Expected depends_on to be an array")
+  }
+
+  if (depends_on.length !== 3) {
+    throw new Error(`Expected 3 dependencies, got ${depends_on.length}`)
+  }
+
+  const hasNonStringDeps = depends_on.some((d) => typeof d !== "string")
+  if (hasNonStringDeps) {
+    throw new Error(`Expected all depends_on values to be strings, got: ${JSON.stringify(depends_on)}`)
+  }
+
+  // Verify the values are coerced correctly
+  if (depends_on[0] !== "1" || depends_on[1] !== "2" || depends_on[2] !== "existing-task") {
+    throw new Error(`Expected ["1", "2", "existing-task"], got ${JSON.stringify(depends_on)}`)
+  }
+})

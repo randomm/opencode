@@ -12,7 +12,7 @@ const ComposerTasksSchema = z.object({
   acceptance_criteria: z.string().min(1),
   task_type: z.enum(["implementation", "test", "research"]),
   labels: z.array(z.string().max(100)).default([]),
-  depends_on: z.array(z.string().min(1).max(200)).default([]),
+  depends_on: z.array(z.union([z.string(), z.number()]).transform(String).pipe(z.string().min(1).max(200))).default([]),
   priority: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
 })
 
