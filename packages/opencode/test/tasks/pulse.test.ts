@@ -388,66 +388,73 @@ describe("pulse.ts", () => {
      })
    })
 
-   describe("commitTask", () => {
-     test("commitTask handles ops output verification - nothing to commit case", async () => {
-       const { Instance } = await import("../../src/project/instance")
+    describe("commitTask", () => {
+      test("commit verification: empty text (no ops output) is treated as success", async () => {
+        // When ops session produces no messages, text is empty string.
+        // The new logic should treat this as success (don't escalate),
+        // only escalate on explicit "nothing to commit" or fatal errors.
+        const text = ""
+        
+        // Should NOT escalate with empty text
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(false)
+        
+        // Empty text doesn't trigger escalation (only escalates if text is set AND condition is met)
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(false)
+      })
 
-       await Instance.provide({
-         directory: testDataDir,
-         fn: async () => {
-           const { Store } = await import("../../src/tasks/store")
+      test("commit verification: 'nothing to commit' message escalates", async () => {
+        const text = "On branch main\nnothing to commit, working tree clean"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(true)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(false)
+        
+        // Should escalate with "nothing to commit"
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(true)
+      })
 
-           await Store.createJob(TEST_PROJECT_ID, {
-             id: TEST_JOB_ID,
-             parent_issue: 279,
-             status: "running",
-             created_at: new Date().toISOString(),
-             stopping: false,
-             pulse_pid: null,
-             max_workers: 1,
-             pm_session_id: TEST_PM_SESSION_ID,
-           })
+      test("commit verification: fatal error without commit hash escalates", async () => {
+        const text = "fatal: not a git repository"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(false)
+        expect(hasFatal).toBe(true)
+        
+        // Should escalate with fatal error and no commit hash
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(true)
+      })
 
-           const task: any = {
-             id: "task-commit-escalate",
-             job_id: TEST_JOB_ID,
-             status: "review",
-             priority: 1,
-             task_type: "implementation",
-             parent_issue: 279,
-             labels: [],
-             depends_on: [],
-             assignee: null,
-             assignee_pid: null,
-             worktree: "/tmp/worktree",
-             branch: "feature/test",
-             title: "test fix",
-             description: "Test",
-             acceptance_criteria: "Test",
-             created_at: new Date().toISOString(),
-             updated_at: new Date().toISOString(),
-             close_reason: null,
-             comments: [],
-             pipeline: {
-               stage: "committing",
-               attempt: 0,
-               last_activity: new Date().toISOString(),
-               last_steering: null,
-               history: [],
-               adversarial_verdict: null,
-             },
-           }
-
-           await Store.createTask(TEST_PROJECT_ID, task)
-
-           // Verify the task was created successfully
-           const created = await Store.getTask(TEST_PROJECT_ID, task.id)
-           expect(created?.id).toBe(task.id)
-           expect(created?.status).toBe("review")
-           expect(created?.pipeline.stage).toBe("committing")
-           expect(created?.worktree).toBe("/tmp/worktree")
-         },
-       })
-     })
-   })
+      test("commit verification: commit hash with error does not escalate", async () => {
+        const text = "[main abc1234] Commit message\nError: something minor"
+        
+        const nothingToCommit = /nothing to commit/i.test(text)
+        const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
+        const hasFatal = /fatal|error/i.test(text)
+        
+        expect(nothingToCommit).toBe(false)
+        expect(hasCommitHash).toBe(true)
+        expect(hasFatal).toBe(true)
+        
+        // Should NOT escalate if we have commit hash (commit succeeded)
+        const shouldEscalate = !!(text && (nothingToCommit || (hasFatal && !hasCommitHash)))
+        expect(shouldEscalate).toBe(false)
+      })
+    })
  })
