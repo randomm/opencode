@@ -356,6 +356,14 @@ bun test
 \`\`\`
 NEVER run from project root (causes "do-not-run-tests-from-root" error).
 
+## Reviewing ONLY developer changes (base_commit)
+The prompt includes a base_commit hash. Use it to see ONLY the developer's changes:
+\`\`\`bash
+cd <worktree>
+git diff <base_commit>..HEAD
+\`\`\`
+This diff shows ONLY what the developer added, not commits already in dev. Flag ONLY changes that appear in this diff as out-of-scope.
+
 ## Scope enforcement
 Check: Does the implementation add ANYTHING not in the task description or acceptance criteria?
 - Extra tests not covering the implementation → ISSUES_FOUND (MEDIUM)

@@ -14,6 +14,7 @@ export type Task = {
   assignee_pid: number | null
   worktree: string | null
   branch: string | null
+  base_commit: string | null
   created_at: string
   updated_at: string
   close_reason: string | null

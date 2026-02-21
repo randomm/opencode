@@ -66,6 +66,7 @@ describe("taskctl pulse: full happy path integration test", () => {
           assignee_pid: null,
           worktree: null,
           branch: null,
+          base_commit: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           close_reason: null,

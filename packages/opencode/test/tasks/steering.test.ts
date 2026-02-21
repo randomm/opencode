@@ -41,6 +41,7 @@ describe("steering.ts", () => {
     assignee_pid: null,
     worktree: null,
     branch: null,
+    base_commit: null,
     title: "Test task",
     description: "Test description",
     acceptance_criteria: "Test criteria",

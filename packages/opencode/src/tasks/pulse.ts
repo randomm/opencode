@@ -1,6 +1,7 @@
 import fs from "fs/promises"
 import path from "path"
 import { platform } from "os"
+import { $ } from "bun"
 import { Global } from "../global"
 import { Store } from "./store"
 import { Scheduler } from "./scheduler"
@@ -144,19 +145,20 @@ export async function resurrectionScan(jobId: string, projectId: string): Promis
               log.error("failed to remove worktree during resurrection", { taskId: task.id, error: String(e) })
             }
           }
-          await Store.updateTask(
-            projectId,
-            task.id,
-            {
-              status: "open",
-              assignee: null,
-              assignee_pid: null,
-              worktree: null,
-              branch: null,
-              pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
-            },
-            true,
-          )
+await Store.updateTask(
+          projectId,
+          task.id,
+          {
+            status: "open",
+            assignee: null,
+            assignee_pid: null,
+            worktree: null,
+            branch: null,
+            base_commit: null,
+            pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
+          },
+          true,
+        )
 
           await Store.addComment(projectId, task.id, {
             author: "system",
@@ -354,6 +356,47 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
 
   const now = new Date().toISOString()
 
+  // Verify dev branch exists before merge-base
+  let devBranchExists = false
+  try {
+    const res = await $`git rev-parse --verify dev`.quiet().nothrow().cwd(worktreeInfo.directory)
+    if (res.exitCode === 0) {
+      devBranchExists = true
+    }
+  } catch (e) {
+    log.warn("failed to verify dev branch exists", { taskId: task.id, error: String(e) })
+  }
+
+  // Capture merge-base (base_commit) for accurate adversarial diffs
+  let baseCommit: string | null = null
+  if (devBranchExists) {
+    try {
+      const res = await $`git merge-base dev HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
+      if (res.exitCode === 0 && res.stdout) {
+        baseCommit = new TextDecoder().decode(res.stdout).trim()
+      }
+
+      // Guard against worktree-on-dev edge case
+      if (baseCommit) {
+        const headRes = await $`git rev-parse HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
+        if (headRes.exitCode === 0 && headRes.stdout) {
+          const headCommit = new TextDecoder().decode(headRes.stdout).trim()
+          if (baseCommit === headCommit) {
+            log.warn("worktree HEAD equals merge-base (likely worktree-on-dev), setting base_commit to null", {
+              taskId: task.id,
+              base_commit: baseCommit,
+            })
+            baseCommit = null
+          }
+        }
+      }
+    } catch (e) {
+      log.warn("failed to capture base_commit", { taskId: task.id, error: String(e) })
+    }
+  } else {
+    log.warn("dev branch not found in worktree, skipping merge-base capture", { taskId: task.id })
+  }
+
   const parentSession = await Session.get(pmSessionId).catch(() => null)
   if (!parentSession?.directory) {
     await Worktree.remove({ directory: worktreeInfo.directory }).catch((e) =>
@@ -388,6 +431,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
       assignee_pid: process.pid,
       worktree: worktreeInfo.directory,
       branch: worktreeInfo.branch,
+      base_commit: baseCommit,
       pipeline: { ...task.pipeline, stage: "developing", last_activity: now },
     },
     true,
@@ -980,12 +1024,22 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
     pipeline: { ...task.pipeline, stage: "adversarial-running", last_activity: new Date().toISOString() },
   }, true)
 
+  const baseCommitStr = task.base_commit ? `Base Commit: ${task.base_commit}` : "Base Commit: Not captured"
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
 
 Task ID: ${task.id}
 Title: ${task.title}
 Description: ${task.description}
 Acceptance Criteria: ${task.acceptance_criteria}
+${baseCommitStr}
+
+When reviewing changes, use git diff to see ONLY the developer's changes:
+\`\`\`bash
+cd ${safeWorktree}
+git diff ${task.base_commit || "dev"}..HEAD
+\`\`\`
+
+This ensures you only review changes made by the developer, not commits that were already in dev.
 
 Read the changed files in the worktree, run typecheck, and record your verdict with taskctl verdict.`
 
@@ -1027,6 +1081,7 @@ Read the changed files in the worktree, run typecheck, and record your verdict w
         assignee_pid: null,
         worktree: null,
         branch: null,
+        base_commit: null,
         pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
       },
       true,
