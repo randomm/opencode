@@ -10,10 +10,9 @@ import { Log } from "../../util/log"
 import { lazy } from "../../util/lazy"
 import { Config } from "../../config/config"
 import { errors } from "../error"
+import { DisposedEvent } from "../event"
 
 const log = Log.create({ service: "server" })
-
-export const GlobalDisposedEvent = BusEvent.define("global.disposed", z.object({}))
 
 export const GlobalRoutes = lazy(() =>
   new Hono()
@@ -173,7 +172,7 @@ export const GlobalRoutes = lazy(() =>
         GlobalBus.emit("event", {
           directory: "global",
           payload: {
-            type: GlobalDisposedEvent.type,
+            type: DisposedEvent.type,
             properties: {},
           },
         })
