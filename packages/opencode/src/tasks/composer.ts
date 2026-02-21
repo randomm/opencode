@@ -208,6 +208,7 @@ Decompose this issue into a dependency-ordered list of implementation tasks. Ret
         assignee_pid: null,
         worktree: null,
         branch: null,
+        base_commit: null,
         created_at: now,
         updated_at: now,
         close_reason: null,

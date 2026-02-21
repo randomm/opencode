@@ -31,6 +31,7 @@ describe("validation: validateGraph", () => {
       assignee_pid: null,
       worktree: null,
       branch: null,
+      base_commit: null,
       created_at: now,
       updated_at: now,
       close_reason: null,

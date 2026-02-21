@@ -162,6 +162,7 @@ describe("PM notifications", () => {
             assignee_pid: null,
             worktree: null,
             branch: null,
+            base_commit: null,
             title: `Completed task ${i}`,
             description: "Test description",
             acceptance_criteria: "Test criteria",

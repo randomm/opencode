@@ -177,6 +177,7 @@ Task labels:
         assignee_pid: null,
         worktree: null,
         branch: null,
+        base_commit: null,
         created_at: now,
         updated_at: now,
         close_reason: null,
@@ -383,6 +384,9 @@ if (params.command === "close") {
 
       const task1: Task = {
         ...task,
+        worktree: null,
+        branch: null,
+        base_commit: null,
         id: slug1,
         title: `${task.title} (Part 1)`,
         depends_on: [task.id, ...task.depends_on],
@@ -405,6 +409,9 @@ if (params.command === "close") {
 
       const task2: Task = {
         ...task,
+        worktree: null,
+        branch: null,
+        base_commit: null,
         id: slug2,
         title: `${task.title} (Part 2)`,
         depends_on: [task.id, ...task.depends_on],
