@@ -13,19 +13,20 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   const issueNumber = params.issueNumber
   if (!issueNumber) throw new Error("start requires issueNumber")
 
+  // KNOWN RACE CONDITION: Concurrent starts for the same issue can create multiple jobs
+  // File locking around findJobByIssue + createJob transaction would fix this (medium complexity)
+  // Issue tracked: GitHub #293 restart feature
   const existingJob = await Store.findJobByIssue(projectId, issueNumber)
   if (existingJob) {
     const existingPid = await readLockPid(existingJob.id, projectId)
 
     if (existingJob.status === "complete" || existingJob.status === "failed" || existingJob.status === "stopped") {
-      return {
-        title: "Job already completed",
-        output: `Job is ${existingJob.status}. Status: taskctl status ${issueNumber}`,
-        metadata: {},
-      }
-    }
-
-    if (existingJob.status === "running") {
+      // Clean up old terminal-state job before creating new one
+      // Note: This is not atomic. If deleteTasksByJobId fails, orphaned task files may remain.
+      // Known limitation without transaction support.
+      await Store.deleteJob(projectId, existingJob.id)
+      await Store.deleteTasksByJobId(projectId, existingJob.id)
+    } else if (existingJob.status === "running") {
       if (existingPid !== null && isPidAlive(existingPid)) {
         return {
           title: "Already running",
@@ -33,6 +34,7 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
           metadata: {},
         }
       }
+      // Clean up lock file before job deletion (prevents orphaned lock files)
       if (existingPid !== null) {
         await removeLockFile(existingJob.id, projectId)
       }
@@ -230,14 +232,16 @@ export async function executeResume(projectId: string, params: any, ctx: any): P
     await removeLockFile(jobId, projectId)
   }
 
+  // Single resurrection scan before job validation - checks for zombie processes
+  // killed externally. Removed duplicate scan after status update.
   await resurrectionScan(jobId, projectId)
 
   const revalidated = await Store.getJob(projectId, jobId)
   if (!revalidated) throw new Error(`Job vanished after resurrection: ${jobId}`)
-  if (revalidated.stopping === true || revalidated.status === "complete" || revalidated.status === "failed" || revalidated.status === "stopped") {
+  if (revalidated.status === "complete" || revalidated.status === "failed" || revalidated.status === "stopped") {
     return {
       title: "Cannot resume",
-      output: `Job is ${revalidated.status}${revalidated.stopping ? " and has stop flag set" : ""}. Status: taskctl status`,
+      output: `Job is ${revalidated.status}. Use taskctl start <issueNumber> to create a new job.`,
       metadata: {},
     }
   }
@@ -247,7 +251,6 @@ export async function executeResume(projectId: string, params: any, ctx: any): P
 
   const tasks = await Store.listTasks(projectId)
   const remaining = tasks.filter((t) => t.job_id === jobId && t.status !== "closed").length
-  await resurrectionScan(jobId, projectId)
   startPulse(jobId, projectId, ctx.sessionID)
 
   return {

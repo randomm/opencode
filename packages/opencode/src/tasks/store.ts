@@ -294,4 +294,67 @@ export const Store = {
     jobs.sort((a, b) => time(b) - time(a))
     return jobs.find((j) => j.status === "running") ?? jobs[0]
   },
+
+  async deleteJob(projectId: string, jobId: string): Promise<void> {
+    const tasksDir = getTasksDir(projectId)
+    const jobPath = path.join(tasksDir, `job-${jobId}.json`)
+
+    // Check if job exists before deletion (idempotent operation)
+    const exists = await Bun.file(jobPath).exists()
+    if (!exists) return
+
+    await fs.unlink(jobPath)
+    await this.logActivity(projectId, {
+      type: "job_deleted",
+      job_id: jobId,
+      timestamp: new Date().toISOString(),
+    })
+  },
+
+  async deleteTasksByJobId(projectId: string, jobId: string): Promise<void> {
+    const tasksDir = getTasksDir(projectId)
+
+    const entries = await fs.readdir(tasksDir).catch(() => [] as string[])
+    if (entries.length === 0) return
+
+    const entriesToDelete: string[] = []
+
+    for (const entry of entries) {
+      if (!/^(.+)\.json$/.test(entry)) continue
+      if (entry.startsWith("job-")) continue
+
+      const taskPath = path.join(tasksDir, entry)
+      const content = await Bun.file(taskPath).text().catch(() => null)
+      if (!content) continue
+
+      try {
+        const task = JSON.parse(content) as Task
+        if (task.job_id === jobId) {
+          // Only add to index cleanup list after successful deletion
+          await fs.unlink(taskPath)
+          entriesToDelete.push(task.id)
+        }
+      } catch {
+        // Skip tasks that can't be parsed or deleted
+      }
+    }
+
+    // Clean up index in one operation (only if we successfully deleted tasks)
+    if (entriesToDelete.length > 0) {
+      const indexPath = path.join(tasksDir, "index.json")
+      let index = {} as TaskIndex
+      const content = await Bun.file(indexPath).text().catch(() => "{}")
+      try {
+        index = JSON.parse(content) as TaskIndex
+      } catch {
+        index = {}
+      }
+
+      for (const taskId of entriesToDelete) {
+        delete index[taskId]
+      }
+
+      await atomicWrite(indexPath, JSON.stringify(index, null, 2))
+    }
+  },
 }

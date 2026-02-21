@@ -329,3 +329,275 @@ describe("taskctl retry", () => {
     })
   })
 })
+
+describe("taskctl start - restart capability", () => {
+  test("cleans up old complete job before creating new one", async () => {
+    await withTestProject(async (projectId) => {
+      const oldJobId = "job-old"
+      const issueNumber = 123
+
+      await Store.createJob(projectId, {
+        id: oldJobId,
+        parent_issue: issueNumber,
+        status: "complete",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const oldJob = await Store.findJobByIssue(projectId, issueNumber)
+      expect(oldJob).not.toBeNull()
+      expect(oldJob?.id).toBe(oldJobId)
+
+      await Store.deleteJob(projectId, oldJobId)
+
+      const deletedJob = await Store.getJob(projectId, oldJobId)
+      expect(deletedJob).toBeNull()
+
+      await new Promise(resolve => setTimeout(resolve, 10))
+
+      const newJobId = `job-new-${Date.now()}`
+      await Store.createJob(projectId, {
+        id: newJobId,
+        parent_issue: issueNumber,
+        status: "running",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const allJobs = await Store.findJobByIssue(projectId, issueNumber)
+      expect(allJobs).not.toBeNull()
+      expect(allJobs?.id).toBe(newJobId)
+      expect(allJobs?.status).toBe("running")
+    })
+  })
+
+  test("cleans up old failed job before creating new one", async () => {
+    await withTestProject(async (projectId) => {
+      const oldJobId = "job-old"
+      const issueNumber = 124
+
+      await Store.createJob(projectId, {
+        id: oldJobId,
+        parent_issue: issueNumber,
+        status: "failed",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      await Store.deleteJob(projectId, oldJobId)
+
+      const newJobId = `job-new-${Date.now()}`
+      await Store.createJob(projectId, {
+        id: newJobId,
+        parent_issue: issueNumber,
+        status: "running",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const allJobs = await Store.findJobByIssue(projectId, issueNumber)
+      expect(allJobs).not.toBeNull()
+      expect(allJobs?.id).toBe(newJobId)
+      expect(allJobs?.status).toBe("running")
+    })
+  })
+
+  test("cleans up tasks when deleting job", async () => {
+    await withTestProject(async (projectId) => {
+      const jobId = "job-deletethis"
+      const issueNumber = 125
+
+      await Store.createJob(projectId, {
+        id: jobId,
+        parent_issue: issueNumber,
+        status: "complete",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const now = new Date().toISOString()
+      const task: Task = {
+        id: "task-1",
+        title: "Test Task",
+        description: "Test",
+        acceptance_criteria: "Test",
+        parent_issue: issueNumber,
+        job_id: jobId,
+        status: "closed",
+        priority: 2,
+        task_type: "implementation",
+        labels: [],
+        depends_on: [],
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        base_commit: null,
+        created_at: now,
+        updated_at: now,
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "done",
+          attempt: 1,
+          last_activity: now,
+          last_steering: null,
+          history: [],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(projectId, task)
+
+      const taskBefore = await Store.getTask(projectId, "task-1")
+      expect(taskBefore).not.toBeNull()
+
+      await Store.deleteTasksByJobId(projectId, jobId)
+
+      const taskAfter = await Store.getTask(projectId, "task-1")
+      expect(taskAfter).toBeNull()
+    })
+  })
+
+test("removes deleted tasks from index", async () => {
+    await withTestProject(async (projectId) => {
+      const jobId = "job-test"
+      const issueNumber = 127
+
+      const now = new Date().toISOString()
+      const task: Task = {
+        id: "task-1",
+        title: "Test Task",
+        description: "Test",
+        acceptance_criteria: "Test",
+        parent_issue: issueNumber,
+        job_id: jobId,
+        status: "closed",
+        priority: 2,
+        task_type: "implementation",
+        labels: [],
+        depends_on: [],
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        base_commit: null,
+        created_at: now,
+        updated_at: now,
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "done",
+          attempt: 1,
+          last_activity: now,
+          last_steering: null,
+          history: [],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(projectId, task)
+
+      const indexBefore = await Store.getIndex(projectId)
+      expect(indexBefore["task-1"]).toBeDefined()
+
+      await Store.deleteTasksByJobId(projectId, jobId)
+
+      const indexAfter = await Store.getIndex(projectId)
+      expect(indexAfter["task-1"]).toBeUndefined()
+    })
+  })
+
+  test("deleteJob is idempotent - succeeds if job already deleted", async () => {
+    await withTestProject(async (projectId) => {
+      const jobId = "job-does-not-exist"
+
+      // Should not throw error
+      await Store.deleteJob(projectId, jobId)
+
+      // Verify no job created
+      const job = await Store.getJob(projectId, jobId)
+      expect(job).toBeNull()
+    })
+  })
+
+  test("cleans up old stopped job before creating new one", async () => {
+    await withTestProject(async (projectId) => {
+      const oldJobId = "job-old"
+      const issueNumber = 126
+
+      await Store.createJob(projectId, {
+        id: oldJobId,
+        parent_issue: issueNumber,
+        status: "stopped",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      await Store.deleteJob(projectId, oldJobId)
+
+      const newJobId = `job-new-${Date.now()}`
+      await Store.createJob(projectId, {
+        id: newJobId,
+        parent_issue: issueNumber,
+        status: "running",
+        created_at: new Date().toISOString(),
+        stopping: false,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const allJobs = await Store.findJobByIssue(projectId, issueNumber)
+      expect(allJobs).not.toBeNull()
+      expect(allJobs?.id).toBe(newJobId)
+      expect(allJobs?.status).toBe("running")
+    })
+  })
+})
+
+describe("taskctl resume - stop flag clearing", () => {
+  test("resumes job with stopping flag set", async () => {
+    await withTestProject(async (projectId) => {
+      const jobId = "job-test"
+
+      await Store.createJob(projectId, {
+        id: jobId,
+        parent_issue: 1,
+        status: "running",
+        created_at: new Date().toISOString(),
+        stopping: true,
+        pulse_pid: null,
+        max_workers: 3,
+        pm_session_id: "pm-test",
+      })
+
+      const before = await Store.getJob(projectId, jobId)
+      expect(before?.stopping).toBe(true)
+
+      await Store.updateJob(projectId, jobId, { stopping: false, status: "running" })
+
+      const after = await Store.getJob(projectId, jobId)
+      expect(after?.stopping).toBe(false)
+      expect(after?.status).toBe("running")
+    })
+  })
+})
