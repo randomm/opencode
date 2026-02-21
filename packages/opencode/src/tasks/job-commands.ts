@@ -17,25 +17,33 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   if (existingJob) {
     const existingPid = await readLockPid(existingJob.id, projectId)
 
-    if (existingJob.status === "complete" || existingJob.status === "failed" || existingJob.status === "stopped") {
-      return {
-        title: "Job already completed",
-        output: `Job is ${existingJob.status}. Status: taskctl status ${issueNumber}`,
-        metadata: {},
-      }
-    }
-
     if (existingJob.status === "running") {
       if (existingPid !== null && isPidAlive(existingPid)) {
         return {
-          title: "Already running",
-          output: `Job already running (PID ${existingPid}). Use taskctl status ${issueNumber} to monitor.`,
+          title: "Job already running",
+          output: `Job is running. Status: taskctl status ${issueNumber}`,
           metadata: {},
         }
       }
       if (existingPid !== null) {
         await removeLockFile(existingJob.id, projectId)
       }
+    }
+
+    // Re-check job existence after lock cleanup to avoid race
+    const recheckedJob = await Store.getJob(projectId, existingJob.id)
+    if (recheckedJob === null) {
+      // Job was deleted by another process, proceed to create new job
+    } else if (recheckedJob.status === "running") {
+      // Another process already started a new job
+      return {
+        title: "Job already running",
+        output: `Job ${recheckedJob.id} is running. Status: taskctl status ${issueNumber}`,
+        metadata: {},
+      }
+    } else {
+      // Delete non-running jobs atomically
+      await Store.deleteJobAndTasks(projectId, existingJob.id)
     }
   }
 
@@ -234,20 +242,20 @@ export async function executeResume(projectId: string, params: any, ctx: any): P
 
   const revalidated = await Store.getJob(projectId, jobId)
   if (!revalidated) throw new Error(`Job vanished after resurrection: ${jobId}`)
-  if (revalidated.stopping === true || revalidated.status === "complete" || revalidated.status === "failed" || revalidated.status === "stopped") {
+  
+  if (revalidated.status !== "stopped") {
     return {
       title: "Cannot resume",
-      output: `Job is ${revalidated.status}${revalidated.stopping ? " and has stop flag set" : ""}. Status: taskctl status`,
+      output: `Job status must be "stopped" to resume. Current status: ${revalidated.status}. Status: taskctl status`,
       metadata: {},
     }
   }
-
-  await Store.updateJob(projectId, jobId, { status: "running", stopping: false })
+  
+  await Store.updateJob(projectId, jobId, { stopping: false, status: "running" })
   enableAutoWakeup(ctx.sessionID)
 
   const tasks = await Store.listTasks(projectId)
   const remaining = tasks.filter((t) => t.job_id === jobId && t.status !== "closed").length
-  await resurrectionScan(jobId, projectId)
   startPulse(jobId, projectId, ctx.sessionID)
 
   return {

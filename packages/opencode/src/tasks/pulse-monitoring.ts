@@ -407,6 +407,7 @@ export async function gracefulStop(
       })
     }
 
+    await Store.updateJob(projectId, jobId, { status: "stopped", stopping: false })
     await clearIntervalSafe(intervalId)
     log.info("graceful stop completed", { jobId })
   } catch (e) {

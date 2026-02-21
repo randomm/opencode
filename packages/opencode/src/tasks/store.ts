@@ -294,4 +294,29 @@ export const Store = {
     jobs.sort((a, b) => time(b) - time(a))
     return jobs.find((j) => j.status === "running") ?? jobs[0]
   },
+
+  async deleteJob(projectId: string, jobId: string): Promise<void> {
+    const tasksDir = getTasksDir(projectId)
+    const jobPath = path.join(tasksDir, `job-${jobId}.json`)
+    const file = Bun.file(jobPath)
+    if (await file.exists()) {
+      await fs.unlink(jobPath).catch(() => {})
+    }
+  },
+
+  async deleteTasksByJobId(projectId: string, jobId: string): Promise<void> {
+    const tasks = await this.listTasks(projectId)
+    const matching = tasks.filter((t) => t.job_id === jobId)
+    const index = await this.getIndex(projectId)
+    for (const task of matching) {
+      await fs.unlink(getSafeTaskPath(projectId, task.id)).catch(() => {})
+      delete index[task.id]
+    }
+    await atomicWrite(path.join(getTasksDir(projectId), "index.json"), JSON.stringify(index, null, 2))
+  },
+
+  async deleteJobAndTasks(projectId: string, jobId: string): Promise<void> {
+    await this.deleteTasksByJobId(projectId, jobId)
+    await this.deleteJob(projectId, jobId)
+  },
 }
