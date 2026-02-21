@@ -14,16 +14,16 @@ function validateLabel(label: string): void {
   }
 }
 
-export async function generateUniqueSlug(projectId: string, title: string): Promise<string> {
-  const slugify = (title: string): string => {
-    const slug = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 100)
-    return slug || "entry"
-  }
+export function slugify(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 100)
+  return slug || "entry"
+}
 
+export async function generateUniqueSlug(projectId: string, title: string): Promise<string> {
   const baseSlug = slugify(title)
   let slug = baseSlug
   let counter = 2

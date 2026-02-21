@@ -4,10 +4,30 @@ import { Bus } from "../bus"
 import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Instance, context as instanceContext } from "../project/instance"
 import { Store } from "./store"
-import { writeLockFile, removeLockFile, readLockPid, isPidAlive, isSessionActivelyRunning } from "./pulse-scheduler"
-import { processAdversarialVerdicts, notifyPM } from "./pulse-verdicts"
-import { scheduleReadyTasks, sanitizeWorktree } from "./pulse-scheduler"
+import {
+  writeLockFile,
+  removeLockFile,
+  readLockPid,
+  isPidAlive,
+  isSessionActivelyRunning,
+  scheduleReadyTasks,
+  sanitizeWorktree,
+} from "./pulse-scheduler"
+import { processAdversarialVerdicts, notifyPM, escalateToPM } from "./pulse-verdicts"
 import { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
+
+// Re-exports for backward compatibility with tests
+export {
+  writeLockFile,
+  removeLockFile,
+  readLockPid,
+  isPidAlive,
+  isSessionActivelyRunning,
+  scheduleReadyTasks,
+  sanitizeWorktree,
+} from "./pulse-scheduler"
+export { processAdversarialVerdicts, notifyPM, escalateToPM } from "./pulse-verdicts"
+export { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const activeTicks = new Map<string, Set<string>>()

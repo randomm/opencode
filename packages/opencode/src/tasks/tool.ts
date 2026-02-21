@@ -7,6 +7,7 @@ import type { Task } from "./types"
 import * as TaskCommands from "./tool-commands"
 import * as JobCommands from "./job-commands"
 import * as InspectCommands from "./inspect-commands"
+export { generateUniqueSlug, slugify } from "./tool-commands"
 
 const log = Log.create({ service: "taskctl.tool" })
 
