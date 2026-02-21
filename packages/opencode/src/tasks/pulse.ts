@@ -541,8 +541,8 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
       continue
     }
 
-    if (verdict.verdict === "APPROVED") {
-      await commitTask(updatedTask, projectId, pmSessionId)
+     if (verdict.verdict === "APPROVED") {
+       await commitTask(updatedTask, jobId, projectId, pmSessionId)
     } else {
       const newAttempt = (updatedTask.pipeline.attempt || 0) + 1
       if (newAttempt >= 3) {
@@ -554,7 +554,7 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
   }
 }
 
-async function commitTask(task: Task, projectId: string, pmSessionId: string): Promise<void> {
+async function commitTask(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const parentSession = await Session.get(pmSessionId).catch(() => null)
   if (!parentSession?.directory) {
     log.error("PM session not found for commit", { taskId: task.id })
@@ -690,6 +690,11 @@ If there is an error, report the full error output.`
   })
 
   log.info("task committed and closed", { taskId: task.id })
+
+  // Immediately reschedule after commit — don't wait for next Pulse tick
+  await scheduleReadyTasks(jobId, projectId, pmSessionId).catch((e) =>
+    log.error("failed to reschedule after commit", { taskId: task.id, error: String(e) }),
+  )
 }
 
 async function respawnDeveloper(

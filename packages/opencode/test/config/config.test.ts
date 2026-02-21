@@ -618,6 +618,20 @@ test("does not try to install dependencies in read-only OPENCODE_CONFIG_DIR", as
   }
 })
 
+test("installDependencies completes without hardcoded delay", async () => {
+  await using tmp = await tmpdir<string>({
+    init: async (dir) => {
+      const cfg = path.join(dir, "configdir")
+      await fs.mkdir(cfg, { recursive: true })
+      return cfg
+    },
+  })
+
+  await Config.installDependencies(tmp.extra)
+
+  expect(await Bun.file(path.join(tmp.extra, "package.json")).exists()).toBe(true)
+})
+
 test("installs dependencies in writable OPENCODE_CONFIG_DIR", async () => {
   await using tmp = await tmpdir<string>({
     init: async (dir) => {

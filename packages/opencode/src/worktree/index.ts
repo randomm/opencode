@@ -342,7 +342,7 @@ export namespace Worktree {
     const base = input?.name ? slug(input.name) : ""
     const info = await candidate(root, base || undefined)
 
-    const created = await $`git worktree add --no-checkout -b ${info.branch} ${info.directory}`
+    const created = await $`git worktree add -b ${info.branch} ${info.directory}`
       .quiet()
       .nothrow()
       .cwd(Instance.worktree)

@@ -263,7 +263,6 @@ export namespace Config {
       "@opencode-ai/plugin": targetVersion,
     }
     await Bun.write(pkg, JSON.stringify(json, null, 2))
-    await new Promise((resolve) => setTimeout(resolve, 3000))
 
     const gitignore = path.join(dir, ".gitignore")
     const hasGitIgnore = await Bun.file(gitignore).exists()
