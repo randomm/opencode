@@ -48,6 +48,7 @@ export namespace Worktree {
   export const CreateInput = z
     .object({
       name: z.string().optional(),
+      rootPath: z.string().optional(),
       startCommand: z
         .string()
         .optional()
@@ -336,7 +337,9 @@ export namespace Worktree {
       throw new NotGitError({ message: "Worktrees are only supported for git projects" })
     }
 
-    const root = path.join(Global.Path.data, "worktree", Instance.project.id)
+    const root = input?.rootPath
+      ? path.resolve(input.rootPath)
+      : path.join(Global.Path.data, "worktree", Instance.project.id)
     await fs.mkdir(root, { recursive: true })
 
     const base = input?.name ? slug(input.name) : ""

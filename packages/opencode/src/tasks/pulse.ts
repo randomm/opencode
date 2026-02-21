@@ -273,7 +273,10 @@ async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId:
 async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   let worktreeInfo
   try {
-    worktreeInfo = await Worktree.create({ name: task.id })
+    worktreeInfo = await Worktree.create({
+      name: task.id,
+      rootPath: path.join(Instance.directory, ".worktrees"),
+    })
   } catch (e) {
     log.error("failed to create worktree", { taskId: task.id, error: String(e) })
     return
