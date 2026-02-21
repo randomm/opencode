@@ -112,6 +112,13 @@ export function startPulse(jobId: string, projectId: string, pmSessionId: string
 export async function resurrectionScan(jobId: string, projectId: string): Promise<void> {
   const tasks = await Store.listTasks(projectId)
   const jobTasks = tasks.filter((t) => t.job_id === jobId)
+  
+  // Guard: only resurrect tasks if job exists and is running (prevent resurrecting deleted job's tasks)
+  const job = await Store.getJob(projectId, jobId)
+  if (!job || job.status !== "running") {
+    return
+  }
+  
   const { isPidAlive } = await import("./pulse-scheduler")
   const { sanitizeWorktree } = await import("./pulse-scheduler")
 
