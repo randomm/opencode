@@ -15,6 +15,8 @@ import { SessionStatus } from "../session/status"
 import type { Task, Job, AdversarialVerdict } from "./types"
 import { Instance, context as instanceContext } from "../project/instance"
 import { GlobalBus } from "../bus/global"
+import { Identifier } from "../id/id"
+import { Agent } from "../agent/agent"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const activeTicks = new Map<string, Set<string>>()
@@ -35,6 +37,62 @@ export function sanitizeWorktree(worktree: string | null | undefined): string | 
   if (!worktree || typeof worktree !== "string") return null
   if (worktree.includes("..")) return null
   return path.resolve(worktree)
+}
+
+export async function sendNotificationToPM(pmSessionId: string, message: string): Promise<void> {
+  try {
+    const session = await Session.get(pmSessionId).catch(() => null)
+    if (!session) {
+      log.warn("PM session not found for notification", { pmSessionId })
+      return
+    }
+
+    const msgs = await Session.messages({ sessionID: pmSessionId, limit: 1 })
+    const lastMsg = msgs[0]
+
+    let providerID: string | undefined
+    let modelID: string | undefined
+
+    if (lastMsg) {
+      if (lastMsg.info.role === "user") {
+        providerID = lastMsg.info.model.providerID
+        modelID = lastMsg.info.model.modelID
+      } else {
+        providerID = lastMsg.info.providerID
+        modelID = lastMsg.info.modelID
+      }
+    }
+
+    if (!providerID || !modelID) {
+      log.warn("no model found for PM session", { pmSessionId })
+      return
+    }
+
+    const userMsg: MessageV2.User = {
+      id: Identifier.ascending("message"),
+      sessionID: pmSessionId,
+      role: "user",
+      time: { created: Date.now() },
+      agent: "system",
+      model: {
+        providerID,
+        modelID,
+      },
+    }
+    await Session.updateMessage(userMsg)
+
+    const textPart: MessageV2.TextPart = {
+      id: Identifier.ascending("part"),
+      messageID: userMsg.id,
+      sessionID: pmSessionId,
+      type: "text",
+      text: message,
+      synthetic: true,
+    }
+    await Session.updatePart(textPart)
+  } catch (e) {
+    log.error("failed to send notification to PM", { pmSessionId, error: String(e) })
+  }
 }
 
 export function startPulse(jobId: string, projectId: string, pmSessionId: string): ReturnType<typeof setInterval> {
@@ -273,7 +331,10 @@ async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId:
 async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   let worktreeInfo
   try {
-    worktreeInfo = await Worktree.create({ name: task.id })
+    worktreeInfo = await Worktree.create({
+      name: task.id,
+      rootPath: path.join(Instance.directory, ".worktrees"),
+    })
   } catch (e) {
     log.error("failed to create worktree", { taskId: task.id, error: String(e) })
     return
@@ -689,6 +750,8 @@ If there is an error, report the full error output.`
     parentSessionID: undefined,
   })
 
+  await sendNotificationToPM(pmSessionId, `✅ Task complete: ${task.title} (#${task.parent_issue}) — committed to branch`)
+
   log.info("task committed and closed", { taskId: task.id })
 
   // Immediately reschedule after commit — don't wait for next Pulse tick
@@ -822,6 +885,8 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
     sessionID: pmSessionId,
     parentSessionID: undefined,
   })
+
+  await sendNotificationToPM(pmSessionId, `❌ Task failed: ${task.title} (#${task.parent_issue}) — exhausted 3 adversarial cycles. Use taskctl retry ${task.id} or taskctl override ${task.id} --skip`)
 
   log.error("task escalated to PM after 3 failures", { taskId: task.id, jobId })
 }
@@ -1179,6 +1244,7 @@ export async function checkCompletion(
       await removeLockFile(jobId, projectId)
       await Store.updateJob(projectId, jobId, { status: "complete" })
       Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: undefined })
+      await sendNotificationToPM(pmSessionId, `🎉 Job complete: all ${jobTasks.length} tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}`)
     } catch (e) {
       activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId).catch(() => {})
