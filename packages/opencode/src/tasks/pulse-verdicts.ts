@@ -16,7 +16,12 @@ import { scheduleReadyTasks } from "./pulse-scheduler"
 import { sanitizeWorktree } from "./pulse-scheduler"
 import { isSessionActivelyRunning, lockFilePath } from "./pulse-scheduler"
 
+// Allow 6 attempts to resolve minor test flakiness before escalating to PM
+const MAX_ADVERSARIAL_ATTEMPTS = 6
+
 const log = Log.create({ service: "taskctl.pulse.verdicts" })
+
+export { MAX_ADVERSARIAL_ATTEMPTS }
 
 async function notifyPM(pmSessionId: string, text: string): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
@@ -240,7 +245,7 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
 
   await Store.addComment(projectId, task.id, {
     author: "system",
-    message: `Failed after 3 adversarial review cycles. Last verdict: ${task.pipeline.adversarial_verdict?.summary ?? "unknown"}. Worktree preserved for PM inspection.`,
+    message: `Failed after ${MAX_ADVERSARIAL_ATTEMPTS} adversarial review cycles. Last verdict: ${task.pipeline.adversarial_verdict?.summary ?? "unknown"}. Worktree preserved for PM inspection.`,
     created_at: new Date().toISOString(),
   })
 
@@ -258,7 +263,7 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
     log.warn("failed to notify PM of task escalation", { taskId: task.id, error: notifyResult.error })
   }
 
-  log.error("task escalated to PM after 3 failures", { taskId: task.id, jobId })
+  log.error(`task escalated to PM after ${MAX_ADVERSARIAL_ATTEMPTS} failures`, { taskId: task.id, jobId })
 }
 
 async function escalateCommitFailure(
@@ -319,7 +324,7 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
       await commitTask(updatedTask, jobId, projectId, pmSessionId)
     } else {
       const newAttempt = (updatedTask.pipeline.attempt || 0) + 1
-      if (newAttempt >= 3) {
+      if (newAttempt >= MAX_ADVERSARIAL_ATTEMPTS) {
         await escalateToPM(updatedTask, jobId, projectId, pmSessionId)
       } else {
         const { respawnDeveloper } = await import("./pulse-scheduler")
