@@ -611,7 +611,7 @@ assignee: null,
     })
   })
 
-  test("3rd ISSUES_FOUND verdict escalates to PM with failed status", async () => {
+  test("6th ISSUES_FOUND verdict escalates to PM with failed status", async () => {
     await using tmp = await tmpdir()
     await Instance.provide({
       directory: tmp.path,
@@ -651,7 +651,7 @@ assignee: null,
           comments: [],
           pipeline: {
             stage: "reviewing",
-            attempt: 2, // This is the 3rd attempt (0, 1, 2)
+            attempt: 5, // This is the 6th attempt (0, 1, 2, 3, 4, 5)
             last_activity: new Date().toISOString(),
             last_steering: null,
             history: [],

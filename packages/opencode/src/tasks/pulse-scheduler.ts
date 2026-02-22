@@ -14,6 +14,7 @@ import { Scheduler } from "./scheduler"
 import { Global } from "../global"
 import { Instance as InstanceImport } from "../project/instance"
 import type { Task, AdversarialVerdict } from "./types"
+import { MAX_ADVERSARIAL_ATTEMPTS } from "./pulse-verdicts"
 
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
 
@@ -425,7 +426,7 @@ async function respawnDeveloper(
   )
 
   const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
-  const prompt = `This is retry attempt ${attempt} of 3. The previous implementation had issues that must be fixed.
+  const prompt = `This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
 
 **Task:** ${task.title}
 **Description:** ${task.description}
