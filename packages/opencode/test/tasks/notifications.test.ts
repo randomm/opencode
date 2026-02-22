@@ -38,7 +38,7 @@ describe("PM notifications", () => {
     }
   })
 
-  test("BackgroundTaskEvent.Completed fired when task escalated (after 3 failures)", async () => {
+  test("BackgroundTaskEvent.Completed fired when task escalated (after 6 failures)", async () => {
     const { escalateToPM } = await import("../../src/tasks/pulse")
 
     await Instance.provide({
@@ -71,7 +71,7 @@ describe("PM notifications", () => {
           comments: [],
           pipeline: {
             stage: "adversarial-running",
-            attempt: 3,
+            attempt: 5,
             last_activity: new Date().toISOString(),
             last_steering: null,
             history: [],
