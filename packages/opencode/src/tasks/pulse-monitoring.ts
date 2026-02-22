@@ -3,7 +3,7 @@ import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { Log } from "../util/log"
 import { Store } from "./store"
-import { sanitizeWorktree, isSessionActivelyRunning, isPidAlive } from "./pulse-scheduler"
+import { sanitizeWorktree, isSessionActivelyRunning, isPidAlive, removeLockFile } from "./pulse-scheduler"
 import type { Task } from "./types"
 
 const log = Log.create({ service: "taskctl.pulse.monitoring" })
@@ -407,7 +407,10 @@ export async function gracefulStop(
       })
     }
 
-    await Store.updateJob(projectId, jobId, { status: "stopped", stopping: false })
+    await removeLockFile(jobId, projectId).catch((e) => {
+      log.error("failed to remove lock file during graceful stop", { jobId, error: String(e) })
+    })
+    await Store.updateJob(projectId, jobId, { status: "stopped", stopping: false, pulse_pid: null })
     await clearIntervalSafe(intervalId)
     log.info("graceful stop completed", { jobId })
   } catch (e) {
