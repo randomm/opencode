@@ -202,11 +202,11 @@ export const Store = {
     const tasksDir = await ensureTasksDir(projectId)
     const activityPath = path.join(tasksDir, "activity.ndjson")
     const line = JSON.stringify(event) + "\n"
-    const file = Bun.file(activityPath)
     try {
-      const existing = file.size > 0 ? await file.text() : ""
-      await Bun.write(activityPath, existing + line)
-    } catch {}
+      await fs.writeFile(activityPath, line, { flag: "a" })
+    } catch {
+      return
+    }
   },
 
   async createJob(projectId: string, job: Job): Promise<void> {

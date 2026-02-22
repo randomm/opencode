@@ -1,10 +1,24 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, beforeEach, afterEach } from "bun:test"
 import { Store } from "../../src/tasks/store"
+import { Global } from "../../src/global"
 import type { Task, Job } from "../../src/tasks/types"
 import { tmpdir } from "../fixture/fixture"
 import path from "path"
 import { randomUUID } from "crypto"
 import fs from "fs/promises"
+
+let testDataDir: string
+
+beforeEach(async () => {
+  testDataDir = path.join("/tmp", "opencode-store-test-" + Math.random().toString(36).slice(2))
+  await fs.mkdir(testDataDir, { recursive: true })
+  process.env.OPENCODE_TEST_HOME = testDataDir
+  await Global.init()
+})
+
+afterEach(async () => {
+  await fs.rm(testDataDir, { recursive: true, force: true }).catch(() => {})
+})
 
 function getProjectId(): string {
   return `test-store-${randomUUID()}`
@@ -30,7 +44,6 @@ function isValidISODate(dateStr: string): boolean {
 
 describe("store: task operations", () => {
   test("write task and verify file exists", async () => {
-    await using tmp = await tmpdir()
     const projectId = getProjectId()
     const now = new Date().toISOString()
 
@@ -46,7 +59,7 @@ describe("store: task operations", () => {
       task_type: "implementation",
       labels: ["module:auth", "file:src/auth/oauth.ts"],
       depends_on: [],
-assignee: null,
+    assignee: null,
         assignee_pid: null,
         worktree: null,
         branch: null,
@@ -414,5 +427,74 @@ describe("store: findJobByIssue", () => {
     const found = await Store.findJobByIssue(projectId, 1)
     expect(found).not.toBeNull()
     expect(found!.id).toBe(validJob.id)
+  })
+})
+
+describe("store: logActivity append-only", () => {
+  test("appends activity entry without reading entire file", async () => {
+    const projectId = getProjectId()
+
+    const event1 = { type: "test-event-1", timestamp: "2024-01-01T00:00:00.000Z" }
+    const event2 = { type: "test-event-2", timestamp: "2024-01-01T00:01:00.000Z" }
+    const event3 = { type: "test-event-3", timestamp: "2024-01-01T00:02:00.000Z" }
+
+    await Store.logActivity(projectId, event1)
+    await Store.logActivity(projectId, event2)
+    await Store.logActivity(projectId, event3)
+
+    const activityPath = path.join(Global.Path.data, "tasks", projectId, "activity.ndjson")
+    const content = await Bun.file(activityPath).text()
+    const lines = content.trim().split("\n")
+
+    expect(lines.length).toBe(3)
+    expect(JSON.parse(lines[0]!)).toEqual(event1)
+    expect(JSON.parse(lines[1]!)).toEqual(event2)
+    expect(JSON.parse(lines[2]!)).toEqual(event3)
+  })
+
+  test("logActivity appends efficiently (file grows linearly with calls)", async () => {
+    const projectId = getProjectId()
+    const activityPath = path.join(Global.Path.data, "tasks", projectId, "activity.ndjson")
+
+    const count = 100
+    const getInitialSize = async () => {
+      const file = Bun.file(activityPath)
+      try {
+        return await file.size
+      } catch {
+        return 0
+      }
+    }
+
+    const before = await getInitialSize()
+
+    for (let i = 0; i < count; i++) {
+      await Store.logActivity(projectId, { type: `event-${i}`, timestamp: new Date().toISOString() })
+    }
+
+    const after = await getInitialSize()
+    const content = await Bun.file(activityPath).text()
+    const lines = content.trim().split("\n")
+
+    expect(lines.length).toBe(count)
+    expect(after).toBeGreaterThan(before)
+
+    for (let i = 0; i < count; i++) {
+      const parsed = JSON.parse(lines[i]!)
+      expect(parsed.type).toBe(`event-${i}`)
+    }
+  })
+
+  test("logActivity handles empty directory gracefully", async () => {
+    const projectId = getProjectId()
+
+    await Store.logActivity(projectId, { type: "first-event", timestamp: "2024-01-01T00:00:00.000Z" })
+
+    const activityPath = path.join(Global.Path.data, "tasks", projectId, "activity.ndjson")
+    const content = await Bun.file(activityPath).text()
+    const lines = content.trim().split("\n")
+
+    expect(lines.length).toBe(1)
+    expect(JSON.parse(lines[0]!)).toEqual({ type: "first-event", timestamp: "2024-01-01T00:00:00.000Z" })
   })
 })
