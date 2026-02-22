@@ -7,21 +7,40 @@ import path from "path"
 import { randomUUID } from "crypto"
 import fs from "fs/promises"
 
-const mockGet = mock(() => Promise.resolve({ id: "test", directory: "/tmp" } as any))
-const mockCancel = mock(() => {})
-const mockRemove = mock(() => Promise.resolve())
-
 let testDataDir: string
 
+// Pre-import modules to cache them before any test runs
+const SessionModule = await import("../../src/session")
+const SessionPromptModule = await import("../../src/session/prompt")
+const WorktreeModule = await import("../../src/worktree")
+
+// Create function mocks outside beforeEach
+const mockGet = mock(() => Promise.resolve({ id: "test", directory: "/tmp" } as any))
+const mockCancel = mock(() => {})
+const mockRemove = mock(() => Promise.resolve(true))
+
 beforeEach(async () => {
+  // Mock modules, preserving all exports except the methods we override
   mock.module("../../src/session", () => ({
-    Session: { get: mockGet },
+    ...SessionModule,
+    Session: {
+      ...SessionModule.Session,
+      get: mockGet,
+    },
   }))
   mock.module("../../src/session/prompt", () => ({
-    SessionPrompt: { cancel: mockCancel },
+    ...SessionPromptModule,
+    SessionPrompt: {
+      ...SessionPromptModule.SessionPrompt,
+      cancel: mockCancel,
+    },
   }))
   mock.module("../../src/worktree", () => ({
-    Worktree: { remove: mockRemove },
+    ...WorktreeModule,
+    Worktree: {
+      ...WorktreeModule.Worktree,
+      remove: mockRemove,
+    },
   }))
 
   testDataDir = path.join("/tmp", "opencode-pulse-monitoring-test-" + Math.random().toString(36).slice(2))
@@ -32,7 +51,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await fs.rm(testDataDir, { recursive: true, force: true }).catch(() => {})
-  mock.restore()
+  // Reset mock call counts and behavior for next test
+  mockGet.mockClear?.()
+  mockCancel.mockClear?.()
+  mockRemove.mockClear?.()
 })
 
 function getProjectId(): string {
