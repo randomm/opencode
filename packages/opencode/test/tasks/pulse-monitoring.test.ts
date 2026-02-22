@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test"
+import { describe, expect, test, beforeEach, afterEach } from "bun:test"
 import { Store } from "../../src/tasks/store"
 import { Global } from "../../src/global"
 import { gracefulStop } from "../../src/tasks/pulse-monitoring"
@@ -9,40 +9,7 @@ import fs from "fs/promises"
 
 let testDataDir: string
 
-// Pre-import modules to cache them before any test runs
-const SessionModule = await import("../../src/session")
-const SessionPromptModule = await import("../../src/session/prompt")
-const WorktreeModule = await import("../../src/worktree")
-
-// Create function mocks outside beforeEach
-const mockGet = mock(() => Promise.resolve({ id: "test", directory: "/tmp" } as any))
-const mockCancel = mock(() => {})
-const mockRemove = mock(() => Promise.resolve(true))
-
 beforeEach(async () => {
-  // Mock modules, preserving all exports except the methods we override
-  mock.module("../../src/session", () => ({
-    ...SessionModule,
-    Session: {
-      ...SessionModule.Session,
-      get: mockGet,
-    },
-  }))
-  mock.module("../../src/session/prompt", () => ({
-    ...SessionPromptModule,
-    SessionPrompt: {
-      ...SessionPromptModule.SessionPrompt,
-      cancel: mockCancel,
-    },
-  }))
-  mock.module("../../src/worktree", () => ({
-    ...WorktreeModule,
-    Worktree: {
-      ...WorktreeModule.Worktree,
-      remove: mockRemove,
-    },
-  }))
-
   testDataDir = path.join("/tmp", "opencode-pulse-monitoring-test-" + Math.random().toString(36).slice(2))
   await fs.mkdir(testDataDir, { recursive: true })
   process.env.OPENCODE_TEST_HOME = testDataDir
@@ -51,10 +18,6 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await fs.rm(testDataDir, { recursive: true, force: true }).catch(() => {})
-  // Reset mock call counts and behavior for next test
-  mockGet.mockClear?.()
-  mockCancel.mockClear?.()
-  mockRemove.mockClear?.()
 })
 
 function getProjectId(): string {
@@ -118,7 +81,7 @@ describe("pulse-monitoring: gracefulStop", () => {
     const job = createJob({ id: jobId, pulse_pid: 12345 })
     await Store.createJob(projectId, job)
 
-    const task1 = createTask({ job_id: jobId, assignee: "session-1", worktree: "/tmp/test-worktree" })
+    const task1 = createTask({ job_id: jobId })
     await Store.createTask(projectId, task1)
 
     const lockFilePath = path.join(Global.Path.data, "tasks", projectId, `job-${jobId}.lock`)
