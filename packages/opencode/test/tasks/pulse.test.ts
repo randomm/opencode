@@ -492,4 +492,123 @@ describe("pulse.ts", () => {
     describe("PM session notifications", () => {
 
     })
+
+  describe("resolveModel", () => {
+    test("returns modelID and providerID from last assistant message", async () => {
+      const { resolveModel } = await import("../../src/tasks/pulse")
+
+      // Mock MessageV2.stream to yield one assistant message
+      const mockMsg = {
+        info: {
+          role: "assistant",
+          modelID: "claude-sonnet-4-5",
+          providerID: "anthropic",
+        },
+        parts: [],
+      }
+
+      const MessageV2 = await import("../../src/session/message-v2")
+      const origStream = MessageV2.MessageV2.stream
+
+      // Replace stream with a mock that yields our message
+      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+        yield mockMsg
+      }
+
+      try {
+        const result = await resolveModel("pm-session-test-123")
+        expect(result.modelID).toBe("claude-sonnet-4-5")
+        expect(result.providerID).toBe("anthropic")
+      } finally {
+        ;(MessageV2.MessageV2 as any).stream = origStream
+      }
+    })
+
+    test("skips non-assistant messages and returns first assistant message", async () => {
+      const { resolveModel } = await import("../../src/tasks/pulse")
+
+      const userMsg = {
+        info: { role: "user", modelID: "ignored", providerID: "ignored" },
+        parts: [],
+      }
+      const assistantMsg = {
+        info: { role: "assistant", modelID: "gpt-4o", providerID: "openai" },
+        parts: [],
+      }
+
+      const MessageV2 = await import("../../src/session/message-v2")
+      const origStream = MessageV2.MessageV2.stream
+
+      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+        yield userMsg
+        yield assistantMsg
+      }
+
+      try {
+        const result = await resolveModel("pm-session-test-456")
+        expect(result.modelID).toBe("gpt-4o")
+        expect(result.providerID).toBe("openai")
+      } finally {
+        ;(MessageV2.MessageV2 as any).stream = origStream
+      }
+    })
+
+    test("falls back to Provider.defaultModel when no assistant message found", async () => {
+      const { resolveModel } = await import("../../src/tasks/pulse")
+
+      const MessageV2 = await import("../../src/session/message-v2")
+      const origStream = MessageV2.MessageV2.stream
+
+      // Stream with only user messages — no assistant
+      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+        yield { info: { role: "user", modelID: "x", providerID: "y" }, parts: [] }
+      }
+
+      const Provider = await import("../../src/provider/provider")
+      const origDefaultModel = Provider.Provider.defaultModel
+
+      ;(Provider.Provider as any).defaultModel = async () => ({
+        modelID: "default-model",
+        providerID: "default-provider",
+      })
+
+      try {
+        const result = await resolveModel("pm-session-no-assistant")
+        expect(result.modelID).toBe("default-model")
+        expect(result.providerID).toBe("default-provider")
+      } finally {
+        ;(MessageV2.MessageV2 as any).stream = origStream
+        ;(Provider.Provider as any).defaultModel = origDefaultModel
+      }
+    })
+
+    test("falls back to Provider.defaultModel when session has no messages", async () => {
+      const { resolveModel } = await import("../../src/tasks/pulse")
+
+      const MessageV2 = await import("../../src/session/message-v2")
+      const origStream = MessageV2.MessageV2.stream
+
+      // Empty stream
+      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+        // yields nothing
+      }
+
+      const Provider = await import("../../src/provider/provider")
+      const origDefaultModel = Provider.Provider.defaultModel
+
+      ;(Provider.Provider as any).defaultModel = async () => ({
+        modelID: "fallback-model",
+        providerID: "fallback-provider",
+      })
+
+      try {
+        const result = await resolveModel("pm-session-empty")
+        expect(result.modelID).toBe("fallback-model")
+        expect(result.providerID).toBe("fallback-provider")
+      } finally {
+        ;(MessageV2.MessageV2 as any).stream = origStream
+        ;(Provider.Provider as any).defaultModel = origDefaultModel
+      }
+    })
+  })
  })
