@@ -11,7 +11,9 @@ const log = Log.create({ service: "taskctl.tool.job-commands" })
 
 export async function executeStart(projectId: string, params: any, ctx: any): Promise<{ title: string; output: string; metadata: {} }> {
   const issueNumber = params.issueNumber
-  if (!issueNumber) throw new Error("start requires issueNumber")
+  if (!issueNumber || !Number.isInteger(Number(issueNumber)) || Number(issueNumber) <= 0) {
+    throw new Error("issueNumber must be a valid positive integer")
+  }
 
   const existingJob = await Store.findJobByIssue(projectId, issueNumber)
   if (existingJob) {
@@ -56,6 +58,14 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
     const result = await $`git checkout -b ${featureBranch} dev`.cwd(ctx.session.directory).quiet().nothrow()
     if (result.exitCode !== 0) {
       log.error("failed to create feature branch", { issueNumber, featureBranch })
+    } else {
+      // Push the feature branch to origin
+      const pushResult = await $`git push -u origin ${featureBranch}`.cwd(ctx.session.directory).quiet().nothrow()
+      if (pushResult.exitCode !== 0) {
+        log.warn("failed to push feature branch to origin", { issueNumber, featureBranch })
+      } else {
+        log.info("feature branch created and pushed", { issueNumber, featureBranch })
+      }
     }
   } catch (e) {
     log.error("error creating feature branch", { issueNumber, featureBranch, error: String(e) })
