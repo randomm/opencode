@@ -230,7 +230,7 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
   )
 
   const model = await resolveModel(pmSessionId)
-  const prompt = buildDeveloperPrompt(task)
+  const prompt = buildDeveloperPrompt(task, worktreeInfo.directory, worktreeInfo.branch)
   try {
     await SessionPrompt.prompt({
       sessionID: devSession.id,
@@ -273,7 +273,16 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
   }
 }
 
-function buildDeveloperPrompt(task: Task): string {
+function buildDeveloperPrompt(task: Task, worktreeDir: string, branch: string): string {
+  const worktreeWarning = `⚠️ WORKING DIRECTORY: You are working in worktree: ${worktreeDir}
+On branch: ${branch}
+
+BEFORE any file operation:
+1. Verify with: git branch --show-current
+2. If output is NOT "${branch}", STOP immediately and report the error
+3. All file reads/writes must use paths under ${worktreeDir}
+`
+
   return `Implement the following task with TDD:
 
 **Title:** ${task.title}
@@ -313,6 +322,26 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
     return
   }
 
+  await Store.updateTask(projectId, task.id, {
+    pipeline: { ...task.pipeline, stage: "adversarial-running", last_activity: new Date().toISOString() },
+  }, true)
+
+  // Check if developer committed changes
+  const base = task.base_commit ?? "dev"
+  const diffCheck = await $`git diff ${base}..HEAD --stat`.quiet().nothrow().cwd(safeWorktree)
+  const diffOutput = new TextDecoder().decode(diffCheck.stdout).trim()
+  if (!diffOutput) {
+    await Store.addComment(projectId, task.id, {
+      author: "system",
+      message: "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      created_at: new Date().toISOString(),
+    })
+    await Store.updateTask(projectId, task.id, {
+      pipeline: { ...task.pipeline, stage: "developing", last_activity: new Date().toISOString() },
+    }, true)
+    return
+  }
+
   let adversarialSession
   try {
     adversarialSession = await Session.createNext({
@@ -325,10 +354,6 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
     log.error("failed to create adversarial session", { taskId: task.id, error: String(e) })
     return
   }
-
-  await Store.updateTask(projectId, task.id, {
-    pipeline: { ...task.pipeline, stage: "adversarial-running", last_activity: new Date().toISOString() },
-  }, true)
 
   const baseCommitStr = task.base_commit ? `Base Commit: ${task.base_commit}` : "Base Commit: Not captured"
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
@@ -444,8 +469,18 @@ async function respawnDeveloper(
     true,
   )
 
+  const worktreeWarning = `⚠️ WORKING DIRECTORY: You are working in worktree: ${task.worktree}
+On branch: ${task.branch || "feature"}
+
+BEFORE any file operation:
+1. Run: git branch --show-current
+2. If output is NOT "${task.branch || "feature"}", STOP and report immediately
+3. All file paths must be under ${task.worktree}
+
+`
+
   const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
-  const prompt = `This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
+  const prompt = `${worktreeWarning}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
 
 **Task:** ${task.title}
 **Description:** ${task.description}
