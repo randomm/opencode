@@ -79,20 +79,7 @@ async function notifyPM(pmSessionId: string, text: string): Promise<{ ok: true }
       synthetic: true,
     })
 
-    // Wake up the PM agentic loop by calling SessionPrompt.prompt
-    // This will create a synthetic user message and run the agentic loop
-    try {
-      await SessionPrompt.prompt({
-        sessionID: pmSessionId,
-        parts: [{ type: "text", text: "Resume processing tasks.", synthetic: true }],
-        noReply: true,
-      })
-    } catch (e) {
-      // Log but don't fail if prompt wakeup fails — notification was still delivered
-      log.warn("failed to wake up PM loop via prompt", { pmSessionId, error: String(e) })
-    }
-
-    log.info("PM notification sent and loop woken up", { pmSessionId })
+    log.info("PM notification sent", { pmSessionId })
     return { ok: true }
   } catch (e) {
     const errorMsg = String(e)
@@ -115,6 +102,12 @@ async function commitTask(task: Task, jobId: string, projectId: string, pmSessio
     return
   }
 
+  if (!task.branch) {
+    log.error("Task has no branch for commit and push", { taskId: task.id })
+    await escalateCommitFailure(task, projectId, pmSessionId, "No branch available - cannot push")
+    return
+  }
+
   let opsSession
   try {
     opsSession = await Session.createNext({
@@ -129,9 +122,9 @@ async function commitTask(task: Task, jobId: string, projectId: string, pmSessio
     return
   }
 
-  const branchName = task.branch || "unknown"
+  const branchName = task.branch
   const commitMsg = `feat(taskctl): ${task.title} (#${task.parent_issue})`
-  const opsPrompt = `Commit all changes in the worktree directory: ${task.worktree}
+  const opsPrompt = `Commit and push all changes in the worktree directory: ${task.worktree}
 Commit message: "${commitMsg}"
 
 Step 1: Commit locally
@@ -142,7 +135,7 @@ Step 2: Push to remote
 After successful commit, push the branch to origin:
 git push -u origin ${branchName}
 
-If there is an error, report the full error output.`
+Report the full output from both steps so we can verify the push succeeded.`
 
   try {
     await SessionPrompt.prompt({
@@ -189,7 +182,9 @@ If there is an error, report the full error output.`
   if (text) {
     const nothingToCommit = /nothing to commit/i.test(text)
     const hasCommitHash = /\b[0-9a-f]{7,40}\b/.test(text)
-    const hasFatal = /fatal|error/i.test(text)
+    const hasPushSuccess = /branch '.*' set up to track|pushed to|Branch '\w+.*' set up to track/i.test(text)
+    const hasPushFailure = /fatal:.*unable to access|Could not read from remote repository|authentication failed|Permission denied|rejected|! \[rejected\]/i.test(text)
+    const hasNoRemote = /fatal: 'origin' does not appear to be a git repository|no such remote/i.test(text)
 
     if (nothingToCommit) {
       log.error("@ops reported nothing to commit", { taskId: task.id })
@@ -197,10 +192,22 @@ If there is an error, report the full error output.`
       return
     }
 
-    if (hasFatal && !hasCommitHash) {
-      log.error("@ops commit failed", { taskId: task.id, output: text.substring(0, 200) })
-      await escalateCommitFailure(task, projectId, pmSessionId, `Commit failed: ${text.substring(0, 200)}`)
-      return
+    const hasFatal = /fatal|error/i.test(text)
+    if (hasFatal) {
+      if (hasPushFailure || hasNoRemote || !hasPushSuccess) {
+        log.error("@ops push failed", { taskId: task.id, output: text.substring(0, 200) })
+        await escalateCommitFailure(task, projectId, pmSessionId, `Push failed: ${text.substring(0, 200)}`)
+        return
+      }
+      if (!hasCommitHash) {
+        log.error("@ops commit failed", { taskId: task.id, output: text.substring(0, 200) })
+        await escalateCommitFailure(task, projectId, pmSessionId, `Commit failed: ${text.substring(0, 200)}`)
+        return
+      }
+    }
+
+    if (!hasPushSuccess && hasCommitHash) {
+      log.warn("@ops commit appeared to succeed but push output not detected", { taskId: task.id, output: text.substring(0, 300) })
     }
   }
 
@@ -220,7 +227,7 @@ If there is an error, report the full error output.`
       status: "closed",
       close_reason: "approved and committed",
       worktree: null,
-      branch: task.branch, // Preserve branch for PR creation at job completion
+      branch: null,
       assignee: null,
       assignee_pid: null,
       pipeline: { ...task.pipeline, stage: "done", last_activity: null },
@@ -315,6 +322,52 @@ async function escalateCommitFailure(
   })
 }
 
+async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: string, issueNumber: number): Promise<{ ok: true; prUrl: string } | { ok: false; error: string }> {
+  if (tasks.length === 0) {
+    return { ok: false, error: "No tasks found in job" }
+  }
+
+  const job = await Store.getJob(projectId, tasks[0].job_id)
+  if (!job?.feature_branch) {
+    return { ok: false, error: "No feature branch found for job" }
+  }
+
+  const featureBranch = job.feature_branch
+
+  try {
+    const parentSession = await Session.get(pmSessionId).catch(() => null)
+    if (!parentSession?.directory) {
+      return { ok: false, error: "PM session not found for PR creation" }
+    }
+
+    const { $ } = await import("bun")
+    const repo = "randomm/opencode"
+    const prTitle = `Issue #${issueNumber}: Automated PR from taskctl`
+    const prBody = `Closes #${issueNumber}
+
+This PR was automatically created by the taskctl pipeline after all tasks completed.`
+
+    // Use proper shell escaping to prevent command injection
+    const result = await $`gh pr create --repo ${repo} --base dev --head ${featureBranch} --title ${prTitle} --body ${prBody}`
+      .cwd(parentSession.directory)
+      .quiet()
+      .nothrow()
+
+    if (result.exitCode !== 0) {
+      const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
+      return { ok: false, error: `gh pr create failed: ${stderr}` }
+    }
+
+    const stdout = result.stdout ? new TextDecoder().decode(result.stdout).trim() : ""
+    const prUrl = stdout.match(/https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/)?.[0] || stdout
+
+    return { ok: true, prUrl }
+  } catch (e) {
+    log.error("failed to create PR", { error: String(e) })
+    return { ok: false, error: String(e) }
+  }
+}
+
 async function processAdversarialVerdicts(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const allTasks = await Store.listTasks(projectId)
   const jobTasks = allTasks.filter((t) => t.job_id === jobId)
@@ -351,50 +404,6 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
         await respawnDeveloper(updatedTask, jobId, projectId, pmSessionId, newAttempt, verdict)
       }
     }
-  }
-}
-
-async function createPRForJob(tasks: Task[], pmSessionId: string): Promise<{ ok: true; prUrl: string } | { ok: false; error: string }> {
-  if (tasks.length === 0) {
-    return { ok: false, error: "No tasks found in job" }
-  }
-
-  const issueNumber = tasks[0].parent_issue
-  const branchName = tasks[0].branch
-
-  if (!branchName) {
-    return { ok: false, error: "No branch found for job" }
-  }
-
-  try {
-    const parentSession = await Session.get(pmSessionId).catch(() => null)
-    if (!parentSession?.directory) {
-      return { ok: false, error: "PM session not found for PR creation" }
-    }
-
-    const { $ } = await import("bun")
-    const prTitle = `Issue #${issueNumber}: Automated PR from taskctl`
-    const prBody = `Closes #${issueNumber}
-
-This PR was automatically created by the taskctl pipeline after all tasks completed.`
-
-    const result = await $`gh pr create --repo randomm/opencode --base dev --head ${branchName} --title ${prTitle} --body ${prBody}`
-      .cwd(parentSession.directory)
-      .quiet()
-      .nothrow()
-
-    if (result.exitCode !== 0) {
-      const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
-      return { ok: false, error: `gh pr create failed: ${stderr}` }
-    }
-
-    const stdout = result.stdout ? new TextDecoder().decode(result.stdout).trim() : ""
-    const prUrl = stdout.match(/https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/)?.[0] || stdout
-
-    return { ok: true, prUrl }
-  } catch (e) {
-    log.error("failed to create PR", { error: String(e) })
-    return { ok: false, error: String(e) }
   }
 }
 
