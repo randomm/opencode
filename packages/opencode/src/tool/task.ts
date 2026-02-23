@@ -31,7 +31,7 @@ const parameters = z.object({
   sync: z.boolean().describe("Execute synchronously and wait for result").optional(),
 })
 
-const MAX_CONCURRENT_TASKS_PER_SESSION = 5
+const MAX_CONCURRENT_TASKS_PER_SESSION = 10
 
 type LockCallback = (release: () => void) => void
 interface LockState {

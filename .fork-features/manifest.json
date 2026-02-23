@@ -9,7 +9,7 @@
   "features": {
     "async-tasks": {
       "status": "active",
-      "description": "Background task execution with slot-based concurrency (max 5). Supports both async and sync modes. Enables agent orchestration via /task and /check_task tools.",
+      "description": "Background task execution with slot-based concurrency (max 10). Supports both async and sync modes. Enables agent orchestration via /task and /check_task tools.",
       "issue": "https://github.com/randomm/opencode/issues/159",
       "newFiles": [
         "packages/opencode/src/session/async-tasks.ts",
@@ -48,7 +48,8 @@
         "triggerWakeup",
         "autoWakeupSubscribers",
         "hasUndeliveredCompletedTasks",
-        "getAndClearCompletedTasks"
+        "getAndClearCompletedTasks",
+        "MAX_CONCURRENT_TASKS_PER_SESSION = 10"
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
