@@ -10,7 +10,7 @@ import { applyHashlineEdits, type HashlineEdit, parseAnchor } from "./hashline"
 export const HashlineEditTool = Tool.define("hashline_edit", {
   description: DESCRIPTION,
   parameters: z.object({
-    file: z.string().describe("Absolute path to the file to edit"),
+    filePath: z.string().describe("Absolute path to the file to edit"),
     edits: z
       .array(
         z.discriminatedUnion("op", [
@@ -36,7 +36,7 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
       .describe("List of edits to apply atomically"),
   }),
   async execute(params, ctx) {
-    const filepath = path.isAbsolute(params.file) ? params.file : path.join(Instance.directory, params.file)
+    const filepath = path.isAbsolute(params.filePath) ? params.filePath : path.join(Instance.directory, params.filePath)
 
     await assertExternalDirectory(ctx, filepath)
 
@@ -79,7 +79,7 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
 
     return {
       title: path.relative(Instance.worktree, filepath),
-      output: `Edit applied successfully to ${params.file}`,
+      output: `Edit applied successfully to ${params.filePath}`,
       metadata: {},
     }
   },
