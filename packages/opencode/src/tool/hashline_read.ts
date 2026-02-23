@@ -1,5 +1,5 @@
 import z from "zod"
-import * as fs from "fs"
+import * as fs from "fs/promises"
 import * as path from "path"
 import { Tool } from "./tool"
 import { LSP } from "../lsp"
@@ -48,23 +48,21 @@ export const HashlineReadTool = Tool.define("hashline_read", {
     })
 
     if (!stat) {
-      const dir = path.dirname(filepath)
-      const base = path.basename(filepath)
-
-      const dirEntries = fs.readdirSync(dir)
-      const suggestions = dirEntries
-        .filter(
-          (entry) =>
-            entry.toLowerCase().includes(base.toLowerCase()) || base.toLowerCase().includes(entry.toLowerCase()),
-        )
-        .map((entry) => path.join(dir, entry))
-        .slice(0, 3)
-
-      if (suggestions.length > 0) {
-        throw new Error(`File not found: ${filepath}\n\nDid you mean one of these?\n${suggestions.join("\n")}`)
+      await fs.mkdir(path.dirname(filepath), { recursive: true })
+      await Bun.write(filepath, "")
+      
+      FileTime.read(ctx.sessionID, filepath)
+      FileTime.hashlineRead(ctx.sessionID, filepath)
+      
+      return {
+        title,
+        output: [`<path>${filepath}</path>`, `<type>file</type>`, "<content>"].join("\n") + "\n</content>\n\n(File created successfully - empty and ready for editing)",
+        metadata: {
+          preview: "",
+          truncated: false,
+          loaded: [],
+        },
       }
-
-      throw new Error(`File not found: ${filepath}`)
     }
 
     if (stat.isDirectory()) {
