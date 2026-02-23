@@ -28,8 +28,7 @@ describe("PM notifications", () => {
   })
 
   afterEach(async () => {
-    const tasksDir = path.join(Global.Path.data, "tasks", TEST_PROJECT_ID)
-    const lockPath = path.join(tasksDir, `job-${TEST_JOB_ID}.lock`)
+    const lockPath = path.join(Global.Path.data, "tasks", TEST_PROJECT_ID, `job-${TEST_JOB_ID}.lock`)
     await fs.unlink(lockPath).catch(() => {})
 
     await fs.rm(testDataDir, { recursive: true, force: true }).catch(() => {})
