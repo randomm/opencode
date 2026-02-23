@@ -20,6 +20,9 @@ export type HashlineEdit =
       anchor: Anchor
       text: string
     }
+  | {
+      op: "delete_file"
+    }
 
 export function normalizeLine(line: string): string {
   let result = line.replace(/\r$/, "")
@@ -77,6 +80,9 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
   const relocatedMap: Map<number, number> = new Map()
 
   for (const edit of edits) {
+    // Skip delete_file operations - they don't have anchors to validate
+    if (edit.op === "delete_file") continue
+
     const anchors = [
       ...(edit.op === "set_line"
         ? [edit.anchor]
@@ -125,6 +131,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
 
   const sortedEdits = [...edits].sort((a, b) => {
     const getOriginalLine = (e: HashlineEdit): number => {
+      if (e.op === "delete_file") return Infinity
       if (e.op === "replace_lines") return e.start_anchor.line
       return e.anchor.line
     }

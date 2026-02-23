@@ -413,4 +413,152 @@ describe("tool.hashline_edit", () => {
       },
     })
   })
+
+  test("delete_file successfully deletes a file after hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        )
+        expect(result.output).toContain("File deleted successfully")
+        const exists = await Bun.file(filepath).exists()
+        expect(exists).toBe(false)
+      },
+    })
+  })
+
+  test("delete_file is rejected without prior hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "content")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result.message).toContain("You must use hashline_read before hashline_edit")
+        const exists = await Bun.file(filepath).exists()
+        expect(exists).toBe(true)
+      },
+    })
+  })
+
+  test("delete_file returns clear error if file already gone", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "content")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+        // Delete the file externally
+        await Bun.file(filepath).delete()
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result.message).toContain("File not found")
+      },
+    })
+  })
+
+  test("after delete_file, subsequent hashline_edit fails until new hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "content")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+        await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        )
+        // Try to edit the same path (file is now gone)
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result.message).toContain("You must use hashline_read before hashline_edit")
+      },
+    })
+  })
+
+  test("after delete_file + new hashline_read, operations work on re-created file", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+        // Delete the file
+        await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "delete_file" }],
+          },
+          ctx
+        )
+        // Re-create the file
+        await Bun.write(filepath, "new line1\nnew line2")
+        // Read it again with hashline_read
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+        // Now editing should work
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "set_line", anchor: "1赙", new_text: "modified" }],
+          },
+          ctx
+        )
+        expect(result.output).toContain("Edit applied successfully")
+        const content = await Bun.file(filepath).text()
+        expect(content).toContain("modified")
+      },
+    })
+  })
 })
