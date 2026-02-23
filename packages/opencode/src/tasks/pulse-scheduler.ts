@@ -16,6 +16,7 @@ import { Global } from "../global"
 import { Instance as InstanceImport } from "../project/instance"
 import type { Task, AdversarialVerdict } from "./types"
 import { MAX_ADVERSARIAL_ATTEMPTS } from "./pulse-verdicts"
+import { resolveModel } from "./pulse"
 
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
 
@@ -228,11 +229,13 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
     true,
   )
 
+  const model = await resolveModel(pmSessionId)
   const prompt = buildDeveloperPrompt(task)
   try {
     await SessionPrompt.prompt({
       sessionID: devSession.id,
       agent: "developer-pipeline",
+      model,
       parts: [{ type: "text", text: prompt }],
     })
   } catch (e) {
@@ -344,12 +347,14 @@ git diff ${task.base_commit || "dev"}..HEAD
 
 This ensures you only review changes made by the developer, not commits that were already in dev.
 
-Read the changed files in the worktree, run typecheck, and record your verdict with taskctl verdict.`
+  Read the changed files in the worktree, run typecheck, and record your verdict with taskctl verdict.`
 
+  const model = await resolveModel(pmSessionId)
   try {
     await SessionPrompt.prompt({
       sessionID: adversarialSession.id,
       agent: "adversarial-pipeline",
+      model,
       parts: [{ type: "text", text: prompt }],
     })
   } catch (e) {
@@ -451,12 +456,14 @@ Summary: ${verdict.summary}
 Issues:
 ${issueLines}
 
-The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, and complete your work. The pulse system automatically detects completion.`
+  The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, and complete your work. The pulse system automatically detects completion.`
 
+  const model = await resolveModel(pmSessionId)
   try {
     await SessionPrompt.prompt({
       sessionID: devSession.id,
       agent: "developer-pipeline",
+      model,
       parts: [{ type: "text", text: prompt }],
     })
   } catch (e) {

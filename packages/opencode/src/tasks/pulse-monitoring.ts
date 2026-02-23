@@ -5,6 +5,7 @@ import { Log } from "../util/log"
 import { Store } from "./store"
 import { sanitizeWorktree, isSessionActivelyRunning, isPidAlive, removeLockFile } from "./pulse-scheduler"
 import type { Task } from "./types"
+import { resolveModel } from "./pulse"
 
 const log = Log.create({ service: "taskctl.pulse.monitoring" })
 
@@ -190,10 +191,12 @@ ${history}
 
 Assess the developer's progress and respond with the appropriate JSON action.`
 
+  const model = await resolveModel(pmSessionId)
   try {
     await SessionPrompt.prompt({
       sessionID: steeringSession.id,
       agent: "steering",
+      model,
       parts: [{ type: "text", text: prompt }],
     })
   } catch (e) {
@@ -230,7 +233,7 @@ Assess the developer's progress and respond with the appropriate JSON action.`
     return { action: "continue", message: null }
   }
 
-  const responseText = textParts.map((p) => (p as any).text).join("\n")
+  const responseText = textParts.map((p) => p.text).join("\n")
 
   let response
   try {
@@ -295,9 +298,11 @@ export async function checkSteering(jobId: string, projectId: string, pmSessionI
       if (task.assignee) {
         const sessionId = task.assignee
         try {
+          const model = await resolveModel(pmSessionId)
           await SessionPrompt.prompt({
             sessionID: sessionId,
             agent: "developer-pipeline",
+            model,
             parts: [{ type: "text", text: `[Steering guidance]: ${result.message}` }],
           })
         } catch (e) {
