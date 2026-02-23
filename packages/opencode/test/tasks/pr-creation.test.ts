@@ -89,7 +89,7 @@ describe("PR Creation on Job Completion", () => {
             await Store.createTask(projectId, task)
           }
 
-          const result = await createPRForJob(projectId, testTasks, "pm-session-id", 123)
+          const result = await createPRForJob(projectId, testTasks, "ses_" + "test".repeat(8), 123)
           expect(result.ok).toBe(false)
           if (!result.ok) {
             expect(result.error).toContain("No feature branch found")
@@ -153,7 +153,7 @@ describe("PR Creation on Job Completion", () => {
             await Store.createTask(projectId, task)
           }
 
-          const result = await createPRForJob(projectId, testTasks, "pm-session-id", 123)
+          const result = await createPRForJob(projectId, testTasks, "ses_" + "test".repeat(8), 123)
           // We expect this to fail because we're not in a real git repo
           // but the important thing is it tried to use the feature_branch
           expect(result.ok).toBe(false)
@@ -220,7 +220,7 @@ describe("PR Creation on Job Completion", () => {
             await Store.createTask(projectId, task)
           }
 
-          const result = await createPRForJob(projectId, testTasks, "pm-session-id", 123)
+          const result = await createPRForJob(projectId, testTasks, "ses_" + "test".repeat(8), 123)
           // Should try to use the fallback branch
           expect(result.ok).toBe(false)
           if (!result.ok) {

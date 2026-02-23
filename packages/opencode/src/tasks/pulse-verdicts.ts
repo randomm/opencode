@@ -328,16 +328,22 @@ async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: str
   }
 
   const job = await Store.getJob(projectId, tasks[0].job_id)
-  if (!job?.feature_branch) {
-    return { ok: false, error: "No feature branch found for job" }
-  }
+  let featureBranch = job?.feature_branch
 
-  const featureBranch = job.feature_branch
+  // Fallback to first task branch if job or feature_branch is missing
+  if (!featureBranch) {
+    const firstTaskWithBranch = tasks.find((t) => t.branch)
+    if (firstTaskWithBranch) {
+      featureBranch = firstTaskWithBranch.branch
+    } else {
+      return { ok: false, error: "No feature branch found for job" }
+    }
+  }
 
   try {
     const parentSession = await Session.get(pmSessionId).catch(() => null)
     if (!parentSession?.directory) {
-      return { ok: false, error: "PM session not found for PR creation" }
+      return { ok: false, error: `PM session not found for PR creation (session: ${pmSessionId}, branch: ${featureBranch})` }
     }
 
     const { $ } = await import("bun")
