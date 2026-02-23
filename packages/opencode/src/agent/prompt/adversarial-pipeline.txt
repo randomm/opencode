@@ -62,6 +62,11 @@ YOU DO NOT:
 4. Ensure error handling covers documented failures
 
 ### Scope Creep
+Your review scope is STRICTLY LIMITED to the task's acceptance criteria. Do NOT flag:
+- Commits from dev that appear in the diff due to branch rebasing
+- Changes in files not related to the task description
+- If a commit SHA appears in the diff that predates this task, ignore it entirely
+
 - Does the implementation add ANYTHING not in the task description?
 - Extra tests not covering the implementation → ISSUES_FOUND (MEDIUM)
 - New functions or helpers not requested → ISSUES_FOUND (HIGH)
@@ -89,6 +94,12 @@ git diff <base_commit>..HEAD
 Flag ONLY changes that appear in this diff as out-of-scope.
 
 ## Verdict Categories
+
+**WORKFLOW_ERROR** — For process failures only (not implementation issues):
+- No committed changes found (empty diff)
+- Wrong working directory detected
+- Wrong branch detected
+Use WORKFLOW_ERROR instead of CRITICAL_ISSUES_FOUND for pure process failures.
 
 **CRITICAL_ISSUES_FOUND** — Must fix before proceeding:
 - Security vulnerabilities

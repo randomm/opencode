@@ -1,4 +1,4 @@
-import { describe, expect, test, spyOn } from "bun:test"
+import { describe, expect, test, spyOn, mock } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { Store } from "../../src/tasks/store"
 import type { Task, Job } from "../../src/tasks/types"
@@ -8,7 +8,12 @@ import { SessionPrompt } from "../../src/session/prompt"
 import { Worktree } from "../../src/worktree"
 import { SessionStatus } from "../../src/session/status"
 
-// Import the tick functions - these need to be exported from pulse.ts
+// Mock hasCommittedChanges BEFORE any imports that use it
+mock.module("../../src/tasks/pulse-utils", () => ({
+  hasCommittedChanges: async () => true,
+}))
+
+// Import the tick functions AFTER the mock is set up
 import {
   scheduleReadyTasks,
   heartbeatActiveAgents,
@@ -19,10 +24,6 @@ describe("taskctl pulse: full happy path integration test", () => {
   test("complete happy path: open → developing → reviewing → adversarial-running → done", async () => {
     // Mock SessionPrompt.prompt to return immediately (simulating developer/adversarial completing)
     const promptSpy = spyOn(SessionPrompt, "prompt").mockImplementation(() => Promise.resolve())
-
-    // Mock Worktree.remove to avoid cleanup noise
-    const removeSpy = spyOn(Worktree, "remove")
-    removeSpy.mockImplementation(async () => true)
 
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
@@ -47,6 +48,7 @@ describe("taskctl pulse: full happy path integration test", () => {
           pulse_pid: null,
           max_workers: 3,
           pm_session_id: pmSession.id,
+          feature_branch: `feature/issue-257-test`,
         }
 
         // Create a task in open state
@@ -148,6 +150,5 @@ describe("taskctl pulse: full happy path integration test", () => {
 
     // Clean up mocks
     promptSpy.mockRestore()
-    removeSpy.mockRestore()
   })
 })
