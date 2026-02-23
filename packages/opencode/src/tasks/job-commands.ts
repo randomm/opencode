@@ -48,6 +48,19 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   }
 
   const jobId = `job-${Date.now()}`
+  const featureBranch = `feature/issue-${issueNumber}`
+
+  // Create the feature branch in the main repository
+  try {
+    const { $ } = await import("bun")
+    const result = await $`git checkout -b ${featureBranch} dev`.cwd(ctx.session.directory).quiet().nothrow()
+    if (result.exitCode !== 0) {
+      log.error("failed to create feature branch", { issueNumber, featureBranch })
+    }
+  } catch (e) {
+    log.error("error creating feature branch", { issueNumber, featureBranch, error: String(e) })
+  }
+
   await Store.createJob(projectId, {
     id: jobId,
     parent_issue: issueNumber,
@@ -57,6 +70,7 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
     pulse_pid: null,
     max_workers: 3,
     pm_session_id: ctx.sessionID,
+    feature_branch: featureBranch,
   })
 
   enableAutoWakeup(ctx.sessionID)

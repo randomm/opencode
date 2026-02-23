@@ -63,6 +63,7 @@ export type Job = {
   pulse_pid: number | null
   max_workers: number
   pm_session_id: string
+  feature_branch: string | null
 }
 
 export type TaskIndexEntry = {
