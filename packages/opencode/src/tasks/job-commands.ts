@@ -9,6 +9,13 @@ import { Worktree } from "../worktree"
 
 const log = Log.create({ service: "taskctl.tool.job-commands" })
 
+// Branch name validation for security
+const BRANCH_REGEX = /^[a-zA-Z0-9_\-\/\+.]+$/
+
+function safeBranch(name: string): string | null {
+  return BRANCH_REGEX.test(name) ? name : null
+}
+
 export async function executeStart(projectId: string, params: any, ctx: any): Promise<{ title: string; output: string; metadata: {} }> {
   const issueNumber = params.issueNumber
   if (!issueNumber || !Number.isInteger(Number(issueNumber)) || Number(issueNumber) <= 0) {
@@ -52,23 +59,32 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   const jobId = `job-${Date.now()}`
   const featureBranch = `feature/issue-${issueNumber}`
 
+  // Validate feature branch name before using in git operations
+  const safeFeatureBranch = safeBranch(featureBranch)
+  if (!safeFeatureBranch) {
+    log.error("feature branch name failed validation", { issueNumber, featureBranch })
+    throw new Error(`Invalid feature branch name: ${featureBranch}`)
+  }
+
   // Create the feature branch in the main repository
   try {
     const { $ } = await import("bun")
-    const result = await $`git checkout -b ${featureBranch} dev`.cwd(ctx.session.directory).quiet().nothrow()
+    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(ctx.session.directory).quiet().nothrow()
     if (result.exitCode !== 0) {
-      log.error("failed to create feature branch", { issueNumber, featureBranch })
+      log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch })
     } else {
-      // Push the feature branch to origin
-      const pushResult = await $`git push -u origin ${featureBranch}`.cwd(ctx.session.directory).quiet().nothrow()
+      // Push the feature branch to origin - MUST succeed before creating job
+      const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(ctx.session.directory).quiet().nothrow()
       if (pushResult.exitCode !== 0) {
-        log.warn("failed to push feature branch to origin", { issueNumber, featureBranch })
-      } else {
-        log.info("feature branch created and pushed", { issueNumber, featureBranch })
+        const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
+        log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+        throw new Error(`Failed to push feature branch ${safeFeatureBranch} to origin: ${stderr}`)
       }
+      log.info("feature branch created and pushed", { issueNumber, featureBranch: safeFeatureBranch })
     }
   } catch (e) {
-    log.error("error creating feature branch", { issueNumber, featureBranch, error: String(e) })
+    log.error("error creating feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: String(e) })
+    throw e
   }
 
   await Store.createJob(projectId, {
@@ -80,7 +96,7 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
     pulse_pid: null,
     max_workers: 3,
     pm_session_id: ctx.sessionID,
-    feature_branch: featureBranch,
+    feature_branch: safeFeatureBranch,
   })
 
   enableAutoWakeup(ctx.sessionID)
