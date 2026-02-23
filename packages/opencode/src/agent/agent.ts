@@ -262,7 +262,23 @@ RULES FOR GOOD TASK DECOMPOSITION:
 6. Do not create tasks for work not explicitly required by the issue
 7. Validate your own output: check that no depends_on creates a cycle before responding
 8. Respond with ONLY the JSON object — no markdown, no explanation, no code blocks
- 9. depends_on values must be the EXACT title string of another task in this batch — never use numbers, indexes, or abbreviations`,
+ 9. depends_on values must be the EXACT title string of another task in this batch — never use numbers, indexes, or abbreviations
+
+## CRITICAL: Dependency Rules — Prevent Overly Sequential Chains
+
+10. depends_on is ONLY for true data dependencies — when task B literally cannot start without task A's output/files
+11. DEFAULT: tasks are INDEPENDENT and run in parallel — ONLY add depends_on when absolutely necessary
+12. Research tasks can run alongside implementation tasks — TDD: tests and research can be parallel
+13. Prefer wide parallel trees over deep sequential chains — maximum chain depth of 2 levels for most issues
+14. BAD example: "write tests" depending on "implement feature" — tests should be written first (TDD) or in parallel
+15. GOOD example: "implement feature" depending on "research API" — implementation needs research findings
+16. Ask yourself: "Can this task start and make meaningful progress before the dependency completes?" If YES, remove the dependency
+
+## Examples
+- Bad: Task A → Task B → Task C → Task D (sequential chain, no parallelism)
+- Good: Task A (research) + Task B (file setup) → Task C + Task D (parallel implementations)
+- Bad: "Write tests" depends_on: "Implement feature" (tests come first in TDD)
+- Good: "Implement feature" depends_on: "Research API design" (needs the design doc)`,
       },
       "developer-pipeline": {
         name: "developer-pipeline",
