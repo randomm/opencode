@@ -4,6 +4,8 @@ import { Bus } from "../bus"
 import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Instance, context as instanceContext } from "../project/instance"
 import { Store } from "./store"
+import { MessageV2 } from "../session/message-v2"
+import { Provider } from "../provider/provider"
 import {
   writeLockFile,
   removeLockFile,
@@ -13,7 +15,7 @@ import {
   scheduleReadyTasks,
   sanitizeWorktree,
 } from "./pulse-scheduler"
-import { processAdversarialVerdicts, notifyPM, escalateToPM } from "./pulse-verdicts"
+import { processAdversarialVerdicts, notifyPM, escalateToPM, createPRForJob } from "./pulse-verdicts"
 import { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
 
 // Re-exports for backward compatibility with tests
@@ -26,11 +28,20 @@ export {
   scheduleReadyTasks,
   sanitizeWorktree,
 } from "./pulse-scheduler"
-export { processAdversarialVerdicts, notifyPM, escalateToPM } from "./pulse-verdicts"
+export { processAdversarialVerdicts, notifyPM, escalateToPM, createPRForJob } from "./pulse-verdicts"
 export { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
 
 const log = Log.create({ service: "taskctl.pulse" })
 const activeTicks = new Map<string, Set<string>>()
+
+export async function resolveModel(pmSessionId: string): Promise<{ modelID: string; providerID: string }> {
+  for await (const msg of MessageV2.stream(pmSessionId)) {
+    if (msg.info.role === "assistant") {
+      return { modelID: msg.info.modelID, providerID: msg.info.providerID }
+    }
+  }
+  return Provider.defaultModel()
+}
 const intervalListeners = new Map<ReturnType<typeof setInterval>, (event: { directory?: string | undefined; payload: any }) => void>()
 
 function clearIntervalSafe(interval: ReturnType<typeof setInterval>) {
@@ -203,13 +214,32 @@ export async function checkCompletion(
       await removeLockFile(jobId, projectId)
       await Store.updateJob(projectId, jobId, { status: "complete" })
       Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: undefined })
-      const notifyResult = await notifyPM(pmSessionId, `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}`)
-      if (!notifyResult.ok) {
-        log.warn("failed to notify PM of job completion", { jobId, error: notifyResult.error })
+
+      // Create PR for the job
+      const prResult = await createPRForJob(jobTasks, pmSessionId)
+      if (prResult.ok) {
+        log.info("PR created successfully", { jobId, prUrl: prResult.prUrl })
+        const notifyResult = await notifyPM(
+          pmSessionId,
+          `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\nPR created: ${prResult.prUrl}`,
+        )
+        if (!notifyResult.ok) {
+          log.warn("failed to notify PM of job completion with PR", { jobId, error: notifyResult.error })
+        }
+      } else {
+        log.warn("failed to create PR for completed job", { jobId, error: prResult.error })
+        const notifyResult = await notifyPM(
+          pmSessionId,
+          `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\n⚠️ PR creation failed: ${prResult.error}`,
+        )
+        if (!notifyResult.ok) {
+          log.warn("failed to notify PM of job completion", { jobId, error: notifyResult.error })
+        }
       }
     } catch (e) {
       activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId).catch(() => {})
+      log.error("error during job completion", { jobId, error: String(e) })
     }
   }
 }

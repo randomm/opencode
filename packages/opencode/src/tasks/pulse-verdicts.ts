@@ -79,7 +79,20 @@ async function notifyPM(pmSessionId: string, text: string): Promise<{ ok: true }
       synthetic: true,
     })
 
-    log.info("PM notification sent", { pmSessionId })
+    // Wake up the PM agentic loop by calling SessionPrompt.prompt
+    // This will create a synthetic user message and run the agentic loop
+    try {
+      await SessionPrompt.prompt({
+        sessionID: pmSessionId,
+        parts: [{ type: "text", text: "Resume processing tasks.", synthetic: true }],
+        noReply: true,
+      })
+    } catch (e) {
+      // Log but don't fail if prompt wakeup fails — notification was still delivered
+      log.warn("failed to wake up PM loop via prompt", { pmSessionId, error: String(e) })
+    }
+
+    log.info("PM notification sent and loop woken up", { pmSessionId })
     return { ok: true }
   } catch (e) {
     const errorMsg = String(e)
@@ -116,12 +129,19 @@ async function commitTask(task: Task, jobId: string, projectId: string, pmSessio
     return
   }
 
+  const branchName = task.branch || "unknown"
   const commitMsg = `feat(taskctl): ${task.title} (#${task.parent_issue})`
   const opsPrompt = `Commit all changes in the worktree directory: ${task.worktree}
 Commit message: "${commitMsg}"
-Do NOT push to remote. Only commit locally.
+
+Step 1: Commit locally
 Use ${task.worktree} as the working directory for all bash commands (workdir parameter).
 Run: git add -A && git commit -m "${commitMsg}"
+
+Step 2: Push to remote
+After successful commit, push the branch to origin:
+git push -u origin ${branchName}
+
 If there is an error, report the full error output.`
 
   try {
@@ -200,7 +220,7 @@ If there is an error, report the full error output.`
       status: "closed",
       close_reason: "approved and committed",
       worktree: null,
-      branch: null,
+      branch: task.branch, // Preserve branch for PR creation at job completion
       assignee: null,
       assignee_pid: null,
       pipeline: { ...task.pipeline, stage: "done", last_activity: null },
@@ -334,4 +354,48 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
   }
 }
 
-export { processAdversarialVerdicts, commitTask, escalateToPM, escalateCommitFailure, notifyPM }
+async function createPRForJob(tasks: Task[], pmSessionId: string): Promise<{ ok: true; prUrl: string } | { ok: false; error: string }> {
+  if (tasks.length === 0) {
+    return { ok: false, error: "No tasks found in job" }
+  }
+
+  const issueNumber = tasks[0].parent_issue
+  const branchName = tasks[0].branch
+
+  if (!branchName) {
+    return { ok: false, error: "No branch found for job" }
+  }
+
+  try {
+    const parentSession = await Session.get(pmSessionId).catch(() => null)
+    if (!parentSession?.directory) {
+      return { ok: false, error: "PM session not found for PR creation" }
+    }
+
+    const { $ } = await import("bun")
+    const prTitle = `Issue #${issueNumber}: Automated PR from taskctl`
+    const prBody = `Closes #${issueNumber}
+
+This PR was automatically created by the taskctl pipeline after all tasks completed.`
+
+    const result = await $`gh pr create --repo randomm/opencode --base dev --head ${branchName} --title ${prTitle} --body ${prBody}`
+      .cwd(parentSession.directory)
+      .quiet()
+      .nothrow()
+
+    if (result.exitCode !== 0) {
+      const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
+      return { ok: false, error: `gh pr create failed: ${stderr}` }
+    }
+
+    const stdout = result.stdout ? new TextDecoder().decode(result.stdout).trim() : ""
+    const prUrl = stdout.match(/https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/)?.[0] || stdout
+
+    return { ok: true, prUrl }
+  } catch (e) {
+    log.error("failed to create PR", { error: String(e) })
+    return { ok: false, error: String(e) }
+  }
+}
+
+export { processAdversarialVerdicts, commitTask, escalateToPM, escalateCommitFailure, notifyPM, createPRForJob }
