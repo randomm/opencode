@@ -1,4 +1,4 @@
-import { describe, expect, test, spyOn } from "bun:test"
+import { describe, expect, test, spyOn, mock } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { Store } from "../../src/tasks/store"
 import type { Task, Job } from "../../src/tasks/types"
@@ -7,9 +7,13 @@ import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/prompt"
 import { Worktree } from "../../src/worktree"
 import { SessionStatus } from "../../src/session/status"
-import * as Scheduler from "../../src/tasks/pulse-scheduler"
 
-// Import the tick functions - these need to be exported from pulse.ts
+// Mock hasCommittedChanges BEFORE any imports that use it
+mock.module("../../src/tasks/pulse-utils", () => ({
+  hasCommittedChanges: async () => true,
+}))
+
+// Import the tick functions AFTER the mock is set up
 import {
   scheduleReadyTasks,
   heartbeatActiveAgents,
@@ -20,13 +24,6 @@ describe("taskctl pulse: full happy path integration test", () => {
   test("complete happy path: open → developing → reviewing → adversarial-running → done", async () => {
     // Mock SessionPrompt.prompt to return immediately (simulating developer/adversarial completing)
     const promptSpy = spyOn(SessionPrompt, "prompt").mockImplementation(() => Promise.resolve())
-
-    // Mock Worktree.remove to avoid cleanup noise
-    const removeSpy = spyOn(Worktree, "remove")
-    removeSpy.mockImplementation(async () => true)
-
-    // Mock hasCommittedChanges to return true (simulating developer made commits)
-    const hasChangesSpy = spyOn(Scheduler, "hasCommittedChanges").mockImplementation(async () => true)
 
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
@@ -153,7 +150,5 @@ describe("taskctl pulse: full happy path integration test", () => {
 
     // Clean up mocks
     promptSpy.mockRestore()
-    removeSpy.mockRestore()
-    hasChangesSpy.mockRestore()
   })
 })
