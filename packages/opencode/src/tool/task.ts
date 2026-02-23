@@ -87,7 +87,7 @@ export async function tryIncrementSessionCount(
     const releaseSlot = reserveTaskSlot(sessionID)
 
     const afterReserve = getSessionTaskCount(sessionID)
-    if (afterReserve > MAX_CONCURRENT_TASKS_PER_SESSION) {
+    if (afterReserve >= MAX_CONCURRENT_TASKS_PER_SESSION) {
       releaseSlot()
       return { allowed: false }
     }
