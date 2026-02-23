@@ -1,14 +1,15 @@
 import { describe, expect, test, spyOn } from "bun:test"
 import { Instance } from "../../src/project/instance"
 import { Store } from "../../src/tasks/store"
-import type { Task, Job, AdversarialVerdict } from "../../src/tasks/types"
+import type { Task, Job } from "../../src/tasks/types"
 import { tmpdir } from "../fixture/fixture"
 import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/prompt"
 import { Worktree } from "../../src/worktree"
 import { MessageV2 } from "../../src/session/message-v2"
 
-import { spawnDeveloper, spawnAdversarial, respawnDeveloper } from "../../src/tasks/pulse-scheduler"
+import { spawnDeveloper, spawnAdversarial } from "../../src/tasks/pulse-scheduler"
+import { spawnSteering } from "../../src/tasks/pulse-monitoring"
 
 const PM_MODEL = { modelID: "claude-opus-4-5", providerID: "anthropic" }
 
@@ -168,7 +169,7 @@ describe("model propagation in spawn functions", () => {
     }
   })
 
-  test("respawnDeveloper passes PM session model to SessionPrompt.prompt", async () => {
+  test("spawnSteering passes PM session model to SessionPrompt.prompt", async () => {
     const origStream = MessageV2.stream
     mockPmStream()
 
@@ -178,42 +179,16 @@ describe("model propagation in spawn functions", () => {
       promptCalls.push(input)
       return undefined as any
     })
-    const removeSpy: any = spyOn(Worktree, "remove")
-    removeSpy.mockImplementation(async () => true)
 
     try {
       await using tmp = await tmpdir({ git: true })
       await Instance.provide({
         directory: tmp.path,
         fn: async () => {
-          const projectId = Instance.project.id
           const pmSession = await Session.create({ directory: tmp.path, title: "PM", permission: [] })
-          const job = makeJob(pmSession.id)
-          const task = makeTask({
-            job_id: job.id,
-            status: "in_progress",
-            worktree: tmp.path,
-            pipeline: {
-              stage: "reviewing",
-              attempt: 1,
-              last_activity: new Date().toISOString(),
-              last_steering: null,
-              history: [],
-              adversarial_verdict: null,
-            },
-          })
+          const task = makeTask()
 
-          await Store.createJob(projectId, job)
-          await Store.createTask(projectId, task)
-
-          const verdict: AdversarialVerdict = {
-            verdict: "ISSUES_FOUND",
-            summary: "Needs fixes",
-            issues: [{ location: "src/foo.ts", severity: "HIGH", fix: "Add tests" }],
-            created_at: new Date().toISOString(),
-          }
-
-          await respawnDeveloper(task, job.id, projectId, pmSession.id, 2, verdict)
+          await spawnSteering(task, "Recent developer activity summary", pmSession.id)
 
           expect(promptCalls.length).toBeGreaterThan(0)
           const call = promptCalls[0]!
@@ -225,7 +200,6 @@ describe("model propagation in spawn functions", () => {
     } finally {
       ;(MessageV2 as any).stream = origStream
       promptSpy.mockRestore()
-      removeSpy.mockRestore()
     }
   })
 })

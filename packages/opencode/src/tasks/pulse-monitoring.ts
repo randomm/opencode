@@ -160,7 +160,7 @@ async function getRecentActivity(sessionId: string): Promise<string> {
   }
 }
 
-async function spawnSteering(
+export async function spawnSteering(
   task: Task,
   history: string,
   pmSessionId: string,
