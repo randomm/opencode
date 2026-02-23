@@ -17,22 +17,9 @@ import { Instance as InstanceImport } from "../project/instance"
 import type { Task, AdversarialVerdict } from "./types"
 import { MAX_ADVERSARIAL_ATTEMPTS } from "./pulse-verdicts"
 import { resolveModel } from "./pulse"
+import * as PulseUtils from "./pulse-utils"
 
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
-
-// Check if there are committed changes in the worktree (for adversarial review validation)
-// Exported for test mocking
-export async function hasCommittedChanges(worktreePath: string, baseCommit: string | null): Promise<boolean> {
-  try {
-    const base = baseCommit ?? "dev"
-    const diffCheck = await $`git diff ${base}..HEAD --stat`.quiet().nothrow().cwd(worktreePath)
-    const diffOutput = new TextDecoder().decode(diffCheck.stdout).trim()
-    return diffOutput.length > 0
-  } catch (e) {
-    log.warn("failed to check for committed changes", { worktreePath, baseCommit, error: String(e) })
-    return false
-  }
-}
 
 async function lockFilePath(jobId: string, projectId: string): Promise<string> {
   let tasksDir: string
@@ -330,9 +317,9 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
     log.error("invalid worktree for adversarial spawn", { taskId: task.id, worktree: task.worktree })
     return
   }
-  const safeWorktree = task.worktree.replace(/[^\w\-./]/g, "")
+  const safeWorktree = sanitizeWorktree(task.worktree)
   if (!safeWorktree) {
-    log.error("worktree sanitization resulted in empty string", { taskId: task.id, worktree: task.worktree })
+    log.error("worktree sanitization failed or resulted in null", { taskId: task.id, worktree: task.worktree })
     return
   }
 
@@ -341,7 +328,7 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
   }, true)
 
   // Check if developer committed changes
-  const hasChanges = await hasCommittedChanges(safeWorktree, task.base_commit)
+  const hasChanges = await PulseUtils.hasCommittedChanges(safeWorktree, task.base_commit)
   if (!hasChanges) {
     await Store.addComment(projectId, task.id, {
       author: "system",
@@ -367,7 +354,8 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
     return
   }
 
-  const baseCommitStr = task.base_commit ? `Base Commit: ${task.base_commit}` : "Base Commit: Not captured"
+  const validatedBaseCommit = PulseUtils.validateBaseCommit(task.base_commit) ?? "dev"
+  const baseCommitStr = task.base_commit ? `Base Commit: ${validatedBaseCommit}` : "Base Commit: Not captured"
   const prompt = `Review the implementation in worktree at: ${safeWorktree}
 
 Task ID: ${task.id}
@@ -379,7 +367,7 @@ ${baseCommitStr}
 When reviewing changes, use git diff to see ONLY the developer's changes:
 \`\`\`bash
 cd ${safeWorktree}
-git diff ${task.base_commit || "dev"}..HEAD
+git diff ${validatedBaseCommit}..HEAD
 \`\`\`
 
 This ensures you only review changes made by the developer, not commits that were already in dev.
