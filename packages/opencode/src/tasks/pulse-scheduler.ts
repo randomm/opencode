@@ -1,4 +1,5 @@
 import fs from "fs/promises"
+import os from "os"
 import path from "path"
 import { $ } from "bun"
 import { Session } from "../session"
@@ -26,6 +27,11 @@ async function lockFilePath(jobId: string, projectId: string): Promise<string> {
   } catch {
     // Fallback for tests without Instance context
     tasksDir = path.join(Global.Path.data, "tasks", projectId)
+  }
+
+  // Safe fallback: if path resolves to /.opencode or /, use tmpdir
+  if (tasksDir.startsWith("/.opencode") || tasksDir === "/") {
+    tasksDir = path.join(os.tmpdir(), "opencode-tasks-test", projectId)
   }
 
   await fs.mkdir(tasksDir, { recursive: true })

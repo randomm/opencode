@@ -1,4 +1,5 @@
 import fs from "fs/promises"
+import os from "os"
 import path from "path"
 import { Instance } from "../project/instance"
 import { Global } from "../global/index"
@@ -41,13 +42,21 @@ function sanitizeTaskId(taskId: string): string {
 
 function getTasksDir(projectId: string): string {
   const sanitized = sanitizeProjectId(projectId)
+  let tasksDir: string
   try {
     const worktree = Instance.worktree
-    return path.join(worktree, ".opencode", TASKS_DIR_NAME, sanitized)
+    tasksDir = path.join(worktree, ".opencode", TASKS_DIR_NAME, sanitized)
   } catch {
     // Fallback for tests without Instance context
-    return path.join(Global.Path.data, TASKS_DIR_NAME, sanitized)
+    tasksDir = path.join(Global.Path.data, TASKS_DIR_NAME, sanitized)
   }
+
+  // Safe fallback: if path resolves to /.opencode or /, use tmpdir
+  if (tasksDir.startsWith("/.opencode") || tasksDir === "/") {
+    return path.join(os.tmpdir(), "opencode-tasks-test", sanitized)
+  }
+
+  return tasksDir
 }
 
 function getSafeTaskPath(projectId: string, taskId: string): string {
