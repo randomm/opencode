@@ -221,7 +221,7 @@ describe("PM notifications", () => {
         const result = await notifyPM(pmSessionId, message)
         expect(result.ok).toBe(true)
 
-        await new Promise((r) => setTimeout(r, 100))
+        await new Promise((r) => setTimeout(r, 200))
 
         // Verify message was added to session
         const msgs: MessageV2.WithParts[] = []
@@ -232,7 +232,7 @@ describe("PM notifications", () => {
         const notificationMsg = msgs.find((m) => m.info.role === "assistant" && m.info.agent === "system")
         expect(notificationMsg).toBeDefined()
 
-        const textPart = notificationMsg?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && (p.synthetic ?? false))
+        const textPart = notificationMsg?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && p.synthetic === true)
         expect(textPart?.text).toContain("Task complete")
       },
     })
@@ -290,7 +290,7 @@ describe("PM notifications", () => {
     })
   })
 
-  test("notifyPM creates user message to wake up PM agentic loop", async () => {
+  test("notifyPM creates assistant notification message", async () => {
     const { notifyPM } = await import("../../src/tasks/pulse")
 
     await Instance.provide({
@@ -305,9 +305,9 @@ describe("PM notifications", () => {
         const result = await notifyPM(pmSessionId, message)
         expect(result.ok).toBe(true)
 
-        await new Promise((r) => setTimeout(r, 100))
+        await new Promise((r) => setTimeout(r, 200))
 
-        // Verify both assistant (notification) and user (wake-up) messages were added
+        // Verify notification message was added
         const msgs: MessageV2.WithParts[] = []
         for await (const msg of MessageV2.stream(pmSessionId)) {
           msgs.push(msg)
@@ -317,10 +317,9 @@ describe("PM notifications", () => {
         const notificationMsg = msgs.find((m) => m.info.role === "assistant" && m.info.agent === "system")
         expect(notificationMsg).toBeDefined()
 
-        // Should have user message that wakes up the PM loop (synthetic message)
-        const userMsg = msgs.find((m) => m.info.role === "user")
-        expect(userMsg).toBeDefined()
-        expect(userMsg?.parts.some((p) => p.type === "text" && (p.synthetic ?? false))).toBe(true)
+        // Should have synthetic text part with the notification text
+        const textPart = notificationMsg?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && p.synthetic === true)
+        expect(textPart?.text).toContain("Task failed")
       },
     })
   })
