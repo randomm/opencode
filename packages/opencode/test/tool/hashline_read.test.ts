@@ -109,17 +109,24 @@ describe("tool.hashline_read binary file detection", () => {
 })
 
 describe("tool.hashline_read non-existent file", () => {
-  test("returns error for non-existent file", async () => {
+  test("creates non-existent file and returns successfully", async () => {
     await using tmp = await tmpdir({})
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
         const hashlineRead = await HashlineReadTool.init()
-        const error = await hashlineRead
-          .execute({ filePath: path.join(tmp.path, "nonexistent.txt") }, ctx)
-          .catch((e) => e)
-        expect(error).toBeInstanceOf(Error)
-        expect(error.message).toContain("File not found")
+        const filePath = path.join(tmp.path, "nonexistent.txt")
+        
+        expect(await Bun.file(filePath).exists()).toBe(false)
+        
+        const result = await hashlineRead.execute({ filePath }, ctx)
+        
+        expect(result).toBeDefined()
+        expect(await Bun.file(filePath).exists()).toBe(true)
+        expect(result.output).toContain(`<path>${filePath}</path>`)
+        expect(result.output).toContain("<type>file</type>")
+        expect(result.output).toContain("(File created successfully - empty and ready for editing)")
+        expect(result.metadata.preview).toBe("")
       },
     })
   })
