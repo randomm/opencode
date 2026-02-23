@@ -25,6 +25,11 @@ const editSchema = z.discriminatedUnion("op", [
     text: z.string().describe("Text to insert after the anchor line"),
   }),
   z.object({
+    op: z.literal("insert_before"),
+    anchor: z.string().describe('Line anchor e.g. "14丐"'),
+    text: z.string().describe("Text to insert before the anchor line"),
+  }),
+  z.object({
     op: z.literal("delete_file"),
   }),
 ])
@@ -44,6 +49,9 @@ function parseEdit(edit: EditSchema): HashlineEdit {
     }
   }
   if (edit.op === "insert_after") {
+    return { op: edit.op, anchor: parseAnchor(edit.anchor), text: edit.text }
+  }
+  if (edit.op === "insert_before") {
     return { op: edit.op, anchor: parseAnchor(edit.anchor), text: edit.text }
   }
   throw new Error(`Unknown edit operation: ${edit.op}`)

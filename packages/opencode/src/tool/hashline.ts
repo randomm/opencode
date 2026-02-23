@@ -21,6 +21,11 @@ export type HashlineEdit =
       text: string
     }
   | {
+      op: "insert_before"
+      anchor: Anchor
+      text: string
+    }
+  | {
       op: "delete_file"
     }
 
@@ -48,7 +53,7 @@ export function parseAnchor(ref: string): Anchor {
 
 export class HashlineMismatchError extends Error {
   constructor(
-    mismatches: { ref: string; error: string }[],
+    mismatches: { line: number; ref: string; error: string }[],
     currentLines: string
   ) {
     const mismatchedRefs = mismatches.map((m) => m.ref).join(", ")
@@ -76,7 +81,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
     lineMap.set(i + 1, hashLine(line))
   })
 
-  const mismatches: { ref: string; error: string }[] = []
+  const mismatches: { line: number; ref: string; error: string }[] = []
   const relocatedMap: Map<number, number> = new Map()
 
   for (const edit of edits) {
@@ -104,28 +109,50 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
       })
 
       if (matchingLines.length === 0) {
-        mismatches.push({ ref, error: "hash not found" })
+        mismatches.push({ line: anchor.line, ref, error: "hash not found" })
       } else if (matchingLines.length === 1) {
         const newLine = matchingLines[0]
         if (!relocatedMap.has(anchor.line)) {
           relocatedMap.set(anchor.line, newLine)
         }
       } else {
-        mismatches.push({ ref, error: "ambiguous hash found at multiple lines" })
+        mismatches.push({ line: anchor.line, ref, error: "ambiguous hash found at multiple lines" })
       }
     }
   }
 
   if (mismatches.length > 0) {
-    const currentLinesWithMarkers = lines
-      .map((line, i) => {
-        const markers = mismatches
-          .filter((m) => m.ref.startsWith(`${i + 1}`))
-          .map(() => "→")
-          .join("")
-        return `${markers}${i + 1}${hashLine(line)}${line}`
-      })
-      .join("\n")
+    const MISMATCH_CONTEXT = 2
+    const mismatchSet = new Set(mismatches.map((m) => m.line))
+    const displayRanges: Array<[number, number]> = []
+    let startRange = -1
+
+    for (let i = 1; i <= lines.length; i++) {
+      const inRange =
+        mismatchSet.has(i) || (startRange >= 0 && i <= startRange + MISMATCH_CONTEXT * 2)
+      if (inRange && startRange === -1) {
+        startRange = Math.max(1, i - MISMATCH_CONTEXT)
+      } else if (!inRange && startRange >= 0) {
+        displayRanges.push([startRange, i - 1])
+        startRange = -1
+      }
+    }
+    if (startRange >= 0) {
+      displayRanges.push([startRange, lines.length])
+    }
+
+    const lineDisplays: string[] = []
+    for (const [start, end] of displayRanges) {
+      for (let i = start; i <= end; i++) {
+        const markers = mismatchSet.has(i) ? "→" : " "
+        lineDisplays.push(`${markers}${i}${hashLine(lines[i - 1])}${lines[i - 1]}`)
+      }
+      if (end < lines.length) {
+        lineDisplays.push("...")
+      }
+    }
+
+    const currentLinesWithMarkers = lineDisplays.join("\n")
     throw new HashlineMismatchError(mismatches, currentLinesWithMarkers)
   }
 
@@ -160,7 +187,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
           .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
           .join("\n")
         throw new HashlineMismatchError(
-          [{ ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
+          [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
           currentLinesWithMarkers
         )
       }
@@ -196,12 +223,31 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
           .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
           .join("\n")
         throw new HashlineMismatchError(
-          [{ ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
+          [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
           currentLinesWithMarkers
         )
       }
       const newLines = edit.text.split("\n")
       resultLines.splice(line, 0, ...newLines)
+    } else if (edit.op === "insert_before") {
+      const line = getLine(edit.anchor)
+      if (line < 1 || line > resultLines.length) {
+        throw new Error(
+          `Invalid line ${line}: must be between 1 and ${resultLines.length}`
+        )
+      }
+      const currentHash = hashLine(resultLines[line - 1])
+      if (currentHash !== edit.anchor.hashChar) {
+        const currentLinesWithMarkers = resultLines
+          .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
+          .join("\n")
+        throw new HashlineMismatchError(
+          [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
+          currentLinesWithMarkers
+        )
+      }
+      const newLines = edit.text.split("\n")
+      resultLines.splice(line - 1, 0, ...newLines)
     }
   }
 
