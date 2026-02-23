@@ -137,7 +137,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
     }
     const lineA = getOriginalLine(a)
     const lineB = getOriginalLine(b)
-    return lineA - lineB
+    return lineB - lineA
   })
 
   const resultLines = [...lines]

@@ -277,4 +277,87 @@ describe("applyHashlineEdits", () => {
     const result = applyHashlineEdits(content, edits)
     expect(result).toBe("modified\nshould-fail\nline3")
   })
+
+  test("batch: delete line 2, then set line 4 (line shift regression test)", () => {
+    const content = "line1\nline2\nline3\nline4"
+    const edits = [
+      {
+        op: "set_line" as const,
+        anchor: { line: 2, hashChar: hashLine("line2") },
+        new_text: "", // Delete line 2
+      },
+      {
+        op: "set_line" as const,
+        anchor: { line: 4, hashChar: hashLine("line4") },
+        new_text: "replaced4", // Should target original line 4, not shifted line 3
+      },
+    ]
+    const result = applyHashlineEdits(content, edits)
+    // After deleting line 2: line1, line3, line4
+    // After replacing line 4 with replaced4: line1, line3, replaced4
+    expect(result).toBe("line1\nline3\nreplaced4")
+  })
+
+  test("batch: replace_lines deleting 2-3, then set line 5 (larger range deletion)", () => {
+    const content = "line1\nline2\nline3\nline4\nline5"
+    const edits = [
+      {
+        op: "replace_lines" as const,
+        start_anchor: { line: 2, hashChar: hashLine("line2") },
+        end_anchor: { line: 3, hashChar: hashLine("line3") },
+        new_text: "", // Delete lines 2-3
+      },
+      {
+        op: "set_line" as const,
+        anchor: { line: 5, hashChar: hashLine("line5") },
+        new_text: "replaced5", // Should target original line 5, not shifted line 3
+      },
+    ]
+    const result = applyHashlineEdits(content, edits)
+    // After deleting lines 2-3: line1, line4, line5
+    // After replacing line 5 with replaced5: line1, line4, replaced5
+    expect(result).toBe("line1\nline4\nreplaced5")
+  })
+
+  test("batch: multiple deletions with descending sort handles line shifts correctly", () => {
+    const content = "a\nb\nc\nd\ne"
+    const edits = [
+      {
+        op: "set_line" as const,
+        anchor: { line: 2, hashChar: hashLine("b") },
+        new_text: "", // Delete line 2
+      },
+      {
+        op: "set_line" as const,
+        anchor: { line: 4, hashChar: hashLine("d") },
+        new_text: "", // Delete line 4 (originally)
+      },
+    ]
+    const result = applyHashlineEdits(content, edits)
+    // With descending sort: line 4 deleted first, then line 2
+    // After deleting line 4: a, b, c, e
+    // After deleting line 2: a, c, e
+    expect(result).toBe("a\nc\ne")
+  })
+
+  test("batch: insert_after on line 1, then set line 3 (edge case from adversarial review)", () => {
+    const content = "a\nb\nc\nd"
+    const edits = [
+      {
+        op: "insert_after" as const,
+        anchor: { line: 1, hashChar: hashLine("a") },
+        text: "X", // Insert X after line 1, shifts b,c,d down
+      },
+      {
+        op: "set_line" as const,
+        anchor: { line: 3, hashChar: hashLine("c") },
+        new_text: "C", // Should still find line c and replace it
+      },
+    ]
+    const result = applyHashlineEdits(content, edits)
+    // With descending sort: set_line (line 3) happens first, then insert_after (line 1)
+    // After set_line: a, b, C, d
+    // After insert_after: a, X, b, C, d
+    expect(result).toBe("a\nX\nb\nC\nd")
+  })
 })
