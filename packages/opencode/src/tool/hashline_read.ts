@@ -121,6 +121,7 @@ export const HashlineReadTool = Tool.define("hashline_read", {
 
     LSP.touchFile(filepath, false)
     FileTime.read(ctx.sessionID, filepath)
+    FileTime.hashlineRead(ctx.sessionID, filepath)
 
     if (instructions.length > 0) {
       output += `\n\n<system-reminder>\n${instructions.map((i) => i.content).join("\n\n")}\n</system-reminder>`

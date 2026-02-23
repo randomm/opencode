@@ -69,7 +69,7 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
       const stats = await file.stat().catch(() => {})
       if (!stats) throw new Error(`File not found: ${filepath}`)
       if (stats.isDirectory()) throw new Error(`Path is a directory: ${filepath}`)
-      await FileTime.assert(ctx.sessionID, filepath)
+      await FileTime.assertHashlineRead(ctx.sessionID, filepath)
 
       const contentOld = await file.text()
       const contentNew = applyHashlineEdits(contentOld, parsedEdits)

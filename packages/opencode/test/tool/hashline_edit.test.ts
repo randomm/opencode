@@ -28,7 +28,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -53,7 +53,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -78,7 +78,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -110,7 +110,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -142,7 +142,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -173,7 +173,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -199,7 +199,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -224,7 +224,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -252,7 +252,7 @@ describe("tool.hashline_edit", () => {
       directory: tmp.path,
       fn: async () => {
         const tool = await HashlineEditTool.init()
-        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
@@ -280,5 +280,137 @@ describe("tool.hashline_edit", () => {
     } finally {
       delete process.env.OPENCODE_EXPERIMENTAL_HASHLINE
     }
+  })
+
+  test("hashline_edit fails if called after regular read instead of hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        // Use regular read, NOT hashline_read
+        FileTime.read(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        const result = await tool.execute(
+          {
+            filePath: path.join(tmp.path, "test.txt"),
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "new line 2" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result.message).toContain("You must use hashline_read before hashline_edit")
+        expect(result.message).toContain("The regular read tool does not provide hashline anchors")
+        const content = await Bun.file(path.join(tmp.path, "test.txt")).text()
+        expect(content).toBe("line1\nline2\nline3")
+      },
+    })
+  })
+
+  test("hashline_edit succeeds after hashline_read but fails after only regular read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "file1.txt"), "line1\nline2\nline3")
+        await Bun.write(path.join(dir, "file2.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath1 = path.join(tmp.path, "file1.txt")
+        const filepath2 = path.join(tmp.path, "file2.txt")
+
+        // file1: use hashline_read - should succeed
+        FileTime.hashlineRead(ctx.sessionID, filepath1)
+        const result1 = await tool.execute(
+          {
+            filePath: filepath1,
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+          },
+          ctx
+        )
+        expect(result1.output).toContain("Edit applied successfully")
+
+        // file2: use only regular read, NOT hashline_read - should fail
+        FileTime.read(ctx.sessionID, filepath2)
+        const result2 = await tool.execute(
+          {
+            filePath: filepath2,
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result2.message).toContain("You must use hashline_read before hashline_edit")
+        expect(result2.message).toContain("The regular read tool does not provide hashline anchors")
+      },
+    })
+  })
+
+  test("hashline_edit fails when file modified on disk after hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+
+        // hashline_read the file
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+
+        // Modify file externally to trigger staleness error
+        await new Promise((r) => setTimeout(r, 10)) // Small delay to ensure mtime changes
+        await Bun.write(filepath, "line1\nmodified\nline3")
+
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "new" }],
+          },
+          ctx
+        ).catch((e) => e)
+        expect(result.message).toContain("File")
+        expect(result.message).toContain("has been modified since it was last read with hashline_read")
+      },
+    })
+  })
+
+  test("hashline_edit rejects edit from different session even if another session used hashline_read", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+
+        // Session A reads with hashline_read
+        FileTime.hashlineRead("session-a", filepath)
+
+        // Session B (different sessionID) tries to edit — should fail
+        const ctxB = { ...ctx, sessionID: "session-b" }
+        const result = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+          },
+          ctxB
+        ).catch((e) => e)
+        expect(result.message).toContain("You must use hashline_read before hashline_edit")
+
+        // File should be unchanged
+        const content = await Bun.file(filepath).text()
+        expect(content).toBe("line1\nline2\nline3")
+      },
+    })
   })
 })
