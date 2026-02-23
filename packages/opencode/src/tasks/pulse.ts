@@ -213,7 +213,7 @@ export async function checkCompletion(
       activeTicks.get(projectId)?.delete(jobId)
       await removeLockFile(jobId, projectId)
       await Store.updateJob(projectId, jobId, { status: "complete" })
-      Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: undefined })
+      Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: pmSessionId })
 
       // Create PR for the job
       const issueNumber = jobTasks[0]?.parent_issue ?? 0

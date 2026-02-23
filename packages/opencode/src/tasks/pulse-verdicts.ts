@@ -244,7 +244,7 @@ Report the full output from both steps so we can verify the push succeeded.`
   Bus.publish(BackgroundTaskEvent.Completed, {
     taskID: task.id,
     sessionID: pmSessionId,
-    parentSessionID: undefined,
+    parentSessionID: pmSessionId,
   })
 
   const notifyResult = await notifyPM(pmSessionId, `✅ Task complete: ${task.title} (${task.id})`)
@@ -279,7 +279,7 @@ async function escalateToPM(task: Task, jobId: string, projectId: string, pmSess
   Bus.publish(BackgroundTaskEvent.Completed, {
     taskID: `escalation-${task.id}`,
     sessionID: pmSessionId,
-    parentSessionID: undefined,
+    parentSessionID: pmSessionId,
   })
 
   const notifyResult = await notifyPM(
@@ -318,7 +318,7 @@ async function escalateCommitFailure(
   Bus.publish(BackgroundTaskEvent.Completed, {
     taskID: `commit-failure-${task.id}`,
     sessionID: pmSessionId,
-    parentSessionID: undefined,
+    parentSessionID: pmSessionId,
   })
 }
 

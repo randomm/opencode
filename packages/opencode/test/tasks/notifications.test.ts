@@ -98,6 +98,7 @@ describe("PM notifications", () => {
           pulse_pid: null,
           max_workers: 1,
           pm_session_id: pmSessionId,
+          feature_branch: null,
         })
 
         await Store.createTask(TEST_PROJECT_ID, mockTask)
@@ -144,6 +145,7 @@ describe("PM notifications", () => {
           pulse_pid: null,
           max_workers: 1,
           pm_session_id: pmSessionId,
+          feature_branch: null,
         })
 
         // Create two completed tasks
@@ -180,10 +182,10 @@ describe("PM notifications", () => {
           })
         }
 
-        let jobCompletionEventFired = false
+        const capturedJobEvents: any[] = []
         const unsub = Bus.subscribe(BackgroundTaskEvent.Completed, (evt) => {
           if (evt.properties.taskID === jobId && evt.properties.sessionID === pmSessionId) {
-            jobCompletionEventFired = true
+            capturedJobEvents.push(evt.properties)
             unsub()
           }
         })
@@ -196,7 +198,9 @@ describe("PM notifications", () => {
         }
 
         await new Promise((r) => setTimeout(r, 200))
-        expect(jobCompletionEventFired).toBe(true)
+        expect(capturedJobEvents.length).toBeGreaterThan(0)
+        const jobEvt = capturedJobEvents[0]
+        expect(jobEvt.parentSessionID).toBe(pmSessionId)
 
         const job = await Store.getJob(TEST_PROJECT_ID, jobId)
         expect(job?.status).toBe("complete")
@@ -319,6 +323,87 @@ describe("PM notifications", () => {
         // Should have synthetic text part with the notification text
         const textPart = notificationMsg?.parts.find((p): p is MessageV2.TextPart => p.type === "text" && p.synthetic === true)
         expect(textPart?.text).toContain("Task failed")
+      },
+    })
+  })
+
+  test("BackgroundTaskEvent.Completed includes parentSessionID equal to pmSessionId", async () => {
+    const { escalateToPM } = await import("../../src/tasks/pulse")
+    const { enableAutoWakeup } = await import("../../src/session/async-tasks")
+
+    await Instance.provide({
+      directory: testDataDir,
+      fn: async () => {
+        const pmSession = await Session.createNext({
+          directory: testDataDir,
+        })
+        pmSessionId = pmSession.id
+
+        const mockTask: any = {
+          id: "task-parent-session-test",
+          job_id: TEST_JOB_ID,
+          status: "review",
+          priority: 2,
+          task_type: "implementation",
+          parent_issue: 314,
+          labels: [],
+          depends_on: [],
+          assignee: null,
+          assignee_pid: null,
+          worktree: testDataDir,
+          branch: "feature/test",
+          title: "Task for parent session ID test",
+          description: "Test description",
+          acceptance_criteria: "Test criteria",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          close_reason: null,
+          comments: [],
+          pipeline: {
+            stage: "adversarial-running",
+            attempt: 5,
+            last_activity: new Date().toISOString(),
+            last_steering: null,
+            history: [],
+            adversarial_verdict: {
+              verdict: "CRITICAL_ISSUES_FOUND",
+              issues: [],
+              summary: "Test verdict",
+              created_at: new Date().toISOString(),
+            },
+          },
+        }
+
+        await Store.createJob(TEST_PROJECT_ID, {
+          id: TEST_JOB_ID,
+          parent_issue: 314,
+          status: "running",
+          created_at: new Date().toISOString(),
+          stopping: false,
+          pulse_pid: null,
+          max_workers: 1,
+          pm_session_id: pmSessionId,
+          feature_branch: null,
+        })
+
+        await Store.createTask(TEST_PROJECT_ID, mockTask)
+
+        enableAutoWakeup(pmSessionId)
+
+        const capturedEvents: any[] = []
+        const unsub = Bus.subscribe(BackgroundTaskEvent.Completed, (evt) => {
+          if (evt.properties.taskID.startsWith("escalation-") && evt.properties.sessionID === pmSessionId) {
+            capturedEvents.push(evt.properties)
+            unsub()
+          }
+        })
+
+        await escalateToPM(mockTask, TEST_JOB_ID, TEST_PROJECT_ID, pmSessionId)
+
+        await new Promise((r) => setTimeout(r, 200))
+        expect(capturedEvents.length).toBeGreaterThan(0)
+        const evt = capturedEvents[0]
+        expect(evt.parentSessionID).toBe(pmSessionId)
       },
     })
   })
