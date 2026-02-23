@@ -7,6 +7,7 @@ import { Session } from "../../src/session"
 import { SessionPrompt } from "../../src/session/prompt"
 import { Worktree } from "../../src/worktree"
 import { SessionStatus } from "../../src/session/status"
+import * as Scheduler from "../../src/tasks/pulse-scheduler"
 
 // Import the tick functions - these need to be exported from pulse.ts
 import {
@@ -23,6 +24,9 @@ describe("taskctl pulse: full happy path integration test", () => {
     // Mock Worktree.remove to avoid cleanup noise
     const removeSpy = spyOn(Worktree, "remove")
     removeSpy.mockImplementation(async () => true)
+
+    // Mock hasCommittedChanges to return true (simulating developer made commits)
+    const hasChangesSpy = spyOn(Scheduler, "hasCommittedChanges").mockImplementation(async () => true)
 
     await using tmp = await tmpdir({ git: true })
     await Instance.provide({
@@ -47,6 +51,7 @@ describe("taskctl pulse: full happy path integration test", () => {
           pulse_pid: null,
           max_workers: 3,
           pm_session_id: pmSession.id,
+          feature_branch: `feature/issue-257-test`,
         }
 
         // Create a task in open state
@@ -149,5 +154,6 @@ describe("taskctl pulse: full happy path integration test", () => {
     // Clean up mocks
     promptSpy.mockRestore()
     removeSpy.mockRestore()
+    hasChangesSpy.mockRestore()
   })
 })

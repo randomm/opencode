@@ -20,6 +20,20 @@ import { resolveModel } from "./pulse"
 
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
 
+// Check if there are committed changes in the worktree (for adversarial review validation)
+// Exported for test mocking
+export async function hasCommittedChanges(worktreePath: string, baseCommit: string | null): Promise<boolean> {
+  try {
+    const base = baseCommit ?? "dev"
+    const diffCheck = await $`git diff ${base}..HEAD --stat`.quiet().nothrow().cwd(worktreePath)
+    const diffOutput = new TextDecoder().decode(diffCheck.stdout).trim()
+    return diffOutput.length > 0
+  } catch (e) {
+    log.warn("failed to check for committed changes", { worktreePath, baseCommit, error: String(e) })
+    return false
+  }
+}
+
 async function lockFilePath(jobId: string, projectId: string): Promise<string> {
   let tasksDir: string
   try {
@@ -327,10 +341,8 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
   }, true)
 
   // Check if developer committed changes
-  const base = task.base_commit ?? "dev"
-  const diffCheck = await $`git diff ${base}..HEAD --stat`.quiet().nothrow().cwd(safeWorktree)
-  const diffOutput = new TextDecoder().decode(diffCheck.stdout).trim()
-  if (!diffOutput) {
+  const hasChanges = await hasCommittedChanges(safeWorktree, task.base_commit)
+  if (!hasChanges) {
     await Store.addComment(projectId, task.id, {
       author: "system",
       message: "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
