@@ -216,7 +216,8 @@ export async function checkCompletion(
       Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: undefined })
 
       // Create PR for the job
-      const prResult = await createPRForJob(jobTasks, pmSessionId)
+      const issueNumber = jobTasks[0]?.parent_issue ?? 0
+      const prResult = await createPRForJob(projectId, jobTasks, pmSessionId, issueNumber)
       if (prResult.ok) {
         log.info("PR created successfully", { jobId, prUrl: prResult.prUrl })
         const notifyResult = await notifyPM(
