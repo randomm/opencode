@@ -19,7 +19,15 @@ import { MAX_ADVERSARIAL_ATTEMPTS } from "./pulse-verdicts"
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
 
 async function lockFilePath(jobId: string, projectId: string): Promise<string> {
-  const tasksDir = path.join(Global.Path.data, "tasks", projectId)
+  let tasksDir: string
+  try {
+    const worktree = Instance.worktree
+    tasksDir = path.join(worktree, ".opencode", "tasks", projectId)
+  } catch {
+    // Fallback for tests without Instance context
+    tasksDir = path.join(Global.Path.data, "tasks", projectId)
+  }
+
   await fs.mkdir(tasksDir, { recursive: true })
 
   const files = await fs.readdir(tasksDir)
