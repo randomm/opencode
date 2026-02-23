@@ -19,7 +19,14 @@ import { isSessionActivelyRunning, lockFilePath } from "./pulse-scheduler"
 // Allow 6 attempts to resolve minor test flakiness before escalating to PM
 const MAX_ADVERSARIAL_ATTEMPTS = 6
 
+// Branch name validation: only alphanumeric, hyphen, underscore, slash, dot, plus (anchors ensure full string match)
+const BRANCH_REGEX = /^[a-zA-Z0-9_\-\/\+.]+$/
+
 const log = Log.create({ service: "taskctl.pulse.verdicts" })
+
+function safeBranch(name: string): string | null {
+  return BRANCH_REGEX.test(name) ? name : null
+}
 
 export { MAX_ADVERSARIAL_ATTEMPTS }
 
@@ -322,6 +329,75 @@ async function escalateCommitFailure(
   })
 }
 
+async function mergeTaskBranchesToFeatureBranch(projectRoot: string, featureBranch: string, tasks: Task[]): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Validate feature branch name
+  const safeFeatureBranch = safeBranch(featureBranch)
+  if (!safeFeatureBranch) {
+    log.error("feature branch name contains invalid characters", { featureBranch })
+    return { ok: false, error: `Invalid feature branch name: ${featureBranch}` }
+  }
+
+  const branches: string[] = []
+  for (const task of tasks) {
+    if (task.branch && task.branch !== safeFeatureBranch) {
+      const safeTaskBranch = safeBranch(task.branch)
+      if (!safeTaskBranch) {
+        log.warn("task branch name contains invalid characters, skipping", { taskId: task.id, branch: task.branch })
+        continue
+      }
+      branches.push(safeTaskBranch)
+    }
+  }
+  if (!branches.length) {
+    log.debug("no task branches to merge", { featureBranch: safeFeatureBranch })
+    return { ok: true }
+  }
+
+  try {
+    const { $ } = await import("bun")
+
+    // Verify origin remote exists
+    const remoteCheck = await $`git ls-remote origin HEAD`.cwd(projectRoot).quiet().nothrow()
+    if (remoteCheck.exitCode !== 0) {
+      log.warn("origin remote not configured", { projectRoot })
+      return { ok: false, error: "origin remote not configured" }
+    }
+
+    // Checkout feature branch
+    const checkoutRes = await $`git checkout ${safeFeatureBranch}`.cwd(projectRoot).nothrow()
+    if (checkoutRes.exitCode !== 0) {
+      log.error("failed to checkout feature branch", { featureBranch: safeFeatureBranch })
+      return { ok: false, error: `Failed to checkout feature branch ${safeFeatureBranch}` }
+    }
+
+    // Merge each task branch
+    for (const branch of branches) {
+      const mergeRes = await $`git merge --no-ff ${branch} -m "merge task branch ${branch}"`.cwd(projectRoot).nothrow()
+      if (mergeRes.exitCode !== 0) {
+        log.error("failed to merge task branch, aborting", { branch, featureBranch: safeFeatureBranch })
+        // Abort merge to leave repository in clean state
+        await $`git merge --abort`.cwd(projectRoot).nothrow()
+        return { ok: false, error: `Merge conflict with branch ${branch}, aborting` }
+      }
+      log.info("merged task branch", { branch, featureBranch: safeFeatureBranch })
+    }
+
+    // Push feature branch
+    const pushResult = await $`git push origin ${safeFeatureBranch}`.cwd(projectRoot).nothrow()
+    if (pushResult.exitCode !== 0) {
+      const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
+      log.error("failed to push feature branch", { featureBranch: safeFeatureBranch, error: stderr })
+      return { ok: false, error: `Failed to push feature branch: ${stderr}` }
+    }
+
+    log.info("pushed feature branch after merging task branches", { featureBranch: safeFeatureBranch })
+    return { ok: true }
+  } catch (e) {
+    log.error("error merging task branches", { featureBranch, error: String(e) })
+    return { ok: false, error: String(e) }
+  }
+}
+
 async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: string, issueNumber: number): Promise<{ ok: true; prUrl: string } | { ok: false; error: string }> {
   if (tasks.length === 0) {
     return { ok: false, error: "No tasks found in job" }
@@ -332,7 +408,7 @@ async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: str
 
   // Fallback to first task branch if job or feature_branch is missing
   if (!featureBranch) {
-    const firstTaskWithBranch = tasks.find((t) => t.branch)
+    const firstTaskWithBranch = tasks.find((t) => t.branch && t.branch.trim().length > 0)
     if (firstTaskWithBranch) {
       featureBranch = firstTaskWithBranch.branch
     } else {
@@ -340,21 +416,42 @@ async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: str
     }
   }
 
+  // After fallback, validate featureBranch is not empty
+  if (!featureBranch || featureBranch.trim().length === 0) {
+    return { ok: false, error: "Invalid feature branch name for job" }
+  }
+
+  // Validate branch name contains only safe characters
+  const safeFeatureBranch = safeBranch(featureBranch)
+  if (!safeFeatureBranch) {
+    log.error("feature branch name contains invalid characters", { featureBranch })
+    return { ok: false, error: `Invalid feature branch name: ${featureBranch}` }
+  }
+
   try {
     const parentSession = await Session.get(pmSessionId).catch(() => null)
     if (!parentSession?.directory) {
-      return { ok: false, error: `PM session not found for PR creation (session: ${pmSessionId}, branch: ${featureBranch})` }
+      return { ok: false, error: `PM session not found for PR creation (session: ${pmSessionId}, branch: ${safeFeatureBranch})` }
     }
 
     const { $ } = await import("bun")
+
+    // Check if feature branch has commits ahead of dev
+    const ahead = await $`git rev-list --count dev..${safeFeatureBranch}`.cwd(parentSession.directory).quiet().nothrow()
+    const count = parseInt(new TextDecoder().decode(ahead.stdout).trim() || "0")
+    if (count === 0) {
+      log.warn("feature branch has no commits ahead of dev, skipping PR creation", { featureBranch: safeFeatureBranch })
+      return { ok: false, error: `Feature branch ${safeFeatureBranch} has no commits ahead of dev` }
+    }
+
     const repo = "randomm/opencode"
     const prTitle = `Issue #${issueNumber}: Automated PR from taskctl`
     const prBody = `Closes #${issueNumber}
 
 This PR was automatically created by the taskctl pipeline after all tasks completed.`
 
-    // Use proper shell escaping to prevent command injection
-    const result = await $`gh pr create --repo ${repo} --base dev --head ${featureBranch} --title ${prTitle} --body ${prBody}`
+    // Bun Shell auto-escapes interpolated values; no manual escaping needed
+    const result = await $`gh pr create --repo ${repo} --base dev --head ${safeFeatureBranch} --title ${prTitle} --body ${prBody}`
       .cwd(parentSession.directory)
       .quiet()
       .nothrow()
@@ -413,4 +510,12 @@ async function processAdversarialVerdicts(jobId: string, projectId: string, pmSe
   }
 }
 
-export { processAdversarialVerdicts, commitTask, escalateToPM, escalateCommitFailure, notifyPM, createPRForJob }
+export {
+  processAdversarialVerdicts,
+  commitTask,
+  escalateToPM,
+  escalateCommitFailure,
+  notifyPM,
+  createPRForJob,
+  mergeTaskBranchesToFeatureBranch,
+}

@@ -5,6 +5,7 @@ import { BackgroundTaskEvent } from "../session/async-tasks"
 import { Instance, context as instanceContext } from "../project/instance"
 import { Store } from "./store"
 import { MessageV2 } from "../session/message-v2"
+import { Session } from "../session"
 import { Provider } from "../provider/provider"
 import {
   writeLockFile,
@@ -15,7 +16,7 @@ import {
   scheduleReadyTasks,
   sanitizeWorktree,
 } from "./pulse-scheduler"
-import { processAdversarialVerdicts, notifyPM, escalateToPM, createPRForJob } from "./pulse-verdicts"
+import { processAdversarialVerdicts, notifyPM, escalateToPM, createPRForJob, mergeTaskBranchesToFeatureBranch } from "./pulse-verdicts"
 import { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
 
 // Re-exports for backward compatibility with tests
@@ -28,7 +29,13 @@ export {
   scheduleReadyTasks,
   sanitizeWorktree,
 } from "./pulse-scheduler"
-export { processAdversarialVerdicts, notifyPM, escalateToPM, createPRForJob } from "./pulse-verdicts"
+export {
+  processAdversarialVerdicts,
+  notifyPM,
+  escalateToPM,
+  createPRForJob,
+  mergeTaskBranchesToFeatureBranch,
+} from "./pulse-verdicts"
 export { heartbeatActiveAgents, checkTimeouts, checkSteering, gracefulStop } from "./pulse-monitoring"
 
 const log = Log.create({ service: "taskctl.pulse" })
@@ -215,27 +222,65 @@ export async function checkCompletion(
       await Store.updateJob(projectId, jobId, { status: "complete" })
       Bus.publish(BackgroundTaskEvent.Completed, { taskID: jobId, sessionID: pmSessionId, parentSessionID: pmSessionId })
 
-      // Create PR for the job
-      const issueNumber = jobTasks[0]?.parent_issue ?? 0
-      const prResult = await createPRForJob(projectId, jobTasks, pmSessionId, issueNumber)
-      if (prResult.ok) {
-        log.info("PR created successfully", { jobId, prUrl: prResult.prUrl })
+      // Guard: Cannot create PR if no tasks exist (all skipped/overridden)
+      if (jobTasks.length === 0) {
+        log.warn("job completed with no tasks, skipping PR creation", { jobId })
         const notifyResult = await notifyPM(
           pmSessionId,
-          `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\nPR created: ${prResult.prUrl}`,
-        )
-        if (!notifyResult.ok) {
-          log.warn("failed to notify PM of job completion with PR", { jobId, error: notifyResult.error })
-        }
-      } else {
-        log.warn("failed to create PR for completed job", { jobId, error: prResult.error })
-        const notifyResult = await notifyPM(
-          pmSessionId,
-          `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\n⚠️ PR creation failed: ${prResult.error}`,
+          `🎉 Job complete: all tasks were skipped/overridden. No PR created.`,
         )
         if (!notifyResult.ok) {
           log.warn("failed to notify PM of job completion", { jobId, error: notifyResult.error })
         }
+        return
+      }
+
+      // Merge task branches into feature branch before creating PR
+      const job = await Store.getJob(projectId, jobId)
+      const featureBranch = job?.feature_branch
+      let mergeSuccess = true
+      let mergeError = ""
+
+      if (featureBranch) {
+        const pmSession = await Session.get(pmSessionId).catch(() => null)
+        if (pmSession?.directory) {
+          const mergeResult = await mergeTaskBranchesToFeatureBranch(pmSession.directory, featureBranch, jobTasks)
+          if (!mergeResult.ok) {
+            mergeSuccess = false
+            mergeError = mergeResult.error
+            log.warn("failed to merge task branches", { jobId, error: mergeError })
+          }
+        } else {
+          log.warn("PM session not found for merging task branches", { pmSessionId })
+        }
+      } else {
+        log.warn("No feature branch found for job, skipping task branch merge", { jobId })
+      }
+
+      // Create PR for the job (only if merge succeeded)
+      const issueNumber = jobTasks[0]?.parent_issue ?? 0
+      let prResult: { ok: true; prUrl: string } | { ok: false; error: string }
+
+      if (!mergeSuccess) {
+        prResult = { ok: false, error: `Merge failed: ${mergeError}` }
+      } else {
+        prResult = await createPRForJob(projectId, jobTasks, pmSessionId, issueNumber)
+      }
+
+      // Build appropriate completion message based on result
+      let completionMessage: string
+      if (prResult.ok) {
+        completionMessage = `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\nPR created: ${prResult.prUrl}`
+        log.info("PR created successfully", { jobId, prUrl: prResult.prUrl })
+      } else if (!mergeSuccess) {
+        completionMessage = `🎉 Job complete: all tasks done for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\n⚠️ Merge failed: ${prResult.error}`
+      } else {
+        completionMessage = `🎉 Job complete: all tasks merged for issue #${jobTasks[0]?.parent_issue ?? "unknown"}\n\n⚠️ PR creation failed: ${prResult.error}`
+      }
+
+      const notifyResult = await notifyPM(pmSessionId, completionMessage)
+      if (!notifyResult.ok) {
+        log.warn("failed to notify PM of job completion", { jobId, error: notifyResult.error })
       }
     } catch (e) {
       activeTicks.get(projectId)?.delete(jobId)
