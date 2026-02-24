@@ -104,7 +104,6 @@ function sanitizeWorktree(worktree: string | null | undefined): string | null {
   return path.resolve(worktree)
 }
 
-async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void>
 async function scheduleReadyTasks(jobId: string, projectId: string, pmSessionId: string): Promise<void> {
   const job = await Store.getJob(projectId, jobId)
   if (!job) return
@@ -275,16 +274,24 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
 }
 
 function buildDeveloperPrompt(task: Task, worktreeDir: string, branch: string): string {
-  const worktreeWarning = `⚠️ WORKING DIRECTORY: You are working in worktree: ${worktreeDir}
-On branch: ${branch}
+  const directiveHeader = `⛔ CRITICAL: YOUR WORKING DIRECTORY IS: ${worktreeDir}
+⛔ Branch: ${branch}
 
-BEFORE any file operation:
-1. Verify with: git branch --show-current
-2. If output is NOT "${branch}", STOP immediately and report the error
-3. All file reads/writes must use paths under ${worktreeDir}
+YOUR FIRST ACTION — run pwd and confirm output matches exactly: ${worktreeDir}
+If pwd output does NOT match → STOP immediately, report the mismatch, do not touch any files.
+
+ABSOLUTE RULES:
+- NEVER use relative paths like ../ or ../Claude or ../anything
+- ALL file paths must start with ${worktreeDir}
+- NEVER navigate outside this directory
+- The project package is at ${worktreeDir}/packages/opencode/
+- Tests go in ${worktreeDir}/packages/opencode/test/
+- Source goes in ${worktreeDir}/packages/opencode/src/
+- Run commands from ${worktreeDir}/packages/opencode/
 `
 
-  return `Implement the following task with TDD:
+  return `${directiveHeader}
+Implement the following task with TDD:
 
 **Title:** ${task.title}
 
@@ -440,11 +447,17 @@ async function respawnDeveloper(
     return
   }
 
+  const safeWorktree = sanitizeWorktree(task.worktree)
+  if (!safeWorktree) {
+    log.error("worktree sanitization failed for respawn", { taskId: task.id, worktree: task.worktree })
+    return
+  }
+
   let devSession
   try {
     devSession = await Session.createNext({
       parentID: pmSessionId,
-      directory: task.worktree,
+      directory: safeWorktree,
       title: `Developer retry #${attempt}: ${task.title}`,
       permission: [],
     })
@@ -469,18 +482,24 @@ async function respawnDeveloper(
     true,
   )
 
-  const worktreeWarning = `⚠️ WORKING DIRECTORY: You are working in worktree: ${task.worktree}
-On branch: ${task.branch || "feature"}
+  const directiveHeader = `⛔ CRITICAL: YOUR WORKING DIRECTORY IS: ${safeWorktree}
+⛔ Branch: ${task.branch}
 
-BEFORE any file operation:
-1. Run: git branch --show-current
-2. If output is NOT "${task.branch || "feature"}", STOP and report immediately
-3. All file paths must be under ${task.worktree}
+YOUR FIRST ACTION — run pwd and confirm output matches exactly: ${safeWorktree}
+If pwd output does NOT match → STOP immediately, report the mismatch, do not touch any files.
 
+ABSOLUTE RULES:
+- NEVER use relative paths like ../ or ../Claude or ../anything
+- ALL file paths must start with ${safeWorktree}
+- NEVER navigate outside this directory
+- The project package is at ${safeWorktree}/packages/opencode/
+- Tests go in ${safeWorktree}/packages/opencode/test/
+- Source goes in ${safeWorktree}/packages/opencode/src/
+- Run commands from ${safeWorktree}/packages/opencode/
 `
 
   const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
-  const prompt = `${worktreeWarning}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
+  const prompt = `${directiveHeader}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
 
 **Task:** ${task.title}
 **Description:** ${task.description}
@@ -491,7 +510,13 @@ Summary: ${verdict.summary}
 Issues:
 ${issueLines}
 
-  The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, and complete your work. The pulse system automatically detects completion.`
+Follow TDD for any fixes:
+1. Write failing test(s) for each issue
+2. Fix the code to make tests pass
+3. Run all tests to verify nothing broke
+4. Only implement what's explicitly requested in the feedback
+
+Important: Continue following the same TDD discipline as the initial implementation. The codebase changes are already in this worktree. Fix the specific issues listed above, run tests, and complete your work. The pulse system automatically detects completion.`
 
   const model = await resolveModel(pmSessionId)
   try {
