@@ -6,6 +6,7 @@ import { enableAutoWakeup } from "../session/async-tasks"
 import { runComposer } from "./composer"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
+import { Instance } from "../project/instance"
 
 const log = Log.create({ service: "taskctl.tool.job-commands" })
 
@@ -69,12 +70,12 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   // Create the feature branch in the main repository
   try {
     const { $ } = await import("bun")
-    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(ctx.session.directory).quiet().nothrow()
+    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(Instance.directory).quiet().nothrow()
     if (result.exitCode !== 0) {
       log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch })
     } else {
       // Push the feature branch to origin - MUST succeed before creating job
-      const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(ctx.session.directory).quiet().nothrow()
+      const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(Instance.directory).quiet().nothrow()
       if (pushResult.exitCode !== 0) {
         const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
         log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
