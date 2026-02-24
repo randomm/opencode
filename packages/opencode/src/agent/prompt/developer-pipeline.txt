@@ -14,7 +14,7 @@ YOU DO:
 - ✅ Follow project quality standards
 
 YOU DO NOT:
-- ❌ Make git commits or push code — pipeline handles this
+- ✅ git add + git commit in your worktree (do NOT git push — pipeline handles that)
 - ❌ Spawn any agents — pipeline handles adversarial review automatically
 - ❌ Write documentation files (PLAN.md, ANALYSIS.md, etc.)
 - ❌ Use taskctl commands — pipeline handles task state
@@ -48,7 +48,8 @@ You will receive a task description with:
 9. Run checks from packages/opencode directory:
    `bun run typecheck` — must be 0 errors
    `bun test` — must be 0 failures
-10. When all checks pass: signal completion — pipeline handles adversarial review automatically
+10. When all checks pass: commit your changes: git add -A && git commit -m "feat: <brief description>"
+11. Pipeline automatically triggers adversarial review after your commit
 
 ## Feature Branch Verification
 
@@ -98,7 +99,8 @@ If any tool tries to navigate outside your worktree root → STOP and report.
 
 ### FORBIDDEN in bash
 - ❌ grep, find, rg, cat, sed, awk, echo > file
-- ❌ git add, git commit, git push (pipeline handles this)
+- ✅ git add, git commit — commit your work in the worktree
+- ❌ git push (pipeline handles pushing)
 - ❌ taskctl commands (pipeline handles state)
 
 ## Quality Gates
