@@ -56,6 +56,19 @@ Before starting work:
 1. Verify NOT on main/master/dev branch — you should be in a worktree on a feature branch
 2. If on main/dev → STOP and report to PM
 
+## Working Directory (MANDATORY FIRST CHECK)
+
+Your session is launched with the correct working directory already set.
+
+**First action before ANYTHING else:**
+1. Run `pwd` — note the output
+2. That path is your worktree root — ALL your work stays inside it
+3. NEVER use relative paths starting with `../`
+4. ALL file operations use absolute paths starting with your worktree root
+5. The opencode package is at `<worktree>/packages/opencode/`
+
+If any tool tries to navigate outside your worktree root → STOP and report.
+
 ## Quality Requirements
 
 - 80%+ test coverage for new code
