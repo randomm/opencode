@@ -67,22 +67,34 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
     throw new Error(`Invalid feature branch name: ${featureBranch}`)
   }
 
-  // Create the feature branch in the main repository
+  // Create the feature branch in the main repository.
+  // Note: We try Instance.directory first (for normal CLI context), then fall back to
+  // process.cwd() if Instance is unavailable (for MCP bridge contexts where AsyncLocalStorage
+  // context may not be established).
+  let cwd: string
+  try {
+    cwd = Instance.directory
+  } catch {
+    cwd = process.cwd()
+  }
+
   try {
     const { $ } = await import("bun")
-    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(Instance.directory).quiet().nothrow()
+    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(cwd).quiet().nothrow()
     if (result.exitCode !== 0) {
-      log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch })
-    } else {
-      // Push the feature branch to origin - MUST succeed before creating job
-      const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(Instance.directory).quiet().nothrow()
-      if (pushResult.exitCode !== 0) {
-        const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
-        log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
-        throw new Error(`Failed to push feature branch ${safeFeatureBranch} to origin: ${stderr}`)
-      }
-      log.info("feature branch created and pushed", { issueNumber, featureBranch: safeFeatureBranch })
+      const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
+      log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+      throw new Error(`Failed to create feature branch ${safeFeatureBranch}: ${stderr}`)
     }
+
+    // Push the feature branch to origin - MUST succeed before creating job
+    const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(cwd).quiet().nothrow()
+    if (pushResult.exitCode !== 0) {
+      const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
+      log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+      throw new Error(`Failed to push feature branch ${safeFeatureBranch} to origin: ${stderr}`)
+    }
+    log.info("feature branch created and pushed", { issueNumber, featureBranch: safeFeatureBranch })
   } catch (e) {
     log.error("error creating feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: String(e) })
     throw e
