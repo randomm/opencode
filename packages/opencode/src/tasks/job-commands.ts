@@ -1,5 +1,6 @@
 import { Store } from "./store"
 import { Log } from "../util/log"
+import { formatElapsed } from "../util/format"
 import { startPulse, resurrectionScan } from "./pulse"
 import { removeLockFile, readLockPid, isPidAlive, sanitizeWorktree } from "./pulse-scheduler"
 import { enableAutoWakeup } from "../session/async-tasks"
@@ -232,7 +233,9 @@ export async function executeStatus(projectId: string, params: any): Promise<{ t
       lines.push(`    Worktree: ${task.worktree}`)
     }
     if (task.pipeline.stage !== "idle") {
-      lines.push(`    Pipeline: ${task.pipeline.stage} (attempt ${task.pipeline.attempt})`)
+      const elapsed = formatElapsed(task.pipeline.last_activity)
+      const elapsedSuffix = elapsed ? `, ${elapsed}` : ""
+      lines.push(`    Pipeline: ${task.pipeline.stage} (attempt ${task.pipeline.attempt}${elapsedSuffix})`)
     }
   }
 

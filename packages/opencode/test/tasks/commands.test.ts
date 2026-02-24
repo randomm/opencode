@@ -1,4 +1,5 @@
-import { describe, test, expect } from "bun:test"
+import { describe, test, expect, beforeEach, afterEach } from "bun:test"
+import { executeStatus } from "../../src/tasks/job-commands"
 import { Store } from "../../src/tasks/store"
 import type { Task, Job } from "../../src/tasks/types"
 import { Global } from "../../src/global"
@@ -327,5 +328,135 @@ describe("taskctl retry", () => {
       expect(retrieved?.pipeline.adversarial_verdict).toBeNull()
       expect(retrieved?.pipeline.last_activity).toBeNull()
     })
+  })
+})
+
+describe("taskctl status - elapsed time", () => {
+  let testDataDir: string
+
+  beforeEach(async () => {
+    testDataDir = path.join("/tmp", "opencode-status-test-" + Math.random().toString(36).slice(2))
+    await fs.mkdir(testDataDir, { recursive: true })
+    process.env.OPENCODE_TEST_HOME = testDataDir
+    await Global.init()
+  })
+
+  afterEach(async () => {
+    await fs.rm(testDataDir, { recursive: true, force: true }).catch(() => {})
+    delete process.env.OPENCODE_TEST_HOME
+  })
+
+  test("includes elapsed time for in-progress pipeline stage", async () => {
+    const projectId = `test-status-elapsed-${Date.now()}`
+    const jobId = `job-status-elapsed-${Date.now()}`
+    const issueNumber = 999
+    const lastActivity = new Date(Date.now() - 272000).toISOString() // 4m 32s ago
+
+    await Store.createJob(projectId, {
+      id: jobId,
+      parent_issue: issueNumber,
+      status: "running",
+      created_at: new Date().toISOString(),
+      stopping: false,
+      pulse_pid: null,
+      max_workers: 3,
+      pm_session_id: "pm-test",
+      feature_branch: null,
+    })
+
+    const task: Task = {
+      id: "task-elapsed-1",
+      title: "Test task",
+      description: "Test",
+      acceptance_criteria: "Test",
+      parent_issue: issueNumber,
+      job_id: jobId,
+      status: "in_progress",
+      priority: 1,
+      task_type: "implementation",
+      labels: [],
+      depends_on: [],
+      assignee: null,
+      assignee_pid: null,
+      worktree: null,
+      branch: null,
+      base_commit: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      close_reason: null,
+      comments: [],
+      pipeline: {
+        stage: "adversarial-running",
+        attempt: 1,
+        last_activity: lastActivity,
+        last_steering: null,
+        history: [],
+        adversarial_verdict: null,
+      },
+    }
+
+    await Store.createTask(projectId, task)
+
+    const result = await executeStatus(projectId, { issueNumber })
+
+    expect(result.output).toContain("adversarial-running")
+    expect(result.output).toContain("attempt 1")
+    expect(result.output).toMatch(/Pipeline: adversarial-running \(attempt 1, \d+m \d+s\)/)
+  })
+
+  test("omits elapsed suffix when last_activity is null", async () => {
+    const projectId = `test-status-no-elapsed-${Date.now()}`
+    const jobId = `job-status-no-elapsed-${Date.now()}`
+    const issueNumber = 998
+
+    await Store.createJob(projectId, {
+      id: jobId,
+      parent_issue: issueNumber,
+      status: "running",
+      created_at: new Date().toISOString(),
+      stopping: false,
+      pulse_pid: null,
+      max_workers: 3,
+      pm_session_id: "pm-test",
+      feature_branch: null,
+    })
+
+    const task: Task = {
+      id: "task-no-elapsed-1",
+      title: "Test task",
+      description: "Test",
+      acceptance_criteria: "Test",
+      parent_issue: issueNumber,
+      job_id: jobId,
+      status: "in_progress",
+      priority: 1,
+      task_type: "implementation",
+      labels: [],
+      depends_on: [],
+      assignee: null,
+      assignee_pid: null,
+      worktree: null,
+      branch: null,
+      base_commit: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      close_reason: null,
+      comments: [],
+      pipeline: {
+        stage: "developing",
+        attempt: 1,
+        last_activity: null,
+        last_steering: null,
+        history: [],
+        adversarial_verdict: null,
+      },
+    }
+
+    await Store.createTask(projectId, task)
+
+    const result = await executeStatus(projectId, { issueNumber })
+
+    expect(result.output).toContain("Pipeline: developing (attempt 1)")
+    expect(result.output).not.toMatch(/Pipeline: developing \(attempt 1, /)
   })
 })
