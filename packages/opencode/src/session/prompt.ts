@@ -1809,18 +1809,21 @@ NOTE: At any point in time through this workflow you should feel free to ask the
       return await lastModel(input.sessionID)
     })()
 
-    try {
-      await Provider.getModel(taskModel.providerID, taskModel.modelID)
-    } catch (e) {
-      if (Provider.ModelNotFoundError.isInstance(e)) {
-        const { providerID, modelID, suggestions } = e.data
-        const hint = suggestions?.length ? ` Did you mean: ${suggestions.join(", ")}?` : ""
-        Bus.publish(Session.Event.Error, {
-          sessionID: input.sessionID,
-          error: new NamedError.Unknown({ message: `Model not found: ${providerID}/${modelID}.${hint}` }).toObject(),
-        })
+    // Skip model lookup for synthetic messages (system notifications, etc.)
+    if (taskModel.providerID !== "system") {
+      try {
+        await Provider.getModel(taskModel.providerID, taskModel.modelID)
+      } catch (e) {
+        if (Provider.ModelNotFoundError.isInstance(e)) {
+          const { providerID, modelID, suggestions } = e.data
+          const hint = suggestions?.length ? ` Did you mean: ${suggestions.join(", ")}?` : ""
+          Bus.publish(Session.Event.Error, {
+            sessionID: input.sessionID,
+            error: new NamedError.Unknown({ message: `Model not found: ${providerID}/${modelID}.${hint}` }).toObject(),
+          })
+        }
+        throw e
       }
-      throw e
     }
     const agent = await Agent.get(agentName)
     if (!agent) {
