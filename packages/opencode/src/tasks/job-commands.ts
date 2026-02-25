@@ -278,6 +278,37 @@ export async function executeResume(projectId: string, params: any, ctx: any): P
 
   const job = await Store.getJob(projectId, jobId)
   if (!job) throw new Error(`Job not found: ${jobId}`)
+  // Auto-recover if job is "running" but Pulse PID is dead (binary restart scenario)
+  if (job.status === "running") {
+    const livePid = await readLockPid(jobId, projectId)
+    if (livePid === null || !isPidAlive(livePid)) {
+      // Pulse is dead — reset job to stopped and reset in-flight tasks
+      await removeLockFile(jobId, projectId)
+      await Store.updateJob(projectId, jobId, { status: "stopped", stopping: false })
+      const allTasks = await Store.listTasks(projectId)
+      const stale = allTasks.filter(t =>
+        t.job_id === jobId &&
+        t.status === "in_progress" &&
+        ["developing", "reviewing", "adversarial-running"].includes(t.pipeline.stage)
+      )
+      for (const task of stale) {
+        await Store.updateTask(projectId, task.id, {
+          status: "open",
+          assignee: null,
+          assignee_pid: null,
+          pipeline: { ...task.pipeline, stage: "idle", last_activity: null },
+        }, true)
+        await Store.addComment(projectId, task.id, {
+          author: "system",
+          message: `Task reset to open after binary restart (was ${task.pipeline.stage} with dead Pulse).`,
+          created_at: new Date().toISOString(),
+        })
+      }
+      // Fall through to normal resume logic (job is now "stopped")
+    } else {
+      return { title: "Already running", output: `Pipeline is already running (PID ${livePid}).`, metadata: {} }
+    }
+  }
 
   const existingPid = await readLockPid(jobId, projectId)
   if (existingPid !== null) {
@@ -306,6 +337,9 @@ export async function executeResume(projectId: string, params: any, ctx: any): P
   
   await Store.updateJob(projectId, jobId, { stopping: false, status: "running" })
   enableAutoWakeup(ctx.sessionID)
+  if (job.pm_session_id && job.pm_session_id !== ctx.sessionID) {
+    enableAutoWakeup(job.pm_session_id)
+  }
 
   const tasks = await Store.listTasks(projectId)
   const remaining = tasks.filter((t) => t.job_id === jobId && t.status !== "closed").length
