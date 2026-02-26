@@ -14,6 +14,8 @@ Supports four operations:
 - If multiple lines (e.g., "line1\nline2"): split and rg each line separately
 - If duplicate found: use replace_lines or set_line instead of insert
 - For special regex chars ([, ], (, ), ., *): escape them. Example: rg "const my\\.special = 1$" file.ts (escape dot for exact match)
+- Note: rg is case-sensitive by default — no --case-sensitive flag needed
+- For literal strings (no regex): use -F flag. Example: rg -F "const my.special = 1" file.ts
 
 If lines have moved since last read, anchors are automatically relocated by hash.
 Always use hashline_read to get current anchors before editing.
