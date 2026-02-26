@@ -122,7 +122,7 @@ export const HashlineEditTool = Tool.define("hashline_edit", {
       const contentOld = await file.text()
       const contentNew = applyHashlineEdits(contentOld, parsedEdits)
       await Bun.write(filepath, contentNew)
-      FileTime.read(ctx.sessionID, filepath)
+      FileTime.hashlineRead(ctx.sessionID, filepath)
     })
 
     return {
