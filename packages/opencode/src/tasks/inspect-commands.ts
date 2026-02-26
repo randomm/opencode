@@ -3,9 +3,14 @@ import { Log } from "../util/log"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { sanitizeWorktree } from "./pulse-scheduler"
+import { Locale } from "../util/locale"
 import type { Task } from "./types"
 
 const log = Log.create({ service: "taskctl.tool.inspect-commands" })
+
+export function formatElapsed(ms: number): string {
+  return Locale.duration(ms)
+}
 
 export async function executeInspect(projectId: string, params: any): Promise<{ title: string; output: string; metadata: {} }> {
   if (!params.taskId) throw new Error("inspect requires taskId")
@@ -28,8 +33,14 @@ export async function executeInspect(projectId: string, params: any): Promise<{ 
 
   if (task.pipeline.history && task.pipeline.history.length > 0) {
     lines.push(``, `Pipeline history:`)
-    for (const entry of task.pipeline.history) {
-      lines.push(`  ${entry}`)
+    for (let i = 0; i < task.pipeline.history.length; i++) {
+      const entry = task.pipeline.history[i]
+      const next = task.pipeline.history[i + 1]
+      const endMs = next ? new Date(next.timestamp).getTime() : Date.now()
+      const durationMs = endMs - new Date(entry.timestamp).getTime()
+      const duration = formatElapsed(durationMs)
+      const label = entry.message ? ` (${entry.message})` : ""
+      lines.push(`  ${entry.from}->${entry.to} [attempt ${entry.attempt}]: ${duration}${label}`)
     }
   }
 
