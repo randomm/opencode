@@ -3,17 +3,17 @@ Apply precise line edits to a file using content-addressable anchors from hashli
 Each edit references a line by its anchor (line number + CJK hash character). The tool validates
 all anchors before applying any edits — if any anchor doesn't match, no changes are made.
 
-Supports five operations:
+Supports four operations:
 - set_line: Replace or delete a single line
 - replace_lines: Replace or delete a contiguous range of lines
 - insert_after: Insert new lines after an anchor line. ⚠️ Does NOT check for duplicates. Before inserting, verify lines don't exist. Example: rg "^const foo = 1$" file.ts (use ^ and $ for exact match)
 - insert_before: Insert new lines before an anchor line. ⚠️ Does NOT check for duplicates. Before inserting, verify lines don't exist. Example: rg "^const foo = 1$" file.ts (use ^ and $ for exact match)
 
 ⚠️ Workflow Checklist:
-- Before insertion: rg "^exact_line$" full/path/to/file.ts --case-sensitive
+- Before insertion: rg "^exact_line$" full/path/to/file.ts
 - If multiple lines (e.g., "line1\nline2"): split and rg each line separately
 - If duplicate found: use replace_lines or set_line instead of insert
-- For special regex chars ([, ], (, ), ., *): escape them or use fixed strings
+- For special regex chars ([, ], (, ), ., *): escape them. Example: rg "const my\\.special = 1$" file.ts (escape dot for exact match)
 
 If lines have moved since last read, anchors are automatically relocated by hash.
 Always use hashline_read to get current anchors before editing.
