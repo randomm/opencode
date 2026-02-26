@@ -561,4 +561,47 @@ describe("tool.hashline_edit", () => {
       },
     })
   })
+
+  test("consecutive hashline_edit calls work without re-reading in between", async () => {
+    await using tmp = await tmpdir({
+      init: async (dir) => {
+        await Bun.write(path.join(dir, "test.txt"), "line1\nline2\nline3\nline4")
+      },
+    })
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const tool = await HashlineEditTool.init()
+        const filepath = path.join(tmp.path, "test.txt")
+
+        // First: hashline_read the file
+        FileTime.hashlineRead(ctx.sessionID, filepath)
+
+        // Second: do first edit
+        const result1 = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "set_line", anchor: "2咲", new_text: "edited line 2" }],
+          },
+          ctx
+        )
+        expect(result1.output).toContain("Edit applied successfully")
+
+        // Third: do second edit WITHOUT re-reading - this should succeed
+        // because hashline_edit now correctly updates the hashlineRead timestamp
+        const result2 = await tool.execute(
+          {
+            filePath: filepath,
+            edits: [{ op: "set_line", anchor: "3徃", new_text: "edited line 3" }],
+          },
+          ctx
+        )
+        expect(result2.output).toContain("Edit applied successfully")
+
+        // Verify both edits were applied
+        const content = await Bun.file(filepath).text()
+        expect(content).toBe("line1\nedited line 2\nedited line 3\nline4")
+      },
+    })
+  })
 })
