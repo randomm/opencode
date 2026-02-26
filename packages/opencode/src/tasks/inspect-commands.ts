@@ -8,6 +8,7 @@ import type { Task } from "./types"
 const log = Log.create({ service: "taskctl.tool.inspect-commands" })
 
 export function formatElapsed(ms: number): string {
+  if (ms < 1000) return `${ms}ms`
   const s = Math.floor(ms / 1000)
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
