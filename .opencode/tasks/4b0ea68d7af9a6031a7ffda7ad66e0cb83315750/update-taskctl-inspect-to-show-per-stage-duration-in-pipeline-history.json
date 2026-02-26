@@ -1,0 +1,1846 @@
+{
+  "id": "update-taskctl-inspect-to-show-per-stage-duration-in-pipeline-history",
+  "title": "Update taskctl inspect to show per-stage duration in pipeline history",
+  "description": "In the `taskctl inspect` output path in `packages/Claude/src/tasks/tool.ts`, compute and display per-stage duration for each entry in the pipeline history using start/end timestamps. Format using `formatElapsed`.",
+  "acceptance_criteria": "`taskctl inspect <taskId>` pipeline history shows duration for each completed stage (e.g. `developer-running: 3m 12s`). In-progress stage shows elapsed since start. Uses `formatElapsed` utility. Tests pass. Linting passes.",
+  "parent_issue": 270,
+  "job_id": "job-1771917872459",
+  "status": "closed",
+  "priority": 1,
+  "task_type": "implementation",
+  "labels": [
+    "module:tasks",
+    "file:packages/Claude/src/tasks/tool.ts"
+  ],
+  "depends_on": [
+    "implement-elapsed-time-formatting-utility"
+  ],
+  "assignee": null,
+  "assignee_pid": null,
+  "worktree": null,
+  "branch": null,
+  "base_commit": "55aa6641e236da9a2f49451ee52c6594279e6687",
+  "created_at": "2026-02-24T07:24:51.026Z",
+  "updated_at": "2026-02-26T14:42:41.517Z",
+  "close_reason": "approved and committed",
+  "comments": [
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:32:53.230Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:07.681Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:23.757Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:38.398Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:55.601Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:13.682Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:28.095Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:42.626Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:58.361Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:13.520Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:28.565Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:45.956Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:58.579Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:14.588Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:27.496Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:42.612Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:54.193Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:07.112Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:19.582Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:32.094Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:47.178Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:02.199Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:18.367Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:34.873Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:47.801Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:03.451Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:19.605Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:35.593Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:51.072Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:01.893Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:09.280Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:16.345Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:25.312Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:30.523Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:40.847Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:02:50.658Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:01.978Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:13.296Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:21.585Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:30.425Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:35.570Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:41.594Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:50.121Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:03:55.387Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:02.368Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:11.736Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:21.148Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:31.598Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:40.233Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:45.372Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:50.402Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:54.790Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:04:59.389Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:05.835Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:09.911Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:16.114Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:25.908Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:32.667Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:43.242Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:05:52.461Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:02.755Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:11.859Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:21.318Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:32.099Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:40.239Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:45.364Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:50.659Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:55.975Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:06:59.445Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:05.499Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:11.045Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:15.754Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:19.494Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:24.748Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:30.463Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:35.489Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:40.150Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:44.715Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:49.852Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:56.056Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:07:59.954Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:07.376Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:14.720Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:21.884Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:29.908Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:34.586Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:40.385Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:44.706Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:49.603Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:54.629Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:08:59.588Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:05.363Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:10.149Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:15.459Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:20.936Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:24.905Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:31.060Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:37.936Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:44.221Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:51.752Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:09:59.982Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:04.571Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:09.722Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:17.792Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:26.951Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:35.523Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:41.629Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:51.038Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:10:55.224Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:00.390Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:04.982Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:09.322Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:14.800Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:19.806Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:25.199Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:31.840Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:40.049Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:44.700Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:49.490Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:11:55.315Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:12:00.415Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:12:04.832Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:12:09.687Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:14.838Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:20.116Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:25.017Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:30.276Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:35.585Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:39.062Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:45.208Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:50.591Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:14:55.834Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:18:40.233Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:18:43.981Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:18:49.411Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:18:55.107Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:18:59.322Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:19:04.220Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:19:09.987Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:19:13.919Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:19:19.790Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:21.960Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:28.574Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:33.747Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:38.930Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:43.530Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:48.077Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:55.285Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:39:57.924Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T10:40:03.738Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:13:38.652Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:13:44.317Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:13:48.467Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:13:53.326Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:13:59.979Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:04.223Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:10.486Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:14.357Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:19.740Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:25.239Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:29.588Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:34.297Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:39.596Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:43.931Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:49.578Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:54.959Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:14:57.652Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:04.166Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:08.355Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:13.817Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:18.763Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:23.592Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:28.760Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:33.721Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:38.523Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:43.410Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:48.589Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:53.368Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:15:58.482Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:03.068Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:08.741Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:13.570Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:18.380Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:23.724Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:28.643Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:34.382Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:39.228Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:44.070Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:49.385Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:53.675Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:16:58.813Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:03.888Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:09.299Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:13.673Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:18.584Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:23.516Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:28.120Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:33.163Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:38.680Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:43.229Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:49.478Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:53.593Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:17:59.187Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:04.117Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:13.098Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:24.606Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:35.613Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:44.151Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:18:53.780Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:01.847Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:12.285Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:22.906Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:34.215Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:44.649Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:19:52.795Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:20:03.239Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:20:17.519Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:20:36.452Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:20:50.101Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:04.807Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:15.349Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:26.668Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:37.997Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:51.160Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:21:59.919Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:22:09.011Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:22:21.775Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:22:31.967Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:22:40.809Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:22:55.770Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:23:07.713Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:23:24.341Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:23:37.717Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:23:45.556Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:23:56.323Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:24:06.125Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:24:21.251Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:24:33.726Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:24:58.455Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:10.919Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:17.973Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:26.044Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:35.538Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:48.349Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:25:59.277Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:26:13.477Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:26:26.036Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:26:37.373Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:26:50.099Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:27:03.654Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:27:14.589Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:27:26.461Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:27:37.942Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:27:47.930Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:28:00.620Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:28:17.239Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:28:43.237Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:28:49.592Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:28:58.521Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:03.530Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:09.522Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:20.183Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:32.110Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:40.311Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:29:51.569Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:00.159Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:11.396Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:23.584Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:34.552Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:43.636Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:30:53.895Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:31:04.461Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:31:14.306Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:31:24.758Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:31:32.861Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:31:44.950Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:32:25.927Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:32:36.726Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:32:47.902Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:32:56.908Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:07.459Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:14.617Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:21.908Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:31.586Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:43.810Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:33:51.316Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:01.277Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:11.774Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:21.001Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:31.496Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:43.618Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:34:53.104Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:35:02.367Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:35:13.180Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:35:22.355Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:35:34.946Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:49:34.025Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:49:46.164Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:49:58.803Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:50:10.998Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:50:20.382Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:50:36.991Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:50:53.103Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:51:18.760Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:51:31.986Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:51:46.406Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:52:03.372Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:52:16.825Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:52:31.562Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:52:42.832Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:52:57.393Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T11:53:13.106Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T13:58:11.302Z"
+    },
+    {
+      "author": "system",
+      "message": "Adversarial agent timed out after 30 minutes. Will retry on next Pulse tick.",
+      "created_at": "2026-02-24T13:58:12.327Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T13:58:25.202Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T14:44:31.735Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T15:48:04.119Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T16:30:49.486Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T16:31:23.778Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T17:37:26.806Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T17:38:05.377Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T18:41:55.431Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T19:46:03.043Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T20:48:09.705Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T20:48:47.796Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T21:51:16.119Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T21:51:55.676Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-24T22:56:01.144Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-24T22:56:39.860Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T00:00:58.126Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T00:01:37.535Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T01:04:30.539Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T01:05:09.345Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T02:09:24.729Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T02:10:03.686Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T02:51:13.101Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T02:51:52.470Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T03:56:13.035Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T03:56:52.262Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T05:27:52.384Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T05:28:31.205Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T06:33:57.154Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T06:34:36.222Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T07:36:46.191Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T08:41:07.787Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T10:01:52.483Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T10:02:31.879Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T11:06:49.676Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T11:07:23.950Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T12:11:54.124Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T12:12:28.998Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T13:16:38.499Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T13:17:13.130Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T14:20:23.332Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T14:20:58.405Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-25T15:26:36.576Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-25T15:27:10.789Z"
+    },
+    {
+      "author": "system",
+      "message": "Task reset to open after binary restart (was developing with dead Pulse).",
+      "created_at": "2026-02-26T13:31:52.837Z"
+    },
+    {
+      "author": "system",
+      "message": "No committed changes found. Developer wrote code but did not commit. Respawning developer.",
+      "created_at": "2026-02-26T13:41:53.846Z"
+    },
+    {
+      "author": "system",
+      "message": "Timed out after 30 minutes with no activity. Worktree cleaned up.",
+      "created_at": "2026-02-26T14:12:12.328Z"
+    },
+    {
+      "author": "adversarial-pipeline",
+      "message": "Verdict: APPROVED — Implementation correctly adds per-stage duration to `taskctl inspect` pipeline history output. Uses `formatElapsed` (wrapping `Locale.duration`) to display duration for completed stages and elapsed time for in-progress stages. Typecheck passes (0 errors), all task-related tests pass (15/15). The one failing test in `pipeline.test.ts` is pre-existing and unrelated to this task (unchanged file). The `fix(hashline)` commit bundled in the diff is a separate, tested fix that passes cleanly. All acceptance criteria are met.",
+      "created_at": "2026-02-26T14:28:56.197Z"
+    },
+    {
+      "author": "system",
+      "message": "Committed to branch by @ops. Task closed.",
+      "created_at": "2026-02-26T14:42:41.516Z"
+    }
+  ],
+  "pipeline": {
+    "stage": "done",
+    "attempt": 0,
+    "last_activity": null,
+    "last_steering": null,
+    "history": [],
+    "adversarial_verdict": null
+  }
+}
