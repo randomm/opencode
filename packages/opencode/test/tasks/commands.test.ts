@@ -1,8 +1,9 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test"
 import { executeStatus } from "../../src/tasks/job-commands"
 import { Store } from "../../src/tasks/store"
-import type { Task, Job } from "../../src/tasks/types"
+import type { Task } from "../../src/tasks/types"
 import { Global } from "../../src/global"
+import { formatElapsed, executeInspect } from "../../src/tasks/inspect-commands"
 import path from "path"
 import fs from "fs/promises"
 
@@ -32,6 +33,7 @@ describe("taskctl start (terminal state rejection)", () => {
         pulse_pid: null,
         max_workers: 3,
         pm_session_id: "pm-test",
+        feature_branch: null,
       })
 
       const job = await Store.getJob(projectId, jobId)
@@ -54,6 +56,7 @@ describe("taskctl start (terminal state rejection)", () => {
         pulse_pid: null,
         max_workers: 3,
         pm_session_id: "pm-test",
+        feature_branch: null,
       })
 
       const job = await Store.getJob(projectId, jobId)
@@ -76,6 +79,7 @@ describe("taskctl start (terminal state rejection)", () => {
         pulse_pid: null,
         max_workers: 3,
         pm_session_id: "pm-test",
+        feature_branch: null,
       })
 
       const job = await Store.getJob(projectId, jobId)
@@ -98,6 +102,7 @@ describe("taskctl stop", () => {
         pulse_pid: null,
         max_workers: 3,
         pm_session_id: "pm-test",
+        feature_branch: null,
       })
 
       const { readLockPid, removeLockFile } = await import("../../src/tasks/pulse")
@@ -127,6 +132,7 @@ describe("taskctl stop", () => {
         pulse_pid: null,
         max_workers: 3,
         pm_session_id: "pm-test",
+        feature_branch: null,
       })
 
       const job = await Store.getJob(projectId, jobId)
@@ -152,7 +158,7 @@ describe("taskctl inspect", () => {
         task_type: "implementation",
         labels: [],
         depends_on: [],
-assignee: null,
+        assignee: null,
         assignee_pid: null,
         worktree: null,
         branch: null,
@@ -304,19 +310,19 @@ describe("taskctl retry", () => {
       await Store.createTask(projectId, task)
 
       await Store.updateTask(projectId, "test-task", {
-         status: "open",
-         assignee: null,
-         assignee_pid: null,
-         worktree: null,
-         branch: null,
-         pipeline: {
-           ...task.pipeline,
-           stage: "idle",
-           attempt: 1,
-           adversarial_verdict: null,
-           last_activity: null,
-         },
-       }, true)
+        status: "open",
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        pipeline: {
+          ...task.pipeline,
+          stage: "idle",
+          attempt: 1,
+          adversarial_verdict: null,
+          last_activity: null,
+        },
+      }, true)
 
       const retrieved = await Store.getTask(projectId, "test-task")
       expect(retrieved).not.toBeNull()
@@ -401,7 +407,8 @@ describe("taskctl status - elapsed time", () => {
 
     expect(result.output).toContain("adversarial-running")
     expect(result.output).toContain("attempt 1")
-    expect(result.output).toMatch(/Pipeline: adversarial-running \(attempt 1, \d+m \d+s\)/)
+    expect(result.output).toContain("adversarial-running (attempt 1, 4m")
+    expect(result.output).toContain("32s)")
   })
 
   test("omits elapsed suffix when last_activity is null", async () => {
@@ -458,5 +465,174 @@ describe("taskctl status - elapsed time", () => {
 
     expect(result.output).toContain("Pipeline: developing (attempt 1)")
     expect(result.output).not.toMatch(/Pipeline: developing \(attempt 1, /)
+  })
+})
+
+describe("formatElapsed", () => {
+  test("formats sub-second durations as ms", () => {
+    expect(formatElapsed(500)).toBe("500ms")
+  })
+
+  test("formats seconds", () => {
+    expect(formatElapsed(5000)).toBe("5.0s")
+  })
+
+  test("formats minutes and seconds", () => {
+    expect(formatElapsed(3 * 60 * 1000 + 12 * 1000)).toBe("3m 12s")
+  })
+
+  test("formats hours and minutes", () => {
+    expect(formatElapsed(2 * 3600 * 1000 + 15 * 60 * 1000)).toBe("2h 15m")
+  })
+})
+
+describe("taskctl inspect - per-stage duration", () => {
+  test("shows duration for completed history stages", async () => {
+    await withTestProject(async (projectId) => {
+      const t0 = new Date("2025-01-01T10:00:00.000Z")
+      const t1 = new Date("2025-01-01T10:03:12.000Z") // 3m 12s after t0
+      const t2 = new Date("2025-01-01T10:05:00.000Z") // 1m 48s after t1
+      const t3 = new Date("2025-01-01T10:06:00.000Z") // gives t2 a deterministic end
+
+      const task: Task = {
+        id: "inspect-duration-task",
+        title: "Duration Task",
+        description: "desc",
+        acceptance_criteria: "ac",
+        parent_issue: 1,
+        job_id: "job-dur",
+        status: "in_progress",
+        priority: 0,
+        task_type: "implementation",
+        labels: [],
+        depends_on: [],
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        base_commit: null,
+        created_at: t0.toISOString(),
+        updated_at: t3.toISOString(),
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "adversarial-running",
+          attempt: 1,
+          last_activity: t3.toISOString(),
+          last_steering: null,
+          history: [
+            { from: "idle", to: "developing", attempt: 1, timestamp: t0.toISOString(), message: null },
+            { from: "developing", to: "reviewing", attempt: 1, timestamp: t1.toISOString(), message: "done" },
+            { from: "reviewing", to: "adversarial-running", attempt: 1, timestamp: t2.toISOString(), message: null },
+          ],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(projectId, task)
+
+      const result = await executeInspect(projectId, { taskId: "inspect-duration-task" })
+
+      // First entry (idle -> developing): t1 - t0 = 3m 12s
+      expect(result.output).toContain("3m 12s")
+      // Second entry (developing -> reviewing): t2 - t1 = 1m 48s
+      expect(result.output).toContain("1m 48s")
+    })
+  })
+
+  test("shows elapsed time for in-progress stage", async () => {
+    await withTestProject(async (projectId) => {
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000)
+
+      const task: Task = {
+        id: "inspect-inprogress-task",
+        title: "In-Progress Task",
+        description: "desc",
+        acceptance_criteria: "ac",
+        parent_issue: 1,
+        job_id: "job-ip",
+        status: "in_progress",
+        priority: 0,
+        task_type: "implementation",
+        labels: [],
+        depends_on: [],
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        base_commit: null,
+        created_at: fiveMinAgo.toISOString(),
+        updated_at: fiveMinAgo.toISOString(),
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "developing",
+          attempt: 1,
+          last_activity: null,
+          last_steering: null,
+          history: [
+            { from: "idle", to: "developing", attempt: 1, timestamp: fiveMinAgo.toISOString(), message: null },
+          ],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(projectId, task)
+
+      const result = await executeInspect(projectId, { taskId: "inspect-inprogress-task" })
+
+      // In-progress last entry: elapsed since start (~5m), check for minutes format
+      expect(result.output).toMatch(/\dm \ds/)
+    })
+  })
+
+  test("history output format includes from->to and duration", async () => {
+    await withTestProject(async (projectId) => {
+      const t0 = new Date("2025-06-01T09:00:00.000Z")
+      const t1 = new Date("2025-06-01T09:01:30.000Z") // 1m 30s after t0
+      const t2 = new Date("2025-06-01T09:02:00.000Z") // gives t1 a deterministic end
+
+      const task: Task = {
+        id: "inspect-format-task",
+        title: "Format Task",
+        description: "desc",
+        acceptance_criteria: "ac",
+        parent_issue: 1,
+        job_id: "job-fmt",
+        status: "closed",
+        priority: 0,
+        task_type: "implementation",
+        labels: [],
+        depends_on: [],
+        assignee: null,
+        assignee_pid: null,
+        worktree: null,
+        branch: null,
+        base_commit: null,
+        created_at: t0.toISOString(),
+        updated_at: t2.toISOString(),
+        close_reason: null,
+        comments: [],
+        pipeline: {
+          stage: "done",
+          attempt: 1,
+          last_activity: t2.toISOString(),
+          last_steering: null,
+          history: [
+            { from: "idle", to: "developing", attempt: 1, timestamp: t0.toISOString(), message: null },
+            { from: "developing", to: "done", attempt: 1, timestamp: t1.toISOString(), message: null },
+          ],
+          adversarial_verdict: null,
+        },
+      }
+
+      await Store.createTask(projectId, task)
+
+      const result = await executeInspect(projectId, { taskId: "inspect-format-task" })
+
+      // Should contain idle->developing with 1m 30s duration (t1 - t0)
+      expect(result.output).toContain("idle->developing")
+      expect(result.output).toContain("1m 30s")
+    })
   })
 })
