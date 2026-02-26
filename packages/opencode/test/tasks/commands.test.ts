@@ -474,7 +474,7 @@ describe("formatElapsed", () => {
   })
 
   test("formats seconds", () => {
-    expect(formatElapsed(5000)).toBe("5.0s")
+    expect(formatElapsed(5000)).toBe("5s")
   })
 
   test("formats minutes and seconds", () => {

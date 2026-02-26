@@ -3,13 +3,18 @@ import { Log } from "../util/log"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { sanitizeWorktree } from "./pulse-scheduler"
-import { Locale } from "../util/locale"
 import type { Task } from "./types"
 
 const log = Log.create({ service: "taskctl.tool.inspect-commands" })
 
 export function formatElapsed(ms: number): string {
-  return Locale.duration(ms)
+  const s = Math.floor(ms / 1000)
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const sec = s % 60
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${sec}s`
+  return `${sec}s`
 }
 
 export async function executeInspect(projectId: string, params: any): Promise<{ title: string; output: string; metadata: {} }> {

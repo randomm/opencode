@@ -1,0 +1,186 @@
+{
+  "id": "update-taskctl-status-to-show-elapsed-time-in-current-stage",
+  "title": "Update taskctl status to show elapsed time in current stage",
+  "description": "In `packages/Claude/src/tasks/tool.ts` (or whichever file renders `taskctl status` output), compute elapsed time from `pipeline.last_activity` to `Date.now()` and append it to the stage label. Output should read e.g. `Pipeline: adversarial-running (attempt 1, 4m 32s)`.",
+  "acceptance_criteria": "`taskctl status` output includes elapsed time for in-progress pipeline stages. Uses `formatElapsed` utility. Tests pass. Linting passes.",
+  "parent_issue": 270,
+  "job_id": "job-1771917872459",
+  "status": "closed",
+  "priority": 1,
+  "task_type": "implementation",
+  "labels": [
+    "module:tasks",
+    "file:packages/Claude/src/tasks/tool.ts"
+  ],
+  "depends_on": [
+    "implement-elapsed-time-formatting-utility"
+  ],
+  "assignee": null,
+  "assignee_pid": null,
+  "worktree": null,
+  "branch": null,
+  "base_commit": null,
+  "created_at": "2026-02-24T07:24:51.026Z",
+  "updated_at": "2026-02-24T10:01:24.071Z",
+  "close_reason": "approved and committed",
+  "comments": [
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:00.482Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:13.525Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:28.962Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:33:46.499Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:02.639Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:19.557Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:34.183Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:34:47.666Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:04.831Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:20.951Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:35.956Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:35:50.212Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:04.349Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:19.523Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:33.509Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:47.099Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:36:57.348Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:12.299Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:25.551Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:37.917Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:37:52.545Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:08.294Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:24.666Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:39.863Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:38:53.501Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:10.177Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:26.632Z"
+    },
+    {
+      "author": "system",
+      "message": "Failed to start developer: ProviderModelNotFoundError: ProviderModelNotFoundError",
+      "created_at": "2026-02-24T09:39:42.555Z"
+    },
+    {
+      "author": "adversarial-pipeline",
+      "message": "Verdict: APPROVED — Implementation is correct and complete. `formatElapsed` utility is properly added to `format.ts`, used in `job-commands.ts` to append elapsed time to in-progress pipeline stage labels, and covered by tests for both the utility and the status command. Typecheck passes with 0 errors, all 22 tests pass. Terminal stages set `last_activity: null` so no stale elapsed time is shown. The missing trailing newline in `commands.test.ts` is pre-existing (dev branch also lacks it).",
+      "created_at": "2026-02-24T10:00:08.915Z"
+    },
+    {
+      "author": "system",
+      "message": "Committed to branch by @ops. Task closed.",
+      "created_at": "2026-02-24T10:01:24.067Z"
+    }
+  ],
+  "pipeline": {
+    "stage": "done",
+    "attempt": 0,
+    "last_activity": null,
+    "last_steering": null,
+    "history": [],
+    "adversarial_verdict": null
+  }
+}
