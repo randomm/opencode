@@ -1805,7 +1805,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
           return cmdAgent.model
         }
       }
-      if (input.model) return input.model
+      if (input.model) return Provider.parseModel(input.model)
       return await lastModel(input.sessionID)
     })()
 
@@ -1859,7 +1859,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
     const userAgent = isSubtask ? (input.agent ?? (await Agent.defaultAgent())) : agentName
     const userModel = isSubtask
       ? input.model
-        ? input.model
+        ? Provider.parseModel(input.model)
         : await lastModel(input.sessionID)
       : taskModel
 
