@@ -1,4 +1,5 @@
 import { $ } from "bun"
+import { existsSync } from "fs"
 import { Log } from "../util/log"
 
 const log = Log.create({ service: "taskctl.pulse.utils" })
@@ -46,6 +47,8 @@ export async function hasCommittedChanges(worktreePath: string, baseCommit: stri
       log.warn("invalid base commit ref", { baseCommit, worktreePath })
       return false
     }
+    
+    if (!existsSync(worktreePath)) return false
     
     const diffCheck = await $`git diff ${validated}..HEAD --stat`.quiet().nothrow().cwd(worktreePath)
     if (diffCheck.exitCode !== 0) return false
