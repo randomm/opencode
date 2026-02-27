@@ -8,6 +8,7 @@ import { runComposer } from "./composer"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { Instance } from "../project/instance"
+import * as PulseUtils from "./pulse-utils"
 
 const log = Log.create({ service: "taskctl.tool.job-commands" })
 
@@ -81,7 +82,8 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
 
   try {
     const { $ } = await import("bun")
-    const result = await $`git checkout -b ${safeFeatureBranch} dev`.cwd(cwd).quiet().nothrow()
+    const base = await PulseUtils.defaultBranch(cwd)
+    const result = await $`git checkout -b ${safeFeatureBranch} ${base}`.cwd(cwd).quiet().nothrow()
     if (result.exitCode !== 0) {
       const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
       log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })

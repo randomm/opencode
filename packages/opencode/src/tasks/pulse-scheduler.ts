@@ -151,20 +151,29 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
 
   const now = new Date().toISOString()
 
-  let devBranchExists = false
+  // Detect the default branch dynamically
+  let base: string
   try {
-    const res = await $`git rev-parse --verify dev`.quiet().nothrow().cwd(worktreeInfo.directory)
+    base = await PulseUtils.defaultBranch(worktreeInfo.directory)
+  } catch (e) {
+    log.warn("failed to detect default branch, using fallback", { taskId: task.id, error: String(e) })
+    base = "dev"
+  }
+
+  let baseBranchExists = false
+  try {
+    const res = await $`git rev-parse --verify ${base}`.quiet().nothrow().cwd(worktreeInfo.directory)
     if (res.exitCode === 0) {
-      devBranchExists = true
+      baseBranchExists = true
     }
   } catch (e) {
-    log.warn("failed to verify dev branch exists", { taskId: task.id, error: String(e) })
+    log.warn("failed to verify base branch exists", { taskId: task.id, baseBranch: base, error: String(e) })
   }
 
   let baseCommit: string | null = null
-  if (devBranchExists) {
+  if (baseBranchExists) {
     try {
-      const res = await $`git merge-base dev HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
+      const res = await $`git merge-base ${base} HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
       if (res.exitCode === 0 && res.stdout) {
         baseCommit = new TextDecoder().decode(res.stdout).trim()
       }
@@ -174,19 +183,20 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
         if (headRes.exitCode === 0 && headRes.stdout) {
           const headCommit = new TextDecoder().decode(headRes.stdout).trim()
           if (baseCommit === headCommit) {
-            log.warn("worktree HEAD equals merge-base (likely worktree-on-dev), setting base_commit to null", {
+            log.warn("worktree HEAD equals merge-base (likely worktree-on-base), setting base_commit to null", {
               taskId: task.id,
               base_commit: baseCommit,
+              base_branch: base,
             })
             baseCommit = null
           }
         }
       }
     } catch (e) {
-      log.warn("failed to capture base_commit", { taskId: task.id, error: String(e) })
+      log.warn("failed to capture base_commit", { taskId: task.id, baseBranch: base, error: String(e) })
     }
   } else {
-    log.warn("dev branch not found in worktree, skipping merge-base capture", { taskId: task.id })
+    log.warn("base branch not found in worktree, skipping merge-base capture", { taskId: task.id, baseBranch: base })
   }
 
   const parentSession = await Session.get(pmSessionId).catch(() => null)
@@ -377,7 +387,7 @@ cd ${safeWorktree}
 git diff ${validatedBaseCommit}..HEAD
 \`\`\`
 
-This ensures you only review changes made by the developer, not commits that were already in dev.
+This ensures you only review changes made by the developer, not commits that were already in the base branch.
 
   Read the changed files in the worktree, run typecheck, and record your verdict with taskctl verdict.`
 
