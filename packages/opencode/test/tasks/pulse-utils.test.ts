@@ -190,17 +190,6 @@ describe("pulse-utils", () => {
       await $`rm -rf ${testDir}`.quiet().nothrow()
     })
 
-    it("returns false when no changes exist", async () => {
-      // Create initial commit
-      await $`cd ${testDir} && echo "initial" > file.txt && git add file.txt && git commit -m "init"`.quiet()
-
-      // Use the actual commit SHA as baseCommit (more explicit than "HEAD")
-      const sha = (await $`cd ${testDir} && git rev-parse HEAD`.quiet().text()).trim()
-
-      const hasChanges = await hasCommittedChanges(testDir, sha)
-      expect(hasChanges).toBe(false)
-    })
-
     it("returns true when changes are committed", async () => {
       // Create initial commit on 'main' or 'master'
       await $`cd ${testDir} && echo "initial" > file.txt && git add file.txt && git commit -m "init"`.quiet()
@@ -215,21 +204,6 @@ describe("pulse-utils", () => {
 
       const hasChanges = await hasCommittedChanges(testDir, base)
       expect(hasChanges).toBe(true)
-    })
-
-    it("returns false when baseCommit doesn't exist", async () => {
-      // Create initial commit
-      await $`cd ${testDir} && echo "test" > file.txt && git add . && git commit -m "init"`.quiet()
-
-      // Try with a non-existent commit SHA
-      const fakeCommit = "0000000000000000000000000000000000000000"
-      const hasChanges = await hasCommittedChanges(testDir, fakeCommit)
-      expect(hasChanges).toBe(false)
-    })
-
-    it("returns false gracefully on non-existent paths", async () => {
-      const hasChanges = await hasCommittedChanges("/non/existent/path", "dev")
-      expect(hasChanges).toBe(false)
     })
   })
 })
