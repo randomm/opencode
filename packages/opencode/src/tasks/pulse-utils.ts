@@ -41,9 +41,14 @@ function safeBranchName(name: string): string | null {
  */
 export async function hasCommittedChanges(worktreePath: string, baseCommit: string | null): Promise<boolean> {
   try {
-    const validated = validateBaseCommit(baseCommit) ?? "dev"
+    const validated = validateBaseCommit(baseCommit)
+    if (!validated) {
+      log.warn("invalid base commit ref", { baseCommit, worktreePath })
+      return false
+    }
     
     const diffCheck = await $`git diff ${validated}..HEAD --stat`.quiet().nothrow().cwd(worktreePath)
+    if (diffCheck.exitCode !== 0) return false
     const diffOutput = new TextDecoder().decode(diffCheck.stdout).trim()
     return diffOutput.length > 0
   } catch (e) {
@@ -74,33 +79,19 @@ export async function defaultBranch(cwd: string): Promise<string> {
 
   try {
     // Fallback: use git ls-remote which is faster and more reliable
-    // Wrap with Promise.race and timeout that rejects after 5 seconds
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 5000)
-    
-    try {
-      const show = await $`timeout 5 git ls-remote --symref origin HEAD`.quiet().nothrow().cwd(cwd)
-      clearTimeout(timeoutId)
-      
-      if (show.exitCode === 0) {
-        const output = new TextDecoder().decode(show.stdout)
-        // Parse output like: "ref: refs/heads/main	HEAD"
-        const match = output.match(/ref:\s*refs\/heads\/([^\t\n\r]+)/)
-        if (match?.[1]) {
-          const branch = match[1].trim()
-          const validated = safeBranchName(branch)
-          if (validated) {
-            log.debug("detected default branch via ls-remote", { branch: validated })
-            return validated
-          }
+    // Shell timeout 5 enforces the 5 second limit (enforces at shell level via timeout command)
+    const show = await $`timeout 5 git ls-remote --symref origin HEAD`.quiet().nothrow().cwd(cwd)
+    if (show.exitCode === 0) {
+      const output = new TextDecoder().decode(show.stdout)
+      // Parse output like: "ref: refs/heads/main	HEAD"
+      const match = output.match(/ref:\s*refs\/heads\/([^\t\n\r]+)/)
+      if (match?.[1]) {
+        const branch = match[1].trim()
+        const validated = safeBranchName(branch)
+        if (validated) {
+          log.debug("detected default branch via ls-remote", { branch: validated })
+          return validated
         }
-      }
-    } catch (e) {
-      clearTimeout(timeoutId)
-      if (String(e).includes("abort")) {
-        log.debug("ls-remote timed out (5s)")
-      } else {
-        log.debug("ls-remote attempt failed", { error: String(e) })
       }
     }
   } catch (e) {
