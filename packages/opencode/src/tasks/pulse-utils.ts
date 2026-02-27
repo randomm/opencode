@@ -40,3 +40,45 @@ export async function hasCommittedChanges(worktreePath: string, baseCommit: stri
     return false
   }
 }
+
+/**
+ * Detect the default branch of a git repository dynamically
+ * Tries symbolic-ref first (fastest), falls back to remote show, then defaults to 'dev'
+ */
+export async function defaultBranch(cwd: string): Promise<string> {
+  try {
+    // Try symbolic-ref first (fastest, works when origin/HEAD is set)
+    const ref = await $`git symbolic-ref refs/remotes/origin/HEAD --short`.quiet().nothrow().cwd(cwd)
+    if (ref.exitCode === 0) {
+      const name = new TextDecoder().decode(ref.stdout).trim().replace(/^origin\//, "")
+      if (name) {
+        log.debug("detected default branch via symbolic-ref", { branch: name })
+        return name
+      }
+    }
+  } catch (e) {
+    log.debug("symbolic-ref attempt failed", { error: String(e) })
+  }
+
+  try {
+    // Fallback: parse remote show output
+    const show = await $`git remote show origin`.quiet().nothrow().cwd(cwd)
+    if (show.exitCode === 0) {
+      const output = new TextDecoder().decode(show.stdout)
+      const match = output.match(/HEAD branch:\s*(.+)/)
+      if (match?.[1]) {
+        const branch = match[1].trim()
+        if (branch) {
+          log.debug("detected default branch via remote show", { branch })
+          return branch
+        }
+      }
+    }
+  } catch (e) {
+    log.debug("remote show attempt failed", { error: String(e) })
+  }
+
+  // Last resort default
+  log.warn("could not detect default branch, using fallback", { fallback: "dev" })
+  return "dev"
+}
