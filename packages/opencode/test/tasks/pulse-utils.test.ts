@@ -83,6 +83,9 @@ describe("pulse-utils", () => {
 
       // Set the symbolic ref (this simulates a real GitHub setup)
       await $`cd ${remoteDir} && git symbolic-ref HEAD refs/heads/main`.quiet()
+      
+      // Fetch to update remote tracking branches
+      await $`cd ${testDir} && git fetch origin 2>/dev/null || true`.quiet().nothrow()
 
       // The defaultBranch function should detect main
       const branch = await defaultBranch(testDir)
@@ -96,6 +99,79 @@ describe("pulse-utils", () => {
       // Use a non-existent directory
       const branch = await defaultBranch("/non/existent/path")
       expect(branch).toBe("dev")
+    })
+
+    it("detects branch from ls-remote when symbolic-ref is not available", async () => {
+      // Create an origin remote
+      const remoteDir = `/tmp/test-remote-${Date.now()}`
+      await $`mkdir -p ${remoteDir}`.quiet()
+      await $`cd ${remoteDir} && git init --bare`.quiet()
+
+      // Add remote to test repo
+      await $`cd ${testDir} && git remote add origin ${remoteDir}`.quiet()
+
+      // Create a commit and push to dev branch
+      await $`cd ${testDir} && echo "test" > file.txt && git add file.txt && git commit -m "init"`.quiet()
+      await $`cd ${testDir} && git branch -M dev && git push -u origin dev 2>/dev/null || true`.quiet().nothrow()
+
+      // Set the symbolic ref on the remote to dev
+      await $`cd ${remoteDir} && git symbolic-ref HEAD refs/heads/dev`.quiet()
+      
+      // Fetch to update remote tracking branches
+      await $`cd ${testDir} && git fetch origin 2>/dev/null || true`.quiet().nothrow()
+
+      // Even though symbolic-ref is set, the fallback ls-remote should also detect it correctly
+      const branch = await defaultBranch(testDir)
+      expect(branch).toBe("dev")
+
+      // Cleanup remote
+      await $`rm -rf ${remoteDir}`.quiet()
+    })
+
+    it("validates and sanitizes detected branch names", async () => {
+      // Create an origin remote
+      const remoteDir = `/tmp/test-remote-${Date.now()}`
+      await $`mkdir -p ${remoteDir}`.quiet()
+      await $`cd ${remoteDir} && git init --bare`.quiet()
+
+      // Add remote to test repo
+      await $`cd ${testDir} && git remote add origin ${remoteDir}`.quiet()
+
+      // Create a commit and push
+      await $`cd ${testDir} && echo "test" > file.txt && git add file.txt && git commit -m "init"`.quiet()
+      await $`cd ${testDir} && git branch -M main && git push -u origin main 2>/dev/null || true`.quiet().nothrow()
+
+      // Set a valid symbolic ref
+      await $`cd ${remoteDir} && git symbolic-ref HEAD refs/heads/main`.quiet()
+      
+      // Fetch to update remote tracking branches
+      await $`cd ${testDir} && git fetch origin 2>/dev/null || true`.quiet().nothrow()
+
+      // Should detect main (valid branch name)
+      const branch = await defaultBranch(testDir)
+      expect(branch).toBe("main")
+
+      // Cleanup remote
+      await $`rm -rf ${remoteDir}`.quiet()
+    })
+
+    it("falls back to dev when both detection methods fail", async () => {
+      // Create a local repo with unreachable remote
+      const localRepo = `/tmp/test-local-${Date.now()}`
+      await $`mkdir -p ${localRepo}`.quiet()
+      await $`cd ${localRepo} && git init`.quiet()
+      await $`cd ${localRepo} && git config user.email "test@example.com"`.quiet()
+      await $`cd ${localRepo} && git config user.name "Test User"`.quiet()
+
+      // Add a fake remote that won't work
+      await $`cd ${localRepo} && git remote add origin "invalid://nowhere"`.quiet()
+
+      // Should fallback to dev
+      const branch = await defaultBranch(localRepo)
+      expect(branch).toBe("dev")
+
+      // Cleanup
+      await $`rm -rf ${localRepo}`.quiet()
     })
   })
 

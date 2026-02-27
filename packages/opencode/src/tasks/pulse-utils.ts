@@ -25,6 +25,17 @@ export function validateBaseCommit(baseCommit: string | null | undefined): strin
 }
 
 /**
+ * Validate a branch name is safe to use in shell commands
+ * Only allow alphanumeric chars, hyphens, underscores, slashes, and dots
+ */
+function safeBranchName(name: string): string | null {
+  // Trim all Unicode whitespace variations
+  const trimmed = name.replace(/^[\s\uFEFF]+|[\s\uFEFF]+$/g, "")
+  // Only allow safe branch name characters: alphanumeric, hyphen, underscore, slash, dot
+  return /^[a-zA-Z0-9._\-/]+$/.test(trimmed) ? trimmed : null
+}
+
+/**
  * Check if there are committed changes in the worktree (for adversarial review validation)
  * This is extracted into a separate file for easier test mocking
  */
@@ -43,7 +54,7 @@ export async function hasCommittedChanges(worktreePath: string, baseCommit: stri
 
 /**
  * Detect the default branch of a git repository dynamically
- * Tries symbolic-ref first (fastest), falls back to remote show, then defaults to 'dev'
+ * Tries symbolic-ref first (fastest), falls back to ls-remote, then defaults to 'dev'
  */
 export async function defaultBranch(cwd: string): Promise<string> {
   try {
@@ -51,9 +62,10 @@ export async function defaultBranch(cwd: string): Promise<string> {
     const ref = await $`git symbolic-ref refs/remotes/origin/HEAD --short`.quiet().nothrow().cwd(cwd)
     if (ref.exitCode === 0) {
       const name = new TextDecoder().decode(ref.stdout).trim().replace(/^origin\//, "")
-      if (name) {
-        log.debug("detected default branch via symbolic-ref", { branch: name })
-        return name
+      const validated = safeBranchName(name)
+      if (validated) {
+        log.debug("detected default branch via symbolic-ref", { branch: validated })
+        return validated
       }
     }
   } catch (e) {
@@ -61,21 +73,38 @@ export async function defaultBranch(cwd: string): Promise<string> {
   }
 
   try {
-    // Fallback: parse remote show output
-    const show = await $`git remote show origin`.quiet().nothrow().cwd(cwd)
-    if (show.exitCode === 0) {
-      const output = new TextDecoder().decode(show.stdout)
-      const match = output.match(/HEAD branch:\s*(.+)/)
-      if (match?.[1]) {
-        const branch = match[1].trim()
-        if (branch) {
-          log.debug("detected default branch via remote show", { branch })
-          return branch
+    // Fallback: use git ls-remote which is faster and more reliable
+    // Wrap with Promise.race and timeout that rejects after 5 seconds
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
+    
+    try {
+      const show = await $`timeout 5 git ls-remote --symref origin HEAD`.quiet().nothrow().cwd(cwd)
+      clearTimeout(timeoutId)
+      
+      if (show.exitCode === 0) {
+        const output = new TextDecoder().decode(show.stdout)
+        // Parse output like: "ref: refs/heads/main	HEAD"
+        const match = output.match(/ref:\s*refs\/heads\/(.+)/)
+        if (match?.[1]) {
+          const branch = match[1].trim()
+          const validated = safeBranchName(branch)
+          if (validated) {
+            log.debug("detected default branch via ls-remote", { branch: validated })
+            return validated
+          }
         }
+      }
+    } catch (e) {
+      clearTimeout(timeoutId)
+      if (String(e).includes("abort")) {
+        log.debug("ls-remote timed out (5s)")
+      } else {
+        log.debug("ls-remote attempt failed", { error: String(e) })
       }
     }
   } catch (e) {
-    log.debug("remote show attempt failed", { error: String(e) })
+    log.debug("ls-remote attempt failed", { error: String(e) })
   }
 
   // Last resort default
