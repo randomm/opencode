@@ -32,7 +32,7 @@ function safeBranchName(name: string): string | null {
   // Trim all Unicode whitespace variations
   const trimmed = name.replace(/^[\s\uFEFF]+|[\s\uFEFF]+$/g, "")
   // Only allow safe branch name characters: alphanumeric, hyphen, underscore, slash, dot
-  return /^[a-zA-Z0-9._\-/]+$/.test(trimmed) ? trimmed : null
+  return /^[a-zA-Z0-9][a-zA-Z0-9._\-/]*$/.test(trimmed) ? trimmed : null
 }
 
 /**
@@ -85,7 +85,7 @@ export async function defaultBranch(cwd: string): Promise<string> {
       if (show.exitCode === 0) {
         const output = new TextDecoder().decode(show.stdout)
         // Parse output like: "ref: refs/heads/main	HEAD"
-        const match = output.match(/ref:\s*refs\/heads\/(.+)/)
+        const match = output.match(/ref:\s*refs\/heads\/([^\t\n\r]+)/)
         if (match?.[1]) {
           const branch = match[1].trim()
           const validated = safeBranchName(branch)
