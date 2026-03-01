@@ -514,12 +514,21 @@ describe("pulse.ts", () => {
               yield mockMsg
             }
 
+            const Provider = await import("../../src/provider/provider")
+            const origGetModel = Provider.Provider.getModel
+
+            ;(Provider.Provider as any).getModel = async (providerID: string, modelID: string) => {
+              return { providerID, modelID }
+            }
+
+
             try {
               const result = await resolveModel("pm-session-test-123")
               expect(result.modelID).toBe("claude-sonnet-4-5")
               expect(result.providerID).toBe("anthropic")
             } finally {
               ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).getModel = origGetModel
             }
           },
         })
