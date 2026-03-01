@@ -488,126 +488,263 @@ describe("pulse.ts", () => {
       })
     })
 
-    describe("PM session notifications", () => {
+    describe("resolveModel", () => {
+      test("returns modelID and providerID from last assistant message", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
 
-    })
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            // Mock MessageV2.stream to yield one assistant message
+            const mockMsg = {
+              info: {
+                role: "assistant",
+                modelID: "claude-sonnet-4-5",
+                providerID: "anthropic",
+              },
+              parts: [],
+            }
 
-  describe("resolveModel", () => {
-    test("returns modelID and providerID from last assistant message", async () => {
-      const { resolveModel } = await import("../../src/tasks/pulse")
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
 
-      // Mock MessageV2.stream to yield one assistant message
-      const mockMsg = {
-        info: {
-          role: "assistant",
-          modelID: "claude-sonnet-4-5",
-          providerID: "anthropic",
-        },
-        parts: [],
-      }
+            // Replace stream with a mock that yields our message
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              yield mockMsg
+            }
 
-      const MessageV2 = await import("../../src/session/message-v2")
-      const origStream = MessageV2.MessageV2.stream
+            const Provider = await import("../../src/provider/provider")
+            const origGetModel = Provider.Provider.getModel
 
-      // Replace stream with a mock that yields our message
-      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
-        yield mockMsg
-      }
+            ;(Provider.Provider as any).getModel = async (providerID: string, modelID: string) => {
+              return { providerID, modelID }
+            }
 
-      try {
-        const result = await resolveModel("pm-session-test-123")
-        expect(result.modelID).toBe("claude-sonnet-4-5")
-        expect(result.providerID).toBe("anthropic")
-      } finally {
-        ;(MessageV2.MessageV2 as any).stream = origStream
-      }
-    })
 
-    test("skips non-assistant messages and returns first assistant message", async () => {
-      const { resolveModel } = await import("../../src/tasks/pulse")
-
-      const userMsg = {
-        info: { role: "user", modelID: "ignored", providerID: "ignored" },
-        parts: [],
-      }
-      const assistantMsg = {
-        info: { role: "assistant", modelID: "gpt-4o", providerID: "openai" },
-        parts: [],
-      }
-
-      const MessageV2 = await import("../../src/session/message-v2")
-      const origStream = MessageV2.MessageV2.stream
-
-      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
-        yield userMsg
-        yield assistantMsg
-      }
-
-      try {
-        const result = await resolveModel("pm-session-test-456")
-        expect(result.modelID).toBe("gpt-4o")
-        expect(result.providerID).toBe("openai")
-      } finally {
-        ;(MessageV2.MessageV2 as any).stream = origStream
-      }
-    })
-
-    test("falls back to Provider.defaultModel when no assistant message found", async () => {
-      const { resolveModel } = await import("../../src/tasks/pulse")
-
-      const MessageV2 = await import("../../src/session/message-v2")
-      const origStream = MessageV2.MessageV2.stream
-
-      // Stream with only user messages — no assistant
-      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
-        yield { info: { role: "user", modelID: "x", providerID: "y" }, parts: [] }
-      }
-
-      const Provider = await import("../../src/provider/provider")
-      const origDefaultModel = Provider.Provider.defaultModel
-
-      ;(Provider.Provider as any).defaultModel = async () => ({
-        modelID: "default-model",
-        providerID: "default-provider",
+            try {
+              const result = await resolveModel("pm-session-test-123")
+              expect(result.modelID).toBe("claude-sonnet-4-5")
+              expect(result.providerID).toBe("anthropic")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).getModel = origGetModel
+            }
+          },
+        })
       })
 
-      try {
-        const result = await resolveModel("pm-session-no-assistant")
-        expect(result.modelID).toBe("default-model")
-        expect(result.providerID).toBe("default-provider")
-      } finally {
-        ;(MessageV2.MessageV2 as any).stream = origStream
-        ;(Provider.Provider as any).defaultModel = origDefaultModel
-      }
-    })
+      test("skips non-assistant messages and returns first assistant message", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
 
-    test("falls back to Provider.defaultModel when session has no messages", async () => {
-      const { resolveModel } = await import("../../src/tasks/pulse")
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            const userMsg = {
+              info: { role: "user", modelID: "ignored", providerID: "ignored" },
+              parts: [],
+            }
+            const assistantMsg = {
+              info: { role: "assistant", modelID: "gpt-4o", providerID: "openai" },
+              parts: [],
+            }
 
-      const MessageV2 = await import("../../src/session/message-v2")
-      const origStream = MessageV2.MessageV2.stream
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
 
-      // Empty stream
-      ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
-        // yields nothing
-      }
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              yield userMsg
+              yield assistantMsg
+            }
 
-      const Provider = await import("../../src/provider/provider")
-      const origDefaultModel = Provider.Provider.defaultModel
+            const Provider = await import("../../src/provider/provider")
+            const origGetModel = Provider.Provider.getModel
 
-      ;(Provider.Provider as any).defaultModel = async () => ({
-        modelID: "fallback-model",
-        providerID: "fallback-provider",
+            ;(Provider.Provider as any).getModel = async (providerID: string, modelID: string) => {
+              return { providerID, modelID }
+            }
+            try {
+              const result = await resolveModel("pm-session-test-456")
+              expect(result.modelID).toBe("gpt-4o")
+              expect(result.providerID).toBe("openai")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).getModel = origGetModel
+            }
+          },
+        })
       })
 
-      try {
-        const result = await resolveModel("pm-session-empty")
-        expect(result.modelID).toBe("fallback-model")
-        expect(result.providerID).toBe("fallback-provider")
-      } finally {
-        ;(MessageV2.MessageV2 as any).stream = origStream
-        ;(Provider.Provider as any).defaultModel = origDefaultModel
-      }
+      test("falls back to Provider.defaultModel when no assistant message found", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
+
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
+
+            // Stream with only user messages — no assistant
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              yield { info: { role: "user", modelID: "x", providerID: "y" }, parts: [] }
+            }
+
+            const Provider = await import("../../src/provider/provider")
+            const origDefaultModel = Provider.Provider.defaultModel
+
+            ;(Provider.Provider as any).defaultModel = async () => ({
+              modelID: "default-model",
+              providerID: "default-provider",
+            })
+
+            try {
+              const result = await resolveModel("pm-session-no-assistant")
+              expect(result.modelID).toBe("default-model")
+              expect(result.providerID).toBe("default-provider")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).defaultModel = origDefaultModel
+            }
+          },
+        })
+      })
+
+      test("falls back to Provider.defaultModel when session has no messages", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
+
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
+
+            // Empty stream
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              // yields nothing
+            }
+
+            const Provider = await import("../../src/provider/provider")
+            const origDefaultModel = Provider.Provider.defaultModel
+
+            ;(Provider.Provider as any).defaultModel = async () => ({
+              modelID: "fallback-model",
+              providerID: "fallback-provider",
+            })
+
+            try {
+              const result = await resolveModel("pm-session-empty")
+              expect(result.modelID).toBe("fallback-model")
+              expect(result.providerID).toBe("fallback-provider")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).defaultModel = origDefaultModel
+            }
+          },
+        })
+      })
+
+      test("resolveModel skips assistant messages with unregistered models and falls back to defaultModel", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
+
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            const invalidMsg = {
+              info: { role: "assistant", modelID: "invalid-model-123", providerID: "unknown-provider" },
+              parts: [],
+            }
+
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
+
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              yield invalidMsg
+            }
+
+            const Provider = await import("../../src/provider/provider")
+            const origGetModel = Provider.Provider.getModel
+            const origDefaultModel = Provider.Provider.defaultModel
+
+            ;(Provider.Provider as any).getModel = async () => {
+              const error = new Provider.Provider.ModelNotFoundError({
+                providerID: "unknown-provider",
+                modelID: "invalid-model-123",
+                suggestions: [],
+              })
+              throw error
+            }
+
+            ;(Provider.Provider as any).defaultModel = async () => ({
+              modelID: "fallback-model",
+              providerID: "fallback-provider",
+            })
+
+            try {
+              const result = await resolveModel("pm-session-invalid-model")
+              expect(result.modelID).toBe("fallback-model")
+              expect(result.providerID).toBe("fallback-provider")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).getModel = origGetModel
+              ;(Provider.Provider as any).defaultModel = origDefaultModel
+            }
+          },
+        })
+      })
+
+      test("resolveModel returns valid model when first message is invalid and second is valid", async () => {
+        const { resolveModel } = await import("../../src/tasks/pulse")
+        const { Instance } = await import("../../src/project/instance")
+
+        await Instance.provide({
+          directory: testDataDir,
+          fn: async () => {
+            const invalidMsg = {
+              info: { role: "assistant", modelID: "invalid-model", providerID: "unknown" },
+              parts: [],
+            }
+            const validMsg = {
+              info: { role: "assistant", modelID: "claude-opus", providerID: "anthropic" },
+              parts: [],
+            }
+
+            const MessageV2 = await import("../../src/session/message-v2")
+            const origStream = MessageV2.MessageV2.stream
+
+            ;(MessageV2.MessageV2 as any).stream = async function* (_sessionId: string) {
+              yield invalidMsg
+              yield validMsg
+            }
+
+            const Provider = await import("../../src/provider/provider")
+            const origGetModel = Provider.Provider.getModel
+
+            ;(Provider.Provider as any).getModel = async (providerID: string, modelID: string) => {
+              if (modelID === "invalid-model") {
+                const error = new Provider.Provider.ModelNotFoundError({
+                  providerID: "unknown",
+                  modelID: "invalid-model",
+                  suggestions: [],
+                })
+                throw error
+              }
+              return { providerID, modelID }
+            }
+
+            try {
+              const result = await resolveModel("pm-session-mixed-models")
+              expect(result.modelID).toBe("claude-opus")
+              expect(result.providerID).toBe("anthropic")
+            } finally {
+              ;(MessageV2.MessageV2 as any).stream = origStream
+              ;(Provider.Provider as any).getModel = origGetModel
+            }
+          },
+        })
+      })
     })
-  })
- })
+})

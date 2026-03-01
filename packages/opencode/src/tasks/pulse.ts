@@ -44,7 +44,14 @@ const activeTicks = new Map<string, Set<string>>()
 export async function resolveModel(pmSessionId: string): Promise<{ modelID: string; providerID: string }> {
   for await (const msg of MessageV2.stream(pmSessionId)) {
     if (msg.info.role === "assistant") {
-      return { modelID: msg.info.modelID, providerID: msg.info.providerID }
+      const candidate = { modelID: msg.info.modelID, providerID: msg.info.providerID }
+      try {
+        await Provider.getModel(candidate.providerID, candidate.modelID)
+        return candidate
+      } catch (e) {
+        if (!Provider.ModelNotFoundError.isInstance(e)) throw e
+        log.warn("skipping unregistered model from pm session", { modelID: candidate.modelID, providerID: candidate.providerID })
+      }
     }
   }
   return Provider.defaultModel()
