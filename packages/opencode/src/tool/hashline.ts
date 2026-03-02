@@ -35,9 +35,9 @@ export function normalizeLine(line: string): string {
   return result.trim()
 }
 
-export function hashLine(line: string): string {
+export function hashLine(line: string, lineNumber: number): string {
   const normalized = normalizeLine(line)
-  const hash = Bun.hash.xxHash32(normalized, 0)
+  const hash = Bun.hash.xxHash32(normalized, lineNumber)
   const codePoint = (hash % 20992) + 0x4e00
   return String.fromCharCode(codePoint)
 }
@@ -78,7 +78,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
 
   const lineMap = new Map<number, string>()
   lines.forEach((line, i) => {
-    lineMap.set(i + 1, hashLine(line))
+    lineMap.set(i + 1, hashLine(line, i + 1))
   })
 
   const mismatches: { line: number; ref: string; error: string }[] = []
@@ -145,7 +145,7 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
     for (const [start, end] of displayRanges) {
       for (let i = start; i <= end; i++) {
         const markers = mismatchSet.has(i) ? "→" : " "
-        lineDisplays.push(`${markers}${i}${hashLine(lines[i - 1])}${lines[i - 1]}`)
+        lineDisplays.push(`${markers}${i}${hashLine(lines[i - 1], i)}${lines[i - 1]}`)
       }
       if (end < lines.length) {
         lineDisplays.push("...")
@@ -181,10 +181,10 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
           `Invalid line ${line}: must be between 1 and ${resultLines.length}`
         )
       }
-      const currentHash = hashLine(resultLines[line - 1])
+      const currentHash = hashLine(resultLines[line - 1], line)
       if (currentHash !== edit.anchor.hashChar) {
         const currentLinesWithMarkers = resultLines
-          .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
+          .map((l, i) => `${i + 1}${hashLine(l, i + 1)}${l}`)
           .join("\n")
         throw new HashlineMismatchError(
           [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
@@ -217,10 +217,10 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
           `Invalid line ${line}: must be between 1 and ${resultLines.length}`
         )
       }
-      const currentHash = hashLine(resultLines[line - 1])
+      const currentHash = hashLine(resultLines[line - 1], line)
       if (currentHash !== edit.anchor.hashChar) {
         const currentLinesWithMarkers = resultLines
-          .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
+          .map((l, i) => `${i + 1}${hashLine(l, i + 1)}${l}`)
           .join("\n")
         throw new HashlineMismatchError(
           [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],
@@ -236,10 +236,10 @@ export function applyHashlineEdits(content: string, edits: HashlineEdit[]): stri
           `Invalid line ${line}: must be between 1 and ${resultLines.length}`
         )
       }
-      const currentHash = hashLine(resultLines[line - 1])
+      const currentHash = hashLine(resultLines[line - 1], line)
       if (currentHash !== edit.anchor.hashChar) {
         const currentLinesWithMarkers = resultLines
-          .map((l, i) => `${i + 1}${hashLine(l)}${l}`)
+          .map((l, i) => `${i + 1}${hashLine(l, i + 1)}${l}`)
           .join("\n")
         throw new HashlineMismatchError(
           [{ line: edit.anchor.line, ref: `${edit.anchor.line}${edit.anchor.hashChar}`, error: "hash mismatch after editing" }],

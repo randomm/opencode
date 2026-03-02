@@ -86,7 +86,7 @@ export const HashlineReadTool = Tool.define("hashline_read", {
     for (let i = start; i < Math.min(lines.length, start + limit); i++) {
       const line = lines[i].length > MAX_LINE_LENGTH ? lines[i].substring(0, MAX_LINE_LENGTH) + "..." : lines[i]
       const lineNum = i + 1
-      const hashChar = hashLine(line)
+      const hashChar = hashLine(line, lineNum)
       const outputLine = `${lineNum}${hashChar}${line}`
       const size = Buffer.byteLength(outputLine, "utf-8") + (raw.length > 0 ? 1 : 0)
       if (bytes + size > MAX_BYTES) {

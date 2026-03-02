@@ -5,6 +5,7 @@ import { Instance } from "../../src/project/instance"
 import { tmpdir } from "../fixture/fixture"
 import { FileTime } from "../../src/file/time"
 import { Flag } from "../../src/flag/flag"
+import { hashLine } from "../../src/tool/hashline"
 
 const ctx = {
   sessionID: "test",
@@ -29,10 +30,11 @@ describe("tool.hashline_edit", () => {
       fn: async () => {
         const tool = await HashlineEditTool.init()
         FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        const anchor = `2${hashLine("line2", 2)}`
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "new line 2" }],
+            edits: [{ op: "set_line", anchor, new_text: "new line 2" }],
           },
           ctx
         )
@@ -54,10 +56,11 @@ describe("tool.hashline_edit", () => {
       fn: async () => {
         const tool = await HashlineEditTool.init()
         FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        const anchor = `2${hashLine("line2", 2)}`
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "" }],
+            edits: [{ op: "set_line", anchor, new_text: "" }],
           },
           ctx
         )
@@ -85,8 +88,8 @@ describe("tool.hashline_edit", () => {
             edits: [
               {
                 op: "replace_lines",
-                start_anchor: "2咲",
-                end_anchor: "4扟",
+                start_anchor: `2${hashLine("line2", 2)}`,
+                end_anchor: `4${hashLine("line4", 4)}`,
                 new_text: "replaced lines",
               },
             ],
@@ -117,8 +120,8 @@ describe("tool.hashline_edit", () => {
             edits: [
               {
                 op: "replace_lines",
-                start_anchor: "2咲",
-                end_anchor: "3徃",
+                start_anchor: `2${hashLine("line2", 2)}`,
+                end_anchor: `3${hashLine("line3", 3)}`,
                 new_text: "",
               },
             ],
@@ -149,7 +152,7 @@ describe("tool.hashline_edit", () => {
             edits: [
               {
                 op: "insert_after",
-                anchor: "2咲",
+                anchor: `2${hashLine("line2", 2)}`,
                 text: "inserted line",
               },
             ],
@@ -200,10 +203,11 @@ describe("tool.hashline_edit", () => {
       fn: async () => {
         const tool = await HashlineEditTool.init()
         FileTime.hashlineRead(ctx.sessionID, path.join(tmp.path, "test.txt"))
+        const anchor = `2${hashLine("line2", 2)}`
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "line2" }],
+            edits: [{ op: "set_line", anchor, new_text: "line2" }],
           },
           ctx
         ).catch((e) => e)
@@ -229,8 +233,8 @@ describe("tool.hashline_edit", () => {
           {
             filePath: path.join(tmp.path, "test.txt"),
             edits: [
-              { op: "set_line", anchor: "2咲", new_text: "updated line 2" },
-              { op: "set_line", anchor: "3徃", new_text: "updated line 3" },
+              { op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "updated line 2" },
+              { op: "set_line", anchor: `3${hashLine("line3", 3)}`, new_text: "updated line 3" },
             ],
           },
           ctx
@@ -257,7 +261,7 @@ describe("tool.hashline_edit", () => {
           {
             filePath: path.join(tmp.path, "test.txt"),
             edits: [
-              { op: "set_line", anchor: "2咲", new_text: "this should apply" },
+              { op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "this should apply" },
               { op: "set_line", anchor: "3戌", new_text: "this should fail" },
             ],
           },
@@ -297,7 +301,7 @@ describe("tool.hashline_edit", () => {
         const result = await tool.execute(
           {
             filePath: path.join(tmp.path, "test.txt"),
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "new line 2" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "new line 2" }],
           },
           ctx
         ).catch((e) => e)
@@ -328,7 +332,7 @@ describe("tool.hashline_edit", () => {
         const result1 = await tool.execute(
           {
             filePath: filepath1,
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "modified" }],
           },
           ctx
         )
@@ -339,7 +343,7 @@ describe("tool.hashline_edit", () => {
         const result2 = await tool.execute(
           {
             filePath: filepath2,
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "modified" }],
           },
           ctx
         ).catch((e) => e)
@@ -371,7 +375,7 @@ describe("tool.hashline_edit", () => {
         const result = await tool.execute(
           {
             filePath: filepath,
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "new" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "new" }],
           },
           ctx
         ).catch((e) => e)
@@ -401,7 +405,7 @@ describe("tool.hashline_edit", () => {
         const result = await tool.execute(
           {
             filePath: filepath,
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "modified" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "modified" }],
           },
           ctxB
         ).catch((e) => e)
@@ -551,7 +555,7 @@ describe("tool.hashline_edit", () => {
         const result = await tool.execute(
           {
             filePath: filepath,
-            edits: [{ op: "set_line", anchor: "1赙", new_text: "modified" }],
+            edits: [{ op: "set_line", anchor: `1${hashLine("new line1", 1)}`, new_text: "modified" }],
           },
           ctx
         )
@@ -581,7 +585,7 @@ describe("tool.hashline_edit", () => {
         const result1 = await tool.execute(
           {
             filePath: filepath,
-            edits: [{ op: "set_line", anchor: "2咲", new_text: "edited line 2" }],
+            edits: [{ op: "set_line", anchor: `2${hashLine("line2", 2)}`, new_text: "edited line 2" }],
           },
           ctx
         )
@@ -592,7 +596,7 @@ describe("tool.hashline_edit", () => {
         const result2 = await tool.execute(
           {
             filePath: filepath,
-            edits: [{ op: "set_line", anchor: "3徃", new_text: "edited line 3" }],
+            edits: [{ op: "set_line", anchor: `3${hashLine("line3", 3)}`, new_text: "edited line 3" }],
           },
           ctx
         )

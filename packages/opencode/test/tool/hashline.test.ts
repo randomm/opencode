@@ -24,7 +24,7 @@ describe("normalizeLine", () => {
 
 describe("hashLine", () => {
   test("returns single char with charCodeAt(0) in [0x4E00, 0x9FFF]", () => {
-    const result = hashLine("test line")
+    const result = hashLine("test line", 1)
     expect(result).toHaveLength(1)
     const code = result.charCodeAt(0)
     expect(code).toBeGreaterThanOrEqual(0x4E00)
@@ -33,9 +33,16 @@ describe("hashLine", () => {
 
   test("stable (same input → same output)", () => {
     const input = "stable test"
-    const result1 = hashLine(input)
-    const result2 = hashLine(input)
+    const result1 = hashLine(input, 1)
+    const result2 = hashLine(input, 1)
     expect(result1).toBe(result2)
+  })
+
+  test("blank lines at different positions get different anchors", () => {
+    const blankLine = ""
+    const result1 = hashLine(blankLine, 5)
+    const result5 = hashLine(blankLine, 10)
+    expect(result1).not.toBe(result5)
   })
 })
 
@@ -68,7 +75,7 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "replaced",
       },
     ]
@@ -81,7 +88,7 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "",
       },
     ]
@@ -94,8 +101,8 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "replace_lines" as const,
-        start_anchor: { line: 2, hashChar: hashLine("line2") },
-        end_anchor: { line: 3, hashChar: hashLine("line3") },
+        start_anchor: { line: 2, hashChar: hashLine("line2", 2) },
+        end_anchor: { line: 3, hashChar: hashLine("line3", 3) },
         new_text: "new2\nnew3",
       },
     ]
@@ -108,8 +115,8 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "replace_lines" as const,
-        start_anchor: { line: 2, hashChar: hashLine("line2") },
-        end_anchor: { line: 3, hashChar: hashLine("line3") },
+        start_anchor: { line: 2, hashChar: hashLine("line2", 2) },
+        end_anchor: { line: 3, hashChar: hashLine("line3", 3) },
         new_text: "",
       },
     ]
@@ -122,7 +129,7 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "insert_after" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         text: "inserted",
       },
     ]
@@ -135,12 +142,12 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 4, hashChar: hashLine("line4") },
+        anchor: { line: 4, hashChar: hashLine("line4", 4) },
         new_text: "replaced4",
       },
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "replaced2",
       },
     ]
@@ -164,29 +171,18 @@ describe("applyHashlineEdits", () => {
 
   test("relocates line when hash found at different line", () => {
     const content = "line1\ntarget\nline3\nline4\nline5"
+    // Anchor says line 1, but we give it the hash that actually appears at line 2
+    // This simulates a hash that was read when the content was at line 1, but is now at line 2
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 1, hashChar: hashLine("target") }, // Hash says line 1, but target is at line 2
+        anchor: { line: 1, hashChar: hashLine("target", 2) }, // Hash from line 2, but anchor says line 1
         new_text: "replaced",
       },
     ]
     const result = applyHashlineEdits(content, edits)
+    // Should relocate to line 2 where the hash is found
     expect(result).toBe("line1\nreplaced\nline3\nline4\nline5")
-  })
-
-  test("throws HashlineMismatchError (not relocates) for ambiguous hash", () => {
-    const content = "same\nsame\nline3"
-    const edits = [
-      {
-        op: "set_line" as const,
-        anchor: { line: 3, hashChar: hashLine("same") }, // Hash appears at lines 1 and 2
-        new_text: "replaced",
-      },
-    ]
-    expect(() => applyHashlineEdits(content, edits)).toThrow(
-      HashlineMismatchError
-    )
   })
 
   test("throws HashlineNoOpError for no-op edits", () => {
@@ -194,7 +190,7 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "line2", // Same content
       },
     ]
@@ -214,7 +210,7 @@ describe("applyHashlineEdits", () => {
     const edits2 = [
       {
         op: "set_line" as const,
-        anchor: { line: 3, hashChar: hashLine("line3") },
+        anchor: { line: 3, hashChar: hashLine("line3", 3) },
         new_text: "also replaced",
       },
     ]
@@ -229,7 +225,7 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "replaced",
       },
     ]
@@ -242,17 +238,17 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 1, hashChar: hashLine("a") },
+        anchor: { line: 1, hashChar: hashLine("a", 1) },
         new_text: "X",
       },
       {
         op: "set_line" as const,
-        anchor: { line: 3, hashChar: hashLine("c") },
+        anchor: { line: 3, hashChar: hashLine("c", 3) },
         new_text: "Y",
       },
       {
         op: "set_line" as const,
-        anchor: { line: 5, hashChar: hashLine("e") },
+        anchor: { line: 5, hashChar: hashLine("e", 5) },
         new_text: "Z",
       },
     ]
@@ -265,12 +261,12 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 1, hashChar: hashLine("line1") },
+        anchor: { line: 1, hashChar: hashLine("line1", 1) },
         new_text: "modified",
       },
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") }, // Line 2 becomes line 2, but anchor validation happens
+        anchor: { line: 2, hashChar: hashLine("line2", 2) }, // Line 2 becomes line 2, but anchor validation happens
         new_text: "should-fail",
       },
     ]
@@ -283,12 +279,12 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("line2") },
+        anchor: { line: 2, hashChar: hashLine("line2", 2) },
         new_text: "", // Delete line 2
       },
       {
         op: "set_line" as const,
-        anchor: { line: 4, hashChar: hashLine("line4") },
+        anchor: { line: 4, hashChar: hashLine("line4", 4) },
         new_text: "replaced4", // Should target original line 4, not shifted line 3
       },
     ]
@@ -303,13 +299,13 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "replace_lines" as const,
-        start_anchor: { line: 2, hashChar: hashLine("line2") },
-        end_anchor: { line: 3, hashChar: hashLine("line3") },
+        start_anchor: { line: 2, hashChar: hashLine("line2", 2) },
+        end_anchor: { line: 3, hashChar: hashLine("line3", 3) },
         new_text: "", // Delete lines 2-3
       },
       {
         op: "set_line" as const,
-        anchor: { line: 5, hashChar: hashLine("line5") },
+        anchor: { line: 5, hashChar: hashLine("line5", 5) },
         new_text: "replaced5", // Should target original line 5, not shifted line 3
       },
     ]
@@ -324,12 +320,12 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "set_line" as const,
-        anchor: { line: 2, hashChar: hashLine("b") },
+        anchor: { line: 2, hashChar: hashLine("b", 2) },
         new_text: "", // Delete line 2
       },
       {
         op: "set_line" as const,
-        anchor: { line: 4, hashChar: hashLine("d") },
+        anchor: { line: 4, hashChar: hashLine("d", 4) },
         new_text: "", // Delete line 4 (originally)
       },
     ]
@@ -345,12 +341,12 @@ describe("applyHashlineEdits", () => {
     const edits = [
       {
         op: "insert_after" as const,
-        anchor: { line: 1, hashChar: hashLine("a") },
+        anchor: { line: 1, hashChar: hashLine("a", 1) },
         text: "X", // Insert X after line 1, shifts b,c,d down
       },
       {
         op: "set_line" as const,
-        anchor: { line: 3, hashChar: hashLine("c") },
+        anchor: { line: 3, hashChar: hashLine("c", 3) },
         new_text: "C", // Should still find line c and replace it
       },
     ]
@@ -359,5 +355,20 @@ describe("applyHashlineEdits", () => {
     // After set_line: a, b, C, d
     // After insert_after: a, X, b, C, d
     expect(result).toBe("a\nX\nb\nC\nd")
+  })
+
+  test("file with 10 blank lines, insert_after on one blank line succeeds", () => {
+    const content = "\n\n\n\n\n\n\n\n\n\n"
+    const edits = [
+      {
+        op: "insert_after" as const,
+        anchor: { line: 5, hashChar: hashLine("", 5) },
+        text: "inserted",
+      },
+    ]
+    const result = applyHashlineEdits(content, edits)
+    expect(result).toContain("inserted")
+    const lines = result.split("\n")
+    expect(lines.length).toBe(12) // 10 blank + 1 inserted + 1 from final empty string
   })
 })
