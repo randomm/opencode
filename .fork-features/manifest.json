@@ -263,6 +263,40 @@
         ]
       }
     },
+    "remove-hashline": {
+      "status": "active",
+      "description": "Removed hashline_read and hashline_edit experimental tools entirely. They were off-by-default, used by zero agents, and causing test failures. Deleted 5 source files and 3 test files. Cleaned up OPENCODE_EXPERIMENTAL_HASHLINE flag from flag.ts, hashlineRead state/functions from file/time.ts, and all imports/registrations from tool/registry.ts. The edit tool now always registers (no hashline condition).",
+      "issue": "https://github.com/randomm/opencode/issues/360",
+      "newFiles": [],
+      "deletedFiles": [
+        "packages/opencode/src/tool/hashline.ts",
+        "packages/opencode/src/tool/hashline_edit.ts",
+        "packages/opencode/src/tool/hashline_edit.txt",
+        "packages/opencode/src/tool/hashline_read.ts",
+        "packages/opencode/src/tool/hashline_read.txt",
+        "packages/opencode/test/tool/hashline.test.ts",
+        "packages/opencode/test/tool/hashline_edit.test.ts",
+        "packages/opencode/test/tool/hashline_read.test.ts"
+      ],
+      "modifiedFiles": [
+        "packages/opencode/src/tool/registry.ts",
+        "packages/opencode/src/file/time.ts",
+        "packages/opencode/src/flag/flag.ts"
+      ],
+      "criticalCode": [],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "HashlineReadTool",
+          "HashlineEditTool",
+          "OPENCODE_EXPERIMENTAL_HASHLINE",
+          "hashline_read",
+          "hashline_edit",
+          "assertHashlineRead",
+          "hashlineRead.*state"
+        ]
+      }
+    },
     "taskctl": {
       "status": "active",
       "description": "Autonomous pipeline for managing task graphs with dependencies, priority ordering, conflict detection, and adversarial workflow. Phase 1 includes types, store, scheduler, validation, and CLI tool. Phase 2 adds Composer agent for automatic issue decomposition, taskctl start command for spawning full pipeline. Phase 3 adds Pulse execution engine with heartbeat, scheduling, singleton lock, crash recovery, and timeout detection. Phase 3a adds adversarial workflow integration with pipeline stages (developing, reviewing, adversarial, steering), verdict tracking, and auto-retry logic. Phase 3b adds agent.ts integration for spawning adversarial sessions (developer-pipeline and adversarial-pipeline agent definitions). Phase 3c adds PM control commands: status, stop, resume, override, retry, inspect for manual pipeline intervention. Phase 4 adds self-healing steering agent (evaluates progress every 15 min, sends guidance or replaces developer), improved adversarial timeout detection (60 min), and session message retrieval for activity summaries. Phase 5 updates AGENTS.md with taskctl documentation section describing pipeline workflow and PM commands.",
