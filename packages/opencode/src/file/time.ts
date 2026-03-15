@@ -14,15 +14,9 @@ export namespace FileTime {
         [path: string]: Date | undefined
       }
     } = {}
-    const hashlineRead: {
-      [sessionID: string]: {
-        [path: string]: Date | undefined
-      }
-    } = {}
     const locks = new Map<string, Promise<void>>()
     return {
       read,
-      hashlineRead,
       locks,
     }
   })
@@ -32,13 +26,6 @@ export namespace FileTime {
     const { read } = state()
     read[sessionID] = read[sessionID] || {}
     read[sessionID][file] = new Date()
-  }
-
-  export function hashlineRead(sessionID: string, file: string) {
-    log.info("hashlineRead", { sessionID, file })
-    const { hashlineRead: map } = state()
-    map[sessionID] = map[sessionID] || {}
-    map[sessionID][file] = new Date()
   }
 
   export function get(sessionID: string, file: string) {
@@ -80,19 +67,4 @@ export namespace FileTime {
     }
   }
 
-  export async function assertHashlineRead(sessionID: string, filepath: string) {
-    if (Flag.OPENCODE_DISABLE_FILETIME_CHECK === true) return
-
-    const { hashlineRead: map } = state()
-    const time = map[sessionID]?.[filepath]
-    if (!time)
-      throw new Error(
-        `You must use hashline_read before hashline_edit on this file. The regular read tool does not provide hashline anchors.`
-      )
-    const stats = await Bun.file(filepath).stat()
-    if (stats.mtime.getTime() > time.getTime())
-      throw new Error(
-        `File ${filepath} has been modified since it was last read with hashline_read.\nLast modification: ${stats.mtime.toISOString()}\nLast read: ${time.toISOString()}\n\nPlease use hashline_read again before modifying it.`
-      )
-  }
 }

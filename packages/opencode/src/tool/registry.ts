@@ -30,8 +30,6 @@ import { CheckTaskTool } from "./check_task"
 import { ListTasksTool } from "./list_tasks"
 import { CancelTaskTool } from "./cancel_task"
 import { TaskctlTool } from "../tasks/tool"
-import { HashlineReadTool } from "./hashline_read"
-import { HashlineEditTool } from "./hashline_edit"
 
 export namespace ToolRegistry {
   const log = Log.create({ service: "tool.registry" })
@@ -134,7 +132,6 @@ export namespace ToolRegistry {
       TaskctlTool,
       ApplyPatchTool,
       ...(Flag.OPENCODE_EXPERIMENTAL_LSP_TOOL ? [LspTool] : []),
-      ...(Flag.OPENCODE_EXPERIMENTAL_HASHLINE ? [HashlineReadTool, HashlineEditTool] : []),
       ...(config.experimental?.batch_tool === true ? [BatchTool] : []),
       ...(Flag.OPENCODE_EXPERIMENTAL_PLAN_MODE && Flag.OPENCODE_CLIENT === "cli" ? [PlanExitTool, PlanEnterTool] : []),
       ...custom,
@@ -165,7 +162,7 @@ export namespace ToolRegistry {
           const usePatch =
             model.modelID.includes("gpt-") && !model.modelID.includes("oss") && !model.modelID.includes("gpt-4")
           if (t.id === "apply_patch") return usePatch
-          if (t.id === "edit") return !usePatch && !Flag.OPENCODE_EXPERIMENTAL_HASHLINE
+          if (t.id === "edit") return !usePatch
           if (t.id === "write") return !usePatch
 
           return true
