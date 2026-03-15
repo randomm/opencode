@@ -47,8 +47,7 @@ import { iife } from "@/util/iife"
 import { Shell } from "@/shell/shell"
 import { Truncate } from "@/tool/truncation"
 
-// @ts-ignore
-globalThis.AI_SDK_LOG_WARNINGS = false
+;(globalThis as unknown as { AI_SDK_LOG_WARNINGS: boolean }).AI_SDK_LOG_WARNINGS = false
 
 const STRUCTURED_OUTPUT_DESCRIPTION = `Use this tool to return your final response in the requested structured format.
 
@@ -299,11 +298,28 @@ export namespace SessionPrompt {
 
     let step = 0
     const session = await Session.get(sessionID)
+
+    // Initial full fetch — cached across iterations to avoid full DB re-scan every loop.
+    // Incremental updates append only new messages using streamAfter().
+    // Set needsFullRefresh=true before any `continue` that may change the compaction
+    // boundary (compaction) or write to existing message parts (subtask).
+    let msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))
+    let needsFullRefresh = false
+
     while (true) {
       SessionStatus.set(sessionID, { type: "busy" })
       log.info("loop", { step, sessionID })
       if (abort.aborted) break
-      let msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))
+
+      // Refresh message cache: full re-fetch when compaction changed the boundary,
+      // otherwise append only messages written since last iteration.
+      if (needsFullRefresh) {
+        msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))
+        needsFullRefresh = false
+      } else if (msgs.length > 0) {
+        const newMsgs = await MessageV2.streamAfter(sessionID, msgs[msgs.length - 1].info.id)
+        if (newMsgs.length > 0) msgs = [...msgs, ...newMsgs]
+      }
 
       let lastUser: MessageV2.User | undefined
       let lastAssistant: MessageV2.Assistant | undefined
@@ -530,6 +546,8 @@ export namespace SessionPrompt {
           } satisfies MessageV2.TextPart)
         }
 
+        // Subtask writes to existing messages in complex ways; full re-fetch next iteration.
+        needsFullRefresh = true
         continue
       }
 
@@ -543,6 +561,8 @@ export namespace SessionPrompt {
           auto: task.auto,
         })
         if (result === "stop") break
+        // Compaction changes the boundary; must re-fetch to apply filterCompacted correctly.
+        needsFullRefresh = true
         continue
       }
 
@@ -558,6 +578,8 @@ export namespace SessionPrompt {
           model: lastUser.model,
           auto: true,
         })
+        // Compaction changes the boundary; must re-fetch to apply filterCompacted correctly.
+        needsFullRefresh = true
         continue
       }
 
@@ -565,11 +587,19 @@ export namespace SessionPrompt {
       const agent = await Agent.get(lastUser.agent)
       const maxSteps = agent.steps ?? Infinity
       const isLastStep = step >= maxSteps
-      msgs = await insertReminders({
-        messages: msgs,
+
+      // insertReminders may push ephemeral in-memory parts onto message objects.
+      // Use a shallow copy (with copied parts arrays) so the cached `msgs` is not mutated
+      // and those synthetic parts don't accumulate across iterations.
+      const reminders = await insertReminders({
+        messages: msgs.map((m) => ({ ...m, parts: [...m.parts] })),
         agent,
         session,
       })
+      const msgsForLLM = reminders.messages
+      // insertReminders may write parts to the DB (e.g. plan-mode system reminder).
+      // Mark for full refresh so streamAfter doesn't miss those written parts next iteration.
+      if (reminders.wroteToDb) needsFullRefresh = true
 
       const processor = SessionProcessor.create({
         assistantMessage: (await Session.updateMessage({
@@ -604,7 +634,7 @@ export namespace SessionPrompt {
       using _ = defer(() => InstructionPrompt.clear(processor.message.id))
 
       // Check if user explicitly invoked an agent via @ in this turn
-      const lastUserMsg = msgs.findLast((m) => m.info.role === "user")
+      const lastUserMsg = msgsForLLM.findLast((m) => m.info.role === "user")
       const bypassAgentCheck = lastUserMsg?.parts.some((p) => p.type === "agent") ?? false
 
       const tools = await resolveTools({
@@ -614,7 +644,7 @@ export namespace SessionPrompt {
         tools: lastUser.tools,
         processor,
         bypassAgentCheck,
-        messages: msgs,
+        messages: msgsForLLM,
       })
 
       // Inject StructuredOutput tool if JSON schema mode enabled
@@ -634,7 +664,7 @@ export namespace SessionPrompt {
         })
       }
 
-      const sessionMessages = clone(msgs)
+      const sessionMessages = clone(msgsForLLM)
 
       // Ephemerally wrap queued user messages with a reminder to stay on track
       if (step > 1 && lastFinished) {
@@ -718,6 +748,8 @@ export namespace SessionPrompt {
           model: lastUser.model,
           auto: true,
         })
+        // Compaction changes the boundary; must re-fetch to apply filterCompacted correctly.
+        needsFullRefresh = true
       }
       continue
     }
@@ -1326,9 +1358,13 @@ export namespace SessionPrompt {
     }
   }
 
-  async function insertReminders(input: { messages: MessageV2.WithParts[]; agent: Agent.Info; session: Session.Info }) {
+  async function insertReminders(input: {
+    messages: MessageV2.WithParts[]
+    agent: Agent.Info
+    session: Session.Info
+  }): Promise<{ messages: MessageV2.WithParts[]; wroteToDb: boolean }> {
     const userMessage = input.messages.findLast((msg) => msg.info.role === "user")
-    if (!userMessage) return input.messages
+    if (!userMessage) return { messages: input.messages, wroteToDb: false }
 
     // Original logic when experimental plan mode is disabled
     if (!Flag.OPENCODE_EXPERIMENTAL_PLAN_MODE) {
@@ -1353,7 +1389,7 @@ export namespace SessionPrompt {
           synthetic: true,
         })
       }
-      return input.messages
+      return { messages: input.messages, wroteToDb: false }
     }
 
     // New plan mode logic when flag is enabled
@@ -1374,8 +1410,9 @@ export namespace SessionPrompt {
           synthetic: true,
         })
         userMessage.parts.push(part)
+        return { messages: input.messages, wroteToDb: true }
       }
-      return input.messages
+      return { messages: input.messages, wroteToDb: false }
     }
 
     // Entering plan mode
@@ -1461,9 +1498,9 @@ NOTE: At any point in time through this workflow you should feel free to ask the
         synthetic: true,
       })
       userMessage.parts.push(part)
-      return input.messages
+      return { messages: input.messages, wroteToDb: true }
     }
-    return input.messages
+    return { messages: input.messages, wroteToDb: false }
   }
 
   export const ShellInput = z.object({
