@@ -6,7 +6,7 @@ import { Identifier } from "../id/id"
 import { LSP } from "../lsp"
 import { Snapshot } from "@/snapshot"
 import { fn } from "@/util/fn"
-import { Database, eq, desc, inArray } from "@/storage/db"
+import { Database, eq, desc, inArray, gt, and, asc } from "@/storage/db"
 import { MessageTable, PartTable } from "./session.sql"
 import { ProviderTransform } from "@/provider/transform"
 import { STATUS_CODES } from "http"
@@ -765,6 +765,50 @@ export namespace MessageV2 {
       if (rows.length < size) break
     }
   })
+
+  /**
+   * Fetch messages for a session that were created after `afterID` (exclusive),
+   * returned in ascending chronological order. Used for incremental cache updates
+   * in the loop() to avoid full DB re-scans on every iteration.
+   */
+  export async function streamAfter(sessionID: string, afterID: string): Promise<MessageV2.WithParts[]> {
+    const rows = Database.use((db) =>
+      db
+        .select()
+        .from(MessageTable)
+        .where(and(eq(MessageTable.session_id, sessionID), gt(MessageTable.id, afterID)))
+        .orderBy(asc(MessageTable.id))
+        .all(),
+    )
+    if (rows.length === 0) return []
+
+    const ids = rows.map((row) => row.id)
+    const partsByMessage = new Map<string, MessageV2.Part[]>()
+    const partRows = Database.use((db) =>
+      db
+        .select()
+        .from(PartTable)
+        .where(inArray(PartTable.message_id, ids))
+        .orderBy(PartTable.message_id, PartTable.id)
+        .all(),
+    )
+    for (const row of partRows) {
+      const part = {
+        ...row.data,
+        id: row.id,
+        sessionID: row.session_id,
+        messageID: row.message_id,
+      } as MessageV2.Part
+      const list = partsByMessage.get(row.message_id)
+      if (list) list.push(part)
+      else partsByMessage.set(row.message_id, [part])
+    }
+
+    return rows.map((row) => ({
+      info: { ...row.data, id: row.id, sessionID: row.session_id } as MessageV2.Info,
+      parts: partsByMessage.get(row.id) ?? [],
+    }))
+  }
 
   export const parts = fn(Identifier.schema("message"), async (message_id) => {
     const rows = Database.use((db) =>
