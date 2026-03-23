@@ -213,6 +213,13 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV2 {
       fetch: this.config.fetch,
     })
 
+    if (!responseBody.choices?.length) {
+      throw new InvalidResponseDataError({
+        data: responseBody,
+        message: `OpenAI-compatible provider returned no choices. Provider may have returned an error payload.`,
+      })
+    }
+
     const choice = responseBody.choices[0]
     const content: Array<LanguageModelV2Content> = []
 
@@ -430,6 +437,10 @@ export class OpenAICompatibleChatLanguageModel implements LanguageModelV2 {
               if (prompt_tokens_details?.cached_tokens != null) {
                 usage.promptTokensDetails.cachedTokens = prompt_tokens_details?.cached_tokens
               }
+            }
+
+            if (!value.choices?.length) {
+              return
             }
 
             const choice = value.choices[0]

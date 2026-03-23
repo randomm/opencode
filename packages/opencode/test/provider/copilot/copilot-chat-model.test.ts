@@ -1,5 +1,6 @@
 import { OpenAICompatibleChatLanguageModel } from "@/provider/sdk/copilot/chat/openai-compatible-chat-language-model"
 import { describe, test, expect, mock } from "bun:test"
+import { InvalidResponseDataError } from "@ai-sdk/provider"
 import type { LanguageModelV2Prompt } from "@ai-sdk/provider"
 
 async function convertReadableStreamToArray<T>(stream: ReadableStream<T>): Promise<T[]> {
@@ -532,6 +533,87 @@ describe("doStream", () => {
 
     const rawChunks = parts.filter((p) => p.type === "raw")
     expect(rawChunks.length).toBeGreaterThan(0)
+  })
+})
+
+describe("doGenerate", () => {
+  test("should throw InvalidResponseDataError when choices array is empty", async () => {
+    const mockFetch = mock(async () => {
+      return new Response(
+        JSON.stringify({
+          id: "test",
+          model: "test",
+          created: 1234567890,
+          choices: [],
+          usage: { prompt_tokens: 10, completion_tokens: 0, total_tokens: 10 },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      )
+    })
+
+    const model = createModel(mockFetch)
+
+    try {
+      await model.doGenerate({
+        prompt: TEST_PROMPT,
+      })
+      expect.unreachable("should have thrown")
+    } catch (e) {
+      expect(e).toBeInstanceOf(InvalidResponseDataError)
+      const err = e as Error
+      expect(err.message).toContain("OpenAI-compatible provider returned no choices")
+    }
+  })
+})
+
+describe("doStream empty/missing choices", () => {
+  test("should silently skip chunk when choices array is empty", async () => {
+    const mixedChunks = [
+      `data: {"id":"test","choices":[],"created":1677652288,"model":"test"}`,
+      `data: {"id":"test","object":"chat.completion.chunk","created":1677652288,"model":"test","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}`,
+      `data: [DONE]`,
+    ]
+
+    const mockFetch = createMockFetch(mixedChunks)
+    const model = createModel(mockFetch)
+
+    const { stream } = await model.doStream({
+      prompt: TEST_PROMPT,
+      includeRawChunks: false,
+    })
+
+    const parts = await convertReadableStreamToArray(stream)
+
+    // Should have skipped the empty choices chunk and processed the valid one
+    const textParts = parts.filter((p) => p.type === "text-start" || p.type === "text-delta" || p.type === "text-end")
+    expect(textParts.length).toBeGreaterThan(0)
+    expect((textParts.find((p) => p.type === "text-delta") as { delta: string })?.delta).toContain("Hello")
+  })
+
+  test("should silently skip chunk when choices is undefined", async () => {
+    const mixedChunks = [
+      `data: {"id":"test","created":1677652288,"model":"test"}`,
+      `data: {"id":"test","object":"chat.completion.chunk","created":1677652288,"model":"test","choices":[{"index":0,"delta":{"content":"Valid"},"finish_reason":null}]}`,
+      `data: [DONE]`,
+    ]
+
+    const mockFetch = createMockFetch(mixedChunks)
+    const model = createModel(mockFetch)
+
+    const { stream } = await model.doStream({
+      prompt: TEST_PROMPT,
+      includeRawChunks: false,
+    })
+
+    const parts = await convertReadableStreamToArray(stream)
+
+    // Should have skipped the undefined choices chunk and processed the valid one
+    const textParts = parts.filter((p) => p.type === "text-start" || p.type === "text-delta" || p.type === "text-end")
+    expect(textParts.length).toBeGreaterThan(0)
+    expect((textParts.find((p) => p.type === "text-delta") as { delta: string })?.delta).toContain("Valid")
   })
 })
 
