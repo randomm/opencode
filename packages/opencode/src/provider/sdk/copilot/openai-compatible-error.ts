@@ -1,6 +1,6 @@
 import { z, type ZodType } from "zod/v4"
 
-export const openaiCompatibleErrorDataSchema = z.object({
+const standardErrorObject = z.object({
   error: z.object({
     message: z.string(),
 
@@ -10,8 +10,24 @@ export const openaiCompatibleErrorDataSchema = z.object({
     type: z.string().nullish(),
     param: z.any().nullish(),
     code: z.union([z.string(), z.number()]).nullish(),
-  }),
+  }).passthrough(),
+}).strict()
+
+const wrappedErrorObject = z.object({
+  status_code: z.number(),
+  error: z.object({
+    message: z.string(),
+    type: z.string().nullish(),
+    param: z.any().nullish(),
+    code: z.union([z.string(), z.number()]).nullish(),
+    id: z.string().nullish(),
+  }).passthrough(),
 })
+
+export const openaiCompatibleErrorDataSchema = z.union([
+  standardErrorObject,
+  wrappedErrorObject,
+])
 
 export type OpenAICompatibleErrorData = z.infer<typeof openaiCompatibleErrorDataSchema>
 

@@ -490,31 +490,43 @@
       }
     },
     "openai-compatible-choices-validation": {
-      "status": "active",
-      "description": "Guards doGenerate and doStream against missing/empty choices array in OpenAI-compatible provider responses. Throws InvalidResponseDataError with raw payload context instead of propagating AI_TypeValidationError (invalid_union).",
-      "issue": "https://github.com/randomm/opencode/issues/365",
-      "newFiles": [],
-      "modifiedFiles": [
-        "packages/opencode/src/provider/sdk/copilot/chat/openai-compatible-chat-language-model.ts"
-      ],
-      "criticalCode": [
-        "InvalidResponseDataError",
-        "responseBody.choices?.length",
-        "value.choices?.length",
-        "OpenAI-compatible provider returned no choices"
-      ],
-      "tests": [
-        "packages/opencode/test/provider/copilot/copilot-chat-model.test.ts"
-      ],
-      "upstreamTracking": {
-        "absorptionSignals": [
-          "responseBody.choices?.length",
-          "value.choices?.length",
-          "InvalidResponseDataError.*choices",
-          "choices.*length.*0",
-          "no choices.*provider"
-        ]
-       }
-     }
+       "status": "active",
+       "description": "Guards OpenAI-compatible provider responses against validation errors. (1) Issue #365: Prevents AI_TypeValidationError when choices array is missing/empty by throwing InvalidResponseDataError instead. (2) Issue #367: Normalizes error response schema to accept both standard OpenAI format and status_code-wrapped format, supporting providers with different error response structures.",
+       "issue": "https://github.com/randomm/opencode/issues/367",
+       "newFiles": [],
+       "modifiedFiles": [
+         "packages/opencode/src/provider/sdk/copilot/chat/openai-compatible-chat-language-model.ts",
+         "packages/opencode/src/provider/sdk/copilot/openai-compatible-error.ts"
+       ],
+       "criticalCode": [
+         "InvalidResponseDataError",
+         "responseBody.choices?.length",
+         "value.choices?.length",
+         "OpenAI-compatible provider returned no choices",
+         "status_code",
+         "openaiCompatibleErrorDataSchema",
+         "errorToMessage",
+         "standardErrorObject",
+         "wrappedErrorObject",
+         "Both union branches have error.message at the same path"
+       ],
+       "tests": [
+         "packages/opencode/test/provider/copilot/copilot-chat-model.test.ts",
+         "packages/opencode/test/provider/copilot/openai-compatible-error.test.ts"
+       ],
+       "upstreamTracking": {
+         "absorptionSignals": [
+           "responseBody.choices?.length",
+           "value.choices?.length",
+           "InvalidResponseDataError.*choices",
+           "choices.*length.*0",
+           "no choices.*provider",
+           "status_code.*error",
+           "openaiCompatibleErrorDataSchema.*union",
+           "wrappedErrorObject",
+           "standardErrorObject"
+         ]
+        }
+      }
    }
  }
