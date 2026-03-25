@@ -3,7 +3,7 @@ import {
   openaiCompatibleErrorDataSchema,
   defaultOpenAICompatibleErrorStructure,
   type OpenAICompatibleErrorData,
-} from "@/provider/sdk/copilot/openai-compatible-error"
+} from "../../../src/provider/sdk/copilot/openai-compatible-error"
 import { z } from "zod/v4"
 
 describe("openaiCompatibleErrorDataSchema", () => {
