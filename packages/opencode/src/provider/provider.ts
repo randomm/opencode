@@ -571,10 +571,26 @@ export namespace Provider {
     cerebras: async () => {
       return {
         autoload: false,
+        async getModel(_sdk: any, modelID: string, _options?: Record<string, any>) {
+          const { OpenAICompatibleChatLanguageModel } = await import(
+            "./sdk/copilot/chat/openai-compatible-chat-language-model"
+          )
+          const { defaultOpenAICompatibleErrorStructure } = await import(
+            "./sdk/copilot/openai-compatible-error"
+          )
+
+          return new OpenAICompatibleChatLanguageModel(modelID, {
+            provider: "cerebras",
+            headers: () => ({
+              "X-Cerebras-3rd-Party-Integration": "opencode",
+              Authorization: `Bearer ${Env.get("CEREBRAS_API_KEY") ?? ""}`,
+            }),
+            url: ({ path }) => `https://api.cerebras.ai/v1${path}`,
+            errorStructure: defaultOpenAICompatibleErrorStructure,
+          })
+        },
         options: {
-          headers: {
-            "X-Cerebras-3rd-Party-Integration": "opencode",
-          },
+          apiKey: "",
         },
       }
     },

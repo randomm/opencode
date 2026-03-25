@@ -527,6 +527,32 @@
            "standardErrorObject"
          ]
         }
+      },
+      "cerebras-error-normalization": {
+       "status": "active",
+       "description": "Overrides @ai-sdk/cerebras in the cerebras custom loader to use OpenAICompatibleChatLanguageModel with defaultOpenAICompatibleErrorStructure, so Cerebras status_code-wrapped error responses are handled correctly instead of throwing AI_TypeValidationError.",
+       "issue": "https://github.com/randomm/opencode/issues/369",
+       "newFiles": [],
+       "modifiedFiles": [
+         "packages/opencode/src/provider/provider.ts"
+       ],
+"criticalCode": [
+          "OpenAICompatibleChatLanguageModel",
+          "defaultOpenAICompatibleErrorStructure",
+          "X-Cerebras-3rd-Party-Integration",
+          "api.cerebras.ai",
+          "CEREBRAS_API_KEY"
+        ],
+       "tests": [
+         "packages/opencode/test/provider/cerebras-error-schema.test.ts"
+       ],
+       "upstreamTracking": {
+         "absorptionSignals": [
+           "cerebras.*OpenAICompatibleChatLanguageModel",
+           "cerebras.*errorStructure",
+           "cerebras.*defaultOpenAICompatibleErrorStructure"
+         ]
+        }
       }
    }
  }
