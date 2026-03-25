@@ -3,7 +3,7 @@ import {
   openaiCompatibleErrorDataSchema,
   defaultOpenAICompatibleErrorStructure,
   type OpenAICompatibleErrorData,
-} from "../../src/provider/sdk/copilot/openai-compatible-error"
+} from "@/provider/sdk/copilot/openai-compatible-error"
 
 describe("Cerebras Error Schema Integration", () => {
   test("cerebras custom loader uses defaultOpenAICompatibleErrorStructure", () => {
