@@ -264,7 +264,8 @@
       }
     },
     "remove-hashline": {
-      "status": "active",
+      "status": "dropped",
+      "droppedReason": "Feature removed in issue #360 — zero agent adoption and test failures after 25-day experiment. Pure fork invention (upstream never had hashline), no re-introduction risk. All 8 source/test files deleted (1,921 lines).",
       "description": "Removed hashline_read and hashline_edit experimental tools entirely. They were off-by-default, used by zero agents, and causing test failures. Deleted 5 source files and 3 test files. Cleaned up OPENCODE_EXPERIMENTAL_HASHLINE flag from flag.ts, hashlineRead state/functions from file/time.ts, and all imports/registrations from tool/registry.ts. The edit tool now always registers (no hashline condition).",
       "issue": "https://github.com/randomm/opencode/issues/360",
       "newFiles": [],
