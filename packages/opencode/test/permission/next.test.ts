@@ -695,11 +695,6 @@ test("DeniedError - includes suggestion when provided", () => {
 
 test("DeniedError - no suggestion text when not provided", () => {
   const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }])
-  expect(error.message).not.toContain("Suggested alternative")
-})
-
-test("DeniedError - message format without suggestion", () => {
-  const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }])
   expect(error.message).toContain("The user has specified a rule")
   expect(error.message).not.toContain("Suggested alternative")
 })

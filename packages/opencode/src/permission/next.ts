@@ -292,24 +292,30 @@ export namespace PermissionNext {
 
   async function getApfelSuggestion(command: string, allowRules: Rule[]): Promise<string | undefined> {
     if (!command.trim()) return undefined
-    if (!Bun.which("apfel")) return undefined
+    const apfelPath = Bun.which("apfel")
+    if (!apfelPath) return undefined
 
     const rules = JSON.stringify(allowRules.slice(0, 30))
     const system = `You are a bash command advisor. Given these permitted patterns as JSON: ${rules}, the agent tried a denied command. Output ONLY the single best permitted alternative command. No explanation. No punctuation. Just the command.`
 
-    const { controller, signal, clearTimeout } = abortAfter(5000)
+    const { signal, clearTimeout } = abortAfter(5000)
     let proc: ReturnType<typeof Bun.spawn> | undefined
     try {
-      proc = Bun.spawn(["apfel", "-q", "--permissive", "-s", system, command], {
+      proc = Bun.spawn([apfelPath, "-q", "--permissive", "-s", system, command], {
         signal,
         stdout: "pipe",
         stderr: "ignore",
       })
+      if (!proc.stdout) {
+        clearTimeout()
+        return undefined
+      }
       const output = await new Response(proc.stdout as ReadableStream<Uint8Array>).text()
       const code = await proc.exited
       clearTimeout()
       if (code !== 0) return undefined
-      return output.trim() || undefined
+      const trimmed = output.trim().slice(0, 200).replaceAll("`", "").replaceAll("\n", " ")
+      return trimmed || undefined
     } catch (e) {
       clearTimeout()
       proc?.kill()
