@@ -507,44 +507,59 @@
          "packages/opencode/test/provider/copilot/openai-compatible-error.test.ts"
        ],
        "upstreamTracking": {
-         "absorptionSignals": [
-           "responseBody.choices?.length",
-           "value.choices?.length",
-           "InvalidResponseDataError.*choices",
-           "choices.*length.*0",
-           "no choices.*provider",
-           "status_code.*error",
-           "openaiCompatibleErrorDataSchema.*union",
-           "wrappedErrorObject",
-           "standardErrorObject"
-         ]
+"absorptionSignals": [
+            "responseBody.choices?.length",
+            "value.choices?.length",
+            "InvalidResponseDataError.*choices",
+            "choices.*length.*0",
+            "no choices.*provider",
+            "status_code.*error",
+            "openaiCompatibleErrorDataSchema.*union",
+            "wrappedErrorObject",
+            "standardErrorObject"
+            ]
+          }
+       },
+        "cerebras-error-normalization": {
+         "status": "active",
+         "description": "Overrides @ai-sdk/cerebras in the cerebras custom loader to use OpenAICompatibleChatLanguageModel with defaultOpenAICompatibleErrorStructure, so Cerebras status_code-wrapped error responses are handled correctly instead of throwing AI_TypeValidationError.",
+         "issue": "https://github.com/randomm/opencode/issues/369",
+         "newFiles": [],
+         "modifiedFiles": [
+           "packages/opencode/src/provider/provider.ts"
+         ],
+        "criticalCode": [
+           "OpenAICompatibleChatLanguageModel",
+           "defaultOpenAICompatibleErrorStructure",
+           "X-Cerebras-3rd-Party-Integration",
+           "api.cerebras.ai",
+           "CEREBRAS_API_KEY"
+         ],
+         "tests": [
+           "packages/opencode/test/provider/cerebras-error-schema.test.ts"
+         ],
+         "upstreamTracking": {
+           "absorptionSignals": [
+             "cerebras.*OpenAICompatibleChatLanguageModel",
+             "cerebras.*errorStructure",
+             "cerebras.*defaultOpenAICompatibleErrorStructure"
+           ]
+          }
+},
+        "apfel-permission-suggestion": {
+          "status": "active",
+         "description": "On bash permission denial, optionally spawns apfel (Apple Intelligence CLI) to suggest the nearest permitted alternative command. Appended to DeniedError message shown to the agent. No-op if apfel not installed.",
+         "issue": "https://github.com/randomm/opencode/issues/371",
+         "newFiles": [],
+         "modifiedFiles": ["packages/opencode/src/permission/next.ts"],
+         "deletedFiles": [],
+         "criticalCode": ["getApfelSuggestion", "apfelPath", "DeniedError.*suggestion"],
+         "tests": ["packages/opencode/test/permission/next.test.ts"],
+         "upstreamTracking": {
+           "relatedPRs": [],
+           "relatedIssues": [],
+           "absorptionSignals": ["getApfelSuggestion", "apfelPath.*Bun.which", "apfel.*permissive.*permission"]
+         }
         }
-      },
-      "cerebras-error-normalization": {
-       "status": "active",
-       "description": "Overrides @ai-sdk/cerebras in the cerebras custom loader to use OpenAICompatibleChatLanguageModel with defaultOpenAICompatibleErrorStructure, so Cerebras status_code-wrapped error responses are handled correctly instead of throwing AI_TypeValidationError.",
-       "issue": "https://github.com/randomm/opencode/issues/369",
-       "newFiles": [],
-       "modifiedFiles": [
-         "packages/opencode/src/provider/provider.ts"
-       ],
-      "criticalCode": [
-         "OpenAICompatibleChatLanguageModel",
-         "defaultOpenAICompatibleErrorStructure",
-         "X-Cerebras-3rd-Party-Integration",
-         "api.cerebras.ai",
-         "CEREBRAS_API_KEY"
-       ],
-       "tests": [
-         "packages/opencode/test/provider/cerebras-error-schema.test.ts"
-       ],
-       "upstreamTracking": {
-         "absorptionSignals": [
-           "cerebras.*OpenAICompatibleChatLanguageModel",
-           "cerebras.*errorStructure",
-           "cerebras.*defaultOpenAICompatibleErrorStructure"
-         ]
-        }
-      }
-  }
+    }
 }

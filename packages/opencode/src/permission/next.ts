@@ -1,3 +1,4 @@
+import { abortAfter } from "@/util/abort"
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Config } from "@/config/config"
@@ -138,8 +139,12 @@ export namespace PermissionNext {
       for (const pattern of request.patterns ?? []) {
         const rule = evaluate(request.permission, pattern, ruleset, s.approved)
         log.info("evaluated", { permission: request.permission, pattern, action: rule })
-        if (rule.action === "deny")
-          throw new DeniedError(ruleset.filter((r) => Wildcard.match(request.permission, r.permission)))
+        if (rule.action === "deny") {
+          const denied = ruleset.filter((r) => Wildcard.match(request.permission, r.permission))
+          const allowed = ruleset.filter((r) => r.action === "allow")
+          const suggestion = await getApfelSuggestion(request.patterns[0] ?? "", allowed)
+          throw new DeniedError(denied, suggestion)
+        }
         if (rule.action === "ask") {
           const id = input.id ?? Identifier.ascending("permission")
           return new Promise<void>((resolve, reject) => {
@@ -272,9 +277,10 @@ export namespace PermissionNext {
 
   /** Auto-rejected by config rule - halts execution */
   export class DeniedError extends Error {
-    constructor(public readonly ruleset: Ruleset) {
+    constructor(public readonly ruleset: Ruleset, suggestion?: string) {
       super(
-        `The user has specified a rule which prevents you from using this specific tool call. Here are some of the relevant rules ${JSON.stringify(ruleset)}`,
+        `The user has specified a rule which prevents you from using this specific tool call. Here are some of the relevant rules ${JSON.stringify(ruleset)}` +
+          (suggestion ? `\n\nSuggested alternative: \`${suggestion}\`` : ""),
       )
     }
   }
@@ -282,5 +288,39 @@ export namespace PermissionNext {
   export async function list() {
     const s = await state()
     return Object.values(s.pending).map((x) => x.info)
+  }
+
+  async function getApfelSuggestion(command: string, allowRules: Rule[]): Promise<string | undefined> {
+    if (!command.trim()) return undefined
+    const apfelPath = Bun.which("apfel")
+    if (!apfelPath) return undefined
+
+    const rules = JSON.stringify(allowRules.slice(0, 30))
+    const system = `You are a bash command advisor. Given these permitted patterns as JSON: ${rules}, the agent tried a denied command. Output ONLY the single best permitted alternative command. No explanation. No punctuation. Just the command.`
+
+    const { signal, clearTimeout } = abortAfter(5000)
+    let proc: ReturnType<typeof Bun.spawn> | undefined
+    try {
+      proc = Bun.spawn([apfelPath, "-q", "--permissive", "-s", system, command], {
+        signal,
+        stdout: "pipe",
+        stderr: "ignore",
+      })
+      if (!proc.stdout) {
+        clearTimeout()
+        return undefined
+      }
+      const output = await new Response(proc.stdout as ReadableStream<Uint8Array>).text()
+      const code = await proc.exited
+      clearTimeout()
+      if (code !== 0) return undefined
+      const trimmed = output.trim().slice(0, 200).replaceAll("`", "").replaceAll("\n", " ")
+      return trimmed || undefined
+    } catch (e) {
+      clearTimeout()
+      proc?.kill()
+      log.debug("apfel suggestion failed", { error: e })
+      return undefined
+    }
   }
 }
