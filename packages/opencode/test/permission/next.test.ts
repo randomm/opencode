@@ -687,3 +687,25 @@ test("ask - allows all patterns when all match allow rules", async () => {
     },
   })
 })
+
+test("DeniedError - includes suggestion when provided", () => {
+  const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }], "ls -la")
+  expect(error.message).toContain("Suggested alternative: `ls -la`")
+})
+
+test("DeniedError - no suggestion text when not provided", () => {
+  const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }])
+  expect(error.message).not.toContain("Suggested alternative")
+})
+
+test("DeniedError - message format without suggestion", () => {
+  const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }])
+  expect(error.message).toContain("The user has specified a rule")
+  expect(error.message).not.toContain("Suggested alternative")
+})
+
+test("DeniedError - message format with empty string suggestion treated as no suggestion", () => {
+  // suggestion="" should not add the Suggested alternative line (falsy check)
+  const error = new PermissionNext.DeniedError([{ permission: "bash", pattern: "*", action: "deny" }], undefined)
+  expect(error.message).not.toContain("Suggested alternative")
+})
