@@ -30,7 +30,6 @@
       "criticalCode": [
         "backgroundTaskResults",
         "trackBackgroundTask",
-        "cleanupSessionMaps",
         "formatCompletedTasksForInjection",
         "TaskTool",
         "CheckTaskTool",
@@ -40,16 +39,9 @@
         "CancelTaskTool",
         "tryCancel",
         "parent_session_id",
-        "Session ownership filtering",
-        "filter to caller's session",
-        "Sync mode: execute synchronously",
-        "params.sync",
-        "enableAutoWakeup",
-        "triggerWakeup",
-        "autoWakeupSubscribers",
-        "hasUndeliveredCompletedTasks",
-        "getAndClearCompletedTasks",
-        "MAX_CONCURRENT_TASKS_PER_SESSION = 10"
+        "reserveTaskSlot",
+        "getSessionTaskCount",
+        "MAX_STORED_TASK_RESULTS"
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
@@ -64,7 +56,6 @@
           "backgroundTaskResults",
           "BackgroundTask",
           "task.*concurrency.*slot",
-          "sync.*mode",
           "cancel.*task",
           "CancelTaskTool",
           "tryCancel"
@@ -343,7 +334,14 @@
         "packages/opencode/src/tasks/validation.ts",
         "packages/opencode/src/tasks/composer.ts",
         "packages/opencode/src/tasks/pulse.ts",
+        "packages/opencode/src/tasks/pulse-monitoring.ts",
+        "packages/opencode/src/tasks/pulse-scheduler.ts",
+        "packages/opencode/src/tasks/pulse-verdicts.ts",
+        "packages/opencode/src/tasks/pulse-utils.ts",
         "packages/opencode/src/tasks/tool.ts",
+        "packages/opencode/src/tasks/tool-commands.ts",
+        "packages/opencode/src/tasks/job-commands.ts",
+        "packages/opencode/src/tasks/inspect-commands.ts",
         "packages/opencode/src/tasks/index.ts",
         "packages/opencode/src/tasks/LIMITATIONS.md",
         "packages/opencode/test/tasks/store.test.ts",
@@ -409,52 +407,45 @@
          "taskctl depends",
          "taskctl split",
          "taskctl next",
-         "taskctl validate",
-         "taskctl start",
-         "taskctl start-skip",
-         "taskctl status",
-         "taskctl stop",
-         "taskctl resume",
-         "taskctl inspect",
-         "taskctl override",
-         "taskctl retry",
-         "command enum (stop, resume, inspect, override, retry)",
-         "overrideMode parameter (skip, commit-as-is)",
-         "Terminal state rejection (complete/failed/stopped)",
-         "Pulse-zombie detection in stop command",
-         "Job stopping flag validation",
-         "Session cancellation and worktree cleanup",
-         "composer agent",
+"taskctl validate",
+"taskctl start",
+"start-skip",
+"taskctl status",
+"taskctl stop",
+"taskctl resume",
+"taskctl inspect",
+"taskctl override",
+"taskctl retry",
+"case \"override\":",
+"commit-as-is",
+"Job status must be \"stopped\" to resume",
+"stopping: true",
+         "SessionPrompt.cancel",
+         "Worktree.remove",
          "runComposer",
-         "Circular dependency detection",
-         "Missing dependency detection",
-         "Acceptance criteria warning",
-         "Conflict label warning",
-         "Priority ordering (0=highest)",
-         "Dependency filtering",
-         "Self-dependency prevention",
-         "Duplicate dependency check",
-         "Status validation (only split open, prevent re-close)",
+         ".literal(0)",
+         ".literal(1)",
+         ".literal(2)",
+         ".literal(3)",
+         ".literal(4)",
+         "slugify",
+         "generateUniqueSlug",
+         "Can only split open tasks",
+         "counter <= maxAttempts",
+         "maxAttempts = 1000",
          "MAX_COMMENT_LENGTH",
-         "maxAttempts (1000)",
-         "append-only.ndjson",
          "activity.ndjson",
          "index.json",
-         "slug generation",
-         "conflict detection",
-         "TOCTOU",
-         "concurrent operation",
+         "module:<name>",
+         "file:<path>",
          "steering agent",
          "checkSteering",
          "spawnSteering",
          "getRecentActivity",
-         "Session.messages()",
-         "15-minute steering evaluation",
-         "continue/steer/replace",
-         "ADVERSARIAL_TIMEOUT_MS = 60 * 60 * 1000",
-         "adversarial-running stage timeout",
-         "Steering guidance via SessionPrompt",
-         "Developer replacement logic"
+         "Session.messages",
+         "minutesSince < 15",
+         "result.action",
+         "adversarial-running"
        ],
       "tests": [
         "packages/opencode/test/tasks/store.test.ts",
@@ -508,8 +499,7 @@
          "openaiCompatibleErrorDataSchema",
          "errorToMessage",
          "standardErrorObject",
-         "wrappedErrorObject",
-         "Both union branches have error.message at the same path"
+         "wrappedErrorObject"
        ],
        "tests": [
          "packages/opencode/test/provider/copilot/copilot-chat-model.test.ts",
@@ -537,13 +527,13 @@
        "modifiedFiles": [
          "packages/opencode/src/provider/provider.ts"
        ],
-"criticalCode": [
-          "OpenAICompatibleChatLanguageModel",
-          "defaultOpenAICompatibleErrorStructure",
-          "X-Cerebras-3rd-Party-Integration",
-          "api.cerebras.ai",
-          "CEREBRAS_API_KEY"
-        ],
+      "criticalCode": [
+         "OpenAICompatibleChatLanguageModel",
+         "defaultOpenAICompatibleErrorStructure",
+         "X-Cerebras-3rd-Party-Integration",
+         "api.cerebras.ai",
+         "CEREBRAS_API_KEY"
+       ],
        "tests": [
          "packages/opencode/test/provider/cerebras-error-schema.test.ts"
        ],
@@ -555,5 +545,5 @@
          ]
         }
       }
-   }
- }
+  }
+}
