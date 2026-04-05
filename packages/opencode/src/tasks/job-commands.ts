@@ -9,6 +9,7 @@ import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { Instance } from "../project/instance"
 import * as PulseUtils from "./pulse-utils"
+import { getGithubRepo } from "../util/git"
 
 const log = Log.create({ service: "taskctl.tool.job-commands" })
 
@@ -117,7 +118,7 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
 
   enableAutoWakeup(ctx.sessionID)
 
-  const repo = "randomm/opencode"
+  const repo = await getGithubRepo(cwd) ?? "randomm/opencode"
 
   let issueOutput: { title: string; body: string } | null = null
   const proc = Bun.spawn(["gh", "issue", "view", issueNumber.toString(), "--repo", repo, "--json", "title,body"], {

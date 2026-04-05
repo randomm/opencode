@@ -15,6 +15,7 @@ import type { Task, AdversarialVerdict } from "./types"
 import { scheduleReadyTasks } from "./pulse-scheduler"
 import { sanitizeWorktree } from "./pulse-scheduler"
 import { isSessionActivelyRunning, lockFilePath } from "./pulse-scheduler"
+import { getGithubRepo } from "../util/git"
 
 // Allow 6 attempts to resolve minor test flakiness before escalating to PM
 const MAX_ADVERSARIAL_ATTEMPTS = 6
@@ -444,7 +445,7 @@ async function createPRForJob(projectId: string, tasks: Task[], pmSessionId: str
       return { ok: false, error: `Feature branch ${safeFeatureBranch} has no commits ahead of dev` }
     }
 
-    const repo = "randomm/opencode"
+    const repo = await getGithubRepo(parentSession.directory) ?? "randomm/opencode"
     const prTitle = `Issue #${issueNumber}: Automated PR from taskctl`
     const prBody = `Closes #${issueNumber}
 
