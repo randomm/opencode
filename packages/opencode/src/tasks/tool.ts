@@ -87,6 +87,11 @@ Task labels:
       fix: z.string(),
     })).optional().describe("Issues found in review (for verdict)"),
     verdictSummary: z.string().optional().describe("Summary of verdict (for verdict)"),
+    verdictScenarios: z.array(z.object({
+      scenario: z.string().max(500),
+      result: z.string().max(500),
+    })).max(50).optional().describe("Tested scenarios (for verdict)"),
+    coverageLevel: z.enum(["critical", "high", "medium", "low"]).nullish().describe("Coverage level assessed (for verdict)"),
   }),
   async execute(params, ctx) {
     const projectId = Instance.project.id

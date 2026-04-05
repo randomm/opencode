@@ -3,6 +3,7 @@ import { Log } from "../util/log"
 import { SessionPrompt } from "../session/prompt"
 import { Worktree } from "../worktree"
 import { sanitizeWorktree } from "./pulse-scheduler"
+import { formatScenarios } from "./format"
 import type { Task } from "./types"
 
 const log = Log.create({ service: "taskctl.tool.inspect-commands" })
@@ -59,6 +60,13 @@ export async function executeInspect(projectId: string, params: any): Promise<{ 
       for (const issue of v.issues) {
         lines.push(`    - ${issue.location} [${issue.severity}]: ${issue.fix}`)
       }
+    }
+    if (v.tested_scenarios && v.tested_scenarios.length > 0) {
+      lines.push(`  Tested scenarios:`)
+      lines.push(formatScenarios(v.tested_scenarios))
+    }
+    if (v.coverage_level) {
+      lines.push(`  Coverage level: ${v.coverage_level}`)
     }
   }
 
@@ -207,6 +215,17 @@ export async function executeVerdict(projectId: string, params: any, ctx: any): 
     verdict,
     summary,
     issues,
+    tested_scenarios: Array.isArray(params.verdictScenarios)
+    ? params.verdictScenarios.slice(0, 50).map((s: any) => ({
+        scenario: String(s?.scenario || ''),
+        result: String(s?.result || '')
+      }))
+    : [],
+    coverage_level: (params.coverageLevel === null || typeof params.coverageLevel === 'undefined')
+    ? null
+    : (typeof params.coverageLevel === 'string' && ['critical', 'high', 'medium', 'low'].includes(params.coverageLevel))
+      ? params.coverageLevel
+      : null,
     created_at: new Date().toISOString(),
   }
 

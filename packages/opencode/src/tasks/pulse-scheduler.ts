@@ -18,6 +18,7 @@ import type { Task, AdversarialVerdict } from "./types"
 import { MAX_ADVERSARIAL_ATTEMPTS } from "./pulse-verdicts"
 import { resolveModel } from "./pulse"
 import * as PulseUtils from "./pulse-utils"
+import { formatScenarios } from "./format"
 
 const log = Log.create({ service: "taskctl.pulse.scheduler" })
 
@@ -508,17 +509,28 @@ ABSOLUTE RULES:
 - Run commands from ${safeWorktree}/packages/opencode/
 `
 
-  const issueLines = verdict.issues.map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`).join("\n")
-  const prompt = `${directiveHeader}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
+  const issueLines = verdict.issues
+    .map((i) => `  - ${i.location} [${i.severity}]: ${i.fix}`)
+    .join("\n")
 
-**Task:** ${task.title}
-**Description:** ${task.description}
-**Acceptance Criteria:** ${task.acceptance_criteria}
+  const scenarioLines = verdict.tested_scenarios && verdict.tested_scenarios.length > 0
+    ? formatScenarios(verdict.tested_scenarios)
+    : "  - None specified"
+
+  const coverageNote = verdict.coverage_level
+    ? `\nCoverage level assessed: ${verdict.coverage_level.toUpperCase()}`
+    : ""
+
+  const prompt = `${directiveHeader}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
 
 **Adversarial feedback — fix these before signaling complete:**
 Summary: ${verdict.summary}
+
 Issues:
 ${issueLines}
+
+Tested Scenarios:
+${scenarioLines}${coverageNote}
 
 Follow TDD for any fixes:
 1. Write failing test(s) for each issue
