@@ -688,7 +688,7 @@ export namespace SessionPrompt {
       await Plugin.trigger("experimental.chat.messages.transform", {}, { messages: sessionMessages })
 
       // Build system prompt, adding structured output instruction if needed
-      const system = [...(await SystemPrompt.environment(model)), ...(await InstructionPrompt.system())]
+      const system = [...(await SystemPrompt.environment(model, { directory: session.directory })), ...(await InstructionPrompt.system())]
       const format = lastUser.format ?? { type: "text" }
       if (format.type === "json_schema") {
         system.push(STRUCTURED_OUTPUT_SYSTEM_PROMPT)
