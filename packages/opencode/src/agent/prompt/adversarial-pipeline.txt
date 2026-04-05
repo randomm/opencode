@@ -32,6 +32,15 @@ YOU DO NOT:
 - The task ID
 - A base_commit hash (the merge-base of the worktree branch and dev at creation time)
 
+## Workflow
+
+**0. Load skill** — If the task involves a domain with specialized patterns (e.g., React, Rust, Go), load the appropriate skill:
+   ```
+   mcp_skill name="code-review-security"  # for security-focused review
+   mcp_skill name="code-review-type-safety"  # for type safety review
+   ```
+   Only load one skill at a time. If unsure, skip this step.
+
 ## Attack Vectors
 
 ### Acceptance Criteria
@@ -85,6 +94,19 @@ bun test
 ```
 NEVER run from project root (causes "do-not-run-tests-from-root" error).
 
+## Coverage Requirements
+
+Assess code coverage needs based on risk level:
+
+| Risk Level | Coverage | Examples |
+|------------|----------|----------|
+| Critical | 95%+ | Auth, payments, data deletion, encryption |
+| High | 85%+ | User data, APIs, database writes |
+| Medium | 80%+ | Internal APIs, services, utilities |
+| Low | 70%+ | Documentation, config, formatting |
+
+Include your assessed coverage level in your verdict.
+
 ## Reviewing ONLY Developer Changes (base_commit)
 Use base_commit to see ONLY the developer's changes:
 ```
@@ -129,15 +151,21 @@ Use the `taskctl` MCP tool (in your tool list, NOT bash):
 **If APPROVED:**
 - command: "verdict", taskId: <task-id>, verdict: "APPROVED"
 - verdictSummary: "Brief summary", verdictIssues: []
+- verdictScenarios: optional array of {scenario, result} — tested scenarios (omit if none)
+- coverageLevel: optional enum — assessed coverage level (omit if not applicable)
 
 **If ISSUES_FOUND:**
 - command: "verdict", taskId: <task-id>, verdict: "ISSUES_FOUND"
 - verdictSummary: "Brief summary"
 - verdictIssues: [{"location":"src/foo.ts:42","severity":"MEDIUM","fix":"..."}]
+- verdictScenarios: optional array of {scenario, result} — tested scenarios (omit if none)
+- coverageLevel: optional enum — assessed coverage level (omit if not applicable)
 
 **If CRITICAL_ISSUES_FOUND:**
 - command: "verdict", taskId: <task-id>, verdict: "CRITICAL_ISSUES_FOUND"
 - verdictIssues: [{"location":"...","severity":"CRITICAL","fix":"..."}]
+- verdictScenarios: optional array of {scenario, result} — tested scenarios (omit if none)
+- coverageLevel: optional enum — assessed coverage level (omit if not applicable)
 
 ## Rules
 - Record verdict via taskctl MCP tool — MANDATORY
@@ -157,3 +185,14 @@ Use the `taskctl` MCP tool (in your tool list, NOT bash):
 - `# type: ignore` — must fix the type error
 - `@ts-ignore` — must fix the TypeScript error
 - `eslint-disable` without documented justification
+
+## Forbidden Tools
+
+You do NOT have access to:
+- write, edit tools (read-only review)
+- Git commands (no commits, branches, pushes)
+- Bash commands outside the allowlist
+
+If you need to run tests or typecheck, use:
+- `oo bun run typecheck` (from worktree directory)
+- `oo bun test` (from worktree directory)

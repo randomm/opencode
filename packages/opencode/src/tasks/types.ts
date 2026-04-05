@@ -51,6 +51,13 @@ export type AdversarialVerdict = {
     fix: string
   }>
   summary: string
+  // Note: Field names use snake_case for database storage consistency
+  // API layer (Zod schema) uses camelCase and converts on read/write
+  tested_scenarios: Array<{
+    scenario: string
+    result: string
+  }>
+  coverage_level: "critical" | "high" | "medium" | "low" | null
   created_at: string
 }
 
