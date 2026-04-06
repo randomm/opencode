@@ -264,17 +264,7 @@ export namespace PermissionNext {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-
-      // Prioritize exact permission matches over wildcard matches
-      const exactMatch = ruleset.find((r) => r.permission === permission)
-      if (exactMatch) {
-        if (exactMatch.pattern === "*" && exactMatch.action === "deny") {
-          result.add(tool)
-        }
-        continue
-      }
-
-      // No exact match, use find() to respect rule order
+      // Use wildcard matching like evaluate() - first match wins
       const rule = ruleset.find((r) => Wildcard.match(permission, r.permission))
       if (!rule) continue
       if (rule.pattern === "*" && rule.action === "deny") result.add(tool)

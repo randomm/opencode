@@ -452,9 +452,9 @@ test("disabled - wildcard permission denies all tools", () => {
   expect(result.has("read")).toBe(true)
 })
 
-test("disabled - specificallow rule takes precedence over wildcard deny", () => {
-  // With find(), specific rules take precedence over wildcard rules
-  // when there's an exact match on the permission field
+test("disabled - wildcard deny matches all permissions including specific ones", () => {
+  // With wildcard matching, "*" matches everything including "bash", "edit", "read"
+  // So the first rule { permission: "*", pattern: "*", action: "deny" } disables all tools
   const result = PermissionNext.disabled(
     ["bash", "edit", "read"],
     [
@@ -462,9 +462,8 @@ test("disabled - specificallow rule takes precedence over wildcard deny", () => 
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // bash has a specific allow, so it's NOT disabled (exact permission match wins)
-  expect(result.has("bash")).toBe(false)
-  // edit and read match only the wildcard deny, so they ARE disabled
+  // All tools ARE disabled because the first matching rule is { permission: "*", pattern: "*", action: "deny" }
+  expect(result.has("bash")).toBe(true)
   expect(result.has("edit")).toBe(true)
   expect(result.has("read")).toBe(true)
 })
@@ -490,6 +489,45 @@ test("disabled and evaluate consistency - Security check", () => {
 
   const wildcardResult = PermissionNext.evaluate("read", "other.txt", ruleset)
   expect(wildcardResult.action).toBe("allow") // Wildcard matches
+})
+
+test("disabled and evaluate consistency - wildcard permission edge case", () => {
+  // This test ensures disabled() and evaluate() agree when wildcard permission is involved
+  // Previously, inconsistency caused tools to appear available but be denied at runtime
+  const ruleset: PermissionNext.Ruleset = [
+    { permission: "bash", pattern: "*", action: "allow" },
+    { permission: "*", pattern: "*", action: "deny" }
+  ]
+  
+  const disabled = PermissionNext.disabled(["bash"], ruleset)
+  const evalResult = PermissionNext.evaluate("bash", "rm", ruleset)
+  
+  // With find() and wildcard matching:
+  // - First rule matches "bash" exactly via Wildcard.match("bash", "bash") → allow
+  // - Both functions should agree
+  expect(disabled.has("bash")).toBe(false) // bash is NOT disabled
+  expect(evalResult.action).toBe("allow") // bash is allowed
+  
+  // Verify consistency: if disabled() says available, evaluate() must allow
+  expect(disabled.has("bash")).toBe(evalResult.action === "deny")
+})
+
+test("disabled and evaluate consistency - wildcard permission first", () => {
+  // When wildcard permission comes first, both functions should deny
+  const ruleset: PermissionNext.Ruleset = [
+    { permission: "*", pattern: "*", action: "deny" },
+    { permission: "bash", pattern: "*", action: "allow" }
+  ]
+  
+  const disabled = PermissionNext.disabled(["bash"], ruleset)
+  const evalResult = PermissionNext.evaluate("bash", "rm", ruleset)
+  
+  // With find(), first match is wildcard deny
+  expect(disabled.has("bash")).toBe(true) // bash IS disabled
+  expect(evalResult.action).toBe("deny") // bash is denied
+  
+  // Verify consistency
+  expect(disabled.has("bash")).toBe(evalResult.action === "deny")
 })
 
 
