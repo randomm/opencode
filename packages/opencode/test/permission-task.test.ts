@@ -251,8 +251,8 @@ describe("permission.task with real config files", () => {
         const disabled = PermissionNext.disabled(["bash", "edit", "task"], ruleset)
         expect(disabled.has("bash")).toBe(false)
         expect(disabled.has("edit")).toBe(false)
-        // task is NOT disabled because the first matching rule is {pattern: "general", action: "allow"}
-        // The disabled() function only disables when the first matching rule has pattern="*" and action="deny"
+        // disabled() uses find() - first match is {pattern: "general", action: "allow"}
+        // So the task tool is NOT disabled (even though most subagents are denied)
         expect(disabled.has("task")).toBe(false)
       },
     })
@@ -284,7 +284,6 @@ test("task tool NOT disabled when specific patterns come before wildcard", async
 
         // disabled() uses find() - first match is {pattern: "code_reviewer", action: "deny"}
         // But pattern is NOT "*", so tool is NOT disabled
-        // The disabled() function only disables when pattern="*" AND action="deny"
         const disabled = PermissionNext.disabled(["task"], ruleset)
         expect(disabled.has("task")).toBe(false)
       },
