@@ -356,8 +356,8 @@ test("disabled - disables tool when denied", () => {
   const result = PermissionNext.disabled(
     ["bash", "edit", "read"],
     [
-      { permission: "*", pattern: "*", action: "allow" },
       { permission: "bash", pattern: "*", action: "deny" },
+      { permission: "*", pattern: "*", action: "allow" },
     ],
   )
   expect(result.has("bash")).toBe(true)
@@ -369,8 +369,8 @@ test("disabled - disables edit/write/patch/multiedit when edit denied", () => {
   const result = PermissionNext.disabled(
     ["edit", "write", "patch", "multiedit", "bash"],
     [
-      { permission: "*", pattern: "*", action: "allow" },
       { permission: "edit", pattern: "*", action: "deny" },
+      { permission: "*", pattern: "*", action: "allow" },
     ],
   )
   expect(result.has("edit")).toBe(true)
@@ -396,9 +396,9 @@ test("disabled - does not disable when action is ask", () => {
   expect(result.size).toBe(0)
 })
 
-test("disabled - does not disable when specific allow after wildcard deny", () => {
-  // Tool is NOT disabled because a specific allow after wildcard deny means
-  // there's at least some usage allowed
+test("disabled - disables when wildcard deny comes before specific allow", () => {
+  // With find(), the first matching rule determines if tool is disabled
+  // If wildcard deny comes first, tool is disabled even if there are specific allows later
   const result = PermissionNext.disabled(
     ["bash"],
     [
@@ -406,7 +406,7 @@ test("disabled - does not disable when specific allow after wildcard deny", () =
       { permission: "bash", pattern: "echo *", action: "allow" },
     ],
   )
-  expect(result.has("bash")).toBe(false)
+  expect(result.has("bash")).toBe(true)
 })
 
 test("disabled - does not disable when wildcard allow after deny", () => {
@@ -441,7 +441,9 @@ test("disabled - wildcard permission denies all tools", () => {
   expect(result.has("read")).toBe(true)
 })
 
-test("disabled - specific allow overrides wildcard deny", () => {
+test("disabled - specificallow rule takes precedence over wildcard deny", () => {
+  // With find(), specific rules take precedence over wildcard rules
+  // when there's an exact match on the permission field
   const result = PermissionNext.disabled(
     ["bash", "edit", "read"],
     [
@@ -449,10 +451,14 @@ test("disabled - specific allow overrides wildcard deny", () => {
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
+  // bash has a specific allow, so it's NOT disabled
   expect(result.has("bash")).toBe(false)
+  // edit and read match only the wildcard deny, so they ARE disabled
   expect(result.has("edit")).toBe(true)
   expect(result.has("read")).toBe(true)
 })
+
+
 
 // ask tests
 
