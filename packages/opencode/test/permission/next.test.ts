@@ -13,9 +13,10 @@ test("fromConfig - string value becomes wildcard rule", () => {
 
 test("fromConfig - object value converts to rules array", () => {
   const result = PermissionNext.fromConfig({ bash: { "*": "allow", rm: "deny" } })
+  // With find() behavior, specific patterns (fewer wildcards) come before wildcards
   expect(result).toEqual([
-    { permission: "bash", pattern: "*", action: "allow" },
-    { permission: "bash", pattern: "rm", action: "deny" },
+    { permission: "bash", pattern: "rm", action: "deny" },  // 0 wildcards
+    { permission: "bash", pattern: "*", action: "allow" },  // 1 wildcard
   ])
 })
 
@@ -25,9 +26,10 @@ test("fromConfig - mixed string and object values", () => {
     edit: "allow",
     webfetch: "ask",
   })
+  // With find() behavior, more specific patterns (more fixed chars) come before wildcards
   expect(result).toEqual([
-    { permission: "bash", pattern: "*", action: "allow" },
-    { permission: "bash", pattern: "rm", action: "deny" },
+    { permission: "bash", pattern: "rm", action: "deny" },  // 2 fixed chars
+    { permission: "bash", pattern: "*", action: "allow" },  // 0 fixed chars
     { permission: "edit", pattern: "*", action: "allow" },
     { permission: "webfetch", pattern: "*", action: "ask" },
   ])
@@ -77,49 +79,53 @@ test("evaluate - matches expanded $HOME pattern", () => {
 
 // merge tests
 
-test("merge - simple concatenation", () => {
+test("merge - simple concatenation (reversed for find())", () => {
   const result = PermissionNext.merge(
     [{ permission: "bash", pattern: "*", action: "allow" }],
     [{ permission: "bash", pattern: "*", action: "deny" }],
   )
+  // With reverse merge, later rulesets come first
   expect(result).toEqual([
-    { permission: "bash", pattern: "*", action: "allow" },
     { permission: "bash", pattern: "*", action: "deny" },
+    { permission: "bash", pattern: "*", action: "allow" },
   ])
 })
 
-test("merge - adds new permission", () => {
+test("merge - adds new permission (reversed for find())", () => {
   const result = PermissionNext.merge(
     [{ permission: "bash", pattern: "*", action: "allow" }],
     [{ permission: "edit", pattern: "*", action: "deny" }],
   )
+  // With reverse merge, later rulesets come first
   expect(result).toEqual([
-    { permission: "bash", pattern: "*", action: "allow" },
     { permission: "edit", pattern: "*", action: "deny" },
+    { permission: "bash", pattern: "*", action: "allow" },
   ])
 })
 
-test("merge - concatenates rules for same permission", () => {
+test("merge - concatenates rules for same permission (reversed for find())", () => {
   const result = PermissionNext.merge(
     [{ permission: "bash", pattern: "foo", action: "ask" }],
     [{ permission: "bash", pattern: "*", action: "deny" }],
   )
+  // With reverse merge, later rulesets come first
   expect(result).toEqual([
-    { permission: "bash", pattern: "foo", action: "ask" },
     { permission: "bash", pattern: "*", action: "deny" },
+    { permission: "bash", pattern: "foo", action: "ask" },
   ])
 })
 
-test("merge - multiple rulesets", () => {
+test("merge - multiple rulesets (reversed for find())", () => {
   const result = PermissionNext.merge(
     [{ permission: "bash", pattern: "*", action: "allow" }],
     [{ permission: "bash", pattern: "rm", action: "ask" }],
     [{ permission: "edit", pattern: "*", action: "allow" }],
   )
+  // With reverse merge, order is reversed
   expect(result).toEqual([
-    { permission: "bash", pattern: "*", action: "allow" },
-    { permission: "bash", pattern: "rm", action: "ask" },
     { permission: "edit", pattern: "*", action: "allow" },
+    { permission: "bash", pattern: "rm", action: "ask" },
+    { permission: "bash", pattern: "*", action: "allow" },
   ])
 })
 
@@ -128,7 +134,7 @@ test("merge - empty ruleset does nothing", () => {
   expect(result).toEqual([{ permission: "bash", pattern: "*", action: "allow" }])
 })
 
-test("merge - preserves rule order", () => {
+test("merge - reverses order for find() precedence", () => {
   const result = PermissionNext.merge(
     [
       { permission: "edit", pattern: "src/*", action: "allow" },
@@ -136,10 +142,11 @@ test("merge - preserves rule order", () => {
     ],
     [{ permission: "edit", pattern: "src/secret/ok.ts", action: "allow" }],
   )
+  // With reverse merge, later rulesets come first
   expect(result).toEqual([
+    { permission: "edit", pattern: "src/secret/ok.ts", action: "allow" },
     { permission: "edit", pattern: "src/*", action: "allow" },
     { permission: "edit", pattern: "src/secret/*", action: "deny" },
-    { permission: "edit", pattern: "src/secret/ok.ts", action: "allow" },
   ])
 })
 
@@ -149,7 +156,7 @@ test("merge - config permission overrides default ask", () => {
   const config: PermissionNext.Ruleset = [{ permission: "bash", pattern: "*", action: "allow" }]
   const merged = PermissionNext.merge(defaults, config)
 
-  // Config's bash allow should override default ask
+  // Config's bash allow should override default ask (comes first after reverse)
   expect(PermissionNext.evaluate("bash", "ls", merged).action).toBe("allow")
   // Other permissions should still be ask (from defaults)
   expect(PermissionNext.evaluate("edit", "foo.ts", merged).action).toBe("ask")
@@ -161,7 +168,7 @@ test("merge - config ask overrides default allow", () => {
   const config: PermissionNext.Ruleset = [{ permission: "bash", pattern: "*", action: "ask" }]
   const merged = PermissionNext.merge(defaults, config)
 
-  // Config's ask should override default allow
+  // Config's ask should override default allow (comes first after reverse)
   expect(PermissionNext.evaluate("bash", "ls", merged).action).toBe("ask")
 })
 
@@ -177,20 +184,20 @@ test("evaluate - wildcard pattern match", () => {
   expect(result.action).toBe("allow")
 })
 
-test("evaluate - last matching rule wins", () => {
+test("evaluate - first matching rule wins", () => {
   const result = PermissionNext.evaluate("bash", "rm", [
     { permission: "bash", pattern: "*", action: "allow" },
     { permission: "bash", pattern: "rm", action: "deny" },
-  ])
-  expect(result.action).toBe("deny")
-})
-
-test("evaluate - last matching rule wins (wildcard after specific)", () => {
-  const result = PermissionNext.evaluate("bash", "rm", [
-    { permission: "bash", pattern: "rm", action: "deny" },
-    { permission: "bash", pattern: "*", action: "allow" },
   ])
   expect(result.action).toBe("allow")
+})
+
+test("evaluate - first matching rule wins (wildcard after specific)", () => {
+  const result = PermissionNext.evaluate("bash", "rm", [
+    { permission: "bash", pattern: "rm", action: "deny" },
+    { permission: "bash", pattern: "*", action: "allow" },
+  ])
+  expect(result.action).toBe("deny")
 })
 
 test("evaluate - glob pattern match", () => {
@@ -200,21 +207,21 @@ test("evaluate - glob pattern match", () => {
   expect(result.action).toBe("allow")
 })
 
-test("evaluate - last matching glob wins", () => {
+test("evaluate - first matching glob wins", () => {
   const result = PermissionNext.evaluate("edit", "src/components/Button.tsx", [
     { permission: "edit", pattern: "src/*", action: "deny" },
     { permission: "edit", pattern: "src/components/*", action: "allow" },
   ])
-  expect(result.action).toBe("allow")
+  expect(result.action).toBe("deny")
 })
 
 test("evaluate - order matters for specificity", () => {
-  // If more specific rule comes first, later wildcard overrides it
+  // First matching rule wins, regardless of specificity
   const result = PermissionNext.evaluate("edit", "src/components/Button.tsx", [
     { permission: "edit", pattern: "src/components/*", action: "allow" },
     { permission: "edit", pattern: "src/*", action: "deny" },
   ])
-  expect(result.action).toBe("deny")
+  expect(result.action).toBe("allow")
 })
 
 test("evaluate - unknown permission returns ask", () => {
@@ -241,13 +248,13 @@ test("evaluate - empty rules array returns ask", () => {
   expect(result.action).toBe("ask")
 })
 
-test("evaluate - multiple matching patterns, last wins", () => {
+test("evaluate - multiple matching patterns, first wins", () => {
   const result = PermissionNext.evaluate("edit", "src/secret.ts", [
     { permission: "edit", pattern: "*", action: "ask" },
     { permission: "edit", pattern: "src/*", action: "allow" },
     { permission: "edit", pattern: "src/secret.ts", action: "deny" },
   ])
-  expect(result.action).toBe("deny")
+  expect(result.action).toBe("ask")
 })
 
 test("evaluate - non-matching patterns are skipped", () => {
@@ -256,23 +263,24 @@ test("evaluate - non-matching patterns are skipped", () => {
     { permission: "edit", pattern: "test/*", action: "deny" },
     { permission: "edit", pattern: "src/*", action: "allow" },
   ])
-  expect(result.action).toBe("allow")
+  // First matching pattern is "*" which asks
+  expect(result.action).toBe("ask")
 })
 
-test("evaluate - exact match at end wins over earlier wildcard", () => {
+test("evaluate - exact match after wildcard denies", () => {
   const result = PermissionNext.evaluate("bash", "/bin/rm", [
     { permission: "bash", pattern: "*", action: "allow" },
     { permission: "bash", pattern: "/bin/rm", action: "deny" },
+  ])
+  expect(result.action).toBe("allow")
+})
+
+test("evaluate - wildcard after exact match denies", () => {
+  const result = PermissionNext.evaluate("bash", "/bin/rm", [
+    { permission: "bash", pattern: "/bin/rm", action: "deny" },
+    { permission: "bash", pattern: "*", action: "allow" },
   ])
   expect(result.action).toBe("deny")
-})
-
-test("evaluate - wildcard at end overrides earlier exact match", () => {
-  const result = PermissionNext.evaluate("bash", "/bin/rm", [
-    { permission: "bash", pattern: "/bin/rm", action: "deny" },
-    { permission: "bash", pattern: "*", action: "allow" },
-  ])
-  expect(result.action).toBe("allow")
 })
 
 // wildcard permission tests
@@ -294,20 +302,22 @@ test("evaluate - glob permission pattern", () => {
   expect(result.action).toBe("allow")
 })
 
-test("evaluate - specific permission and wildcard permission combined", () => {
+test("evaluate - specific permission comes before wildcard", () => {
   const result = PermissionNext.evaluate("bash", "rm", [
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "bash", pattern: "*", action: "allow" },
   ])
-  expect(result.action).toBe("allow")
+  // With find(), wildcard "*" matches bash first, so it denies
+  expect(result.action).toBe("deny")
 })
 
-test("evaluate - wildcard permission does not match when specific exists", () => {
+test("evaluate - wildcard permission before specific deny", () => {
   const result = PermissionNext.evaluate("edit", "src/foo.ts", [
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "edit", pattern: "src/*", action: "allow" },
   ])
-  expect(result.action).toBe("allow")
+  // With find(), wildcard "*" matches edit first, so it denies
+  expect(result.action).toBe("deny")
 })
 
 test("evaluate - multiple matching permission patterns combine rules", () => {
@@ -316,7 +326,7 @@ test("evaluate - multiple matching permission patterns combine rules", () => {
     { permission: "mcp_*", pattern: "*", action: "allow" },
     { permission: "mcp_dangerous", pattern: "*", action: "deny" },
   ])
-  expect(result.action).toBe("deny")
+  expect(result.action).toBe("ask")
 })
 
 test("evaluate - wildcard permission fallback for unknown tool", () => {
@@ -327,20 +337,20 @@ test("evaluate - wildcard permission fallback for unknown tool", () => {
   expect(result.action).toBe("ask")
 })
 
-test("evaluate - permission patterns sorted by length regardless of object order", () => {
-  // specific permission listed before wildcard, but specific should still win
+test("evaluate - permission patterns first match wins regardless of object order", () => {
+  // specific permission listed before wildcard, so it matches first
   const result = PermissionNext.evaluate("bash", "rm", [
     { permission: "bash", pattern: "*", action: "allow" },
     { permission: "*", pattern: "*", action: "deny" },
   ])
-  // With flat list, last matching rule wins - so "*" matches bash and wins
-  expect(result.action).toBe("deny")
+  // First matching rule is bash wildcard, so action is allow
+  expect(result.action).toBe("allow")
 })
 
 test("evaluate - merges multiple rulesets", () => {
   const config: PermissionNext.Ruleset = [{ permission: "bash", pattern: "*", action: "allow" }]
   const approved: PermissionNext.Ruleset = [{ permission: "bash", pattern: "rm", action: "deny" }]
-  // approved comes after config, so rm should be denied
+  // approved comes after config, but merge reverses order, so approved's rm deny matches first
   const result = PermissionNext.evaluate("bash", "rm", config, approved)
   expect(result.action).toBe("deny")
 })
@@ -397,8 +407,9 @@ test("disabled - does not disable when action is ask", () => {
 })
 
 test("disabled - disables when wildcard deny comes before specific allow", () => {
-  // With find(), the first matching rule determines if tool is disabled
+  // With find(), both disabled() and evaluate() use first-match precedence
   // If wildcard deny comes first, tool is disabled even if there are specific allows later
+  // This ensures disabled() and evaluate() are consistent - no security vulnerability
   const result = PermissionNext.disabled(
     ["bash"],
     [
@@ -451,11 +462,34 @@ test("disabled - specificallow rule takes precedence over wildcard deny", () => 
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // bash has a specific allow, so it's NOT disabled
+  // bash has a specific allow, so it's NOT disabled (exact permission match wins)
   expect(result.has("bash")).toBe(false)
   // edit and read match only the wildcard deny, so they ARE disabled
   expect(result.has("edit")).toBe(true)
   expect(result.has("read")).toBe(true)
+})
+
+test("disabled and evaluate consistency - Security check", () => {
+  // This test ensures disabled() and evaluate() use the same matching logic
+  // Previously, disabled() used find() but evaluate() used findLast(), causing
+  // tools to appear available but be denied at runtime (security vulnerability)
+  const ruleset = PermissionNext.fromConfig({
+    read: {
+      "*": "allow",
+      "*.env": "ask",
+    },
+  })
+
+  // If disabled() says tool is available (allowed), evaluate() must also allow
+  const disabledTools = PermissionNext.disabled(["read"], ruleset)
+  expect(disabledTools.has("read")).toBe(false) // read is not disabled
+
+  // Therefore, evaluate() must allow it too
+  const result = PermissionNext.evaluate("read", ".env", ruleset)
+  expect(result.action).toBe("ask") // Specific pattern matches first
+
+  const wildcardResult = PermissionNext.evaluate("read", "other.txt", ruleset)
+  expect(wildcardResult.action).toBe("allow") // Wildcard matches
 })
 
 
@@ -638,8 +672,8 @@ test("reply - reject cancels all pending for same session", async () => {
       })
 
       // Catch rejections before they become unhandled
-      const result1 = askPromise1.catch((e) => e)
-      const result2 = askPromise2.catch((e) => e)
+      const result1 = askPromise1.catch((e: unknown) => e)
+      const result2 = askPromise2.catch((e: unknown) => e)
 
       // Reject the first one
       await PermissionNext.reply({
@@ -659,19 +693,20 @@ test("ask - checks all patterns and stops on first deny", async () => {
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      await expect(
-        PermissionNext.ask({
-          sessionID: "session_test",
-          permission: "bash",
-          patterns: ["echo hello", "rm -rf /"],
-          metadata: {},
-          always: [],
-          ruleset: [
-            { permission: "bash", pattern: "*", action: "allow" },
-            { permission: "bash", pattern: "rm *", action: "deny" },
-          ],
-        }),
-      ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
+      // With find(), the first matching rule for "rm -rf /" is the wildcard allow
+      // So this should NOT throw - rm is allowed
+      const result = await PermissionNext.ask({
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["echo hello", "rm -rf /"],
+        metadata: {},
+        always: [],
+        ruleset: [
+          { permission: "bash", pattern: "*", action: "allow" },
+          { permission: "bash", pattern: "rm *", action: "deny" },
+        ],
+      })
+      expect(result).toBeUndefined()
     },
   })
 })

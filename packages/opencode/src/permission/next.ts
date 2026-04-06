@@ -55,15 +55,26 @@ export namespace PermissionNext {
         })
         continue
       }
+      // Sort patterns by specificity for find() behavior:
+      // More specific = fewer files match = more fixed (non-wildcard) characters
+      const patterns = Object.entries(value).sort((a, b) => {
+        const aFixed = a[0].length - (a[0].match(/\*/g) || []).length - (a[0].match(/\?/g) || []).length
+        const bFixed = b[0].length - (b[0].match(/\*/g) || []).length - (b[0].match(/\?/g) || []).length
+        if (aFixed !== bFixed) return bFixed - aFixed
+        // Same fixed chars, put shorter patterns first (fewer wildcards = more constrained)
+        return a[0].length - b[0].length
+      })
       ruleset.push(
-        ...Object.entries(value).map(([pattern, action]) => ({ permission: key, pattern: expand(pattern), action })),
+        ...patterns.map(([pattern, action]) => ({ permission: key, pattern: expand(pattern), action })),
       )
     }
     return ruleset
   }
 
   export function merge(...rulesets: Ruleset[]): Ruleset {
-    return rulesets.flat()
+    // Reverse order so later rulesets take precedence with find()
+    // merge(defaults, user) should produce [...user, ...defaults]
+    return rulesets.reverse().flat()
   }
 
   export const Request = z
@@ -241,7 +252,7 @@ export namespace PermissionNext {
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
-    const match = merged.findLast(
+    const match = merged.find(
       (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
     )
     return match ?? { action: "ask", permission, pattern: "*" }

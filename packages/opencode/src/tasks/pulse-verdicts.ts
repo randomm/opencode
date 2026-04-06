@@ -17,8 +17,8 @@ import { sanitizeWorktree } from "./pulse-scheduler"
 import { isSessionActivelyRunning, lockFilePath } from "./pulse-scheduler"
 import { getGithubRepo } from "../util/git"
 
-// Allow 6 attempts to resolve minor test flakiness before escalating to PM
-const MAX_ADVERSARIAL_ATTEMPTS = 6
+// Allow 3 attempts to resolve adversarial feedback before escalating to PM
+const MAX_ADVERSARIAL_ATTEMPTS = 3
 
 // Branch name validation: only alphanumeric, hyphen, underscore, slash, dot, plus (anchors ensure full string match)
 const BRANCH_REGEX = /^[a-zA-Z0-9_\-\/\+.]+$/
