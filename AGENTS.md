@@ -167,6 +167,20 @@ If the type system complains, fix the underlying issue.
 
 If work must be deferred, create a GitHub issue. The issue IS the TODO.
 
+### Fix What You Find
+
+**When you encounter a pre-existing issue while working on code, you MUST fix it.**
+
+- Don't leave bugs, malformed structure, or technical debt for future discoverers
+- If scope is large, file a separate GitHub issue AND fix what you can in the current PR
+- Pre-existing issues are NOT an excuse to leave broken code
+- "But I didn't write it that way" is not acceptable
+
+**Examples:**
+- Found malformed indentation during review → Fix it
+- Spotted unreachable code while implementing feature → Fix it
+- Discovered incorrect error handling in adjacent function → Fix it
+
 ---
 
 ## Pre-Push Verification

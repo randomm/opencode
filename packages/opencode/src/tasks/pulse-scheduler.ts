@@ -173,28 +173,32 @@ async function spawnDeveloper(task: Task, jobId: string, projectId: string, pmSe
 
   let baseCommit: string | null = null
   if (baseBranchExists) {
+    // Use worktree's branch for merge-base calculation instead of HEAD
+    // This ensures we get the correct merge base even if HEAD is in unexpected state
+    const worktreeBranch = worktreeInfo.branch
     try {
-      const res = await $`git merge-base ${base} HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
+      const res = await $`git merge-base ${base} ${worktreeBranch}`.quiet().nothrow().cwd(worktreeInfo.directory)
       if (res.exitCode === 0 && res.stdout) {
         baseCommit = new TextDecoder().decode(res.stdout).trim()
       }
 
       if (baseCommit) {
-        const headRes = await $`git rev-parse HEAD`.quiet().nothrow().cwd(worktreeInfo.directory)
+        const headRes = await $`git rev-parse ${worktreeBranch}`.quiet().nothrow().cwd(worktreeInfo.directory)
         if (headRes.exitCode === 0 && headRes.stdout) {
-          const headCommit = new TextDecoder().decode(headRes.stdout).trim()
-          if (baseCommit === headCommit) {
-            log.warn("worktree HEAD equals merge-base (likely worktree-on-base), setting base_commit to null", {
+          const branchCommit = new TextDecoder().decode(headRes.stdout).trim()
+          if (baseCommit === branchCommit) {
+            log.warn("worktree branch equals merge-base (likely worktree-on-base), setting base_commit to null", {
               taskId: task.id,
               base_commit: baseCommit,
               base_branch: base,
+              worktree_branch: worktreeBranch,
             })
             baseCommit = null
           }
         }
       }
     } catch (e) {
-      log.warn("failed to capture base_commit", { taskId: task.id, baseBranch: base, error: String(e) })
+      log.warn("failed to capture base_commit", { taskId: task.id, baseBranch: base, worktreeBranch: worktreeBranch, error: String(e) })
     }
   } else {
     log.warn("base branch not found in worktree, skipping merge-base capture", { taskId: task.id, baseBranch: base })
@@ -400,7 +404,7 @@ This ensures you only review changes made by the developer, not commits that wer
       model,
       parts: [{ type: "text", text: prompt }],
     })
-  } catch (e) {
+} catch (e) {
     log.error("adversarial session failed to start", { taskId: task.id, error: String(e) })
     try {
       SessionPrompt.cancel(adversarialSession.id)
@@ -413,13 +417,11 @@ This ensures you only review changes made by the developer, not commits that wer
       })
     }
 
-    if (task.worktree) {
-      const safeWorktree = sanitizeWorktree(task.worktree)
-      if (safeWorktree) {
-        await Worktree.remove({ directory: safeWorktree }).catch((e) =>
-          log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) }),
-        )
-      }
+    // Worktree cleanup on adversarial spawn failure
+    if (safeWorktree) {
+      await Worktree.remove({ directory: safeWorktree }).catch((e) =>
+        log.error("failed to remove worktree after adversarial spawn failed", { taskId: task.id, error: String(e) }),
+      )
     }
 
     await Store.updateTask(
@@ -521,7 +523,69 @@ ABSOLUTE RULES:
     ? `\nCoverage level assessed: ${verdict.coverage_level.toUpperCase()}`
     : ""
 
-  const prompt = `${directiveHeader}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
+  // Generate git diff showing previous implementation
+  const validatedBaseCommit = PulseUtils.validateBaseCommit(task.base_commit) ?? "dev"
+
+  // NEW: Verify base commit is ancestor of HEAD
+  let baseIsAncestor = false
+  try {
+    const ancestorCheck = await $`git merge-base --is-ancestor ${validatedBaseCommit} HEAD`.quiet().nothrow().cwd(safeWorktree)
+    baseIsAncestor = ancestorCheck.exitCode === 0
+  } catch {
+    baseIsAncestor = false
+  }
+
+  const diffBase = baseIsAncestor ? validatedBaseCommit : "dev"
+  if (!baseIsAncestor && validatedBaseCommit !== "dev") {
+    log.warn("base_commit not ancestor of HEAD, using dev as fallback", { taskId: task.id, base_commit: task.base_commit })
+  }
+
+  // NEW: Check worktree validity
+  try {
+    const worktreeCheck = await $`git rev-parse --is-inside-work-tree`.quiet().nothrow().cwd(safeWorktree)
+    if (worktreeCheck.exitCode !== 0) {
+      log.warn("worktree not valid git repository", { taskId: task.id, worktree: safeWorktree })
+    }
+  } catch {}
+
+  let diffOutput = ""
+  try {
+    const diffResult = await $`git diff ${diffBase}..HEAD`.quiet().nothrow().cwd(safeWorktree)
+    if (diffResult.exitCode === 0 && diffResult.stdout) {
+      const rawDiff = new TextDecoder().decode(diffResult.stdout)
+
+      // NEW: Enforce size limit (50KB max)
+      const MAX_DIFF_SIZE = 50 * 1024 // 50KB
+      if (rawDiff.length > MAX_DIFF_SIZE) {
+        // Use stat summary instead for large diffs
+        const statResult = await $`git diff --stat ${diffBase}..HEAD`.quiet().nothrow().cwd(safeWorktree)
+        if (statResult.exitCode === 0 && statResult.stdout) {
+          diffOutput = `[Diff too large, showing summary]\n${new TextDecoder().decode(statResult.stdout)}`
+        }
+        log.warn("git diff exceeded size limit, using stat summary", { taskId: task.id, size: rawDiff.length })
+      } else {
+        diffOutput = rawDiff.trim()
+      }
+    }
+  } catch (e) {
+    log.warn("failed to generate git diff for respawn", { taskId: task.id, error: String(e) })
+  }
+
+  const previousImplementation = diffOutput
+    ? `# PREVIOUS IMPLEMENTATION (for reference)
+
+The following changes already exist in this worktree:
+
+\`\`\`diff
+${diffOutput}
+\`\`\`
+
+⚠️ CRITICAL: Read the changed files above FIRST. These changes already exist.
+Do NOT rewrite from scratch. Fix ONLY the specific issues listed below.
+`
+    : ""
+
+  const prompt = `${directiveHeader}${previousImplementation}This is retry attempt ${attempt} of ${MAX_ADVERSARIAL_ATTEMPTS}. The previous implementation had issues that must be fixed.
 
 **Adversarial feedback — fix these before signaling complete:**
 Summary: ${verdict.summary}
