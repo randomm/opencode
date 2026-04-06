@@ -6,6 +6,7 @@ import path from "path"
 import DESCRIPTION from "./bash.txt"
 import { Log } from "../util/log"
 import { Instance } from "../project/instance"
+import { Session } from "../session"
 import { lazy } from "@/util/lazy"
 import { Language } from "web-tree-sitter"
 
@@ -79,6 +80,13 @@ export const BashTool = Tool.define("bash", async () => {
     }),
     async execute(params, ctx) {
       let cwd = Instance.directory
+      try {
+        const session = await Session.get(ctx.sessionID)
+        cwd = session.directory
+      } catch {
+        // Session might not exist or DB not initialized, fallback to Instance.directory
+        cwd = Instance.directory
+      }
 
       if (params.workdir && params.workdir.trim()) {
         // Resolve symlinks and normalize path before validation
@@ -88,10 +96,10 @@ export const BashTool = Tool.define("bash", async () => {
           resolvedWorkdir = realpathSync.native(params.workdir)
         } catch (error) {
           const err = error as NodeJS.ErrnoException
-          log.warn("workdir resolution failed, falling back to Instance.directory", {
+          log.warn("workdir resolution failed, falling back to session/Instance.directory", {
             workdir: params.workdir,
             error: { code: err.code, message: err.message },
-            fallback: Instance.directory,
+            fallback: cwd,
           })
         }
 
@@ -104,24 +112,24 @@ export const BashTool = Tool.define("bash", async () => {
             if (Instance.containsPath(resolvedWorkdir)) {
               cwd = resolvedWorkdir
             } else {
-              log.warn("workdir is outside project boundary, falling back to Instance.directory", {
+              log.warn("workdir is outside project boundary, falling back to session/Instance.directory", {
                 workdir: params.workdir,
                 resolved: resolvedWorkdir,
-                fallback: Instance.directory,
+                fallback: cwd,
               })
             }
           } else {
-            log.warn("workdir does not exist or is not a directory, falling back to Instance.directory", {
+            log.warn("workdir does not exist or is not a directory, falling back to session/Instance.directory", {
               workdir: params.workdir,
               resolved: resolvedWorkdir,
-              fallback: Instance.directory,
+              fallback: cwd,
             })
           }
         }
       } else if (params.workdir) {
-        log.warn("workdir is empty or whitespace, falling back to Instance.directory", {
+        log.warn("workdir is empty or whitespace, falling back to session/Instance.directory", {
           workdir: params.workdir,
-          fallback: Instance.directory,
+          fallback: cwd,
         })
       }
 

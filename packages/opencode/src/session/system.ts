@@ -26,14 +26,15 @@ export namespace SystemPrompt {
     return [PROMPT_ANTHROPIC_WITHOUT_TODO]
   }
 
-  export async function environment(model: Provider.Model) {
+  export async function environment(model: Provider.Model, session?: { directory: string }) {
     const project = Instance.project
+    const directory = session?.directory ?? Instance.directory
     return [
       [
         `You are powered by the model named ${model.api.id}. The exact model ID is ${model.providerID}/${model.api.id}`,
         `Here is some useful information about the environment you are running in:`,
         `<env>`,
-        `  Working directory: ${Instance.directory}`,
+        `  Working directory: ${directory}`,
         `  Is directory a git repo: ${project.vcs === "git" ? "yes" : "no"}`,
         `  Platform: ${process.platform}`,
         `  Today's date: ${new Date().toDateString()}`,
@@ -42,7 +43,7 @@ export namespace SystemPrompt {
         `  ${
           project.vcs === "git" && false
             ? await Ripgrep.tree({
-                cwd: Instance.directory,
+                cwd: directory,
                 limit: 50,
               })
             : ""
