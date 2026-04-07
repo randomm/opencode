@@ -4,8 +4,10 @@ import path from "path"
 
 const CLOUDFLARE_SKILLS_URL = "https://developers.cloudflare.com/.well-known/skills/"
 
+const hasCloudflare = !!process.env.CLOUDFLARE_API_TOKEN
+
 describe("Discovery.pull", () => {
-  test("downloads skills from cloudflare url", async () => {
+  test.skipIf(!hasCloudflare)("downloads skills from cloudflare url", async () => {
     const dirs = await Discovery.pull(CLOUDFLARE_SKILLS_URL)
     expect(dirs.length).toBeGreaterThan(0)
     for (const dir of dirs) {

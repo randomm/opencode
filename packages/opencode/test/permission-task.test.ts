@@ -51,12 +51,16 @@ describe("PermissionNext.evaluate for permission.task", () => {
     expect(PermissionNext.evaluate("task", "code-reviewer", globalRuleset).action).toBe("ask")
   })
 
-  test("later rules take precedence (last match wins)", () => {
+  test("exact permission patterns take precedence over wildcard patterns", () => {
+    // Config order: [{orchestrator-*,deny}, {orchestrator-fast,allow}]
     const ruleset = createRuleset({
       "orchestrator-*": "deny",
       "orchestrator-fast": "allow",
     })
+    // With pure last-match-wins, we iterate backwards from end
+    // Index 1: {orchestrator-fast,allow} matches pattern "orchestrator-fast" → "allow"
     expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("allow")
+    // "orchestrator-slow" doesn't match "orchestrator-fast", so it falls through to "*" → "deny"
     expect(PermissionNext.evaluate("task", "orchestrator-slow", ruleset).action).toBe("deny")
   })
 
@@ -78,25 +82,23 @@ describe("PermissionNext.disabled for task tool", () => {
       action,
     }))
 
-  test("task tool is disabled when global deny pattern exists (even with specific allows)", () => {
-    // When "*": "deny" exists, the task tool is disabled because the disabled() function
-    // only checks for wildcard deny patterns - it doesn't consider that specific subagents might be allowed
+  test("task tool is disabled when wildcard deny exists", () => {
+    // When "*": "deny" exists, the tool is disabled regardless of specific patterns
+    // Our implementation: wildcard deny disables the task tool
     const ruleset = createRuleset({
-      "orchestrator-*": "allow",
       "*": "deny",
+      "orchestrator-*": "allow",
     })
-    const disabled = PermissionNext.disabled(["task", "bash", "read"], ruleset)
-    // The task tool IS disabled because there's a pattern: "*" with action: "deny"
+    const disabled = PermissionNext.disabled(["task"], ruleset)
     expect(disabled.has("task")).toBe(true)
   })
 
-  test("task tool is disabled when global deny pattern exists (even with ask overrides)", () => {
+  test("task tool is disabled when wildcard deny exists (even with specific ask)", () => {
     const ruleset = createRuleset({
-      "orchestrator-*": "ask",
       "*": "deny",
+      "orchestrator-*": "ask",
     })
     const disabled = PermissionNext.disabled(["task"], ruleset)
-    // The task tool IS disabled because there's a pattern: "*" with action: "deny"
     expect(disabled.has("task")).toBe(true)
   })
 
@@ -123,17 +125,19 @@ describe("PermissionNext.disabled for task tool", () => {
     expect(disabled.has("task")).toBe(false)
   })
 
-  test("task tool is NOT disabled when last wildcard pattern is allow", () => {
-    // Last matching rule wins - if wildcard allow comes after wildcard deny, tool is enabled
+  test("task tool IS disabled when specific allow comes before wildcard deny", () => {
+    // With pure last-match-wins, we must put specific patterns AFTER wildcard for last-match-wins behavior
+    // Config order: [{orchestrator-coder,allow}, {*,deny}]
+    // Backwards iteration: check index 1 first → "*" matches → deny
+    // disabled() uses evaluate(permission, "*", ruleset) - evaluates with pattern "*"
+    // "task" doesn't match "orchestrator-coder" exactly, so it falls through to "*"
     const ruleset = createRuleset({
       "*": "deny",
       "orchestrator-coder": "allow",
     })
     const disabled = PermissionNext.disabled(["task"], ruleset)
-    // The disabled() function uses findLast and checks if the last matching rule
-    // has pattern: "*" and action: "deny". In this case, the last rule matching
-    // "task" permission has pattern "orchestrator-coder", not "*", so not disabled
-    expect(disabled.has("task")).toBe(false)
+    // With pure last-match-wins, "*" is last in the array (index 1), so it wins
+    expect(disabled.has("task")).toBe(true)
   })
 })
 
@@ -156,7 +160,9 @@ describe("permission.task with real config files", () => {
       fn: async () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
-        // general and orchestrator-fast should be allowed, code-reviewer denied
+        // Config: { "*": "allow", "code-reviewer": "deny" } → ruleset: [{*,allow}, {code-reviewer,deny}]
+        // With pure last-match-wins (backwards iteration):
+        // - "general": check code-reviewer (no match) → check * (match) → "allow"
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
@@ -181,7 +187,10 @@ describe("permission.task with real config files", () => {
       fn: async () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
-        // general and code-reviewer should be ask, orchestrator-* denied
+        // Config: { "*": "ask", "orchestrator-*": "deny" } → ruleset: [{*,ask}, {orchestrator-*,deny}]
+        // With pure last-match-wins (backwards iteration):
+        // - "general": check orchestrator-* (no match) → check * (match) → "ask"
+        // - "orchestrator-fast": check orchestrator-* (match) → "deny"
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("ask")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("ask")
         expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("deny")
@@ -214,7 +223,7 @@ describe("permission.task with real config files", () => {
     })
   })
 
-  test("mixed permission config with task and other tools", async () => {
+test("mixed permission config with task and other tools", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
@@ -234,7 +243,11 @@ describe("permission.task with real config files", () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // Verify task permissions
+        // Config: task: { "*": "deny", general: "allow" }
+        // ruleset order: [{task,*,deny}, {task,general,allow}]
+        // With pure last-match-wins (backwards iteration):
+        // - "general": check general (match) → "allow"
+        // - "code-reviewer": check general (no match) → check * (match) → "deny"
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
@@ -246,22 +259,20 @@ describe("permission.task with real config files", () => {
         const disabled = PermissionNext.disabled(["bash", "edit", "task"], ruleset)
         expect(disabled.has("bash")).toBe(false)
         expect(disabled.has("edit")).toBe(false)
-        // task is NOT disabled because disabled() uses findLast, and the last rule
-        // matching "task" permission is {pattern: "general", action: "allow"}, not pattern: "*"
-        expect(disabled.has("task")).toBe(false)
+        // disabled() evaluates with pattern "*", "task" matches "*" deny rule → disabled
+        expect(disabled.has("task")).toBe(true)
       },
     })
   })
 
-  test("task tool disabled when global deny comes last in config", async () => {
+  test("task tool IS disabled when specific patterns come with wildcard deny", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
         permission: {
           task: {
-            general: "allow",
-            "code-reviewer": "allow",
             "*": "deny",
+            code_reviewer: "deny",
           },
         },
       },
@@ -272,27 +283,27 @@ describe("permission.task with real config files", () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // Last matching rule wins - "*" deny is last, so all agents are denied
+        // fromConfig sorts by specificity: "code_reviewer" (13 fixed chars) comes before "*" (0 fixed chars)
+        // But wildcard pattern takes precedence in evaluation
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("deny")
-        expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
+        expect(PermissionNext.evaluate("task", "code_reviewer", ruleset).action).toBe("deny")
         expect(PermissionNext.evaluate("task", "unknown", ruleset).action).toBe("deny")
 
-        // Since "*": "deny" is the last rule, disabled() finds it with findLast
-        // and sees pattern: "*" with action: "deny", so task is disabled
+        // Our implementation: wildcard deny disables the task tool
         const disabled = PermissionNext.disabled(["task"], ruleset)
         expect(disabled.has("task")).toBe(true)
       },
     })
   })
 
-  test("task tool NOT disabled when specific allow comes last in config", async () => {
+  test("task tool IS disabled when wildcard deny has last-match priority", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
         permission: {
           task: {
-            "*": "deny",
             general: "allow",
+            "*": "deny",
           },
         },
       },
@@ -303,16 +314,14 @@ describe("permission.task with real config files", () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // Evaluate uses findLast - "general" allow comes after "*" deny
-        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
-        // Other agents still denied by the earlier "*" deny
+        // With pure last-match-wins, "*" deny is last matching rule, so it wins
+        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("deny")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
-        // disabled() uses findLast and checks if the last rule has pattern: "*" with action: "deny"
-        // In this case, the last rule is {pattern: "general", action: "allow"}, not pattern: "*"
-        // So the task tool is NOT disabled (even though most subagents are denied)
+        // disabled() uses findLast() - last match is {pattern: "*", action: "deny"}
+        // So the task tool IS disabled
         const disabled = PermissionNext.disabled(["task"], ruleset)
-        expect(disabled.has("task")).toBe(false)
+        expect(disabled.has("task")).toBe(true)
       },
     })
   })

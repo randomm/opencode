@@ -59,6 +59,7 @@ export namespace PermissionNext {
         ...Object.entries(value).map(([pattern, action]) => ({ permission: key, pattern: expand(pattern), action })),
       )
     }
+    log.debug("fromConfig result", { input: permission, output: ruleset })
     return ruleset
   }
 
@@ -241,22 +242,31 @@ export namespace PermissionNext {
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
-    const match = merged.findLast(
-      (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
-    )
-    return match ?? { action: "ask", permission, pattern: "*" }
+
+    // Simple last-match-wins: iterate backwards, first match from end wins
+    for (let i = merged.length - 1; i >= 0; i--) {
+      const rule = merged[i]
+      if (Wildcard.match(permission, rule.permission) && 
+          Wildcard.match(pattern, rule.pattern)) {
+        return rule
+      }
+    }
+    
+    return { action: "ask", permission, pattern: "*" }
   }
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
 
-  export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
+export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-
-      const rule = ruleset.findLast((r) => Wildcard.match(permission, r.permission))
-      if (!rule) continue
-      if (rule.pattern === "*" && rule.action === "deny") result.add(tool)
+      // Use evaluate() to check if the tool would be denied
+      // This ensures disabled() and evaluate() use the same logic
+      const rule = evaluate(permission, "*", ruleset)
+      if (rule.action === "deny") {
+        result.add(tool)
+      }
     }
     return result
   }

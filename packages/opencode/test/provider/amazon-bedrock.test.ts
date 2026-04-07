@@ -8,7 +8,13 @@ import { Provider } from "../../src/provider/provider"
 import { Env } from "../../src/env"
 import { Global } from "../../src/global"
 
-test("Bedrock: config region takes precedence over AWS_REGION env var", async () => {
+const hasAWS = !!(
+  process.env.AWS_ACCESS_KEY_ID ||
+  process.env.AWS_BEARER_TOKEN_BEDROCK ||
+  process.env.AWS_WEB_IDENTITY_TOKEN_FILE
+)
+
+test.skipIf(!hasAWS)("Bedrock: config region takes precedence over AWS_REGION env var", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
@@ -40,7 +46,7 @@ test("Bedrock: config region takes precedence over AWS_REGION env var", async ()
   })
 })
 
-test("Bedrock: falls back to AWS_REGION env var when no config region", async () => {
+test.skipIf(!hasAWS)("Bedrock: falls back to AWS_REGION env var when no config region", async () => {
   await using tmp = await tmpdir({
     init: async (dir) => {
       await Bun.write(
