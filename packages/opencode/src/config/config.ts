@@ -1500,4 +1500,39 @@ export namespace Config {
   export async function directories() {
     return state().then((x) => x.directories)
   }
+
+  // Stub exports for plugin system compatibility
+  export type PluginOptions = undefined
+  export type PluginOrigin = { spec: string }
+  export type PluginSpec = string
+
+  export function pluginSpecifier(item: PluginSpec): string {
+    return item
+  }
+
+  export function pluginOptions(_item: PluginSpec): PluginOptions {
+    return undefined
+  }
+
+  // Stub for Effect Layer pattern used by plugin system
+  export const defaultLayer = {
+    key: "config" as const,
+    access: () => {
+      throw new Error("Config.defaultLayer requires Effect runtime - not available in this fork")
+    },
+  }
+
+  export interface Service {
+    [key: string]: unknown
+  }
+
+  export const Service: Service = new Proxy({} as Service, {
+    get(_target, prop) {
+      if (prop === Symbol.toStringTag) return "Service"
+      throw new Error(`Service stub: ${String(prop)} not implemented`)
+    },
+    getOwnPropertyDescriptor() {
+      return { configurable: true, enumerable: true }
+    },
+  })
 }

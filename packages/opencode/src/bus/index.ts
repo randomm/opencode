@@ -102,4 +102,28 @@ export namespace Bus {
       match.splice(index, 1)
     }
   }
+
+  // Stub exports for plugin system compatibility
+  export interface Interface {
+    publish: typeof publish
+    subscribe: typeof subscribe
+  }
+  export const Service = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.Service requires Effect runtime - not available in this fork")
+    }
+  } as const
+  export const layer = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.layer requires Effect runtime - not available in this fork")
+    }
+  } as const
+  export const defaultLayer = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.defaultLayer requires Effect runtime - not available in this fork")
+    }
+  } as const
 }
