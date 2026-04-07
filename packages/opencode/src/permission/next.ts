@@ -243,10 +243,31 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
-    const match = merged.findLast(
-      (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
-    )
-    return match ?? { action: "ask", permission, pattern: "*" }
+
+    // Find last matching rule with exact permission match or wildcard permission match
+    // Exact permission matches always take precedence over wildcard permission matches
+    let lastExactMatch: Rule | undefined
+    let lastWildcardMatch: Rule | undefined
+
+    for (let i = merged.length - 1; i >= 0; i--) {
+      const rule = merged[i]
+
+      // Check if permission matches (exact or wildcard)
+      if (!Wildcard.match(permission, rule.permission)) continue
+      // Check if pattern matches (exact or wildcard)
+      if (!Wildcard.match(pattern, rule.pattern)) continue
+
+      // Record the last exact permission match or wildcard permission match
+      if (rule.permission === "*") {
+        if (!lastWildcardMatch) lastWildcardMatch = rule
+      } else {
+        lastExactMatch = rule
+        break  // Found the most recent exact permission match, no need to continue
+      }
+    }
+
+    // Exact permission matches always take precedence over wildcard matches
+    return lastExactMatch ?? lastWildcardMatch ?? { action: "ask", permission, pattern: "*" }
   }
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
@@ -255,8 +276,31 @@ export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-      // Use findLast() to match last-match-wins semantics
-      const rule = ruleset.findLast((r) => Wildcard.match(permission, r.permission))
+
+      // Find last matching rule with exact permission match or wildcard permission match
+      // Exact permission matches always take precedence over wildcard permission matches
+      let lastExactMatch: Rule | undefined
+      let lastWildcardMatch: Rule | undefined
+
+      for (let i = ruleset.length - 1; i >= 0; i--) {
+        const rule = ruleset[i]
+
+        // Check if permission matches (exact or wildcard)
+        if (!Wildcard.match(permission, rule.permission)) continue
+        // Check if pattern matches (exact or wildcard)
+        if (!Wildcard.match(permission, rule.pattern)) continue
+
+        // Record the last exact permission match or wildcard permission match
+        if (rule.permission === "*") {
+          if (!lastWildcardMatch) lastWildcardMatch = rule
+        } else {
+          lastExactMatch = rule
+          break  // Found the most recent exact permission match, no need to continue
+        }
+      }
+
+      // Exact permission matches always take precedence over wildcard matches
+      const rule = lastExactMatch ?? lastWildcardMatch
       if (!rule) continue
       if (rule.pattern === "*" && rule.action === "deny") result.add(tool)
     }
