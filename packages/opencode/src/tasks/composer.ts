@@ -5,6 +5,9 @@ import { MessageV2 } from "../session/message-v2"
 import { Store } from "./store"
 import { Validation } from "./validation"
 import { generateUniqueSlug, slugify } from "./tool"
+import { Log } from "../util/log"
+
+const log = Log.create({ service: "taskctl.composer" })
 
 const ComposerTasksSchema = z.object({
   title: z.string().min(1).max(200),
@@ -37,6 +40,8 @@ async function defaultSpawnComposerFn(
     permission: [],
   })
 
+  const startTime = Date.now()
+
   // prompt() blocks until the agent finishes
   // Race with timeout — if timeout fires, cancel the session cleanly
   let timedOut = false
@@ -48,12 +53,21 @@ async function defaultSpawnComposerFn(
     }, timeoutMs),
   )
 
+  log.info("composer started", { sessionID: session.id, timeoutMs })
+
   await Promise.race([
     SessionPrompt.prompt({ sessionID: session.id, agent: "composer", parts: [{ type: "text", text: prompt }] }),
     timeoutPromise,
   ])
 
-  if (timedOut) return undefined
+  const elapsedMs = Date.now() - startTime
+
+  if (timedOut) {
+    log.warn("composer timed out", { sessionID: session.id, elapsedMs })
+    throw new Error(`Composer timed out after ${timeoutMs / 1000}s. Issue description may be too complex. Consider simplifying.`)
+  }
+
+  log.info("composer completed", { sessionID: session.id, timedOut })
 
   // Agent finished — read final assistant message directly from DB
   // MessageV2.stream() is descending order — .find() gets the newest assistant message
