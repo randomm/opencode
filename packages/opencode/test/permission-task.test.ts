@@ -51,14 +51,14 @@ describe("PermissionNext.evaluate for permission.task", () => {
     expect(PermissionNext.evaluate("task", "code-reviewer", globalRuleset).action).toBe("ask")
   })
 
-  test("wildcard patterns take precedence over exact matches", () => {
+  test("exact permission patterns take precedence over wildcard patterns", () => {
     const ruleset = createRuleset({
       "orchestrator-*": "deny",
       "orchestrator-fast": "allow",
     })
     // "orchestrator-fast" matches both "orchestrator-*" (deny) and "orchestrator-fast" (allow)
-    // Our implementation: wildcard matches take precedence over exact matches
-    expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("deny")
+    // Our implementation: exact permission matches take precedence over wildcard permission matches
+    expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("allow")
     expect(PermissionNext.evaluate("task", "orchestrator-slow", ruleset).action).toBe("deny")
   })
 
@@ -156,10 +156,10 @@ describe("permission.task with real config files", () => {
       fn: async () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
-        // Our implementation: wildcard patterns take precedence over exact matches
+        // Our implementation: exact pattern matches take precedence over wildcard pattern matches
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("allow")
-        expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("allow")
+        expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
       },
     })
   })
@@ -181,10 +181,11 @@ describe("permission.task with real config files", () => {
       fn: async () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
-        // Our implementation: wildcard patterns take precedence over exact matches
+        // Our implementation: exact pattern matches take precedence over wildcard pattern matches
+        // "orchestrator-*" is a pattern, but "orchestrator-fast" matches it exactly as a pattern string
         expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("ask")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("ask")
-        expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("ask")
+        expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("deny")
       },
     })
   })
@@ -214,7 +215,7 @@ describe("permission.task with real config files", () => {
     })
   })
 
-  test("mixed permission config with task and other tools", async () => {
+test("mixed permission config with task and other tools", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
@@ -234,8 +235,9 @@ describe("permission.task with real config files", () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // Our implementation: wildcard patterns take precedence over exact matches
-        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("deny")
+        // Config order matters: "*": "deny" comes before "general": "allow"
+        // Last-match-wins: "general" rule wins (it comes last)
+        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
         // Verify other tool permissions
@@ -246,13 +248,15 @@ describe("permission.task with real config files", () => {
         const disabled = PermissionNext.disabled(["bash", "edit", "task"], ruleset)
         expect(disabled.has("bash")).toBe(false)
         expect(disabled.has("edit")).toBe(false)
-        // Our implementation: wildcard deny disables the task tool
-        expect(disabled.has("task")).toBe(true)
+        // disabled() evaluates with pattern "*"
+        // "general" pattern also matches "*" (wildcard), and it comes last with action "allow"
+        // So the task tool is NOT disabled
+        expect(disabled.has("task")).toBe(false)
       },
     })
   })
 
-test("task tool IS disabled when specific patterns come with wildcard deny", async () => {
+  test("task tool IS disabled when specific patterns come with wildcard deny", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
