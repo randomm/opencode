@@ -118,10 +118,17 @@ describe("issue-388: PM escalation after 3 adversarial rejections", () => {
   })
 
   test("does NOT escalate on 2nd adversarial rejection (attempt = 1)", async () => {
-    await using tmp = await tmpdir()
-    await Instance.provide({
-      directory: tmp.path,
-      fn: async () => {
+    // Mock SessionPrompt for respawnDeveloper
+    const promptSpy = spyOn(SessionPrompt, "prompt").mockImplementation(() => Promise.resolve())
+    const cancelSpy = spyOn(SessionPrompt, "cancel").mockImplementation(() => {})
+    const removeSpy = spyOn(Worktree, "remove")
+    removeSpy.mockImplementation(async () => true)
+
+    try {
+      await using tmp = await tmpdir()
+      await Instance.provide({
+        directory: tmp.path,
+        fn: async () => {
         const projectId = Instance.project.id
         const testJob: Job = {
           id: `job-${Date.now()}`,
@@ -202,6 +209,11 @@ describe("issue-388: PM escalation after 3 adversarial rejections", () => {
         expect(finalTask?.pipeline.adversarial_verdict).toBeNull()
       },
     })
+    } finally {
+      promptSpy.mockRestore()
+      cancelSpy.mockRestore()
+      removeSpy.mockRestore()
+    }
   })
 
   test("APPROVED verdict on 1st attempt does not escalate", async () => {
