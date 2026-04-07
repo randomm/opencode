@@ -249,9 +249,10 @@ test("mixed permission config with task and other tools", async () => {
         expect(disabled.has("bash")).toBe(false)
         expect(disabled.has("edit")).toBe(false)
         // disabled() evaluates with pattern "*"
-        // "general" pattern also matches "*" (wildcard), and it comes last with action "allow"
-        // So the task tool is NOT disabled
-        expect(disabled.has("task")).toBe(false)
+        // Only the "{pattern: "*", action: "deny"}" rule matches when evaluating with pattern "*"
+        // The "{pattern: "general", action: "allow"}" rule does not match because "general" is not a wildcard
+        // So the task tool IS disabled
+        expect(disabled.has("task")).toBe(true)
       },
     })
   })

@@ -53,4 +53,8 @@ export namespace Wildcard {
     }
     return false
   }
+
+  export function isWildcard(pattern: string): boolean {
+    return pattern.includes("*") || pattern.includes("?")
+  }
 }

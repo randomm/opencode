@@ -245,30 +245,35 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
 
-    // Find last matching rule using true last-match-wins semantics
-    // But with priority: exact permission matches > wildcard permission matches
-    let lastExactMatch: Rule | undefined
-    let lastWildcardMatch: Rule | undefined
+    // Find matching rules and split into buckets
+    const exactPermissionMatches: Rule[] = []
+    const wildcardPermissionMatches: Rule[] = []
 
-    for (let i = merged.length - 1; i >= 0; i--) {
-      const rule = merged[i]
-
+    for (const rule of merged) {
       // Check if permission matches (exact or wildcard)
       if (!Wildcard.match(permission, rule.permission)) continue
       // Check if pattern matches (exact or wildcard)
       if (!Wildcard.match(pattern, rule.pattern)) continue
 
-      // Track exact vs wildcard permission matches
-      // Keep iterating to find the LAST matching rule in each bucket
+      // Categorize by permission type
       if (rule.permission === "*") {
-        lastWildcardMatch = rule
+        wildcardPermissionMatches.push(rule)
       } else {
-        lastExactMatch = rule
+        exactPermissionMatches.push(rule)
       }
     }
 
-    // Exact permission matches always take precedence over wildcard matches
-    return lastExactMatch ?? lastWildcardMatch ?? { action: "ask", permission, pattern: "*" }
+    // Exact permission matches take precedence over wildcard permission matches
+    // Within each bucket, use last-match-wins
+    if (exactPermissionMatches.length > 0) {
+      return exactPermissionMatches[exactPermissionMatches.length - 1]
+    }
+
+    if (wildcardPermissionMatches.length > 0) {
+      return wildcardPermissionMatches[wildcardPermissionMatches.length - 1]
+    }
+
+    return { action: "ask", permission, pattern: "*" }
   }
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
