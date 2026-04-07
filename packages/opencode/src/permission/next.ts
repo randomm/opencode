@@ -245,34 +245,15 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
 
-    // Find matching rules and split into buckets by pattern specificity
-    const exactPatternMatches: Rule[] = []
-    const wildcardPatternMatches: Rule[] = []
-
-    for (const rule of merged) {
-      // Check if permission matches (exact or wildcard)
-      if (!Wildcard.match(permission, rule.permission)) continue
-      // Check if pattern matches (exact or wildcard)
-      if (!Wildcard.match(pattern, rule.pattern)) continue
-
-      // Categorize by pattern specificity: exact patterns take precedence over wildcard patterns
-      if (Wildcard.isWildcard(rule.pattern)) {
-        wildcardPatternMatches.push(rule)
-      } else {
-        exactPatternMatches.push(rule)
+    // Simple last-match-wins: iterate backwards, first match from end wins
+    for (let i = merged.length - 1; i >= 0; i--) {
+      const rule = merged[i]
+      if (Wildcard.match(permission, rule.permission) && 
+          Wildcard.match(pattern, rule.pattern)) {
+        return rule
       }
     }
-
-    // Exact pattern matches take precedence over wildcard pattern matches
-    // Within each bucket, use last-match-wins
-    if (exactPatternMatches.length > 0) {
-      return exactPatternMatches[exactPatternMatches.length - 1]
-    }
-
-    if (wildcardPatternMatches.length > 0) {
-      return wildcardPatternMatches[wildcardPatternMatches.length - 1]
-    }
-
+    
     return { action: "ask", permission, pattern: "*" }
   }
 
