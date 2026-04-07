@@ -56,9 +56,9 @@ describe("PermissionNext.evaluate for permission.task", () => {
       "orchestrator-*": "deny",
       "orchestrator-fast": "allow",
     })
-    // "orchestrator-fast" matches "orchestrator-*" BEFORE the explicit "orchestrator-fast" rule
-    // So it gets denied because first match wins with the wildcard pattern
-    expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("deny")
+    // "orchestrator-fast" matches both "orchestrator-*" (deny) and "orchestrator-fast" (allow)
+    // With last-match-wins, the LAST matching rule wins, so "orchestrator-fast" gets "allow"
+    expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("allow")
     expect(PermissionNext.evaluate("task", "orchestrator-slow", ruleset).action).toBe("deny")
   })
 
@@ -80,27 +80,27 @@ describe("PermissionNext.disabled for task tool", () => {
       action,
     }))
 
-  test("task tool is disabled when global deny pattern exists (even with specific allows)", () => {
-    // When "*": "deny" exists, the task tool is disabled because the disabled() function
-    // checks if the first matching rule has pattern: "*" with action: "deny"
-    // Specific allows for orchestrator-* don't help because the first match is the wildcard deny
+  test("task tool is NOT disabled when specific allow comes after wildcard deny", () => {
+    // When "*": "deny" exists first but specific allows follow, the tool is NOT disabled
+    // because disabled() uses findLast() which returns "orchestrator-*" (the specific allow)
+    // The wildcard deny is NOT the last match, so tool remains enabled
     const ruleset = createRuleset({
       "*": "deny",
       "orchestrator-*": "allow",
     })
     const disabled = PermissionNext.disabled(["task"], ruleset)
-    // The task tool IS disabled because the first matching rule is {pattern: "*", action: "deny"}
-    expect(disabled.has("task")).toBe(true)
+    // The task tool is NOT disabled because the last matching rule is {pattern: "orchestrator-*", action: "allow"}
+    expect(disabled.has("task")).toBe(false)
   })
 
-  test("task tool is disabled when global deny pattern exists (even with ask overrides)", () => {
+  test("task tool is NOT disabled when specific ask comes after wildcard deny", () => {
     const ruleset = createRuleset({
       "*": "deny",
       "orchestrator-*": "ask",
     })
     const disabled = PermissionNext.disabled(["task"], ruleset)
-    // The task tool IS disabled because the first matching rule is {pattern: "*", action: "deny"}
-    expect(disabled.has("task")).toBe(true)
+    // The task tool is NOT disabled because the last matching rule is {pattern: "orchestrator-*", action: "ask"}
+    expect(disabled.has("task")).toBe(false)
   })
 
   test("task tool is disabled when global deny pattern exists", () => {
@@ -126,17 +126,17 @@ describe("PermissionNext.disabled for task tool", () => {
     expect(disabled.has("task")).toBe(false)
   })
 
-  test("task tool is NOT disabled when specific allow comes before wildcard deny", () => {
+  test("task tool IS disabled when specific allow comes before wildcard deny", () => {
     // When a specific allow pattern comes before a wildcard deny (due to fromConfig sorting by specificity),
-    // the specific takes precedence because disabled() uses find() which returns the first match
+    // the wildcard still wins because disabled() uses findLast() to get the LAST matching rule
     const ruleset = createRuleset({
       "orchestrator-coder": "allow",
       "*": "deny",
     })
     const disabled = PermissionNext.disabled(["task"], ruleset)
-    // The task tool is NOT disabled because the first matching rule is {pattern: "orchestrator-coder", action: "allow"}
-    // disabled() only disables when pattern="*" AND action="deny"
-    expect(disabled.has("task")).toBe(false)
+    // The task tool IS disabled because the last matching rule is {pattern: "*", action: "deny"}
+    // "task" doesn't match "orchestrator-coder", so it falls through to "*"
+    expect(disabled.has("task")).toBe(true)
   })
 })
 
@@ -290,7 +290,7 @@ test("task tool NOT disabled when specific patterns come before wildcard", async
     })
   })
 
-  test("task tool NOT disabled when specific allow comes first in config", async () => {
+  test("task tool IS disabled when specific allow comes before wildcard deny in config", async () => {
     await using tmp = await tmpdir({
       git: true,
       config: {
@@ -308,15 +308,16 @@ test("task tool NOT disabled when specific patterns come before wildcard", async
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // fromConfig sorts by specificity: "general" (7 fixed chars) comes before "*" (0 fixed chars)
-        // So "general" rule is found first and is allowed
-        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
+        // fromConfig preserves config order (no sorting for compatibility)
+        // With last-match-wins: "general" matches "general" (allow) then falls through to "*" (deny)
+        // So "general" gets "deny" because the LAST match wins
+        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("deny")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
-        // disabled() uses find() - first match is {pattern: "general", action: "allow"}
-        // So the task tool is NOT disabled (even though most subagents are denied)
+        // disabled() uses findLast() - last match is {pattern: "*", action: "deny"}
+        // So the task tool IS disabled
         const disabled = PermissionNext.disabled(["task"], ruleset)
-        expect(disabled.has("task")).toBe(false)
+        expect(disabled.has("task")).toBe(true)
       },
     })
   })

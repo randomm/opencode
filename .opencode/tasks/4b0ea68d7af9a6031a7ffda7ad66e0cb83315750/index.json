@@ -69,5 +69,27 @@
       "implement-elapsed-time-formatting-utility"
     ],
     "updated_at": "2026-02-26T14:42:41.517Z"
+  },
+  "write-tests-for-branch-creation-resilience": {
+    "status": "in_progress",
+    "priority": 0,
+    "labels": [
+      "module:taskctl",
+      "file:packages/opencode/test/tasks/tool.test.ts"
+    ],
+    "depends_on": [],
+    "updated_at": "2026-04-06T22:00:12.960Z"
+  },
+  "implement-resilient-branch-creation-for-taskctl-start": {
+    "status": "open",
+    "priority": 1,
+    "labels": [
+      "module:taskctl",
+      "file:packages/opencode/src/tasks/tool.ts"
+    ],
+    "depends_on": [
+      "write-tests-for-branch-creation-resilience"
+    ],
+    "updated_at": "2026-04-06T15:32:05.232Z"
   }
 }

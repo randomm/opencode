@@ -1,0 +1,11 @@
+{
+  "id": "job-1775489347168",
+  "parent_issue": 381,
+  "status": "running",
+  "created_at": "2026-04-06T15:29:16.719Z",
+  "stopping": false,
+  "pulse_pid": 37357,
+  "max_workers": 3,
+  "pm_session_id": "ses_2a3184633ffesFYONkcXWp4Tos",
+  "feature_branch": "feature/issue-381"
+}

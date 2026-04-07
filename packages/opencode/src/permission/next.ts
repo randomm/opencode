@@ -251,11 +251,11 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
 
-  export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
+export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-      // Use findLast() to match evaluate() semantics
+      // Use findLast() to match last-match-wins semantics
       const rule = ruleset.findLast((r) => Wildcard.match(permission, r.permission))
       if (!rule) continue
       if (rule.pattern === "*" && rule.action === "deny") result.add(tool)

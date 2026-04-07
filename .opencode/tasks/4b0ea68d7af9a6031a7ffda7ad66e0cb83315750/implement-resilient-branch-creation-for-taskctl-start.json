@@ -1,0 +1,35 @@
+{
+  "id": "implement-resilient-branch-creation-for-taskctl-start",
+  "title": "Implement resilient branch creation for taskctl start",
+  "description": "Implement automatic detection and cleanup of existing branches and worktrees in the taskctl start command. When start is called, check if feature/issue-N branch exists. If yes, delete it. Check if worktree exists. If yes, remove it. Then proceed with normal branch creation. This ensures start is idempotent and works after failed attempts without manual cleanup.",
+  "acceptance_criteria": "All tests pass. taskctl start succeeds when branch already exists (cleanup and recreate). taskctl start succeeds when worktree exists (cleanup and recreate). taskctl start works normally on clean state. No manual cleanup required. All quality gates pass: typecheck (0 errors), linting (0 errors), all tests pass.",
+  "parent_issue": 381,
+  "job_id": "job-1775489347168",
+  "status": "open",
+  "priority": 1,
+  "task_type": "implementation",
+  "labels": [
+    "module:taskctl",
+    "file:packages/opencode/src/tasks/tool.ts"
+  ],
+  "depends_on": [
+    "write-tests-for-branch-creation-resilience"
+  ],
+  "assignee": null,
+  "assignee_pid": null,
+  "worktree": null,
+  "branch": null,
+  "base_commit": null,
+  "created_at": "2026-04-06T15:32:05.232Z",
+  "updated_at": "2026-04-06T15:32:05.232Z",
+  "close_reason": null,
+  "comments": [],
+  "pipeline": {
+    "stage": "idle",
+    "attempt": 0,
+    "last_activity": null,
+    "last_steering": null,
+    "history": [],
+    "adversarial_verdict": null
+  }
+}
