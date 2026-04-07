@@ -108,7 +108,22 @@ export namespace Bus {
     publish: typeof publish
     subscribe: typeof subscribe
   }
-  export const Service = {} as any
-  export const layer = {}
-  export const defaultLayer = {}
+  export const Service = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.Service requires Effect runtime - not available in this fork")
+    }
+  } as const
+  export const layer = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.layer requires Effect runtime - not available in this fork")
+    }
+  } as const
+  export const defaultLayer = {
+    key: "bus" as const,
+    access: () => {
+      throw new Error("Bus.defaultLayer requires Effect runtime - not available in this fork")
+    }
+  } as const
 }
