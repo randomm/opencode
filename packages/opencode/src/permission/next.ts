@@ -287,8 +287,8 @@ export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
 
         // Check if permission matches (exact or wildcard)
         if (!Wildcard.match(permission, rule.permission)) continue
-        // Check if pattern matches (exact or wildcard)
-        if (!Wildcard.match(permission, rule.pattern)) continue
+        // Check if pattern applies to "*" (i.e., rule applies to all patterns)
+        if (!Wildcard.match("*", rule.pattern)) continue
 
         // Record the last exact permission match or wildcard permission match
         if (rule.permission === "*") {
