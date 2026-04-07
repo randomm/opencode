@@ -1,5 +1,5 @@
 // Stub for missing upstream @/effect/instance-state module
-import { Effect } from "effect"
+// No external dependencies - pure TypeScript implementation
 
 type State = Record<string, unknown>
 
@@ -10,16 +10,18 @@ export const InstanceState = {
   make<S extends State>(factory: () => S) {
     const key = Math.random().toString(36)
     stateFactories.set(key, factory)
-    return Effect.sync(() => {
-      let state = stateMap.get(key)
-      if (!state) {
-        state = factory()
-        stateMap.set(key, state)
-      }
-      return state as S
-    })
+    return {
+      [Symbol.iterator]: function* () {
+        let state = stateMap.get(key)
+        if (!state) {
+          state = factory()
+          stateMap.set(key, state)
+        }
+        yield state as S
+      },
+    }
   },
-  get<S extends State>(effect: Effect.Effect<S>): Effect.Effect<S> {
-    return effect
+  get<S extends State>(iterable: { [Symbol.iterator]: () => Iterator<S> }): { [Symbol.iterator]: () => Iterator<S> } {
+    return iterable
   },
 }

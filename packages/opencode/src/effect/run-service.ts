@@ -1,9 +1,9 @@
 // Stub for missing upstream @/effect/run-service module
-import { Effect, Layer } from "effect"
+// No external dependencies - pure TypeScript implementation
 
 export const makeRuntime = <I, S>(
   _service: new () => S,
-  _layer: Layer.Layer<never, never, I>,
+  _layer: { key: string },
 ) => {
   return {
     runPromise: async <R>(fn: (svc: S) => Promise<R>): Promise<R> => {
