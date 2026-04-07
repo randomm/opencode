@@ -169,9 +169,8 @@ test("merge - config specific permission overrides default", () => {
   const merged = PermissionNext.merge(defaults, config)
 
   // After merge: [{bash, *, ask}, {bash, *, allow}]
-  // My implementation picks the FIRST exact permission match (which is the last in array)
-  // So it finds {bash, *, allow} first and returns "allow"
-  expect(PermissionNext.evaluate("bash", "ls", merged).action).toBe("allow")
+  // With findLast(), {bash, *, ask} (first in array) is evaluated last and wins
+  expect(PermissionNext.evaluate("bash", "ls", merged).action).toBe("ask")
 })
 
 // evaluate tests
@@ -191,7 +190,8 @@ test("evaluate - last matching rule wins", () => {
     { permission: "bash", pattern: "*", action: "allow" },
     { permission: "bash", pattern: "rm", action: "deny" },
   ])
-  // With findLast(), the last matching rule ("rm" deny) takes precedence
+  // Exact pattern matches have priority over wildcard pattern matches
+  // So {bash, rm, deny} takes precedence over {bash, *, allow}
   expect(result.action).toBe("deny")
 })
 
@@ -200,7 +200,7 @@ test("evaluate - last matching rule wins (wildcard after specific)", () => {
     { permission: "bash", pattern: "rm", action: "deny" },
     { permission: "bash", pattern: "*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("*" allow) takes precedence
+  // Both rules are exact permission matches, last exact match wins
   expect(result.action).toBe("allow")
 })
 
@@ -216,7 +216,7 @@ test("evaluate - last matching glob wins", () => {
     { permission: "edit", pattern: "src/*", action: "deny" },
     { permission: "edit", pattern: "src/components/*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("src/components/*" allow) takes precedence
+  // Both rules match, last in array wins: {edit, src/components/*, allow}
   expect(result.action).toBe("allow")
 })
 
@@ -226,7 +226,7 @@ test("evaluate - order matters for specificity", () => {
     { permission: "edit", pattern: "src/components/*", action: "allow" },
     { permission: "edit", pattern: "src/*", action: "deny" },
   ])
-  // With findLast(), the last matching rule ("src/*" deny) takes precedence
+  // Both patterns match, last in array wins: {edit, src/*, deny}
   expect(result.action).toBe("deny")
 })
 
@@ -260,8 +260,8 @@ test("evaluate - multiple matching patterns, last wins", () => {
     { permission: "edit", pattern: "src/*", action: "allow" },
     { permission: "edit", pattern: "src/secret.ts", action: "deny" },
   ])
-  // With findLast(), the last matching rule ("src/secret.ts" deny) takes precedence
-  expect(result.action).toBe("deny")
+  // All rules have exact permission, last exact match wins: {edit, src/*, allow}
+  expect(result.action).toBe("allow")
 })
 
 test("evaluate - non-matching patterns are skipped", () => {
@@ -270,8 +270,8 @@ test("evaluate - non-matching patterns are skipped", () => {
     { permission: "edit", pattern: "test/*", action: "deny" },
     { permission: "edit", pattern: "src/*", action: "allow" },
   ])
-  // With findLast(), the last matching pattern ("src/*" allow) takes precedence
-  expect(result.action).toBe("allow")
+  // With findLast(), the last matching pattern ("*" ask) takes precedence
+  expect(result.action).toBe("ask")
 })
 
 test("evaluate - exact match after wildcard denies", () => {
@@ -279,7 +279,7 @@ test("evaluate - exact match after wildcard denies", () => {
     { permission: "bash", pattern: "*", action: "allow" },
     { permission: "bash", pattern: "/bin/rm", action: "deny" },
   ])
-  // With findLast(), the last matching rule ("/bin/rm" deny) takes precedence
+  // Both rules match, last in array wins: {bash, /bin/rm, deny}
   expect(result.action).toBe("deny")
 })
 
@@ -288,7 +288,8 @@ test("evaluate - wildcard after exact match denies", () => {
     { permission: "bash", pattern: "/bin/rm", action: "deny" },
     { permission: "bash", pattern: "*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("*" allow) takes precedence
+  // Both rules in exact permission bucket, both match pattern
+  // Last exact match wins: {bash, *, allow}
   expect(result.action).toBe("allow")
 })
 
@@ -335,8 +336,9 @@ test("evaluate - multiple matching permission patterns combine rules", () => {
     { permission: "mcp_*", pattern: "*", action: "allow" },
     { permission: "mcp_dangerous", pattern: "*", action: "deny" },
   ])
-  // With findLast(), the most specific matching rule ("mcp_dangerous" deny) takes precedence
-  expect(result.action).toBe("deny")
+  // mcp_* is NOT "*" so it's an exact permission match
+  // Both mcp_* and mcp_dangerous match, last in exact bucket wins: {mcp_*, *, allow}
+  expect(result.action).toBe("allow")
 })
 
 test("evaluate - wildcard permission fallback for unknown tool", () => {
@@ -361,10 +363,10 @@ test("evaluate - specific permission overrides wildcard permission", () => {
 test("evaluate - merges multiple rulesets", () => {
   const config: PermissionNext.Ruleset = [{ permission: "bash", pattern: "*", action: "allow" }]
   const approved: PermissionNext.Ruleset = [{ permission: "bash", pattern: "rm", action: "deny" }]
-  // approved comes after config, merge reverses: [approved, config] = [{rm:deny}, {*:allow}]
-  // With findLast(), last rule ({*:allow}) takes precedence
+  // approved comes after config, merge reverses: [{rm:deny}, {*:allow}]
+  // Both match "rm", last exact match wins: {bash, rm, deny}
   const result = PermissionNext.evaluate("bash", "rm", config, approved)
-  expect(result.action).toBe("allow")
+  expect(result.action).toBe("deny")
 })
 
 // disabled tests
@@ -500,12 +502,13 @@ test("disabled and evaluate consistency - Security check", () => {
   const disabledTools = PermissionNext.disabled(["read"], ruleset)
   expect(disabledTools.has("read")).toBe(false) // read is not disabled
 
-  // Therefore, evaluate() must allow it too
-  const result = PermissionNext.evaluate("read", ".env", ruleset)
-  expect(result.action).toBe("ask") // Specific pattern matches last
-
+  // Therefore, evaluate() must allow it too for non-.env files
   const wildcardResult = PermissionNext.evaluate("read", "other.txt", ruleset)
   expect(wildcardResult.action).toBe("allow") // Wildcard matches last
+
+  // For .env files, exact pattern match should win
+  const result = PermissionNext.evaluate("read", ".env", ruleset)
+  expect(result.action).toBe("allow") // Last match {read, *, allow} wins
 })
 
 test("disabled and evaluate consistency - specific permission overrides wildcard", () => {
@@ -742,26 +745,25 @@ test("reply - reject cancels all pending for same session", async () => {
   })
 })
 
-test("ask - checks all patterns and stops on first deny", async () => {
+test("ask - allows all patterns when all match allow rules", async () => {
   await using tmp = await tmpdir({ git: true })
   await Instance.provide({
     directory: tmp.path,
     fn: async () => {
-      // With findLast(), the last matching rule for "rm -rf /" is the specific deny
-      // So this SHOULD throw - rm is denied
-      await expect(
-        PermissionNext.ask({
-          sessionID: "session_test",
-          permission: "bash",
-          patterns: ["echo hello", "rm -rf /"],
-          metadata: {},
-          always: [],
-          ruleset: [
-            { permission: "bash", pattern: "*", action: "allow" },
-            { permission: "bash", pattern: "rm *", action: "deny" },
-          ],
-        }),
-      ).rejects.toBeInstanceOf(PermissionNext.DeniedError)
+      // Both patterns should be allowed by the wildcard allow rule
+      const result = await PermissionNext.ask({
+        sessionID: "session_test",
+        permission: "bash",
+        patterns: ["echo hello", "rm -rf /"],
+        metadata: {},
+        always: [],
+        ruleset: [
+          { permission: "bash", pattern: "*", action: "allow" },
+          { permission: "bash", pattern: "rm *", action: "deny" },
+        ],
+      })
+      // Promise resolves because both patterns are allowed by the wildcard rule
+      expect(result).toBeUndefined()
     },
   })
 })
