@@ -64,10 +64,8 @@ export namespace PermissionNext {
   }
 
 export function merge(...rulesets: Ruleset[]): Ruleset {
-    // Reverse order so later rulesets take precedence with findLast()
-    // merge(defaults, user) should produce [...user, ...defaults]
-    return rulesets.reverse().flat()
-  }
+  return rulesets.flat()
+}
 
   export const Request = z
     .object({

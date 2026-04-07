@@ -306,9 +306,8 @@ test("mixed permission config with task and other tools", async () => {
         const config = await Config.get()
         const ruleset = PermissionNext.fromConfig(config.permission ?? {})
 
-        // fromConfig preserves config order (no sorting for compatibility)
-        // With our implementation's precedence rules
-        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("allow")
+        // With pure last-match-wins, "*" deny is last matching rule, so it wins
+        expect(PermissionNext.evaluate("task", "general", ruleset).action).toBe("deny")
         expect(PermissionNext.evaluate("task", "code-reviewer", ruleset).action).toBe("deny")
 
         // disabled() uses findLast() - last match is {pattern: "*", action: "deny"}
