@@ -1,5 +1,5 @@
 import { realpathSync } from "fs"
-import { dirname, join, relative } from "path"
+import { dirname, join, relative, resolve as pathResolve } from "path"
 
 export namespace Filesystem {
   export const exists = (p: string) =>
@@ -13,6 +13,33 @@ export namespace Filesystem {
       .stat()
       .then((s) => s.isDirectory())
       .catch(() => false)
+
+  export const resolve = (p: string) => pathResolve(p)
+
+  export const statAsync = async (p: string) => {
+    try {
+      return await Bun.file(p).stat()
+    } catch {
+      return undefined
+    }
+  }
+
+  export async function readText(p: string): Promise<string> {
+    return await Bun.file(p).text()
+  }
+
+  export async function readJson<T>(p: string): Promise<T> {
+    return await Bun.file(p).json() as T
+  }
+
+  export async function write(p: string, content: string): Promise<void> {
+    await Bun.write(p, content)
+  }
+
+  export async function writeJson<T>(p: string, data: T): Promise<void> {
+    await Bun.write(p, JSON.stringify(data, null, 2))
+  }
+
   /**
    * On Windows, normalize a path to its canonical casing using the filesystem.
    * This is needed because Windows paths are case-insensitive but LSP servers

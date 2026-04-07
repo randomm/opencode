@@ -102,4 +102,13 @@ export namespace Bus {
       match.splice(index, 1)
     }
   }
+
+  // Stub exports for plugin system compatibility
+  export interface Interface {
+    publish: typeof publish
+    subscribe: typeof subscribe
+  }
+  export const Service = {} as any
+  export const layer = {}
+  export const defaultLayer = {}
 }

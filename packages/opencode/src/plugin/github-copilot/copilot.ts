@@ -40,26 +40,6 @@ function fix(model: Model): Model {
 export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
   const sdk = input.client
   return {
-    provider: {
-      id: "github-copilot",
-      async models(provider, ctx) {
-        if (ctx.auth?.type !== "oauth") {
-          return Object.fromEntries(Object.entries(provider.models).map(([id, model]) => [id, fix(model)]))
-        }
-
-        return CopilotModels.get(
-          base(ctx.auth.enterpriseUrl),
-          {
-            Authorization: `Bearer ${ctx.auth.refresh}`,
-            "User-Agent": `opencode/${Installation.VERSION}`,
-          },
-          provider.models,
-        ).catch((error) => {
-          log.error("failed to fetch copilot models", { error })
-          return Object.fromEntries(Object.entries(provider.models).map(([id, model]) => [id, fix(model)]))
-        })
-      },
-    },
     auth: {
       provider: "github-copilot",
       async loader(getAuth) {
@@ -178,7 +158,6 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
               key: "enterpriseUrl",
               message: "Enter your GitHub Enterprise URL or domain",
               placeholder: "company.ghe.com or https://company.ghe.com",
-              when: { key: "deploymentType", op: "eq", value: "enterprise" },
               validate: (value) => {
                 if (!value) return "URL or domain is required"
                 try {

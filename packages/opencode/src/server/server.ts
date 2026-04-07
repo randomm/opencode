@@ -54,8 +54,10 @@ export namespace Server {
     return _url ?? new URL("http://localhost:4096")
   }
 
-  const app = new Hono()
-  export const App: () => Hono = lazy(
+  export const Default = () => ({ fetch: (...args: unknown[]) => fetch(...args as [RequestInfo, RequestInit?]) })
+
+const app = new Hono()
+export const App: () => Hono = lazy(
     () =>
       // TODO: Break server.ts into smaller route files to fix type inference
       app

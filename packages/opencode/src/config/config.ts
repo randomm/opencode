@@ -1500,4 +1500,21 @@ export namespace Config {
   export async function directories() {
     return state().then((x) => x.directories)
   }
+
+  // Stub exports for plugin system compatibility
+  export type PluginOptions = undefined
+  export type PluginOrigin = { spec: string }
+  export type PluginSpec = string
+
+  export function pluginSpecifier(item: PluginSpec): string {
+    return item
+  }
+
+  export function pluginOptions(_item: PluginSpec): PluginOptions {
+    return undefined
+  }
+
+  // Stub for Effect Layer pattern used by plugin system
+  export const defaultLayer = {}
+  export const Service = {} as any
 }

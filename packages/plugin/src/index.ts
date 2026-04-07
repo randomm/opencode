@@ -34,6 +34,11 @@ export type PluginInput = {
 
 export type Plugin = (input: PluginInput) => Promise<Hooks>
 
+// V1 plugin module with server method
+export interface PluginModule {
+  server?: (input: PluginInput, options?: Record<string, unknown>) => Promise<Hooks>
+}
+
 export type AuthHook = {
   provider: string
   loader?: (auth: () => Promise<Auth>, provider: Provider) => Promise<Record<string, any>>

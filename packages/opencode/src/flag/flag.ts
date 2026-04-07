@@ -52,6 +52,8 @@ export namespace Flag {
   export const OPENCODE_EXPERIMENTAL_MARKDOWN = truthy("OPENCODE_EXPERIMENTAL_MARKDOWN")
   export const OPENCODE_MODELS_URL = process.env["OPENCODE_MODELS_URL"]
   export const OPENCODE_MODELS_PATH = process.env["OPENCODE_MODELS_PATH"]
+  export const OPENCODE_PURE = truthy("OPENCODE_PURE")
+  export const OPENCODE_PLUGIN_META_FILE = process.env["OPENCODE_PLUGIN_META_FILE"]
 
   function number(key: string) {
     const value = process.env[key]
