@@ -51,13 +51,13 @@ describe("PermissionNext.evaluate for permission.task", () => {
     expect(PermissionNext.evaluate("task", "code-reviewer", globalRuleset).action).toBe("ask")
   })
 
-  test("first rule takes precedence (first match wins with wildcard)", () => {
+  test("later rules take precedence (last match wins)", () => {
     const ruleset = createRuleset({
       "orchestrator-*": "deny",
       "orchestrator-fast": "allow",
     })
-    // "orchestrator-fast" matches the first rule "orchestrator-*" with wildcard
-    // So it gets denied even though a more specific rule would allow it
+    // "orchestrator-fast" matches "orchestrator-*" BEFORE the explicit "orchestrator-fast" rule
+    // So it gets denied because first match wins with the wildcard pattern
     expect(PermissionNext.evaluate("task", "orchestrator-fast", ruleset).action).toBe("deny")
     expect(PermissionNext.evaluate("task", "orchestrator-slow", ruleset).action).toBe("deny")
   })
