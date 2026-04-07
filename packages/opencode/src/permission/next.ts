@@ -277,23 +277,10 @@ export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-
-      // Find ALL rules matching this permission with LITERAL "*" pattern
-      const literalWildcardRules = ruleset.filter(
-        (rule) => Wildcard.match(permission, rule.permission) && rule.pattern === "*",
-      )
-
-      if (literalWildcardRules.length === 0) continue
-
-      // Find the LAST one (for exact permission priority)
-      const lastExactPerm = [...literalWildcardRules].reverse().find((r) => r.permission !== "*")
-      const lastWildcardPerm = [...literalWildcardRules].reverse().find((r) => r.permission === "*")
-
-      // Exact permission takes precedence
-      const effectiveRule = lastExactPerm ?? lastWildcardPerm
-
-      // Only disable if the literal "*" rule has "deny" action
-      if (effectiveRule && effectiveRule.action === "deny") {
+      // Use evaluate() to check if the tool would be denied
+      // This ensures disabled() and evaluate() use the same logic
+      const rule = evaluate(permission, "*", ruleset)
+      if (rule.action === "deny") {
         result.add(tool)
       }
     }
