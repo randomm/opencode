@@ -107,24 +107,6 @@
         "absorptionSignals": []
       }
     },
-    "1m-context": {
-      "status": "dropped",
-      "droppedReason": "Caused startup errors; feature removed in issue #170",
-      "description": "1M token context window for Anthropic Opus models. Requires Tier 4 account ($400 credits).",
-      "issue": "https://github.com/randomm/opencode/issues/150",
-      "newFiles": [],
-      "modifiedFiles": [
-        "packages/opencode/src/provider/provider.ts",
-        "packages/opencode/src/provider/transform.ts",
-        "packages/opencode/src/session/compaction.ts",
-        "packages/opencode/src/plugin/copilot.ts"
-      ],
-      "criticalCode": ["context-1m-2025-08-07", "Override context limit for Anthropic models with context-1m"],
-      "tests": ["packages/opencode/test/session/compaction.test.ts"],
-      "upstreamTracking": {
-        "absorptionSignals": ["context-1m-2025-08-07", "context.limit.*1000000"]
-      }
-    },
     "minimal-ci": {
       "status": "active",
       "description": "Fork runs only essential CI workflow. Upstream workflows (beta, nix-hashes, containers, close-stale-prs) deleted from repo. Ghost workflows (Daily Issues/PR Recap, Issue Triage, Duplicate Detection, Guidelines Check, etc.) disabled via gh CLI.",
@@ -152,7 +134,7 @@
       "modifiedFiles": [],
       "criticalCode": [],
       "tests": [],
-      "upstream": {
+      "upstreamTracking": {
         "absorptionSignals": []
       }
     },
@@ -254,41 +236,6 @@
         ]
       }
     },
-    "remove-hashline": {
-      "status": "dropped",
-      "droppedReason": "Feature removed in issue #360 — zero agent adoption and test failures after 25-day experiment. Pure fork invention (upstream never had hashline), no re-introduction risk. All 8 source/test files deleted (1,921 lines).",
-      "description": "Removed hashline_read and hashline_edit experimental tools entirely. They were off-by-default, used by zero agents, and causing test failures. Deleted 5 source files and 3 test files. Cleaned up OPENCODE_EXPERIMENTAL_HASHLINE flag from flag.ts, hashlineRead state/functions from file/time.ts, and all imports/registrations from tool/registry.ts. The edit tool now always registers (no hashline condition).",
-      "issue": "https://github.com/randomm/opencode/issues/360",
-      "newFiles": [],
-      "deletedFiles": [
-        "packages/opencode/src/tool/hashline.ts",
-        "packages/opencode/src/tool/hashline_edit.ts",
-        "packages/opencode/src/tool/hashline_edit.txt",
-        "packages/opencode/src/tool/hashline_read.ts",
-        "packages/opencode/src/tool/hashline_read.txt",
-        "packages/opencode/test/tool/hashline.test.ts",
-        "packages/opencode/test/tool/hashline_edit.test.ts",
-        "packages/opencode/test/tool/hashline_read.test.ts"
-      ],
-      "modifiedFiles": [
-        "packages/opencode/src/tool/registry.ts",
-        "packages/opencode/src/file/time.ts",
-        "packages/opencode/src/flag/flag.ts"
-      ],
-      "criticalCode": [],
-      "tests": [],
-      "upstreamTracking": {
-        "absorptionSignals": [
-          "HashlineReadTool",
-          "HashlineEditTool",
-          "OPENCODE_EXPERIMENTAL_HASHLINE",
-          "hashline_read",
-          "hashline_edit",
-          "assertHashlineRead",
-          "hashlineRead.*state"
-        ]
-      }
-    },
     "loop-message-cache": {
       "status": "active",
       "description": "Caches session messages in loop() to avoid full DB re-scan on every while(true) iteration. Before the loop, messages are fetched once with filterCompacted(). Each subsequent iteration appends only new messages via MessageV2.streamAfter() (a new cursor-based DB query using gt(MessageTable.id, afterID)). Full re-fetch is triggered only when compaction boundary changes (compaction, context overflow, or compact result). insertReminders is protected from mutating the cache by passing a shallow copy of msgs. Eliminates 5-15s blocking per message in long sessions.",
@@ -337,13 +284,13 @@
         "packages/opencode/src/tasks/pulse-monitoring.ts",
         "packages/opencode/src/tasks/pulse-scheduler.ts",
         "packages/opencode/src/tasks/pulse-verdicts.ts",
-"packages/opencode/src/tasks/pulse-utils.ts",
-          "packages/opencode/src/tasks/tool-commands.ts",
-          "packages/opencode/src/tasks/job-commands.ts",
-          "packages/opencode/src/tasks/inspect-commands.ts",
-          "packages/opencode/src/tasks/tool.ts",
-          "packages/opencode/src/tasks/index.ts",
-          "packages/opencode/test/tasks/store.test.ts",
+        "packages/opencode/src/tasks/pulse-utils.ts",
+        "packages/opencode/src/tasks/tool-commands.ts",
+        "packages/opencode/src/tasks/job-commands.ts",
+        "packages/opencode/src/tasks/inspect-commands.ts",
+        "packages/opencode/src/tasks/tool.ts",
+        "packages/opencode/src/tasks/index.ts",
+        "packages/opencode/test/tasks/store.test.ts",
         "packages/opencode/test/tasks/scheduler.test.ts",
         "packages/opencode/test/tasks/validation.test.ts",
         "packages/opencode/test/tasks/composer.test.ts",
@@ -353,101 +300,101 @@
       ],
       "modifiedFiles": ["packages/opencode/src/tool/registry.ts", "packages/opencode/src/agent/agent.ts", "packages/opencode/src/tasks/pulse.ts", "AGENTS.md"],
       "deletedFiles": [],
-       "criticalCode": [
-         "sanitizeProjectId",
-         "sanitizeTaskId",
-         "getSafeTaskPath",
-         "IMMUTABLE_FIELDS",
-         "validateTaskUpdates",
-"const TASKS_DIR_NAME = \"tasks\"",
-          "getTasksDir",
-         "atomicWrite",
-         "Store.createTask",
-         "Store.getTask",
-         "Store.updateTask",
-"Store.listTasks",
-          "async updateIndex(projectId: string, taskId: string, entry: TaskIndex[string]): Promise<void>",
-          "async getIndex(projectId: string): Promise<TaskIndex>",
-          "Store.logActivity",
-"Store.createJob",
-          "Store.getJob",
-          "Store.updateJob",
-          "Store.addComment",
-          "async addPipelineEvent(projectId: string, taskId: string, event: PipelineEvent): Promise<void>",
-          "Store.findJobByIssue",
-         "Scheduler.getNextTasks",
-         "Validation.validateGraph",
-         "Validation.validateGraphFromMap",
-"startPulse",
-          "resurrectionScan",
-          "isPidAlive",
-          "isSessionActivelyRunning",
-         "lock file management",
-         "writeLockFile",
-         "readLockPid",
-         "removeLockFile",
-"isPidAlive",
-          "isSessionActivelyRunning",
-          "checkTimeouts",
-          "TIMEOUT_MS",
-          "checkCompletion",
-          "gracefulStop",
-          "heartbeatActiveAgents",
-          "activeTicks",
-          "projectTicks.has(jobId)",
-          "writeLockFile",
-          "resurrectionScan",
-          "spawnDeveloper",
-"TaskctlTool",
-          "create",
-          "list",
-          "get",
-          "update",
-          "close",
-          "taskctl comment",
-          "depends",
-          "split",
-          "next",
-          "validate",
-          "taskctl start",
-"start-skip",
-"taskctl status",
-"taskctl stop",
-"taskctl resume",
-"taskctl inspect",
-"taskctl override",
-"taskctl retry",
-"case \"override\":",
-"commit-as-is",
-"Job status must be \"stopped\" to resume",
-"stopping: true",
-         "SessionPrompt.cancel",
-         "Worktree.remove",
-         "runComposer",
-         ".literal(0)",
-         ".literal(1)",
-         ".literal(2)",
-         ".literal(3)",
-         ".literal(4)",
-"slugify",
-          "generateUniqueSlug",
-          "Can only split open tasks",
-"while (counter <= maxAttempts)",
-          "const maxAttempts = 1000",
-          "const MAX_COMMENT_LENGTH = 100 * 1024",
-          "activity.ndjson",
-          "index.json",
-          "module:<name>: Prevent conflicts with tasks in same module",
-          "file:<path>: Prevent conflicts with tasks touching same file",
-          "steering agent",
-          "checkSteering",
-          "spawnSteering",
-          "getRecentActivity",
-          "Session.messages",
-          "minutesSince < 15",
-          "result.action",
-          "adversarial-running"
-        ],
+      "criticalCode": [
+        "sanitizeProjectId",
+        "sanitizeTaskId",
+        "getSafeTaskPath",
+        "IMMUTABLE_FIELDS",
+        "validateTaskUpdates",
+        "const TASKS_DIR_NAME = \"tasks\"",
+        "getTasksDir",
+        "atomicWrite",
+        "Store.createTask",
+        "Store.getTask",
+        "Store.updateTask",
+        "Store.listTasks",
+        "async updateIndex(projectId: string, taskId: string, entry: TaskIndex[string]): Promise<void>",
+        "async getIndex(projectId: string): Promise<TaskIndex>",
+        "Store.logActivity",
+        "Store.createJob",
+        "Store.getJob",
+        "Store.updateJob",
+        "Store.addComment",
+        "async addPipelineEvent(projectId: string, taskId: string, event: PipelineEvent): Promise<void>",
+        "Store.findJobByIssue",
+        "Scheduler.getNextTasks",
+        "Validation.validateGraph",
+        "Validation.validateGraphFromMap",
+        "startPulse",
+        "resurrectionScan",
+        "isPidAlive",
+        "isSessionActivelyRunning",
+        "lock file management",
+        "writeLockFile",
+        "readLockPid",
+        "removeLockFile",
+        "isPidAlive",
+        "isSessionActivelyRunning",
+        "checkTimeouts",
+        "TIMEOUT_MS",
+        "checkCompletion",
+        "gracefulStop",
+        "heartbeatActiveAgents",
+        "activeTicks",
+        "projectTicks.has(jobId)",
+        "writeLockFile",
+        "resurrectionScan",
+        "spawnDeveloper",
+        "TaskctlTool",
+        "create",
+        "list",
+        "get",
+        "update",
+        "close",
+        "taskctl comment",
+        "depends",
+        "split",
+        "next",
+        "validate",
+        "taskctl start",
+        "start-skip",
+        "taskctl status",
+        "taskctl stop",
+        "taskctl resume",
+        "taskctl inspect",
+        "taskctl override",
+        "taskctl retry",
+        "case \"override\":",
+        "commit-as-is",
+        "Job status must be \"stopped\" to resume",
+        "stopping: true",
+        "SessionPrompt.cancel",
+        "Worktree.remove",
+        "runComposer",
+        ".literal(0)",
+        ".literal(1)",
+        ".literal(2)",
+        ".literal(3)",
+        ".literal(4)",
+        "slugify",
+        "generateUniqueSlug",
+        "Can only split open tasks",
+        "while (counter <= maxAttempts)",
+        "const maxAttempts = 1000",
+        "const MAX_COMMENT_LENGTH = 100 * 1024",
+        "activity.ndjson",
+        "index.json",
+        "module:<name>: Prevent conflicts with tasks in same module",
+        "file:<path>: Prevent conflicts with tasks touching same file",
+        "steering agent",
+        "checkSteering",
+        "spawnSteering",
+        "getRecentActivity",
+        "Session.messages",
+        "minutesSince < 15",
+        "result.action",
+        "adversarial-running"
+      ],
       "tests": [
         "packages/opencode/test/tasks/store.test.ts",
         "packages/opencode/test/tasks/scheduler.test.ts",
@@ -483,83 +430,83 @@
       }
     },
     "openai-compatible-choices-validation": {
-       "status": "active",
-       "description": "Guards OpenAI-compatible provider responses against validation errors. (1) Issue #365: Prevents AI_TypeValidationError when choices array is missing/empty by throwing InvalidResponseDataError instead. (2) Issue #367: Normalizes error response schema to accept both standard OpenAI format and status_code-wrapped format, supporting providers with different error response structures.",
-       "issue": "https://github.com/randomm/opencode/issues/367",
-       "newFiles": [],
-       "modifiedFiles": [
-         "packages/opencode/src/provider/sdk/copilot/chat/openai-compatible-chat-language-model.ts",
-         "packages/opencode/src/provider/sdk/copilot/openai-compatible-error.ts"
-       ],
-       "criticalCode": [
-         "InvalidResponseDataError",
-         "responseBody.choices?.length",
-         "value.choices?.length",
-         "OpenAI-compatible provider returned no choices",
-         "status_code",
-         "openaiCompatibleErrorDataSchema",
-         "errorToMessage",
-         "standardErrorObject",
-         "wrappedErrorObject"
-       ],
-       "tests": [
-         "packages/opencode/test/provider/copilot/copilot-chat-model.test.ts",
-         "packages/opencode/test/provider/copilot/openai-compatible-error.test.ts"
-       ],
-       "upstreamTracking": {
-"absorptionSignals": [
-            "responseBody.choices?.length",
-            "value.choices?.length",
-            "InvalidResponseDataError.*choices",
-            "choices.*length.*0",
-            "no choices.*provider",
-            "status_code.*error",
-            "openaiCompatibleErrorDataSchema.*union",
-            "wrappedErrorObject",
-            "standardErrorObject"
-            ]
-          }
-       },
-        "cerebras-error-normalization": {
-         "status": "active",
-         "description": "Overrides @ai-sdk/cerebras in the cerebras custom loader to use OpenAICompatibleChatLanguageModel with defaultOpenAICompatibleErrorStructure, so Cerebras status_code-wrapped error responses are handled correctly instead of throwing AI_TypeValidationError.",
-         "issue": "https://github.com/randomm/opencode/issues/369",
-         "newFiles": [],
-         "modifiedFiles": [
-           "packages/opencode/src/provider/provider.ts"
-         ],
-        "criticalCode": [
-           "OpenAICompatibleChatLanguageModel",
-           "defaultOpenAICompatibleErrorStructure",
-           "X-Cerebras-3rd-Party-Integration",
-           "api.cerebras.ai",
-           "CEREBRAS_API_KEY"
-         ],
-         "tests": [
-           "packages/opencode/test/provider/cerebras-error-schema.test.ts"
-         ],
-         "upstreamTracking": {
-           "absorptionSignals": [
-             "cerebras.*OpenAICompatibleChatLanguageModel",
-             "cerebras.*errorStructure",
-             "cerebras.*defaultOpenAICompatibleErrorStructure"
-           ]
-          }
-},
-        "apfel-permission-suggestion": {
-          "status": "active",
-         "description": "On bash permission denial, optionally spawns apfel (Apple Intelligence CLI) to suggest the nearest permitted alternative command. Appended to DeniedError message shown to the agent. No-op if apfel not installed.",
-         "issue": "https://github.com/randomm/opencode/issues/371",
-         "newFiles": [],
-         "modifiedFiles": ["packages/opencode/src/permission/next.ts"],
-         "deletedFiles": [],
-         "criticalCode": ["getApfelSuggestion", "apfelPath", "throw new DeniedError(denied, suggestion)"],
-         "tests": ["packages/opencode/test/permission/next.test.ts"],
-         "upstreamTracking": {
-           "relatedPRs": [],
-           "relatedIssues": [],
-           "absorptionSignals": ["getApfelSuggestion", "apfelPath.*Bun.which", "apfel.*permissive.*permission"]
-         }
-        }
+      "status": "active",
+      "description": "Guards OpenAI-compatible provider responses against validation errors. (1) Issue #365: Prevents AI_TypeValidationError when choices array is missing/empty by throwing InvalidResponseDataError instead. (2) Issue #367: Normalizes error response schema to accept both standard OpenAI format and status_code-wrapped format, supporting providers with different error response structures.",
+      "issue": "https://github.com/randomm/opencode/issues/367",
+      "newFiles": [],
+      "modifiedFiles": [
+        "packages/opencode/src/provider/sdk/copilot/chat/openai-compatible-chat-language-model.ts",
+        "packages/opencode/src/provider/sdk/copilot/openai-compatible-error.ts"
+      ],
+      "criticalCode": [
+        "InvalidResponseDataError",
+        "responseBody.choices?.length",
+        "value.choices?.length",
+        "OpenAI-compatible provider returned no choices",
+        "status_code",
+        "openaiCompatibleErrorDataSchema",
+        "errorToMessage",
+        "standardErrorObject",
+        "wrappedErrorObject"
+      ],
+      "tests": [
+        "packages/opencode/test/provider/copilot/copilot-chat-model.test.ts",
+        "packages/opencode/test/provider/copilot/openai-compatible-error.test.ts"
+      ],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "responseBody.choices?.length",
+          "value.choices?.length",
+          "InvalidResponseDataError.*choices",
+          "choices.*length.*0",
+          "no choices.*provider",
+          "status_code.*error",
+          "openaiCompatibleErrorDataSchema.*union",
+          "wrappedErrorObject",
+          "standardErrorObject"
+        ]
+      }
+    },
+    "cerebras-error-normalization": {
+      "status": "active",
+      "description": "Overrides @ai-sdk/cerebras in the cerebras custom loader to use OpenAICompatibleChatLanguageModel with defaultOpenAICompatibleErrorStructure, so Cerebras status_code-wrapped error responses are handled correctly instead of throwing AI_TypeValidationError.",
+      "issue": "https://github.com/randomm/opencode/issues/369",
+      "newFiles": [],
+      "modifiedFiles": [
+        "packages/opencode/src/provider/provider.ts"
+      ],
+      "criticalCode": [
+        "OpenAICompatibleChatLanguageModel",
+        "defaultOpenAICompatibleErrorStructure",
+        "X-Cerebras-3rd-Party-Integration",
+        "api.cerebras.ai",
+        "CEREBRAS_API_KEY"
+      ],
+      "tests": [
+        "packages/opencode/test/provider/cerebras-error-schema.test.ts"
+      ],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "cerebras.*OpenAICompatibleChatLanguageModel",
+          "cerebras.*errorStructure",
+          "cerebras.*defaultOpenAICompatibleErrorStructure"
+        ]
+      }
+    },
+    "apfel-permission-suggestion": {
+      "status": "active",
+      "description": "On bash permission denial, optionally spawns apfel (Apple Intelligence CLI) to suggest the nearest permitted alternative command. Appended to DeniedError message shown to the agent. No-op if apfel not installed.",
+      "issue": "https://github.com/randomm/opencode/issues/371",
+      "newFiles": [],
+      "modifiedFiles": ["packages/opencode/src/permission/next.ts"],
+      "deletedFiles": [],
+      "criticalCode": ["getApfelSuggestion", "apfelPath", "throw new DeniedError(denied, suggestion)"],
+      "tests": ["packages/opencode/test/permission/next.test.ts"],
+      "upstreamTracking": {
+        "relatedPRs": [],
+        "relatedIssues": [],
+        "absorptionSignals": ["getApfelSuggestion", "apfelPath.*Bun.which", "apfel.*permissive.*permission"]
+      }
     }
+  }
 }
