@@ -245,9 +245,9 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
 
-    // Find matching rules and split into buckets
-    const exactPermissionMatches: Rule[] = []
-    const wildcardPermissionMatches: Rule[] = []
+    // Find matching rules and split into buckets by pattern specificity
+    const exactPatternMatches: Rule[] = []
+    const wildcardPatternMatches: Rule[] = []
 
     for (const rule of merged) {
       // Check if permission matches (exact or wildcard)
@@ -255,22 +255,22 @@ export function merge(...rulesets: Ruleset[]): Ruleset {
       // Check if pattern matches (exact or wildcard)
       if (!Wildcard.match(pattern, rule.pattern)) continue
 
-      // Categorize by permission type
-      if (rule.permission === "*") {
-        wildcardPermissionMatches.push(rule)
+      // Categorize by pattern specificity: exact patterns take precedence over wildcard patterns
+      if (Wildcard.isWildcard(rule.pattern)) {
+        wildcardPatternMatches.push(rule)
       } else {
-        exactPermissionMatches.push(rule)
+        exactPatternMatches.push(rule)
       }
     }
 
-    // Exact permission matches take precedence over wildcard permission matches
+    // Exact pattern matches take precedence over wildcard pattern matches
     // Within each bucket, use last-match-wins
-    if (exactPermissionMatches.length > 0) {
-      return exactPermissionMatches[exactPermissionMatches.length - 1]
+    if (exactPatternMatches.length > 0) {
+      return exactPatternMatches[exactPatternMatches.length - 1]
     }
 
-    if (wildcardPermissionMatches.length > 0) {
-      return wildcardPermissionMatches[wildcardPermissionMatches.length - 1]
+    if (wildcardPatternMatches.length > 0) {
+      return wildcardPatternMatches[wildcardPatternMatches.length - 1]
     }
 
     return { action: "ask", permission, pattern: "*" }
