@@ -240,7 +240,7 @@
         "workdir cannot be empty or whitespace only",
         "workdir does not exist or is not a directory",
         "workdir is outside project boundary",
-        "falling back to Instance.directory"
+        "falling back to session/Instance.directory"
       ],
       "tests": ["packages/opencode/test/tool/bash-workdir.test.ts"],
       "upstreamTracking": {
@@ -553,7 +553,7 @@
          "newFiles": [],
          "modifiedFiles": ["packages/opencode/src/permission/next.ts"],
          "deletedFiles": [],
-         "criticalCode": ["getApfelSuggestion", "apfelPath", "DeniedError.*suggestion"],
+         "criticalCode": ["getApfelSuggestion", "apfelPath", "throw new DeniedError(denied, suggestion)"],
          "tests": ["packages/opencode/test/permission/next.test.ts"],
          "upstreamTracking": {
            "relatedPRs": [],
