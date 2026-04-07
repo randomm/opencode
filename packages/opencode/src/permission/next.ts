@@ -46,7 +46,15 @@ export namespace PermissionNext {
 
   export function fromConfig(permission: Config.Permission) {
     const ruleset: Ruleset = []
-    for (const [key, value] of Object.entries(permission)) {
+    // Sort permissions by specificity for find() behavior:
+    // More specific = fewer wildcards in permission name
+    const entries = Object.entries(permission).sort((a, b) => {
+      const aWild = (a[0].match(/\*/g) || []).length + (a[0].match(/\?/g) || []).length
+      const bWild = (b[0].match(/\*/g) || []).length + (b[0].match(/\?/g) || []).length
+      if (aWild !== bWild) return aWild - bWild  // Fewer wildcards first
+      return a[0].length - b[0].length  // Shorter first (more constrained)
+    })
+    for (const [key, value] of entries) {
       if (typeof value === "string") {
         ruleset.push({
           permission: key,
