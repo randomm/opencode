@@ -63,9 +63,9 @@ export namespace PermissionNext {
     return ruleset
   }
 
-export function merge(...rulesets: Ruleset[]): Ruleset {
-  return rulesets.flat()
-}
+  export function merge(...rulesets: Ruleset[]): Ruleset {
+    return rulesets.flat()
+  }
 
   export const Request = z
     .object({
