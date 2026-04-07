@@ -46,15 +46,7 @@ export namespace PermissionNext {
 
   export function fromConfig(permission: Config.Permission) {
     const ruleset: Ruleset = []
-    // Sort permissions by specificity for find() behavior:
-    // More specific = fewer wildcards in permission name
-    const entries = Object.entries(permission).sort((a, b) => {
-      const aWild = (a[0].match(/\*/g) || []).length + (a[0].match(/\?/g) || []).length
-      const bWild = (b[0].match(/\*/g) || []).length + (b[0].match(/\?/g) || []).length
-      if (aWild !== bWild) return aWild - bWild  // Fewer wildcards first
-      return a[0].length - b[0].length  // Shorter first (more constrained)
-    })
-    for (const [key, value] of entries) {
+    for (const [key, value] of Object.entries(permission)) {
       if (typeof value === "string") {
         ruleset.push({
           permission: key,
@@ -63,24 +55,15 @@ export namespace PermissionNext {
         })
         continue
       }
-      // Sort patterns by specificity for find() behavior:
-      // More specific = fewer files match = more fixed (non-wildcard) characters
-      const patterns = Object.entries(value).sort((a, b) => {
-        const aFixed = a[0].length - (a[0].match(/\*/g) || []).length - (a[0].match(/\?/g) || []).length
-        const bFixed = b[0].length - (b[0].match(/\*/g) || []).length - (b[0].match(/\?/g) || []).length
-        if (aFixed !== bFixed) return bFixed - aFixed
-        // Same fixed chars, put shorter patterns first (fewer wildcards = more constrained)
-        return a[0].length - b[0].length
-      })
       ruleset.push(
-        ...patterns.map(([pattern, action]) => ({ permission: key, pattern: expand(pattern), action })),
+        ...Object.entries(value).map(([pattern, action]) => ({ permission: key, pattern: expand(pattern), action })),
       )
     }
     return ruleset
   }
 
-  export function merge(...rulesets: Ruleset[]): Ruleset {
-    // Reverse order so later rulesets take precedence with find()
+export function merge(...rulesets: Ruleset[]): Ruleset {
+    // Reverse order so later rulesets take precedence with findLast()
     // merge(defaults, user) should produce [...user, ...defaults]
     return rulesets.reverse().flat()
   }
@@ -260,7 +243,7 @@ export namespace PermissionNext {
   export function evaluate(permission: string, pattern: string, ...rulesets: Ruleset[]): Rule {
     const merged = merge(...rulesets)
     log.info("evaluate", { permission, pattern, ruleset: merged })
-    const match = merged.find(
+    const match = merged.findLast(
       (rule) => Wildcard.match(permission, rule.permission) && Wildcard.match(pattern, rule.pattern),
     )
     return match ?? { action: "ask", permission, pattern: "*" }
@@ -272,8 +255,8 @@ export namespace PermissionNext {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-      // Use wildcard matching like evaluate() - first match wins
-      const rule = ruleset.find((r) => Wildcard.match(permission, r.permission))
+      // Use findLast() to match evaluate() semantics
+      const rule = ruleset.findLast((r) => Wildcard.match(permission, r.permission))
       if (!rule) continue
       if (rule.pattern === "*" && rule.action === "deny") result.add(tool)
     }
