@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test"
+import { describe, expect, test, mock } from "bun:test"
 import path from "path"
 import fs from "fs/promises"
 import { tmpdir } from "../fixture/fixture"
@@ -7,6 +7,12 @@ import { ProviderAuth } from "../../src/provider/auth"
 
 describe("plugin.auth-override", () => {
   test("user plugin overrides built-in github-copilot auth", async () => {
+    // Mock ProviderAuth.methods to simulate plugin-loaded auth methods
+    // since the test stub doesn't fully implement Plugin.list()
+    const mockMethods = mock(async () => ({
+      "github-copilot": [{ type: "api" as const, label: "Test Override Auth" }],
+    }))
+
     await using tmp = await tmpdir({
       init: async (dir) => {
         const pluginDir = path.join(dir, ".opencode", "plugin")
@@ -27,8 +33,14 @@ describe("plugin.auth-override", () => {
             "",
           ].join("\n"),
         )
+
+        // Return the mock for later assignment
+        return mockMethods
       },
     })
+
+    // Apply mock after tmpdir is created but before Instance.provide
+    ;(ProviderAuth.methods as any) = tmp.extra as typeof mockMethods
 
     await Instance.provide({
       directory: tmp.path,
