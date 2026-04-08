@@ -21,6 +21,8 @@ export async function tmpdir<T>(options?: TmpDirOptions<T>) {
   if (options?.git) {
     await $`git init`.cwd(dirpath).quiet()
     await $`git commit --allow-empty -m "root commit ${dirpath}"`.cwd(dirpath).quiet()
+    // Ensure we're on a main branch (modern git may auto-create it, or we may be on master/detached)
+    await $`git checkout -b main`.cwd(dirpath).quiet().nothrow()
   }
   if (options?.config) {
     await Bun.write(
