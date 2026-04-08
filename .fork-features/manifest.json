@@ -25,6 +25,7 @@
       "modifiedFiles": [
         "packages/opencode/src/session/index.ts",
         "packages/opencode/src/session/prompt.ts",
+        "packages/opencode/src/session/processor.ts",
         "packages/opencode/src/tool/registry.ts"
       ],
       "criticalCode": [
@@ -41,13 +42,21 @@
         "parent_session_id",
         "reserveTaskSlot",
         "getSessionTaskCount",
-        "MAX_STORED_TASK_RESULTS"
+        "MAX_STORED_TASK_RESULTS",
+        "stallDetected",
+        "lastToolCalls",
+        "lastActivity",
+        "stalledSessions",
+        "lastTokenTime",
+        "OPENCODE_STALL_TIMEOUT_MS",
+        "LLM stream stalled"
       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
         "packages/opencode/test/tool/list_tasks.test.ts",
         "packages/opencode/test/tool/cancel_task.test.ts",
-        "packages/opencode/test/session/async-tasks.test.ts"
+        "packages/opencode/test/session/async-tasks.test.ts",
+        "packages/opencode/test/session/processor-stall.test.ts"
       ],
       "upstreamTracking": {
         "relatedPRs": ["anomalyco/opencode#7206"],
@@ -58,7 +67,14 @@
           "task.*concurrency.*slot",
           "cancel.*task",
           "CancelTaskTool",
-          "tryCancel"
+          "tryCancel",
+          "stallDetected",
+          "lastToolCalls",
+          "lastActivity",
+          "export const stalledSessions",
+          "stall.*detector",
+          "stream.*stall",
+          "lastTokenTime"
         ]
       }
     },

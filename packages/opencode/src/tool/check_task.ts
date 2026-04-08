@@ -6,6 +6,7 @@ import { listBackgroundTasks, getBackgroundTaskResult, getBackgroundTaskMetadata
 import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
+import { SessionProcessor } from "../session/processor"
 
 type TaskStatus = "running" | "completed" | "failed" | "not_found" | "cancelled"
 
@@ -19,6 +20,13 @@ interface TaskResult {
   duration_seconds?: number
   started_at?: string
   completed_at?: string
+  stallDetected?: boolean
+  lastToolCalls?: {
+    name: string
+    status: string
+    time: string
+  }[]
+  lastActivity?: string
 }
 
 interface CheckTaskMetadata {
@@ -84,10 +92,28 @@ async function checkSessionTask(id: string, callerSessionId?: string): Promise<T
   const status = SessionStatus.get(id)
 
   if (status.type === "busy") {
+    const messages = await Session.messages({ sessionID: id, limit: 5 })
+    const toolParts = messages.flatMap((msg) =>
+      msg.info.role === "assistant" ? msg.parts.filter((part): part is MessageV2.ToolPart => part.type === "tool") : []
+    )
+    const recentTools = toolParts
+      .filter((part) => part.state.status !== "pending" && "time" in part.state)
+      .slice(-3)
+      .map((part) => ({
+        name: part.tool,
+        status: part.state.status,
+        time: new Date((part.state as { time: { start: number } }).time.start).toISOString(),
+      }))
+    const lastActivity = recentTools.length > 0 ? recentTools[recentTools.length - 1].time : new Date().toISOString()
+    const stallDetected = SessionProcessor.stalledSessions.has(id)
+
     return {
       task_id: id,
       status: "running",
       started_at: started,
+      stallDetected,
+      lastToolCalls: recentTools,
+      lastActivity,
     }
   }
 
