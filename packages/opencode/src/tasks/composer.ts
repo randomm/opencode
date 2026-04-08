@@ -67,7 +67,7 @@ async function defaultSpawnComposerFn(
     throw new Error(`Composer timed out after ${timeoutMs / 1000}s. Issue description may be too complex. Consider simplifying.`)
   }
 
-  log.info("composer completed", { sessionID: session.id, timedOut })
+  log.info("composer completed", { sessionID: session.id, elapsedMs })
 
   // Agent finished — read final assistant message directly from DB
   // MessageV2.stream() is descending order — .find() gets the newest assistant message
