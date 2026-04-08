@@ -326,43 +326,80 @@ taskctl override <taskId> --commit-as-is   # Commit despite issues (PM responsib
 
 ### Main opencode TUI
 
-**Recommended: Use comprehensive installation script**
+**Quick reference — all commands from repo root:**
 
 ```bash
-cd packages/opencode && bun run build --single
-./script/install.sh
-```
-
-The install script handles:
-
-- Platform/architecture detection
-- Binary verification (size, executability)
-- Directory creation and permission checks
-- Atomic installation with rollback on failure
-- macOS codesigning with error detection
-- Comprehensive verification
-
-**Manual installation (advanced):**
-
-```bash
-# Build for current platform only (dev builds)
+# 1. Build (from packages/opencode)
 cd packages/opencode && bun run build --single
 
-# Copy to ~/bin
-cp packages/opencode/dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode
+# 2. Install (from repo root — NOT from packages/opencode)
+cd ../.. && ./script/install.sh
 
-# REQUIRED on macOS: ad-hoc codesign (build script does NOT auto-sign)
-codesign --force --deep --sign - ~/bin/opencode || exit 1
+# 3. Promote candidate binary to stable
+mv ~/bin/opencode-new ~/bin/opencode
 
-# Verify
+# 4. Verify
 ~/bin/opencode --version
 ```
 
-**Critical Notes:**
+**Agent responsibilities:**
 
-- The build script (`script/build.ts`) does NOT auto-codesign. Without codesign, macOS will refuse to run the binary.
-- Manual installation requires all 4 steps to succeed. Use `./script/install.sh` for automated error handling.
-- If codesigning fails on macOS, the binary becomes non-executable. The install script will detect this and rollback automatically.
+| Step | Agent | Commands |
+|------|-------|----------|
+| Build binary | @ops | `cd packages/opencode && bun run build --single` |
+| Run install script | @ops | `./script/install.sh` (from repo root) |
+| Promote candidate | User | `mv ~/bin/opencode-new ~/bin/opencode` |
+
+> **Note:** @ops handles build and install because it requires `cp`, `codesign`, and file system operations not available to @developer. The install script runs from the **repo root** (`./script/install.sh`), NOT from `packages/opencode/`.
+
+### How install.sh works
+
+The install script (`./script/install.sh` from repo root) automates:
+
+1. Platform/architecture detection (Darwin/Linux/Windows + arch)
+2. Binary verification (size > 10MB, executable flag, symlink resolution)
+3. Directory setup (creates `~/bin` if needed)
+4. Atomic installation via mktemp + mv (rollback on failure)
+5. macOS codesigning (with rollback to previous binary on failure)
+6. Verification (`--version` runs successfully)
+
+The script installs to `~/bin/opencode-new` (candidate binary), NOT `~/bin/opencode` (stable binary). This protects your working installation — you must promote manually:
+
+```bash
+# Test the candidate
+~/bin/opencode-new --version
+
+# If satisfied, promote to stable
+mv ~/bin/opencode-new ~/bin/opencode
+```
+
+### Manual installation (advanced)
+
+Only if the install script is unavailable:
+
+```bash
+# Build for current platform only
+cd packages/opencode && bun run build --single
+
+# Copy to ~/bin
+cp packages/opencode/dist/opencode-darwin-arm64/bin/opencode ~/bin/opencode-new
+
+# REQUIRED on macOS: ad-hoc codesign (build script does NOT auto-sign)
+codesign --force --deep --sign - ~/bin/opencode-new || exit 1
+
+# Verify candidate
+~/bin/opencode-new --version
+
+# Promote to stable
+mv ~/bin/opencode-new ~/bin/opencode
+```
+
+**Critical notes:**
+
+- The build script (`packages/opencode/script/build.ts`) does NOT auto-codesign. The install script handles codesigning.
+- The install script lives at **repo root** (`./script/install.sh`), NOT in `packages/opencode/script/`.
+- If codesigning fails on macOS, the binary will not execute. The install script detects this and rolls back automatically.
+- Always verify with `--version` before promoting the candidate binary.
 
 ### JavaScript SDK
 
