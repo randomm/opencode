@@ -13,7 +13,7 @@ test("fromConfig - string value becomes wildcard rule", () => {
 
 test("fromConfig - object value converts to rules array", () => {
   const result = PermissionNext.fromConfig({ bash: { "*": "allow", rm: "deny" } })
-  // With findLast() behavior, specific patterns come AFTER wildcards to override them
+  // With last-match-wins behavior, specific patterns come AFTER wildcards to override them
   expect(result).toEqual([
     { permission: "bash", pattern: "*", action: "allow" },  // 1 wildcard
     { permission: "bash", pattern: "rm", action: "deny" },  // 0 wildcards
@@ -26,7 +26,7 @@ test("fromConfig - mixed string and object values", () => {
     edit: "allow",
     webfetch: "ask",
   })
-  // With findLast() behavior, specific patterns come AFTER wildcards to override them
+  // With last-match-wins behavior, specific patterns come AFTER wildcards to override them
   expect(result).toEqual([
     { permission: "bash", pattern: "*", action: "allow" },  // 0 fixed chars
     { permission: "bash", pattern: "rm", action: "deny" },  // 2 fixed chars
@@ -134,7 +134,7 @@ test("merge - empty ruleset does nothing", () => {
   expect(result).toEqual([{ permission: "bash", pattern: "*", action: "allow" }])
 })
 
-test("merge - preserves order for findLast() precedence", () => {
+test("merge - preserves order for last-match-wins precedence", () => {
   const result = PermissionNext.merge(
     [
       { permission: "edit", pattern: "src/*", action: "allow" },
@@ -317,7 +317,7 @@ test("evaluate - specific permission comes after wildcard", () => {
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "bash", pattern: "*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("bash" allow) takes precedence
+  // With last-match-wins, the last matching rule ("bash" allow) takes precedence
   expect(result.action).toBe("allow")
 })
 
@@ -326,7 +326,7 @@ test("evaluate - wildcard permission before specific allow", () => {
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "edit", pattern: "src/*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("edit" allow) takes precedence
+  // With last-match-wins, the last matching rule ("edit" allow) takes precedence
   expect(result.action).toBe("allow")
 })
 
@@ -422,10 +422,7 @@ test("disabled - does not disable when action is ask", () => {
   expect(result.size).toBe(0)
 })
 
-test("disabled - does not disable when wildcard deny comes before specific allow", () => {
-  // With findLast(), both disabled() and evaluate() use last-match precedence
-  // If wildcard deny comes first, tool is NOT disabled because findLast() ignores it
-  // This ensures disabled() and evaluate() are consistent - no security vulnerability
+test("disabled - does not disable when wildcard deny before specific allow", () => {
   const result = PermissionNext.disabled(
     ["bash"],
     [
@@ -433,8 +430,8 @@ test("disabled - does not disable when wildcard deny comes before specific allow
       { permission: "bash", pattern: "echo *", action: "allow" },
     ],
   )
-  // With findLast(), the last matching rule is the wildcard deny, so bash IS disabled
-  expect(result.has("bash")).toBe(true)
+  // Tool should NOT be disabled because there is an allow rule for this permission
+  expect(result.has("bash")).toBe(false)
 })
 
 test("disabled - does not disable when specific deny before wildcard allow", () => {
@@ -445,7 +442,7 @@ test("disabled - does not disable when specific deny before wildcard allow", () 
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // With findLast(), the last matching rule is wildcard allow, so bash is NOT disabled
+  // With last-match-wins, the last matching rule is wildcard allow, so bash is NOT disabled
   expect(result.has("bash")).toBe(false)
 })
 
@@ -472,7 +469,7 @@ test("disabled - wildcard permission denies all tools", () => {
 
 test("disabled - specific allow overrides wildcard deny", () => {
   // With wildcard matching, "*" matches everything including "bash", "edit", "read"
-  // But with findLast(), the last matching rule ({ bash, *, allow }) overrides the wildcard deny
+  // The last matching rule ({ bash, *, allow }) overrides the wildcard deny
   const result = PermissionNext.disabled(
     ["bash", "edit", "read"],
     [
@@ -480,11 +477,104 @@ test("disabled - specific allow overrides wildcard deny", () => {
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // With findLast(), bash is NOT disabled because the last matching rule for bash is the wildcard allow
+  // bash is NOT disabled because the last matching rule for bash is the wildcard allow
   expect(result.has("bash")).toBe(false)
   // edit and read ARE disabled because their last matching rule is the wildcard deny
   expect(result.has("edit")).toBe(true)
   expect(result.has("read")).toBe(true)
+})
+
+test("disabled - tool with per-subagent deny/allow is visible", () => {
+  // Tests the exact bug from issue #401
+  const result = PermissionNext.disabled(
+    ["task"],
+    PermissionNext.fromConfig({
+      task: { "*": "deny", "ops": "allow", "developer": "allow" },
+    }),
+  )
+  // Tool should be visible because at least one subagent (ops, developer) is allowed
+  expect(result.has("task")).toBe(false)
+})
+
+test("disabled - tool with deny-only config is hidden", () => {
+  const result = PermissionNext.disabled(
+    ["task"],
+    PermissionNext.fromConfig({
+      task: { "*": "deny" },
+    }),
+  )
+  // Tool should be hidden because no subagent is allowed
+  expect(result.has("task")).toBe(true)
+})
+
+test("disabled - edit tool with deny and glob allow is visible", () => {
+  const result = PermissionNext.disabled(
+    ["edit"],
+    [
+      { permission: "edit", pattern: "*", action: "deny" },
+      { permission: "edit", pattern: "src/*", action: "allow" },
+    ],
+  )
+  // Edit should be visible because src/* allow exists
+  expect(result.has("edit")).toBe(false)
+})
+
+test("disabled - consistency with evaluate for wildcard deny-only", () => {
+  // If disabled() says tool is disabled, evaluate() must also deny
+  const ruleset = PermissionNext.fromConfig({
+    task: { "*": "deny" },
+  })
+  const disabled = PermissionNext.disabled(["task"], ruleset)
+  const evalResult = PermissionNext.evaluate("task", "*", ruleset)
+  expect(disabled.has("task")).toBe(true)
+  expect(evalResult.action).toBe("deny")
+  // Verify consistency
+  expect(disabled.has("task")).toBe(evalResult.action === "deny")
+})
+
+test("disabled - consistency with evaluate for per-subagent allow", () => {
+  // If disabled() says tool is NOT disabled, evaluate() should allow for at least one pattern
+  const ruleset = PermissionNext.fromConfig({
+    task: { "*": "deny", "ops": "allow" },
+  })
+  const disabled = PermissionNext.disabled(["task"], ruleset)
+  const evalForWildcard = PermissionNext.evaluate("task", "*", ruleset)
+  const evalForOps = PermissionNext.evaluate("task", "ops", ruleset)
+  expect(disabled.has("task")).toBe(false)
+  expect(evalForWildcard.action).toBe("deny") // default is deny
+  expect(evalForOps.action).toBe("allow") // ops specifically allowed
+})
+
+test("disabled - tool with all deny rules regardless of pattern", () => {
+  const result = PermissionNext.disabled(
+    ["bash"],
+    [
+      { permission: "bash", pattern: "*", action: "deny" },
+      { permission: "bash", pattern: "rm", action: "deny" },
+    ],
+  )
+  // All rules are deny, tool should be disabled
+  expect(result.has("bash")).toBe(true)
+})
+
+test("disabled - wildcard permission collision: visible but denied at runtime", () => {
+  // A tool with a specific allow rule but wildcard permission deny:
+  // disabled() shows the tool (hasAllow = true), but evaluate() denies for
+  // patterns not specifically allowed. This is by design — visibility shows
+  // "this tool can be used for SOME subagent", enforcement checks per-action.
+  // Note: Order matters for last-match-wins - wildcard must come before specific rules
+  const ruleset: PermissionNext.Ruleset = [
+    { permission: "*", pattern: "*", action: "deny" },
+    { permission: "task", pattern: "*", action: "deny" },
+    { permission: "task", pattern: "ops", action: "allow" },
+  ]
+  const disabled = PermissionNext.disabled(["task"], ruleset)
+  // Tool is visible because task+ops allow rule exists
+  expect(disabled.has("task")).toBe(false)
+  // But evaluate() denies for non-ops subagents
+  expect(PermissionNext.evaluate("task", "developer", ruleset).action).toBe("deny")
+  // And evaluate() allows for ops specifically
+  expect(PermissionNext.evaluate("task", "ops", ruleset).action).toBe("allow")
 })
 
 test("disabled and evaluate consistency - Security check", () => {
@@ -541,7 +631,7 @@ test("disabled and evaluate consistency - wildcard permission first", () => {
   const disabled = PermissionNext.disabled(["bash"], ruleset)
   const evalResult = PermissionNext.evaluate("bash", "rm", ruleset)
 
-  // With findLast(), last match is bash allow
+  // With last-match-wins, last match is bash allow
   expect(disabled.has("bash")).toBe(false) // bash is NOT disabled
   expect(evalResult.action).toBe("allow") // bash is allowed
 
