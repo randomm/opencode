@@ -257,14 +257,35 @@ export namespace PermissionNext {
 
   const EDIT_TOOLS = ["edit", "write", "patch", "multiedit"]
 
-export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
+/** Determines which tools should be hidden from an agent's tool list.
+   * A tool is visible if ANY allow rule exists for its permission (any pattern),
+   * even if the wildcard default is deny. This handles configs like:
+   *   { "task": { "*": "deny", "ops": "allow" } }
+   * where the tool should be visible because at least one subagent is allowed.
+   * 
+   * Note: This only controls tool visibility. Runtime permission enforcement
+   * is handled by evaluate() + ask(), which check specific patterns.
+   * A tool may be visible but denied for a specific subagent at runtime. */
+  export function disabled(tools: string[], ruleset: Ruleset): Set<string> {
     const result = new Set<string>()
     for (const tool of tools) {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
-      // Use evaluate() to check if the tool would be denied
-      // This ensures disabled() and evaluate() use the same logic
-      const rule = evaluate(permission, "*", ruleset)
-      if (rule.action === "deny") {
+      const wildcardResult = evaluate(permission, "*", ruleset)
+      
+      // If wildcard pattern is denied, check if there are any allow rules with specific patterns
+      // (e.g., "ops", "developer", "src/*") that would make the tool visible
+      if (wildcardResult.action === "deny") {
+        // Tool is disabled ONLY if there are NO specific allow patterns
+        // A specific pattern is one that is NOT literally "*"
+        const hasSpecificAllow = ruleset.some(
+          (rule) => Wildcard.match(permission, rule.permission) && 
+                    rule.action === "allow" && 
+                    rule.pattern !== "*"
+        )
+        if (hasSpecificAllow) continue
+      }
+      
+      if (wildcardResult.action === "deny") {
         result.add(tool)
       }
     }
