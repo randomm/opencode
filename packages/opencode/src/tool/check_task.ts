@@ -6,7 +6,7 @@ import { listBackgroundTasks, getBackgroundTaskResult, getBackgroundTaskMetadata
 import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
-import { SessionProcessor } from "../session/processor"
+import { isSessionStalled } from "../session/processor"
 
 type TaskStatus = "running" | "completed" | "failed" | "not_found" | "cancelled"
 
@@ -33,6 +33,10 @@ interface CheckTaskMetadata {
   status: TaskStatus
   taskId?: string
   sessionId?: string
+}
+
+function hasStartTime(part: MessageV2.ToolPart): part is MessageV2.ToolPart & { state: { time: { start: number } } } {
+  return part.state.status !== "pending" && "time" in part.state && typeof (part.state as { time: { start: unknown } }).time.start === "number"
 }
 
 function checkBackgroundTask(id: string): TaskResult | undefined {
@@ -97,15 +101,15 @@ async function checkSessionTask(id: string, callerSessionId?: string): Promise<T
       msg.info.role === "assistant" ? msg.parts.filter((part): part is MessageV2.ToolPart => part.type === "tool") : []
     )
     const recentTools = toolParts
-      .filter((part) => part.state.status !== "pending" && "time" in part.state)
+      .filter(hasStartTime)
       .slice(-3)
       .map((part) => ({
         name: part.tool,
         status: part.state.status,
-        time: new Date((part.state as { time: { start: number } }).time.start).toISOString(),
+        time: new Date(part.state.time.start).toISOString(),
       }))
     const lastActivity = recentTools.length > 0 ? recentTools[recentTools.length - 1].time : new Date().toISOString()
-    const stallDetected = SessionProcessor.stalledSessions.has(id)
+    const stallDetected = isSessionStalled(id)
 
     return {
       task_id: id,

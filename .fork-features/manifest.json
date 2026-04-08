@@ -46,9 +46,12 @@
         "stallDetected",
         "lastToolCalls",
         "lastActivity",
-        "stalledSessions",
+        "isSessionStalled",
+        "markSessionStalled",
+        "clearSessionStalled",
         "lastTokenTime",
         "OPENCODE_STALL_TIMEOUT_MS",
+        "getStallTimeout",
         "LLM stream stalled"
       ],
       "tests": [
@@ -71,7 +74,7 @@
           "stallDetected",
           "lastToolCalls",
           "lastActivity",
-          "export const stalledSessions",
+          "export function isSessionStalled",
           "stall.*detector",
           "stream.*stall",
           "lastTokenTime"
