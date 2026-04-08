@@ -13,7 +13,7 @@ test("fromConfig - string value becomes wildcard rule", () => {
 
 test("fromConfig - object value converts to rules array", () => {
   const result = PermissionNext.fromConfig({ bash: { "*": "allow", rm: "deny" } })
-  // With findLast() behavior, specific patterns come AFTER wildcards to override them
+  // With last-match-wins behavior, specific patterns come AFTER wildcards to override them
   expect(result).toEqual([
     { permission: "bash", pattern: "*", action: "allow" },  // 1 wildcard
     { permission: "bash", pattern: "rm", action: "deny" },  // 0 wildcards
@@ -26,7 +26,7 @@ test("fromConfig - mixed string and object values", () => {
     edit: "allow",
     webfetch: "ask",
   })
-  // With findLast() behavior, specific patterns come AFTER wildcards to override them
+  // With last-match-wins behavior, specific patterns come AFTER wildcards to override them
   expect(result).toEqual([
     { permission: "bash", pattern: "*", action: "allow" },  // 0 fixed chars
     { permission: "bash", pattern: "rm", action: "deny" },  // 2 fixed chars
@@ -134,7 +134,7 @@ test("merge - empty ruleset does nothing", () => {
   expect(result).toEqual([{ permission: "bash", pattern: "*", action: "allow" }])
 })
 
-test("merge - preserves order for findLast() precedence", () => {
+test("merge - preserves order for last-match-wins precedence", () => {
   const result = PermissionNext.merge(
     [
       { permission: "edit", pattern: "src/*", action: "allow" },
@@ -317,7 +317,7 @@ test("evaluate - specific permission comes after wildcard", () => {
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "bash", pattern: "*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("bash" allow) takes precedence
+  // With last-match-wins, the last matching rule ("bash" allow) takes precedence
   expect(result.action).toBe("allow")
 })
 
@@ -326,7 +326,7 @@ test("evaluate - wildcard permission before specific allow", () => {
     { permission: "*", pattern: "*", action: "deny" },
     { permission: "edit", pattern: "src/*", action: "allow" },
   ])
-  // With findLast(), the last matching rule ("edit" allow) takes precedence
+  // With last-match-wins, the last matching rule ("edit" allow) takes precedence
   expect(result.action).toBe("allow")
 })
 
@@ -442,7 +442,7 @@ test("disabled - does not disable when specific deny before wildcard allow", () 
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // With findLast(), the last matching rule is wildcard allow, so bash is NOT disabled
+  // With last-match-wins, the last matching rule is wildcard allow, so bash is NOT disabled
   expect(result.has("bash")).toBe(false)
 })
 
@@ -469,7 +469,7 @@ test("disabled - wildcard permission denies all tools", () => {
 
 test("disabled - specific allow overrides wildcard deny", () => {
   // With wildcard matching, "*" matches everything including "bash", "edit", "read"
-  // But with findLast(), the last matching rule ({ bash, *, allow }) overrides the wildcard deny
+  // The last matching rule ({ bash, *, allow }) overrides the wildcard deny
   const result = PermissionNext.disabled(
     ["bash", "edit", "read"],
     [
@@ -477,7 +477,7 @@ test("disabled - specific allow overrides wildcard deny", () => {
       { permission: "bash", pattern: "*", action: "allow" },
     ],
   )
-  // With findLast(), bash is NOT disabled because the last matching rule for bash is the wildcard allow
+  // bash is NOT disabled because the last matching rule for bash is the wildcard allow
   expect(result.has("bash")).toBe(false)
   // edit and read ARE disabled because their last matching rule is the wildcard deny
   expect(result.has("edit")).toBe(true)
@@ -631,7 +631,7 @@ test("disabled and evaluate consistency - wildcard permission first", () => {
   const disabled = PermissionNext.disabled(["bash"], ruleset)
   const evalResult = PermissionNext.evaluate("bash", "rm", ruleset)
 
-  // With findLast(), last match is bash allow
+  // With last-match-wins, last match is bash allow
   expect(disabled.has("bash")).toBe(false) // bash is NOT disabled
   expect(evalResult.action).toBe("allow") // bash is allowed
 

@@ -272,21 +272,14 @@ export namespace PermissionNext {
       const permission = EDIT_TOOLS.includes(tool) ? "edit" : tool
       const wildcardResult = evaluate(permission, "*", ruleset)
       
-      // If wildcard pattern is denied, check if there are any allow rules with specific patterns
-      // (e.g., "ops", "developer", "src/*") that would make the tool visible
       if (wildcardResult.action === "deny") {
-        // Tool is disabled ONLY if there are NO specific allow patterns
-        // A specific pattern is one that is NOT literally "*"
+        // Check for any non-wildcard allow rules before disabling
         const hasSpecificAllow = ruleset.some(
-          (rule) => Wildcard.match(permission, rule.permission) && 
-                    rule.action === "allow" && 
+          (rule) => Wildcard.match(permission, rule.permission) &&
+                    rule.action === "allow" &&
                     rule.pattern !== "*"
         )
-        if (hasSpecificAllow) continue
-      }
-      
-      if (wildcardResult.action === "deny") {
-        result.add(tool)
+        if (!hasSpecificAllow) result.add(tool)
       }
     }
     return result
