@@ -20,6 +20,28 @@ export namespace SessionProcessor {
   const DOOM_LOOP_THRESHOLD = 3
   const log = Log.create({ service: "session.processor" })
 
+  const stalledSessions = new Set<string>()
+
+  export function isSessionStalled(id: string): boolean {
+    return stalledSessions.has(id)
+  }
+
+  function markSessionStalled(id: string) {
+    stalledSessions.add(id)
+  }
+
+  function clearSessionStalled(id: string) {
+    stalledSessions.delete(id)
+  }
+
+  function getStallTimeout(): number {
+    const timeout = parseInt(process.env.OPENCODE_STALL_TIMEOUT_MS || "180000", 10)
+    if (isNaN(timeout) || timeout <= 0) {
+      throw new Error(`Invalid OPENCODE_STALL_TIMEOUT_MS: must be positive number, got "${process.env.OPENCODE_STALL_TIMEOUT_MS}"`)
+    }
+    return timeout
+  }
+
   export type Info = Awaited<ReturnType<typeof create>>
   export type Result = Awaited<ReturnType<Info["process"]>>
 
@@ -50,16 +72,24 @@ export namespace SessionProcessor {
           try {
             let currentText: MessageV2.TextPart | undefined
             let reasoningMap: Record<string, MessageV2.ReasoningPart> = {}
+            let lastTokenTime = Date.now()
+            const stallTimeout = getStallTimeout()
             const stream = await LLM.stream(streamInput)
 
             for await (const value of stream.fullStream) {
               input.abort.throwIfAborted()
+              if (Date.now() - lastTokenTime > stallTimeout) {
+                log.warn("stall", { sessionID: input.sessionID, elapsed: Date.now() - lastTokenTime })
+                markSessionStalled(input.sessionID)
+                throw new Error(`LLM stream stalled: no tokens received for ${Math.round(stallTimeout / 60000)} minutes`)
+              }
               switch (value.type) {
                 case "start":
                   SessionStatus.set(input.sessionID, { type: "busy" })
                   break
 
                 case "reasoning-start":
+                  lastTokenTime = Date.now()
                   if (value.id in reasoningMap) {
                     continue
                   }
@@ -79,6 +109,7 @@ export namespace SessionProcessor {
                   break
 
                 case "reasoning-delta":
+                  lastTokenTime = Date.now()
                   if (value.id in reasoningMap) {
                     const part = reasoningMap[value.id]
                     part.text += value.text
@@ -132,6 +163,7 @@ export namespace SessionProcessor {
                   break
 
                 case "tool-call": {
+                  lastTokenTime = Date.now()
                   const match = toolcalls[value.toolCallId]
                   if (match) {
                     const part = await Session.updatePart({
@@ -178,6 +210,7 @@ export namespace SessionProcessor {
                   break
                 }
                 case "tool-result": {
+                  lastTokenTime = Date.now()
                   const match = toolcalls[value.toolCallId]
                   if (match && match.state.status === "running") {
                     await Session.updatePart({
@@ -218,6 +251,7 @@ export namespace SessionProcessor {
                 }
 
                 case "tool-error": {
+                  lastTokenTime = Date.now()
                   const match = toolcalls[value.toolCallId]
                   const errorMsg = value.error instanceof Error ? value.error.message : String(value.error)
                   if (match && match.state.status === "running") {
@@ -336,6 +370,7 @@ export namespace SessionProcessor {
                   break
 
                 case "text-delta":
+                  lastTokenTime = Date.now()
                   if (currentText) {
                     currentText.text += value.text
                     if (value.providerMetadata) currentText.metadata = value.providerMetadata
@@ -411,6 +446,7 @@ export namespace SessionProcessor {
               error: input.assistantMessage.error,
             })
             SessionStatus.set(input.sessionID, { type: "idle" })
+            clearSessionStalled(input.sessionID)
           }
           if (snapshot) {
             const patch = await Snapshot.patch(snapshot)
@@ -445,13 +481,27 @@ export namespace SessionProcessor {
           }
           input.assistantMessage.time.completed = Date.now()
           await Session.updateMessage(input.assistantMessage)
-          if (needsCompaction) return "compact"
-          if (blocked) return "stop"
-          if (input.assistantMessage.error) return "stop"
+          if (needsCompaction) {
+            clearSessionStalled(input.sessionID)
+            return "compact"
+          }
+          if (blocked) {
+            clearSessionStalled(input.sessionID)
+            return "stop"
+          }
+          if (input.assistantMessage.error) {
+            clearSessionStalled(input.sessionID)
+            return "stop"
+          }
+          clearSessionStalled(input.sessionID)
           return "continue"
         }
       },
     }
     return result
   }
+}
+
+export function isSessionStalled(id: string): boolean {
+  return SessionProcessor.isSessionStalled(id)
 }

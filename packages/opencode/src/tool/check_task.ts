@@ -6,6 +6,7 @@ import { listBackgroundTasks, getBackgroundTaskResult, getBackgroundTaskMetadata
 import { Instance } from "../project/instance"
 import { SessionStatus } from "../session/status"
 import { MessageV2 } from "../session/message-v2"
+import { isSessionStalled } from "../session/processor"
 
 type TaskStatus = "running" | "completed" | "failed" | "not_found" | "cancelled"
 
@@ -19,12 +20,23 @@ interface TaskResult {
   duration_seconds?: number
   started_at?: string
   completed_at?: string
+  stallDetected?: boolean
+  lastToolCalls?: {
+    name: string
+    status: string
+    time: string
+  }[]
+  lastActivity?: string
 }
 
 interface CheckTaskMetadata {
   status: TaskStatus
   taskId?: string
   sessionId?: string
+}
+
+function hasStartTime(part: MessageV2.ToolPart): part is MessageV2.ToolPart & { state: { time: { start: number } } } {
+  return part.state.status !== "pending" && "time" in part.state && typeof (part.state as { time: { start: unknown } }).time.start === "number"
 }
 
 function checkBackgroundTask(id: string): TaskResult | undefined {
@@ -84,10 +96,28 @@ async function checkSessionTask(id: string, callerSessionId?: string): Promise<T
   const status = SessionStatus.get(id)
 
   if (status.type === "busy") {
+    const messages = await Session.messages({ sessionID: id, limit: 5 })
+    const toolParts = messages.flatMap((msg) =>
+      msg.info.role === "assistant" ? msg.parts.filter((part): part is MessageV2.ToolPart => part.type === "tool") : []
+    )
+    const recentTools = toolParts
+      .filter(hasStartTime)
+      .slice(-3)
+      .map((part) => ({
+        name: part.tool,
+        status: part.state.status,
+        time: new Date(part.state.time.start).toISOString(),
+      }))
+    const lastActivity = recentTools.length > 0 ? recentTools[recentTools.length - 1].time : new Date().toISOString()
+    const stallDetected = isSessionStalled(id)
+
     return {
       task_id: id,
       status: "running",
       started_at: started,
+      stallDetected,
+      lastToolCalls: recentTools,
+      lastActivity,
     }
   }
 
