@@ -86,7 +86,7 @@
     },
     "agents-config": {
       "status": "active",
-      "description": "Fork-specific AGENTS.md with build instructions, codesign steps, quality gates, context7 protocol, and fork governance rules. Upstream's AGENTS.md only has a style guide — ours is comprehensive. Must be manually re-applied after each upstream sync.",
+      "description": "Fork-specific AGENTS.md with build instructions, codesign steps, quality gates, context7 protocol, and fork governance rules. Includes explicit agent responsibilities for build/install workflow and candidate binary promotion pattern. Upstream's AGENTS.md only has a style guide — ours is comprehensive. Must be manually re-applied after each upstream sync.",
       "issue": "https://github.com/randomm/opencode/issues/158",
       "newFiles": [],
       "deletedFiles": [],
@@ -100,7 +100,11 @@
         "Pre-Push Verification",
         "Minimalist Engineering",
         "Auto-Merge Policy",
-        "Worktree and PR Policy"
+        "Worktree and PR Policy",
+        "./script/install.sh",
+        "~/bin/opencode-new",
+        "Agent responsibilities",
+        "Promote candidate"
       ],
       "tests": [],
       "upstreamTracking": {
