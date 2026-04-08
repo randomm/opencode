@@ -84,21 +84,45 @@ export async function executeStart(projectId: string, params: any, ctx: any): Pr
   try {
     const { $ } = await import("bun")
     const base = await PulseUtils.defaultBranch(cwd)
-    const result = await $`git checkout -b ${safeFeatureBranch} ${base}`.cwd(cwd).quiet().nothrow()
-    if (result.exitCode !== 0) {
-      const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
-      log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
-      throw new Error(`Failed to create feature branch ${safeFeatureBranch}: ${stderr}`)
+
+    // Check if branch already exists
+    const branchCheck = await $`git rev-parse --verify ${safeFeatureBranch}`.cwd(cwd).quiet().nothrow()
+
+    if (branchCheck.exitCode === 0) {
+      // Branch exists — check it out instead of creating
+      const checkoutResult = await $`git checkout ${safeFeatureBranch}`.cwd(cwd).quiet().nothrow()
+      if (checkoutResult.exitCode !== 0) {
+        const stderr = checkoutResult.stderr ? new TextDecoder().decode(checkoutResult.stderr) : "Unknown error"
+        log.error("failed to checkout existing branch", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+        throw new Error(`Failed to checkout existing branch ${safeFeatureBranch}: ${stderr}`)
+      }
+      log.info("reusing existing feature branch", { issueNumber, featureBranch: safeFeatureBranch })
+    } else {
+      // Branch doesn't exist — create it
+      const result = await $`git checkout -b ${safeFeatureBranch} ${base}`.cwd(cwd).quiet().nothrow()
+      if (result.exitCode !== 0) {
+        const stderr = result.stderr ? new TextDecoder().decode(result.stderr) : "Unknown error"
+        log.error("failed to create feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+        throw new Error(`Failed to create feature branch ${safeFeatureBranch}: ${stderr}`)
+      }
+      log.info("feature branch created", { issueNumber, featureBranch: safeFeatureBranch })
     }
 
     // Push the feature branch to origin - MUST succeed before creating job
     const pushResult = await $`git push -u origin ${safeFeatureBranch}`.cwd(cwd).quiet().nothrow()
     if (pushResult.exitCode !== 0) {
       const stderr = pushResult.stderr ? new TextDecoder().decode(pushResult.stderr) : "Unknown error"
-      log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
-      throw new Error(`Failed to push feature branch ${safeFeatureBranch} to origin: ${stderr}`)
+      // If push fails because remote branch exists, that's okay — just set upstream
+      if (stderr.includes("already exists") || stderr.includes("would clobber")) {
+        log.info("remote branch already exists, setting upstream", { issueNumber, featureBranch: safeFeatureBranch })
+        await $`git branch --set-upstream-to=origin/${safeFeatureBranch} ${safeFeatureBranch}`.cwd(cwd).quiet().nothrow()
+      } else {
+        log.error("failed to push feature branch to origin", { issueNumber, featureBranch: safeFeatureBranch, error: stderr })
+        throw new Error(`Failed to push feature branch ${safeFeatureBranch} to origin: ${stderr}`)
+      }
+    } else {
+      log.info("feature branch pushed to origin", { issueNumber, featureBranch: safeFeatureBranch })
     }
-    log.info("feature branch created and pushed", { issueNumber, featureBranch: safeFeatureBranch })
   } catch (e) {
     log.error("error creating feature branch", { issueNumber, featureBranch: safeFeatureBranch, error: String(e) })
     throw e

@@ -367,7 +367,7 @@ async function spawnAdversarial(task: Task, jobId: string, projectId: string, pm
   try {
     adversarialSession = await Session.createNext({
       parentID: pmSessionId,
-      directory: parentSession.directory,
+      directory: safeWorktree,
       title: `Adversarial: ${task.title}`,
       permission: [],
     })
