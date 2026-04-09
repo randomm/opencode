@@ -50,6 +50,26 @@ export namespace Agent {
     })
   export type Info = z.infer<typeof Info>
 
+  const READONLY_TOOLS: Config.Permission = {
+    "*": "deny",
+    read: "allow",
+    grep: "allow",
+    glob: "allow",
+    list: "allow",
+    codesearch: "allow",
+    bash: {
+      "vipune *": "allow",
+      "colgrep *": "allow",
+      "oo help *": "allow",
+      "oo gh issue view *": "allow",
+      "oo gh issue list *": "allow",
+      "oo recall *": "allow",
+    },
+    external_directory: {
+      [Truncate.GLOB]: "allow",
+    },
+  }
+
   const state = Instance.state(async () => {
     const cfg = await Config.get()
 
@@ -209,9 +229,7 @@ export namespace Agent {
         options: {},
         permission: PermissionNext.merge(
           defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-          }),
+          PermissionNext.fromConfig(READONLY_TOOLS),
           user,
         ),
         prompt: `You are the Composer agent for the taskctl autonomous development pipeline.
@@ -321,9 +339,7 @@ RULES FOR GOOD TASK DECOMPOSITION:
         hidden: true,
         permission: PermissionNext.merge(
           defaults,
-          PermissionNext.fromConfig({
-            "*": "deny",
-          }),
+          PermissionNext.fromConfig(READONLY_TOOLS),
           user,
         ),
         options: {},
