@@ -62,9 +62,9 @@ export namespace Plugin {
     const client = createOpencodeClient({
       baseUrl: Server.url().origin,
       directory: Instance.directory,
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+      fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
         const request = input instanceof Request ? input : new Request(input, init)
-        return Promise.resolve(Server.App().fetch(request))
+        return Server.App().fetch(request)
       },
     })
 
@@ -88,7 +88,7 @@ export namespace Plugin {
 
     // Load external plugins from config directories (e.g. ~/.config/opencode/plugins/*.js)
     if (config.plugin && config.plugin.length > 0) {
-      const origins: Config.PluginOrigin[] = config.plugin.map((spec: string) => ({ spec }))
+      const origins = config.plugin.map((spec) => ({ spec }))
       await PluginLoader.loadExternal({
         items: origins,
         kind: "server",
