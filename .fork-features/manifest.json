@@ -530,6 +530,34 @@
         "relatedIssues": [],
         "absorptionSignals": ["getApfelSuggestion", "apfelPath.*Bun.which", "apfel.*permissive.*permission"]
       }
+    },
+    "plugin-loading": {
+      "status": "active",
+      "description": "Restored plugin loading in init() to load internal and external plugins. Upstream uses Effect-based init(); our fork uses direct imperative loading with PluginLoader.loadExternal(). Diverges from upstream plugin/index.ts which uses Effect Layer pattern.",
+      "issue": "https://github.com/randomm/opencode/issues/408",
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": ["packages/opencode/src/plugin/index.ts"],
+      "criticalCode": [
+        "Plugin.init",
+        "PluginLoader.loadExternal",
+        "INTERNAL_PLUGINS",
+        "applyPlugin",
+        "createOpencodeClient",
+        "Server.App().fetch",
+        "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+      ],
+      "tests": ["packages/opencode/test/plugin/plugin-loading.test.ts"],
+      "upstreamTracking": {
+        "relatedPRs": ["anomalyco/opencode#7206"],
+        "relatedIssues": ["anomalyco/opencode#5887"],
+        "absorptionSignals": [
+          "Plugin.init.*loadExternal",
+          "createOpencodeClient.*Server.App",
+          "imperative plugin loading",
+          "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+        ]
+      }
     }
   }
 }
