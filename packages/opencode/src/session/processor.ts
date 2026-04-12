@@ -42,6 +42,17 @@ export namespace SessionProcessor {
     return timeout
   }
 
+  class StallError extends Error {
+    constructor(message: string) {
+      super(message)
+      this.name = "StallError"
+    }
+  }
+
+  function isStallError(error: unknown): error is StallError {
+    return error instanceof StallError
+  }
+
   export type Info = Awaited<ReturnType<typeof create>>
   export type Result = Awaited<ReturnType<Info["process"]>>
 
@@ -68,6 +79,8 @@ export namespace SessionProcessor {
         log.info("process")
         needsCompaction = false
         const shouldBreak = (await Config.get()).experimental?.continue_loop_on_deny !== true
+        const session = await Session.get(input.sessionID)
+        let stallErr: StallError | undefined
         while (true) {
           try {
             let currentText: MessageV2.TextPart | undefined
@@ -78,10 +91,10 @@ export namespace SessionProcessor {
 
             for await (const value of stream.fullStream) {
               input.abort.throwIfAborted()
-              if (Date.now() - lastTokenTime > stallTimeout) {
+              if (session.parentID && Date.now() - lastTokenTime > stallTimeout) {
                 log.warn("stall", { sessionID: input.sessionID, elapsed: Date.now() - lastTokenTime })
                 markSessionStalled(input.sessionID)
-                throw new Error(`LLM stream stalled: no tokens received for ${Math.round(stallTimeout / 60000)} minutes`)
+                throw new StallError(`LLM stream stalled: no tokens received for ${Math.round(stallTimeout / 60000)} minutes`)
               }
               switch (value.type) {
                 case "start":
@@ -325,7 +338,7 @@ export namespace SessionProcessor {
                     reason: value.finishReason,
                     snapshot: await Snapshot.track(),
                     messageID: input.assistantMessage.id,
-                    sessionID: input.assistantMessage.sessionID,
+                    sessionID: input.sessionID,
                     type: "step-finish",
                     tokens: usage.tokens,
                     cost: usage.cost,
@@ -418,12 +431,17 @@ export namespace SessionProcessor {
               }
               if (needsCompaction) break
             }
-          } catch (e: any) {
+          } catch (e: unknown) {
             log.error("process", {
               error: e,
-              stack: JSON.stringify(e.stack),
+              stack: JSON.stringify(e instanceof Error ? e.stack : undefined),
             })
-            const error = MessageV2.fromError(e, { providerID: input.model.providerID })
+            // Stall errors should propagate out — they're not retryable
+            if (isStallError(e)) {
+              stallErr = e
+              break
+            }
+            const error = MessageV2.fromError(e as Error, { providerID: input.model.providerID })
             if (MessageV2.ContextOverflowError.isInstance(error)) {
               // TODO: Handle context overflow error
             }
@@ -481,6 +499,7 @@ export namespace SessionProcessor {
           }
           input.assistantMessage.time.completed = Date.now()
           await Session.updateMessage(input.assistantMessage)
+          if (stallErr) throw stallErr
           if (needsCompaction) {
             clearSessionStalled(input.sessionID)
             return "compact"
