@@ -15,31 +15,30 @@ import { Filesystem } from "../util/filesystem"
 
 const DIAGNOSTICS_DEBOUNCE_MS = 150
 
-export namespace LSPClient {
-  const log = Log.create({ service: "lsp.client" })
+const log = Log.create({ service: "lsp.client" })
 
-  export type Info = NonNullable<Awaited<ReturnType<typeof create>>>
+export type LSPClientInfo = NonNullable<Awaited<ReturnType<typeof create>>>
 
-  export type Diagnostic = VSCodeDiagnostic
+export type LSPClientDiagnostic = VSCodeDiagnostic
 
-  export const InitializeError = NamedError.create(
-    "LSPInitializeError",
+export const LSPClientInitializeError = NamedError.create(
+  "LSPInitializeError",
+  z.object({
+    serverID: z.string(),
+  }),
+)
+
+export const LSPClientEvent = {
+  Diagnostics: BusEvent.define(
+    "lsp.client.diagnostics",
     z.object({
       serverID: z.string(),
+      path: z.string(),
     }),
-  )
+  ),
+}
 
-  export const Event = {
-    Diagnostics: BusEvent.define(
-      "lsp.client.diagnostics",
-      z.object({
-        serverID: z.string(),
-        path: z.string(),
-      }),
-    ),
-  }
-
-  export async function create(input: { serverID: string; server: LSPServer.Handle; root: string }) {
+export async function create(input: { serverID: string; server: LSPServer.Handle; root: string }) {
     const l = log.clone().tag("serverID", input.serverID)
     l.info("starting client")
 
@@ -50,15 +49,15 @@ export namespace LSPClient {
 
     const diagnostics = new Map<string, Diagnostic[]>()
     connection.onNotification("textDocument/publishDiagnostics", (params) => {
-      const filePath = Filesystem.normalizePath(fileURLToPath(params.uri))
-      l.info("textDocument/publishDiagnostics", {
-        path: filePath,
-        count: params.diagnostics.length,
-      })
-      const exists = diagnostics.has(filePath)
-      diagnostics.set(filePath, params.diagnostics)
-      if (!exists && input.serverID === "typescript") return
-      Bus.publish(Event.Diagnostics, { path: filePath, serverID: input.serverID })
+       const filePath = Filesystem.normalizePath(fileURLToPath(params.uri))
+       l.info("textDocument/publishDiagnostics", {
+         path: filePath,
+         count: params.diagnostics.length,
+       })
+       const exists = diagnostics.has(filePath)
+       diagnostics.set(filePath, params.diagnostics)
+       if (!exists && input.serverID === "typescript") return
+       Bus.publish(LSPClientEvent.Diagnostics, { path: filePath, serverID: input.serverID })
     })
     connection.onRequest("window/workDoneProgress/create", (params) => {
       l.info("window/workDoneProgress/create", params)
@@ -115,14 +114,14 @@ export namespace LSPClient {
       }),
       45_000,
     ).catch((err) => {
-      l.error("initialize error", { error: err })
-      throw new InitializeError(
-        { serverID: input.serverID },
-        {
-          cause: err,
-        },
-      )
-    })
+       l.error("initialize error", { error: err })
+       throw new LSPClientInitializeError(
+         { serverID: input.serverID },
+         {
+           cause: err,
+         },
+       )
+     })
 
     await connection.sendNotification("initialized", {})
 
@@ -214,10 +213,10 @@ export namespace LSPClient {
         log.info("waiting for diagnostics", { path: normalizedPath })
         let unsub: () => void
         let debounceTimer: ReturnType<typeof setTimeout> | undefined
-        return await withTimeout(
-          new Promise<void>((resolve) => {
-            unsub = Bus.subscribe(Event.Diagnostics, (event) => {
-              if (event.properties.path === normalizedPath && event.properties.serverID === result.serverID) {
+         return await withTimeout(
+           new Promise<void>((resolve) => {
+             unsub = Bus.subscribe(LSPClientEvent.Diagnostics, (event) => {
+               if (event.properties.path === normalizedPath && event.properties.serverID === result.serverID) {
                 // Debounce to allow LSP to send follow-up diagnostics (e.g., semantic after syntax)
                 if (debounceTimer) clearTimeout(debounceTimer)
                 debounceTimer = setTimeout(() => {
@@ -249,4 +248,10 @@ export namespace LSPClient {
 
     return result
   }
+
+export namespace LSPClient {
+  export type Info = LSPClientInfo
+  export type Diagnostic = LSPClientDiagnostic
+  export const InitializeError = LSPClientInitializeError
+  export const Event = LSPClientEvent
 }
