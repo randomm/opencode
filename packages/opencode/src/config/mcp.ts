@@ -18,7 +18,7 @@ export const Local = Schema.Struct({
   }),
 })
   .annotate({ identifier: "McpLocalConfig" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type Local = Schema.Schema.Type<typeof Local>
 
 export const OAuth = Schema.Struct({
@@ -34,7 +34,7 @@ export const OAuth = Schema.Struct({
   }),
 })
   .annotate({ identifier: "McpOAuthConfig" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type OAuth = Schema.Schema.Type<typeof OAuth>
 
 export const Remote = Schema.Struct({
@@ -54,12 +54,12 @@ export const Remote = Schema.Struct({
   }),
 })
   .annotate({ identifier: "McpRemoteConfig" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type Remote = Schema.Schema.Type<typeof Remote>
 
 export const Info = Schema.Union([Local, Remote])
   .annotate({ discriminator: "type" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type Info = Schema.Schema.Type<typeof Info>
 
 export * as ConfigMCP from "./mcp"

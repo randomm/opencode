@@ -195,7 +195,7 @@ export const Info = Schema.Struct({
   revert: optionalOmitUndefined(Revert),
 })
   .annotate({ identifier: "Session" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type Info = Types.DeepMutable<Schema.Schema.Type<typeof Info>>
 
 export const ProjectInfo = Schema.Struct({
@@ -204,7 +204,7 @@ export const ProjectInfo = Schema.Struct({
   worktree: Schema.String,
 })
   .annotate({ identifier: "ProjectSummary" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type ProjectInfo = Types.DeepMutable<Schema.Schema.Type<typeof ProjectInfo>>
 
 export const GlobalInfo = Schema.Struct({
@@ -212,7 +212,7 @@ export const GlobalInfo = Schema.Struct({
   project: Schema.NullOr(ProjectInfo),
 })
   .annotate({ identifier: "GlobalSession" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type GlobalInfo = Types.DeepMutable<Schema.Schema.Type<typeof GlobalInfo>>
 
 export const CreateInput = Schema.optional(
@@ -224,36 +224,36 @@ export const CreateInput = Schema.optional(
     permission: Schema.optional(Permission.Ruleset),
     workspaceID: Schema.optional(WorkspaceID),
   }),
-).pipe(withStatics((s) => ({ zod: zod(s) })))
+).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type CreateInput = Types.DeepMutable<Schema.Schema.Type<typeof CreateInput>>
 
 export const ForkInput = Schema.Struct({
   sessionID: SessionID,
   messageID: Schema.optional(MessageID),
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export const GetInput = SessionID
 export const ChildrenInput = SessionID
 export const RemoveInput = SessionID
 export const SetTitleInput = Schema.Struct({ sessionID: SessionID, title: Schema.String }).pipe(
-  withStatics((s) => ({ zod: zod(s) })),
+  withStatics((s) => ({ get zod() { return zod(s) } })),
 )
 export const SetArchivedInput = Schema.Struct({
   sessionID: SessionID,
   time: Schema.optional(ArchivedTimestamp),
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export const SetPermissionInput = Schema.Struct({
   sessionID: SessionID,
   permission: Permission.Ruleset,
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export const SetRevertInput = Schema.Struct({
   sessionID: SessionID,
   revert: Schema.optional(Revert),
   summary: Schema.optional(Summary),
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export const MessagesInput = Schema.Struct({
   sessionID: SessionID,
   limit: Schema.optional(NonNegativeInt),
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type ListInput = {
   directory?: string
   scope?: "project"

@@ -16,7 +16,7 @@ export const Server = Schema.Struct({
   }),
 })
   .annotate({ identifier: "ServerConfig" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type Server = Schema.Schema.Type<typeof Server>
 
 export * as ConfigServer from "./server"

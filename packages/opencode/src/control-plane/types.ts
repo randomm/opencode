@@ -14,14 +14,14 @@ export const WorkspaceInfo = Schema.Struct({
   projectID: ProjectID,
 })
   .annotate({ identifier: "Workspace" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
+  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type WorkspaceInfo = DeepMutable<Schema.Schema.Type<typeof WorkspaceInfo>>
 
 export const WorkspaceAdapterEntry = Schema.Struct({
   type: Schema.String,
   name: Schema.String,
   description: Schema.String,
-}).pipe(withStatics((s) => ({ zod: zod(s) })))
+}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
 export type WorkspaceAdapterEntry = Schema.Schema.Type<typeof WorkspaceAdapterEntry>
 
 export type Target =

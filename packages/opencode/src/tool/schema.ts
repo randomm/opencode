@@ -11,6 +11,6 @@ export type ToolID = typeof toolIdSchema.Type
 export const ToolID = toolIdSchema.pipe(
   withStatics((schema: typeof toolIdSchema) => ({
     ascending: (id?: string) => schema.make(Identifier.ascending("tool", id)),
-    zod: zod(schema),
+    get zod() { return zod(schema) },
   })),
 )

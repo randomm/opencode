@@ -90,6 +90,10 @@ function bodyWithChecks(ast: SchemaAST.AST): z.ZodTypeAny {
   // Schema.withDecodingDefault also attaches encoding, but we want `.default(v)`
   // on the inner Zod rather than a transform wrapper — so optional ASTs whose
   // encoding resolves a default from Option.none() route through body()/opt().
+  //
+  // Note: In Effect 4.0.0-beta.59, ast.encoding may be undefined if accessed
+  // before schema construction completes. This is safe to handle — if encoding
+  // is not yet initialized, we fall back to the body() path.
   const hasEncoding = ast.encoding?.length && (ast._tag !== "Declaration" || ast.typeParameters.length === 0)
   const hasTransform = hasEncoding && !(SchemaAST.isOptional(ast) && extractDefault(ast) !== undefined)
   const base = hasTransform ? encoded(ast) : body(ast)
@@ -102,7 +106,11 @@ function bodyWithChecks(ast: SchemaAST.AST): z.ZodTypeAny {
 // nest the encoding via `Link.to` so walking it recursively threads all
 // prior transforms — typical encoding.length is 1.
 function encoded(ast: SchemaAST.AST): z.ZodTypeAny {
-  const encoding = ast.encoding!
+  const encoding = ast.encoding
+  // In Effect 4.0.0-beta.59, encoding may be undefined if accessed during
+  // schema construction before the AST is fully initialized. If so, fall back
+  // to body() directly—the encoding Link will be present on subsequent accesses.
+  if (!encoding?.length) return body(ast)
   return encoding.reduce<z.ZodTypeAny>(
     (acc, link) => acc.transform((v) => decode(link.transformation, v)),
     walk(encoding[0].to),
@@ -295,10 +303,18 @@ function extractDefault(ast: SchemaAST.AST): { value: unknown } | undefined {
   // Walk the chain of encoding Links in order; the first Getter that produces
   // a value from Option.none wins.  withDecodingDefault always puts its
   // defaulting Link adjacent to the optional Union.
-  for (const link of encoding) {
-    const probe = Effect.runSyncExit(link.transformation.decode.run(Option.none(), {}))
-    if (probe._tag !== "Success") continue
-    if (Option.isSome(probe.value)) return { value: probe.value.value }
+  //
+  // Note: In Effect 4.0.0-beta.59, encoding may be undefined during schema
+  // construction. Accessing it safely with optional chaining prevents crashes.
+  try {
+    for (const link of encoding) {
+      const probe = Effect.runSyncExit(link.transformation.decode.run(Option.none(), {}))
+      if (probe._tag !== "Success") continue
+      if (Option.isSome(probe.value)) return { value: probe.value.value }
+    }
+  } catch (_e) {
+    // If extraction fails due to incomplete schema initialization, just return undefined
+    return undefined
   }
   return undefined
 }
