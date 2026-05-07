@@ -129,7 +129,10 @@
       "dark": "transparent",
       "light": "transparent"
     },
-    "diffLineNumber": "textMuted",
+    "diffLineNumber": {
+      "dark": "#666666",
+      "light": "#999999"
+    },
     "diffAddedLineNumberBg": {
       "dark": "transparent",
       "light": "transparent"

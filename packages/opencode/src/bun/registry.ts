@@ -1,23 +1,48 @@
-// Package registry stub for Bun package management
-// Provides NPM registry compatibility and package resolution
+import { readableStreamToText, semver } from "bun"
+import { Log } from "../util/log"
 
-export class PackageRegistry {
-  constructor(private registry: string = "https://registry.npmjs.org") {}
+export namespace PackageRegistry {
+  const log = Log.create({ service: "bun" })
 
-  async resolve(pkg: string): Promise<{ version: string; latest: string }> {
-    const res = await fetch(`${this.registry}/${pkg}`)
-    if (!res.ok) throw new Error(`Failed to resolve ${pkg}`)
-    const data = (await res.json()) as { "dist-tags": { latest: string } }
-    return {
-      version: data["dist-tags"].latest,
-      latest: data["dist-tags"].latest,
-    }
+  function which() {
+    return process.execPath
   }
 
-  async getLatestVersion(pkg: string): Promise<string> {
-    const info = await this.resolve(pkg)
-    return info.latest
+  export async function info(pkg: string, field: string, cwd?: string): Promise<string | null> {
+    const result = Bun.spawn([which(), "info", pkg, field], {
+      cwd,
+      stdout: "pipe",
+      stderr: "pipe",
+      env: {
+        ...process.env,
+        BUN_BE_BUN: "1",
+      },
+    })
+
+    const code = await result.exited
+    const stdout = result.stdout ? await readableStreamToText(result.stdout) : ""
+    const stderr = result.stderr ? await readableStreamToText(result.stderr) : ""
+
+    if (code !== 0) {
+      log.warn("bun info failed", { pkg, field, code, stderr })
+      return null
+    }
+
+    const value = stdout.trim()
+    if (!value) return null
+    return value
+  }
+
+  export async function isOutdated(pkg: string, cachedVersion: string, cwd?: string): Promise<boolean> {
+    const latestVersion = await info(pkg, "version", cwd)
+    if (!latestVersion) {
+      log.warn("Failed to resolve latest version, using cached", { pkg, cachedVersion })
+      return false
+    }
+
+    const isRange = /[\s^~*xX<>|=]/.test(cachedVersion)
+    if (isRange) return !semver.satisfies(latestVersion, cachedVersion)
+
+    return semver.order(cachedVersion, latestVersion) === -1
   }
 }
-
-export default PackageRegistry

@@ -62,8 +62,8 @@
       "light": "frappeText"
     },
     "textMuted": {
-      "dark": "frappeOverlay2",
-      "light": "frappeOverlay2"
+      "dark": "frappeSubtext1",
+      "light": "frappeSubtext1"
     },
     "background": {
       "dark": "frappeBase",
@@ -125,7 +125,10 @@
       "dark": "frappeMantle",
       "light": "frappeMantle"
     },
-    "diffLineNumber": "textMuted",
+    "diffLineNumber": {
+      "dark": "frappeSurface1",
+      "light": "frappeSurface1"
+    },
     "diffAddedLineNumberBg": {
       "dark": "#223025",
       "light": "#223025"

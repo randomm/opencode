@@ -1,17 +1,14 @@
 import { BusEvent } from "@/bus/bus-event"
-import { SessionID } from "@/session/schema"
-import { PositiveInt } from "@/util/schema"
-import { Effect, Schema } from "effect"
-
-const DEFAULT_TOAST_DURATION = 5000
+import { Bus } from "@/bus"
+import z from "zod"
 
 export const TuiEvent = {
-  PromptAppend: BusEvent.define("tui.prompt.append", Schema.Struct({ text: Schema.String })),
+  PromptAppend: BusEvent.define("tui.prompt.append", z.object({ text: z.string() })),
   CommandExecute: BusEvent.define(
     "tui.command.execute",
-    Schema.Struct({
-      command: Schema.Union([
-        Schema.Literals([
+    z.object({
+      command: z.union([
+        z.enum([
           "session.list",
           "session.new",
           "session.share",
@@ -29,25 +26,23 @@ export const TuiEvent = {
           "prompt.submit",
           "agent.cycle",
         ]),
-        Schema.String,
+        z.string(),
       ]),
     }),
   ),
   ToastShow: BusEvent.define(
     "tui.toast.show",
-    Schema.Struct({
-      title: Schema.optional(Schema.String),
-      message: Schema.String,
-      variant: Schema.Literals(["info", "success", "warning", "error"]),
-      duration: PositiveInt.pipe(Schema.withDecodingDefault(Effect.succeed(DEFAULT_TOAST_DURATION))).annotate({
-        description: "Duration in milliseconds",
-      }),
+    z.object({
+      title: z.string().optional(),
+      message: z.string(),
+      variant: z.enum(["info", "success", "warning", "error"]),
+      duration: z.number().default(5000).optional().describe("Duration in milliseconds"),
     }),
   ),
   SessionSelect: BusEvent.define(
     "tui.session.select",
-    Schema.Struct({
-      sessionID: SessionID.annotate({ description: "Session ID to navigate to" }),
+    z.object({
+      sessionID: z.string().regex(/^ses/).describe("Session ID to navigate to"),
     }),
   ),
 }

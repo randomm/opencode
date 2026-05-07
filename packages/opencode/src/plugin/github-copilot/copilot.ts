@@ -1,11 +1,10 @@
 import type { Hooks, PluginInput } from "@opencode-ai/plugin"
 import type { Model } from "@opencode-ai/sdk/v2"
-import { InstallationVersion } from "@opencode-ai/core/installation/version"
+import { Installation } from "@/installation"
 import { iife } from "@/util/iife"
-import * as Log from "@opencode-ai/core/util/log"
+import { Log } from "../../util/log"
 import { setTimeout as sleep } from "node:timers/promises"
 import { CopilotModels } from "./models"
-import { MessageV2 } from "@/session/message-v2"
 
 const log = Log.create({ service: "plugin.copilot" })
 
@@ -28,27 +27,11 @@ function base(enterpriseUrl?: string) {
   return enterpriseUrl ? `https://copilot-api.${normalizeDomain(enterpriseUrl)}` : "https://api.githubcopilot.com"
 }
 
-// Check if a message is a synthetic user msg used to attach an image from a tool call
-function imgMsg(msg: any): boolean {
-  if (msg?.role !== "user") return false
-
-  // Handle the 3 api formats
-
-  const content = msg.content
-  if (typeof content === "string") return content === MessageV2.SYNTHETIC_ATTACHMENT_PROMPT
-  if (!Array.isArray(content)) return false
-  return content.some(
-    (part: any) =>
-      (part?.type === "text" || part?.type === "input_text") && part.text === MessageV2.SYNTHETIC_ATTACHMENT_PROMPT,
-  )
-}
-
-function fix(model: Model, url: string): Model {
+function fix(model: Model): Model {
   return {
     ...model,
     api: {
       ...model.api,
-      url,
       npm: "@ai-sdk/github-copilot",
     },
   }
@@ -57,43 +40,22 @@ function fix(model: Model, url: string): Model {
 export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
   const sdk = input.client
   return {
-    provider: {
-      id: "github-copilot",
-      async models(provider, ctx) {
-        if (ctx.auth?.type !== "oauth") {
-          return Object.fromEntries(Object.entries(provider.models).map(([id, model]) => [id, fix(model, base())]))
-        }
-
-        const auth = ctx.auth
-
-        return CopilotModels.get(
-          base(auth.enterpriseUrl),
-          {
-            Authorization: `Bearer ${auth.refresh}`,
-            "User-Agent": `opencode/${InstallationVersion}`,
-          },
-          provider.models,
-        ).catch((error) => {
-          log.error("failed to fetch copilot models", { error })
-          return Object.fromEntries(
-            Object.entries(provider.models).map(([id, model]) => [id, fix(model, base(auth.enterpriseUrl))]),
-          )
-        })
-      },
-    },
     auth: {
       provider: "github-copilot",
       async loader(getAuth) {
         const info = await getAuth()
         if (!info || info.type !== "oauth") return {}
 
+        const baseURL = base(info.enterpriseUrl)
+
         return {
+          baseURL,
           apiKey: "",
           async fetch(request: RequestInfo | URL, init?: RequestInit) {
             const info = await getAuth()
             if (info.type !== "oauth") return fetch(request, init)
 
-            const url = request instanceof URL ? request.href : typeof request === "string" ? request : request.url
+            const url = request instanceof URL ? request.href : request.toString()
             const { isVision, isAgent } = iife(() => {
               try {
                 const body = typeof init?.body === "string" ? JSON.parse(init.body) : init?.body
@@ -106,7 +68,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
                       (msg: any) =>
                         Array.isArray(msg.content) && msg.content.some((part: any) => part.type === "image_url"),
                     ),
-                    isAgent: last?.role !== "user" || imgMsg(last),
+                    isAgent: last?.role !== "user",
                   }
                 }
 
@@ -118,7 +80,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
                       (item: any) =>
                         Array.isArray(item?.content) && item.content.some((part: any) => part.type === "input_image"),
                     ),
-                    isAgent: last?.role !== "user" || imgMsg(last),
+                    isAgent: last?.role !== "user",
                   }
                 }
 
@@ -140,7 +102,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
                               part.content.some((nested: any) => nested?.type === "image")),
                         ),
                     ),
-                    isAgent: !(last?.role === "user" && hasNonToolCalls) || imgMsg(last),
+                    isAgent: !(last?.role === "user" && hasNonToolCalls),
                   }
                 }
               } catch {}
@@ -150,7 +112,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
             const headers: Record<string, string> = {
               "x-initiator": isAgent ? "agent" : "user",
               ...(init?.headers as Record<string, string>),
-              "User-Agent": `opencode/${InstallationVersion}`,
+              "User-Agent": `opencode/${Installation.VERSION}`,
               Authorization: `Bearer ${info.refresh}`,
               "Openai-Intent": "conversation-edits",
             }
@@ -196,7 +158,6 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
               key: "enterpriseUrl",
               message: "Enter your GitHub Enterprise URL or domain",
               placeholder: "company.ghe.com or https://company.ghe.com",
-              when: { key: "deploymentType", op: "eq", value: "enterprise" },
               validate: (value) => {
                 if (!value) return "URL or domain is required"
                 try {
@@ -226,7 +187,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
               headers: {
                 Accept: "application/json",
                 "Content-Type": "application/json",
-                "User-Agent": `opencode/${InstallationVersion}`,
+                "User-Agent": `opencode/${Installation.VERSION}`,
               },
               body: JSON.stringify({
                 client_id: CLIENT_ID,
@@ -256,7 +217,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
                     headers: {
                       Accept: "application/json",
                       "Content-Type": "application/json",
-                      "User-Agent": `opencode/${InstallationVersion}`,
+                      "User-Agent": `opencode/${Installation.VERSION}`,
                     },
                     body: JSON.stringify({
                       client_id: CLIENT_ID,
@@ -327,21 +288,6 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
         },
       ],
     },
-    "chat.params": async (incoming, output) => {
-      if (!incoming.model.providerID.includes("github-copilot")) return
-
-      // Match github copilot cli, omit maxOutputTokens for gpt models
-      if (incoming.model.api.id.includes("gpt")) {
-        output.maxOutputTokens = undefined
-      }
-
-      // GitHub Copilot's /v1/messages shim rejects the GA `eager_input_streaming`
-      // field on tool definitions ("Extra inputs are not permitted"). Opt out of
-      // the @ai-sdk/anthropic default so it stops injecting the field.
-      if (incoming.model.api.npm === "@ai-sdk/anthropic") {
-        output.options.toolStreaming = false
-      }
-    },
     "chat.headers": async (incoming, output) => {
       if (!incoming.model.providerID.includes("github-copilot")) return
 
@@ -362,15 +308,7 @@ export async function CopilotAuthPlugin(input: PluginInput): Promise<Hooks> {
         })
         .catch(() => undefined)
 
-      if (
-        parts?.data.parts?.some(
-          (part) =>
-            part.type === "compaction" ||
-            // Auto-compaction resumes via a synthetic user text part. Treat only
-            // that marked followup as agent-initiated so manual prompts stay user-initiated.
-            (part.type === "text" && part.synthetic && part.metadata?.compaction_continue === true),
-        )
-      ) {
+      if (parts?.data.parts?.some((part) => part.type === "compaction")) {
         output.headers["x-initiator"] = "agent"
         return
       }

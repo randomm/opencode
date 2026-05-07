@@ -1,9 +1,8 @@
-import { Effect } from "effect"
 import { Server } from "../../server/server"
 import { UI } from "../ui"
-import { effectCmd } from "../effect-cmd"
+import { cmd } from "./cmd"
 import { withNetworkOptions, resolveNetworkOptions } from "../network"
-import { Flag } from "@opencode-ai/core/flag/flag"
+import { Flag } from "../../flag/flag"
 import open from "open"
 import { networkInterfaces } from "os"
 
@@ -29,19 +28,16 @@ function getNetworkIPs() {
   return results
 }
 
-export const WebCommand = effectCmd({
+export const WebCommand = cmd({
   command: "web",
   builder: (yargs) => withNetworkOptions(yargs),
   describe: "start opencode server and open web interface",
-  // Server loads instances per-request via x-opencode-directory header — no
-  // ambient project InstanceContext needed at startup.
-  instance: false,
-  handler: Effect.fn("Cli.web")(function* (args) {
+  handler: async (args) => {
     if (!Flag.OPENCODE_SERVER_PASSWORD) {
-      UI.println(UI.Style.TEXT_WARNING_BOLD + "!  OPENCODE_SERVER_PASSWORD is not set; server is unsecured.")
+      UI.println(UI.Style.TEXT_WARNING_BOLD + "!  " + "OPENCODE_SERVER_PASSWORD is not set; server is unsecured.")
     }
-    const opts = yield* resolveNetworkOptions(args)
-    const server = yield* Effect.promise(() => Server.listen(opts))
+    const opts = await resolveNetworkOptions(args)
+    const server = Server.listen(opts)
     UI.empty()
     UI.println(UI.logo("  "))
     UI.empty()
@@ -72,13 +68,14 @@ export const WebCommand = effectCmd({
       }
 
       // Open localhost in browser
-      open(localhostUrl).catch(() => {})
+      open(localhostUrl.toString()).catch(() => {})
     } else {
       const displayUrl = server.url.toString()
       UI.println(UI.Style.TEXT_INFO_BOLD + "  Web interface:    ", UI.Style.TEXT_NORMAL, displayUrl)
       open(displayUrl).catch(() => {})
     }
 
-    yield* Effect.never
-  }),
+    await new Promise(() => {})
+    await server.stop()
+  },
 })

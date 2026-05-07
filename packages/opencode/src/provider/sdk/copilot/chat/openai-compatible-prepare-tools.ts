@@ -1,11 +1,15 @@
-import { type LanguageModelV3CallOptions, type SharedV3Warning, UnsupportedFunctionalityError } from "@ai-sdk/provider"
+import {
+  type LanguageModelV2CallOptions,
+  type LanguageModelV2CallWarning,
+  UnsupportedFunctionalityError,
+} from "@ai-sdk/provider"
 
 export function prepareTools({
   tools,
   toolChoice,
 }: {
-  tools: LanguageModelV3CallOptions["tools"]
-  toolChoice?: LanguageModelV3CallOptions["toolChoice"]
+  tools: LanguageModelV2CallOptions["tools"]
+  toolChoice?: LanguageModelV2CallOptions["toolChoice"]
 }): {
   tools:
     | undefined
@@ -18,12 +22,12 @@ export function prepareTools({
         }
       }>
   toolChoice: { type: "function"; function: { name: string } } | "auto" | "none" | "required" | undefined
-  toolWarnings: SharedV3Warning[]
+  toolWarnings: LanguageModelV2CallWarning[]
 } {
   // when the tools array is empty, change it to undefined to prevent errors:
   tools = tools?.length ? tools : undefined
 
-  const toolWarnings: SharedV3Warning[] = []
+  const toolWarnings: LanguageModelV2CallWarning[] = []
 
   if (tools == null) {
     return { tools: undefined, toolChoice: undefined, toolWarnings }
@@ -39,8 +43,8 @@ export function prepareTools({
   }> = []
 
   for (const tool of tools) {
-    if (tool.type === "provider") {
-      toolWarnings.push({ type: "unsupported", feature: `tool type: ${tool.type}` })
+    if (tool.type === "provider-defined") {
+      toolWarnings.push({ type: "unsupported-tool", tool })
     } else {
       openaiCompatTools.push({
         type: "function",

@@ -3,9 +3,8 @@ import { useSync } from "@tui/context/sync"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useSDK } from "@tui/context/sdk"
 import { useRoute } from "@tui/context/route"
-import * as Clipboard from "@tui/util/clipboard"
+import { Clipboard } from "@tui/util/clipboard"
 import type { PromptInfo } from "@tui/component/prompt/history"
-import { strip } from "@tui/component/prompt/part"
 
 export function DialogMessage(props: {
   messageID: string
@@ -29,7 +28,7 @@ export function DialogMessage(props: {
             const msg = message()
             if (!msg) return
 
-            void sdk.client.session.revert({
+            sdk.client.session.revert({
               sessionID: props.sessionID,
               messageID: msg.id,
             })
@@ -41,7 +40,7 @@ export function DialogMessage(props: {
                   if (part.type === "text") {
                     if (!part.synthetic) agg.input += part.text
                   }
-                  if (part.type === "file") agg.parts.push(strip(part))
+                  if (part.type === "file") agg.parts.push(part)
                   return agg
                 },
                 { input: "", parts: [] as PromptInfo["parts"] },
@@ -81,23 +80,25 @@ export function DialogMessage(props: {
               sessionID: props.sessionID,
               messageID: props.messageID,
             })
-            const msg = message()
-            const prompt = msg
-              ? sync.data.part[msg.id].reduce(
-                  (agg, part) => {
-                    if (part.type === "text") {
-                      if (!part.synthetic) agg.input += part.text
-                    }
-                    if (part.type === "file") agg.parts.push(part)
-                    return agg
-                  },
-                  { input: "", parts: [] as PromptInfo["parts"] },
-                )
-              : undefined
+            const initialPrompt = (() => {
+              const msg = message()
+              if (!msg) return undefined
+              const parts = sync.data.part[msg.id]
+              return parts.reduce(
+                (agg, part) => {
+                  if (part.type === "text") {
+                    if (!part.synthetic) agg.input += part.text
+                  }
+                  if (part.type === "file") agg.parts.push(part)
+                  return agg
+                },
+                { input: "", parts: [] as PromptInfo["parts"] },
+              )
+            })()
             route.navigate({
               sessionID: result.data!.id,
               type: "session",
-              prompt,
+              initialPrompt,
             })
             dialog.clear()
           },

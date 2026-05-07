@@ -539,7 +539,8 @@
       "deletedFiles": [],
       "modifiedFiles": ["packages/opencode/src/plugin/index.ts"],
       "criticalCode": [
-        "Plugin.init",
+        "export namespace Plugin",
+        "async function init()",
         "PluginLoader.loadExternal",
         "INTERNAL_PLUGINS",
         "applyPlugin",

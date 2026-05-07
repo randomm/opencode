@@ -127,8 +127,8 @@
       "light": "dawnSurface"
     },
     "diffLineNumber": {
-      "dark": "#9491a6",
-      "light": "#6c6875"
+      "dark": "muted",
+      "light": "dawnMuted"
     },
     "diffAddedLineNumberBg": {
       "dark": "#1f2d3a",

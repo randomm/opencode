@@ -18,3 +18,9 @@ export function formatDuration(secs: number) {
   const weeks = Math.floor(secs / 604800)
   return weeks === 1 ? "~1 week" : `~${weeks} weeks`
 }
+
+export function formatElapsed(since: string | null, now = Date.now()) {
+  if (!since) return ""
+  const secs = Math.floor((now - new Date(since).getTime()) / 1000)
+  return formatDuration(secs)
+}

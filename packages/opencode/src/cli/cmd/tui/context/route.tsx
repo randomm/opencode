@@ -1,36 +1,29 @@
-import { createStore, reconcile } from "solid-js/store"
+import { createStore } from "solid-js/store"
 import { createSimpleContext } from "./helper"
 import type { PromptInfo } from "../component/prompt/history"
 
 export type HomeRoute = {
   type: "home"
-  prompt?: PromptInfo
+  initialPrompt?: PromptInfo
 }
 
 export type SessionRoute = {
   type: "session"
   sessionID: string
-  prompt?: PromptInfo
+  initialPrompt?: PromptInfo
 }
 
-export type PluginRoute = {
-  type: "plugin"
-  id: string
-  data?: Record<string, unknown>
-}
-
-export type Route = HomeRoute | SessionRoute | PluginRoute
+export type Route = HomeRoute | SessionRoute
 
 export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
   name: "Route",
-  init: (props: { initialRoute?: Route }) => {
+  init: () => {
     const [store, setStore] = createStore<Route>(
-      props.initialRoute ??
-        (process.env["OPENCODE_ROUTE"]
-          ? JSON.parse(process.env["OPENCODE_ROUTE"])
-          : {
-              type: "home",
-            }),
+      process.env["OPENCODE_ROUTE"]
+        ? JSON.parse(process.env["OPENCODE_ROUTE"])
+        : {
+            type: "home",
+          },
     )
 
     return {
@@ -38,7 +31,7 @@ export const { use: useRoute, provider: RouteProvider } = createSimpleContext({
         return store
       },
       navigate(route: Route) {
-        setStore(reconcile(route))
+        setStore(route)
       },
     }
   },

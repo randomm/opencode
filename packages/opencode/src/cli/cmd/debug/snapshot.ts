@@ -1,6 +1,5 @@
-import { Effect } from "effect"
 import { Snapshot } from "../../../snapshot"
-import { effectCmd } from "../../effect-cmd"
+import { bootstrap } from "../../bootstrap"
 import { cmd } from "../cmd"
 
 export const SnapshotCommand = cmd({
@@ -10,16 +9,17 @@ export const SnapshotCommand = cmd({
   async handler() {},
 })
 
-const TrackCommand = effectCmd({
+const TrackCommand = cmd({
   command: "track",
   describe: "track current snapshot state",
-  handler: Effect.fn("Cli.debug.snapshot.track")(function* () {
-    const out = yield* Snapshot.Service.use((svc) => svc.track())
-    console.log(out)
-  }),
+  async handler() {
+    await bootstrap(process.cwd(), async () => {
+      console.log(await Snapshot.track())
+    })
+  },
 })
 
-const PatchCommand = effectCmd({
+const PatchCommand = cmd({
   command: "patch <hash>",
   describe: "show patch for a snapshot hash",
   builder: (yargs) =>
@@ -28,13 +28,14 @@ const PatchCommand = effectCmd({
       description: "hash",
       demandOption: true,
     }),
-  handler: Effect.fn("Cli.debug.snapshot.patch")(function* (args) {
-    const out = yield* Snapshot.Service.use((svc) => svc.patch(args.hash))
-    console.log(out)
-  }),
+  async handler(args) {
+    await bootstrap(process.cwd(), async () => {
+      console.log(await Snapshot.patch(args.hash))
+    })
+  },
 })
 
-const DiffCommand = effectCmd({
+const DiffCommand = cmd({
   command: "diff <hash>",
   describe: "show diff for a snapshot hash",
   builder: (yargs) =>
@@ -43,8 +44,9 @@ const DiffCommand = effectCmd({
       description: "hash",
       demandOption: true,
     }),
-  handler: Effect.fn("Cli.debug.snapshot.diff")(function* (args) {
-    const out = yield* Snapshot.Service.use((svc) => svc.diff(args.hash))
-    console.log(out)
-  }),
+  async handler(args) {
+    await bootstrap(process.cwd(), async () => {
+      console.log(await Snapshot.diff(args.hash))
+    })
+  },
 })

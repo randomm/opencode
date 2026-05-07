@@ -1,13 +1,11 @@
 import type { Argv } from "yargs"
 import { spawn } from "child_process"
-import { Database } from "@/storage/db"
-import { drizzle } from "drizzle-orm/bun-sqlite"
+import { Database } from "../../storage/db"
 import { Database as BunDatabase } from "bun:sqlite"
 import { UI } from "../ui"
 import { cmd } from "./cmd"
-import { JsonMigration } from "@/storage/json-migration"
+import { JsonMigration } from "../../storage/json-migration"
 import { EOL } from "os"
-import { errorMessage } from "../../util/error"
 
 const QueryCommand = cmd({
   command: "$0 [query]",
@@ -41,7 +39,7 @@ const QueryCommand = cmd({
           }
         }
       } catch (err) {
-        UI.error(errorMessage(err))
+        UI.error(err instanceof Error ? err.message : String(err))
         process.exit(1)
       }
       db.close()
@@ -75,7 +73,7 @@ const MigrateCommand = cmd({
     let last = -1
     if (tty) process.stderr.write("\x1b[?25l")
     try {
-      const stats = await JsonMigration.run(drizzle({ client: sqlite }), {
+      const stats = await JsonMigration.run(sqlite, {
         progress: (event) => {
           const percent = Math.floor((event.current / event.total) * 100)
           if (percent === last) return
@@ -102,7 +100,7 @@ const MigrateCommand = cmd({
       }
     } catch (err) {
       if (tty) process.stderr.write("\x1b[?25h")
-      UI.error(`Migration failed: ${errorMessage(err)}`)
+      UI.error(`Migration failed: ${err instanceof Error ? err.message : String(err)}`)
       process.exit(1)
     } finally {
       sqlite.close()

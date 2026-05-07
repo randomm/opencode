@@ -1,6 +1,6 @@
 import { resolver } from "hono-openapi"
 import z from "zod"
-import { NotFoundError } from "@/storage/storage"
+import { NotFoundError } from "../storage/db"
 
 export const ERRORS = {
   400: {
@@ -20,9 +20,6 @@ export const ERRORS = {
         ),
       },
     },
-  },
-  403: {
-    description: "Forbidden",
   },
   404: {
     description: "Not found",

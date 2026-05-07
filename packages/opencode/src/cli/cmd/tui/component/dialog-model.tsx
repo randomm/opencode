@@ -5,10 +5,15 @@ import { map, pipe, flatMap, entries, filter, sortBy, take } from "remeda"
 import { DialogSelect } from "@tui/ui/dialog-select"
 import { useDialog } from "@tui/ui/dialog"
 import { createDialogProviderOptions, DialogProvider } from "./dialog-provider"
-import { DialogVariant } from "./dialog-variant"
 import { useKeybind } from "../context/keybind"
 import * as fuzzysort from "fuzzysort"
-import { useConnected } from "./use-connected"
+
+export function useConnected() {
+  const sync = useSync()
+  return createMemo(() =>
+    sync.data.provider.some((x) => x.id !== "opencode" || Object.values(x.models).some((y) => y.cost?.input !== 0)),
+  )
+}
 
 export function DialogModel(props: { providerID?: string }) {
   const local = useLocal()
@@ -45,7 +50,8 @@ export function DialogModel(props: { providerID?: string }) {
             disabled: provider.id === "opencode" && model.id.includes("-nano"),
             footer: model.cost?.input === 0 && provider.id === "opencode" ? "Free" : undefined,
             onSelect: () => {
-              onSelect(provider.id, model.id)
+              dialog.clear()
+              local.model.set({ providerID: provider.id, modelID: model.id }, { recent: true })
             },
           },
         ]
@@ -82,7 +88,8 @@ export function DialogModel(props: { providerID?: string }) {
             disabled: provider.id === "opencode" && model.includes("-nano"),
             footer: info.cost?.input === 0 && provider.id === "opencode" ? "Free" : undefined,
             onSelect() {
-              onSelect(provider.id, model)
+              dialog.clear()
+              local.model.set({ providerID: provider.id, modelID: model }, { recent: true })
             },
           })),
           filter((x) => {
@@ -126,26 +133,7 @@ export function DialogModel(props: { providerID?: string }) {
     props.providerID ? sync.data.provider.find((x) => x.id === props.providerID) : null,
   )
 
-  const title = createMemo(() => {
-    const value = provider()
-    if (!value) return "Select model"
-    return value.name
-  })
-
-  function onSelect(providerID: string, modelID: string) {
-    local.model.set({ providerID, modelID }, { recent: true })
-    const list = local.model.variant.list()
-    const cur = local.model.variant.selected()
-    if (cur === "default" || (cur && list.includes(cur))) {
-      dialog.clear()
-      return
-    }
-    if (list.length > 0) {
-      dialog.replace(() => <DialogVariant />)
-      return
-    }
-    dialog.clear()
-  }
+  const title = createMemo(() => provider()?.name ?? "Select model")
 
   return (
     <DialogSelect<ReturnType<typeof options>[number]["value"]>

@@ -1,98 +1,131 @@
 import path from "path"
-import { Effect, Layer, Record, Result, Schema, Context } from "effect"
-import { zod } from "@/util/effect-zod"
-import { NonNegativeInt } from "@/util/schema"
-import { Global } from "@opencode-ai/core/global"
-import { AppFileSystem } from "@opencode-ai/core/filesystem"
+import { Global } from "../global"
+import fs from "fs/promises"
+import z from "zod"
+import { Lock } from "../util/lock"
+import * as crypto from "crypto"
+import { Log } from "../util/log"
 
 export const OAUTH_DUMMY_KEY = "opencode-oauth-dummy-key"
 
-const file = path.join(Global.Path.data, "auth.json")
+export namespace Auth {
+  export const Oauth = z
+    .object({
+      type: z.literal("oauth"),
+      refresh: z.string(),
+      access: z.string(),
+      expires: z.number(),
+      accountId: z.string().optional(),
+      enterpriseUrl: z.string().optional(),
+    })
+    .meta({ ref: "OAuth" })
 
-const fail = (message: string) => (cause: unknown) => new AuthError({ message, cause })
+  export const Api = z
+    .object({
+      type: z.literal("api"),
+      key: z.string(),
+    })
+    .meta({ ref: "ApiAuth" })
 
-export class Oauth extends Schema.Class<Oauth>("OAuth")({
-  type: Schema.Literal("oauth"),
-  refresh: Schema.String,
-  access: Schema.String,
-  expires: NonNegativeInt,
-  accountId: Schema.optional(Schema.String),
-  enterpriseUrl: Schema.optional(Schema.String),
-}) {}
+  export const WellKnown = z
+    .object({
+      type: z.literal("wellknown"),
+      key: z.string(),
+      token: z.string(),
+    })
+    .meta({ ref: "WellKnownAuth" })
 
-export class Api extends Schema.Class<Api>("ApiAuth")({
-  type: Schema.Literal("api"),
-  key: Schema.String,
-  metadata: Schema.optional(Schema.Record(Schema.String, Schema.String)),
-}) {}
+  export const Info = z.discriminatedUnion("type", [Oauth, Api, WellKnown]).meta({ ref: "Auth" })
+  export type Info = z.infer<typeof Info>
 
-export class WellKnown extends Schema.Class<WellKnown>("WellKnownAuth")({
-  type: Schema.Literal("wellknown"),
-  key: Schema.String,
-  token: Schema.String,
-}) {}
+  const filepath = path.join(Global.Path.data, "auth.json")
 
-const _Info = Schema.Union([Oauth, Api, WellKnown]).annotate({ discriminator: "type", identifier: "Auth" })
-export const Info = Object.assign(_Info, { zod: zod(_Info) })
-export type Info = Schema.Schema.Type<typeof _Info>
+  export async function get(providerID: string) {
+    const auth = await all()
+    return auth[providerID]
+  }
 
-export class AuthError extends Schema.TaggedErrorClass<AuthError>()("AuthError", {
-  message: Schema.String,
-  cause: Schema.optional(Schema.Defect),
-}) {}
+  export async function all(): Promise<Record<string, Info>> {
+    const release = await Lock.read("auth")
+    try {
+      const file = Bun.file(filepath)
 
-export interface Interface {
-  readonly get: (providerID: string) => Effect.Effect<Info | undefined, AuthError>
-  readonly all: () => Effect.Effect<Record<string, Info>, AuthError>
-  readonly set: (key: string, info: Info) => Effect.Effect<void, AuthError>
-  readonly remove: (key: string) => Effect.Effect<void, AuthError>
-}
+      if (!(await file.exists())) return {}
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/Auth") {}
-
-export const layer = Layer.effect(
-  Service,
-  Effect.gen(function* () {
-    const fsys = yield* AppFileSystem.Service
-    const decode = Schema.decodeUnknownOption(Info)
-
-    const all = Effect.fn("Auth.all")(function* () {
-      if (process.env.OPENCODE_AUTH_CONTENT) {
-        try {
-          return JSON.parse(process.env.OPENCODE_AUTH_CONTENT)
-        } catch (err) {}
+      let data: unknown
+      try {
+        data = await file.json()
+      } catch (error) {
+        Log.Default.warn("auth.json corrupted or unreadable, returning empty", { error })
+        return {}
       }
 
-      const data = (yield* fsys.readJson(file).pipe(Effect.orElseSucceed(() => ({})))) as Record<string, unknown>
-      return Record.filterMap(data, (value) => Result.fromOption(decode(value), () => undefined))
-    })
+      if (typeof data !== "object" || data === null) {
+        Log.Default.warn("auth.json contains invalid data, returning empty")
+        return {}
+      }
 
-    const get = Effect.fn("Auth.get")(function* (providerID: string) {
-      return (yield* all())[providerID]
-    })
+      return Object.entries(data).reduce(
+        (acc, [key, value]) => {
+          const parsed = Info.safeParse(value)
+          if (!parsed.success) return acc
+          acc[key] = parsed.data
+          return acc
+        },
+        {} as Record<string, Info>,
+      )
+    } finally {
+      release[Symbol.dispose]()
+    }
+  }
 
-    const set = Effect.fn("Auth.set")(function* (key: string, info: Info) {
-      const norm = key.replace(/\/+$/, "")
-      const data = yield* all()
-      if (norm !== key) delete data[key]
-      delete data[norm + "/"]
-      yield* fsys
-        .writeJson(file, { ...data, [norm]: info }, 0o600)
-        .pipe(Effect.mapError(fail("Failed to write auth data")))
-    })
+  export async function set(key: string, info: Info) {
+    const release = await Lock.write("auth")
+    try {
+      const file = Bun.file(filepath)
+      const exists = await file.exists()
+      const rawData = exists ? await file.json() : null
+      const data: Record<string, Info> = {}
 
-    const remove = Effect.fn("Auth.remove")(function* (key: string) {
-      const norm = key.replace(/\/+$/, "")
-      const data = yield* all()
+      if (typeof rawData === "object" && rawData !== null) {
+        Object.entries(rawData).forEach(([k, v]) => {
+          const parsed = Info.safeParse(v)
+          if (parsed.success) data[k] = parsed.data
+        })
+      }
+
+      data[key] = info
+      const temp = filepath + ".tmp." + crypto.randomUUID()
+      await Bun.write(temp, JSON.stringify(data, null, 2))
+      await fs.chmod(temp, 0o600)
+      await fs.rename(temp, filepath)
+    } finally {
+      release[Symbol.dispose]()
+    }
+  }
+
+  export async function remove(key: string) {
+    const release = await Lock.write("auth")
+    try {
+      const file = Bun.file(filepath)
+      const exists = await file.exists()
+      const rawData = exists ? await file.json() : null
+      const data: Record<string, Info> = {}
+
+      if (typeof rawData === "object" && rawData !== null) {
+        Object.entries(rawData).forEach(([k, v]) => {
+          const parsed = Info.safeParse(v)
+          if (parsed.success) data[k] = parsed.data
+        })
+      }
+
       delete data[key]
-      delete data[norm]
-      yield* fsys.writeJson(file, data, 0o600).pipe(Effect.mapError(fail("Failed to write auth data")))
-    })
-
-    return Service.of({ get, all, set, remove })
-  }),
-)
-
-export const defaultLayer = layer.pipe(Layer.provide(AppFileSystem.defaultLayer))
-
-export * as Auth from "."
+      const temp = filepath + ".tmp." + crypto.randomUUID()
+      await Bun.write(temp, JSON.stringify(data, null, 2))
+      await fs.chmod(temp, 0o600)
+      await fs.rename(temp, filepath)
+    } finally {
+      release[Symbol.dispose]()
+    }
+  }
+}

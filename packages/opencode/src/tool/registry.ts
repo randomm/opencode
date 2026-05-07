@@ -19,10 +19,11 @@ import { type ToolContext as PluginToolContext, type ToolDefinition } from "@ope
 import z from "zod"
 import { Plugin } from "../plugin"
 import { WebSearchTool } from "./websearch"
+import { CodeSearchTool } from "./codesearch"
 import { Flag } from "@/flag/flag"
 import { Log } from "@/util/log"
 import { LspTool } from "./lsp"
-import { Truncate } from "./truncate"
+import { Truncate } from "./truncation"
 import { PlanExitTool, PlanEnterTool } from "./plan"
 import { ApplyPatchTool } from "./apply_patch"
 import { CheckTaskTool } from "./check_task"
@@ -126,6 +127,7 @@ export namespace ToolRegistry {
       TodoWriteTool,
       // TodoReadTool,
       WebSearchTool,
+      CodeSearchTool,
       SkillTool,
       TaskctlTool,
       ApplyPatchTool,

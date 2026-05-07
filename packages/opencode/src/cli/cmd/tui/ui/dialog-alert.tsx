@@ -15,8 +15,6 @@ export function DialogAlert(props: DialogAlertProps) {
 
   useKeyboard((evt) => {
     if (evt.name === "return") {
-      evt.preventDefault()
-      evt.stopPropagation()
       props.onConfirm?.()
       dialog.clear()
     }

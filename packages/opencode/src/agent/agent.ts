@@ -1,419 +1,518 @@
-import { Config } from "@/config/config"
+import { Config } from "../config/config"
 import z from "zod"
-import { Provider } from "@/provider/provider"
-import { ModelID, ProviderID } from "../provider/schema"
+import { Provider } from "../provider/provider"
 import { generateObject, streamObject, type ModelMessage } from "ai"
-import { Truncate } from "@/tool/truncate"
+import { SystemPrompt } from "../session/system"
+import { Instance } from "../project/instance"
+import { Truncate } from "../tool/truncation"
 import { Auth } from "../auth"
-import { ProviderTransform } from "@/provider/transform"
+import { ProviderTransform } from "../provider/transform"
 
 import PROMPT_GENERATE from "./generate.txt"
 import PROMPT_COMPACTION from "./prompt/compaction.txt"
 import PROMPT_EXPLORE from "./prompt/explore.txt"
 import PROMPT_SUMMARY from "./prompt/summary.txt"
 import PROMPT_TITLE from "./prompt/title.txt"
-import { Permission } from "@/permission"
+import PROMPT_DEVELOPER_PIPELINE from "./prompt/developer-pipeline.txt"
+import PROMPT_ADVERSARIAL_PIPELINE from "./prompt/adversarial-pipeline.txt"
+import { PermissionNext } from "@/permission/next"
 import { mergeDeep, pipe, sortBy, values } from "remeda"
-import { Global } from "@opencode-ai/core/global"
+import { Global } from "@/global"
 import path from "path"
 import { Plugin } from "@/plugin"
 import { Skill } from "../skill"
-import { Effect, Context, Layer, Schema } from "effect"
-import { InstanceState } from "@/effect/instance-state"
-import * as Option from "effect/Option"
-import * as OtelTracer from "@effect/opentelemetry/Tracer"
-import { zod } from "@/util/effect-zod"
-import { withStatics, type DeepMutable } from "@/util/schema"
 
-export const Info = Schema.Struct({
-  name: Schema.String,
-  description: Schema.optional(Schema.String),
-  mode: Schema.Literals(["subagent", "primary", "all"]),
-  native: Schema.optional(Schema.Boolean),
-  hidden: Schema.optional(Schema.Boolean),
-  topP: Schema.optional(Schema.Finite),
-  temperature: Schema.optional(Schema.Finite),
-  color: Schema.optional(Schema.String),
-  permission: Permission.Ruleset,
-  model: Schema.optional(
-    Schema.Struct({
-      modelID: ModelID,
-      providerID: ProviderID,
-    }),
-  ),
-  variant: Schema.optional(Schema.String),
-  prompt: Schema.optional(Schema.String),
-  options: Schema.Record(Schema.String, Schema.Unknown),
-  steps: Schema.optional(Schema.Finite),
-})
-  .annotate({ identifier: "Agent" })
-  .pipe(withStatics((s) => ({ zod: zod(s) })))
-export type Info = DeepMutable<Schema.Schema.Type<typeof Info>>
+export namespace Agent {
+  export const Info = z
+    .object({
+      name: z.string(),
+      description: z.string().optional(),
+      mode: z.enum(["subagent", "primary", "all"]),
+      native: z.boolean().optional(),
+      hidden: z.boolean().optional(),
+      topP: z.number().optional(),
+      temperature: z.number().optional(),
+      color: z.string().optional(),
+      permission: PermissionNext.Ruleset,
+      model: z
+        .object({
+          modelID: z.string(),
+          providerID: z.string(),
+        })
+        .optional(),
+      variant: z.string().optional(),
+      prompt: z.string().optional(),
+      options: z.record(z.string(), z.any()),
+      steps: z.number().int().positive().optional(),
+    })
+    .meta({
+      ref: "Agent",
+    })
+  export type Info = z.infer<typeof Info>
 
-export interface Interface {
-  readonly get: (agent: string) => Effect.Effect<Info>
-  readonly list: () => Effect.Effect<Info[]>
-  readonly defaultAgent: () => Effect.Effect<string>
-  readonly generate: (input: {
-    description: string
-    model?: { providerID: ProviderID; modelID: ModelID }
-  }) => Effect.Effect<{
-    identifier: string
-    whenToUse: string
-    systemPrompt: string
-  }>
+  const READONLY_TOOLS: Config.Permission = {
+    "*": "deny",
+    read: "allow",
+    grep: "allow",
+    glob: "allow",
+    list: "allow",
+    codesearch: "allow",
+    bash: {
+      "vipune *": "allow",
+      "colgrep *": "allow",
+      "oo help *": "allow",
+      "oo gh issue view *": "allow",
+      "oo gh issue list *": "allow",
+      "oo recall *": "allow",
+    },
+    external_directory: {
+      [Truncate.GLOB]: "allow",
+    },
+  }
+
+  const state = Instance.state(async () => {
+    const cfg = await Config.get()
+
+    const skillDirs = await Skill.dirs()
+    const defaults = PermissionNext.fromConfig({
+      "*": "allow",
+      doom_loop: "ask",
+      external_directory: {
+        "*": "ask",
+        [Truncate.GLOB]: "allow",
+        ...Object.fromEntries(skillDirs.map((dir) => [path.join(dir, "*"), "allow"])),
+      },
+      question: "deny",
+      plan_enter: "deny",
+      plan_exit: "deny",
+      // mirrors github.com/github/gitignore Node.gitignore pattern for .env files
+      read: {
+        "*": "allow",
+        "*.env": "ask",
+        "*.env.*": "ask",
+        "*.env.example": "allow",
+      },
+    })
+    const user = PermissionNext.fromConfig(cfg.permission ?? {})
+
+    const result: Record<string, Info> = {
+      build: {
+        name: "build",
+        description: "The default agent. Executes tools based on configured permissions.",
+        options: {},
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            question: "allow",
+            plan_enter: "allow",
+          }),
+          user,
+        ),
+        mode: "primary",
+        native: true,
+      },
+      plan: {
+        name: "plan",
+        description: "Plan mode. Disallows all edit tools.",
+        options: {},
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            question: "allow",
+            plan_exit: "allow",
+            external_directory: {
+              [path.join(Global.Path.data, "plans", "*")]: "allow",
+            },
+            edit: {
+              "*": "deny",
+              [path.join(".opencode", "plans", "*.md")]: "allow",
+              [path.relative(Instance.worktree, path.join(Global.Path.data, path.join("plans", "*.md")))]: "allow",
+            },
+          }),
+          user,
+        ),
+        mode: "primary",
+        native: true,
+      },
+      general: {
+        name: "general",
+        description: `General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.`,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            todoread: "deny",
+            todowrite: "deny",
+          }),
+          user,
+        ),
+        options: {},
+        mode: "subagent",
+        native: true,
+      },
+      explore: {
+        name: "explore",
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+            grep: "allow",
+            glob: "allow",
+            list: "allow",
+            bash: "allow",
+            webfetch: "allow",
+            websearch: "allow",
+            codesearch: "allow",
+            read: "allow",
+            external_directory: {
+              [Truncate.GLOB]: "allow",
+            },
+          }),
+          user,
+        ),
+        description: `Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
+        prompt: PROMPT_EXPLORE,
+        options: {},
+        mode: "subagent",
+        native: true,
+      },
+      compaction: {
+        name: "compaction",
+        mode: "primary",
+        native: true,
+        hidden: true,
+        prompt: PROMPT_COMPACTION,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+          }),
+          user,
+        ),
+        options: {},
+      },
+      title: {
+        name: "title",
+        mode: "primary",
+        options: {},
+        native: true,
+        hidden: true,
+        temperature: 0.5,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+          }),
+          user,
+        ),
+        prompt: PROMPT_TITLE,
+      },
+      summary: {
+        name: "summary",
+        mode: "primary",
+        options: {},
+        native: true,
+        hidden: true,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+          }),
+          user,
+        ),
+        prompt: PROMPT_SUMMARY,
+      },
+      "composer": {
+        name: "composer",
+        mode: "subagent",
+        hidden: true,
+        native: true,
+        options: {},
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig(READONLY_TOOLS),
+          user,
+        ),
+        prompt: `You are the Composer agent for the taskctl autonomous development pipeline.
+
+Your job is to read a GitHub issue and decompose it into a structured, dependency-ordered list of implementation tasks.
+
+RESPONSE FORMAT — you must respond with ONLY valid JSON, nothing else:
+
+If the spec is too vague or missing acceptance criteria:
+{
+  "status": "needs_clarification",
+  "questions": [
+    { "id": 1, "question": "What specific behaviour should change?" }
+  ]
 }
 
-type State = Omit<Interface, "generate">
+If the spec is clear enough to decompose:
+{
+  "status": "ready",
+  "tasks": [
+    {
+      "title": "Add OAuth2 config schema",
+      "description": "Add zod schema for OAuth2 config to src/config/config.ts",
+      "acceptance_criteria": "Schema validates clientId, clientSecret, redirectUri. Tests pass.",
+      "task_type": "implementation",
+      "labels": ["module:config", "file:src/config/config.ts"],
+      "depends_on": [],
+      "priority": 0
+    },
+    {
+      "title": "Write OAuth2 login handler",
+      "description": "Implement the login route using the config schema from the previous task",
+      "acceptance_criteria": "Handler validates token, returns 401 on failure. Tests pass.",
+      "task_type": "implementation",
+      "labels": ["module:auth", "file:src/auth/login.ts"],
+       "depends_on": ["Add OAuth2 config schema"],  // use exact title strings from this batch, never numeric indexes
+       "priority": 1
+    }
+  ]
+}
 
-export class Service extends Context.Service<Service, Interface>()("@opencode/Agent") {}
+RULES FOR GOOD TASK DECOMPOSITION:
+1. Each task must be completable by one developer in a single session
+2. Every task MUST have non-empty acceptance_criteria
+3. Every task MUST have at least one label with "module:" or "file:" prefix
+4. Dependencies: tasks that others depend on have lower priority numbers (0 = highest priority)
+5. Tasks with no shared module:/file: labels can run in parallel
+6. Do not create tasks for work not explicitly required by the issue
+7. Validate your own output: check that no depends_on creates a cycle before responding
+8. Respond with ONLY the JSON object — no markdown, no explanation, no code blocks
+ 9. depends_on values must be the EXACT title string of another task in this batch — never use numbers, indexes, or abbreviations
 
-export const layer = Layer.effect(
-  Service,
-  Effect.gen(function* () {
-    const config = yield* Config.Service
-    const auth = yield* Auth.Service
-    const plugin = yield* Plugin.Service
-    const skill = yield* Skill.Service
-    // Note: Provider is a namespace without a Service, we'll wrap calls directly
+## CRITICAL: Dependency Rules — Prevent Overly Sequential Chains
 
-    const state = yield* InstanceState.make<State>(
-      Effect.fn("Agent.state")(function* (ctx) {
-        const cfg = yield* config.get()
-        const skillDirs = yield* skill.dirs()
-        const whitelistedDirs = [
-          Truncate.GLOB,
-          path.join(Global.Path.tmp, "*"),
-          ...skillDirs.map((dir) => path.join(dir, "*")),
-        ]
+10. depends_on is ONLY for true data dependencies — when task B literally cannot start without task A's output/files
+11. DEFAULT: tasks are INDEPENDENT and run in parallel — ONLY add depends_on when absolutely necessary
+12. Research tasks can run alongside implementation tasks — TDD: tests and research can be parallel
+13. Prefer wide parallel trees over deep sequential chains — maximum chain depth of 2 levels for most issues
+14. BAD example: "write tests" depending on "implement feature" — tests should be written first (TDD) or in parallel
+15. GOOD example: "implement feature" depending on "research API" — implementation needs research findings
+16. Ask yourself: "Can this task start and make meaningful progress before the dependency completes?" If YES, remove the dependency
 
-        const defaults = Permission.fromConfig({
-          "*": "allow",
-          doom_loop: "ask",
-          external_directory: {
-            "*": "ask",
-            ...Object.fromEntries(whitelistedDirs.map((dir) => [dir, "allow"])),
-          },
-          question: "deny",
-          plan_enter: "deny",
-          plan_exit: "deny",
-          // mirrors github.com/github/gitignore Node.gitignore pattern for .env files
-          read: {
-            "*": "allow",
-            "*.env": "ask",
-            "*.env.*": "ask",
-            "*.env.example": "allow",
-          },
-        })
-
-        const user = Permission.fromConfig(cfg.permission ?? {})
-
-        const agents: Record<string, Info> = {
-          build: {
-            name: "build",
-            description: "The default agent. Executes tools based on configured permissions.",
-            options: {},
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                question: "allow",
-                plan_enter: "allow",
-              }),
-              user,
-            ),
-            mode: "primary",
-            native: true,
-          },
-          plan: {
-            name: "plan",
-            description: "Plan mode. Disallows all edit tools.",
-            options: {},
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                question: "allow",
-                plan_exit: "allow",
-                external_directory: {
-                  [path.join(Global.Path.data, "plans", "*")]: "allow",
-                },
-                edit: {
-                  "*": "deny",
-                  [path.join(".opencode", "plans", "*.md")]: "allow",
-                  [path.relative(ctx.worktree, path.join(Global.Path.data, path.join("plans", "*.md")))]: "allow",
-                },
-              }),
-              user,
-            ),
-            mode: "primary",
-            native: true,
-          },
-          general: {
-            name: "general",
-            description: `General-purpose agent for researching complex questions and executing multi-step tasks. Use this agent to execute multiple units of work in parallel.`,
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                todowrite: "deny",
-              }),
-              user,
-            ),
-            options: {},
-            mode: "subagent",
-            native: true,
-          },
-          explore: {
-            name: "explore",
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                "*": "deny",
-                grep: "allow",
-                glob: "allow",
-                list: "allow",
-                bash: "allow",
-                webfetch: "allow",
-                websearch: "allow",
-                read: "allow",
-                external_directory: {
-                  "*": "ask",
-                  ...Object.fromEntries(whitelistedDirs.map((dir) => [dir, "allow"])),
-                },
-              }),
-              user,
-            ),
-            description: `Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (eg. "src/components/**/*.tsx"), search code for keywords (eg. "API endpoints"), or answer questions about the codebase (eg. "how do API endpoints work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "very thorough" for comprehensive analysis across multiple locations and naming conventions.`,
-            prompt: PROMPT_EXPLORE,
-            options: {},
-            mode: "subagent",
-            native: true,
-          },
-          compaction: {
-            name: "compaction",
-            mode: "primary",
-            native: true,
-            hidden: true,
-            prompt: PROMPT_COMPACTION,
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                "*": "deny",
-              }),
-              user,
-            ),
-            options: {},
-          },
-          title: {
-            name: "title",
-            mode: "primary",
-            options: {},
-            native: true,
-            hidden: true,
-            temperature: 0.5,
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                "*": "deny",
-              }),
-              user,
-            ),
-            prompt: PROMPT_TITLE,
-          },
-          summary: {
-            name: "summary",
-            mode: "primary",
-            options: {},
-            native: true,
-            hidden: true,
-            permission: Permission.merge(
-              defaults,
-              Permission.fromConfig({
-                "*": "deny",
-              }),
-              user,
-            ),
-            prompt: PROMPT_SUMMARY,
-          },
-        }
-
-        for (const [key, value] of Object.entries(cfg.agent ?? {})) {
-          if (value.disable) {
-            delete agents[key]
-            continue
-          }
-          let item = agents[key]
-          if (!item)
-            item = agents[key] = {
-              name: key,
-              mode: "all",
-              permission: Permission.merge(defaults, user),
-              options: {},
-              native: false,
-            }
-          if (value.model) {
-            const parsed = Provider.parseModel(value.model)
-            item.model = { providerID: ProviderID.make(parsed.providerID), modelID: ModelID.make(parsed.modelID) }
-          }
-          item.variant = value.variant ?? item.variant
-          item.prompt = value.prompt ?? item.prompt
-          item.description = value.description ?? item.description
-          item.temperature = value.temperature ?? item.temperature
-          item.topP = value.top_p ?? item.topP
-          item.mode = value.mode ?? item.mode
-          item.color = value.color ?? item.color
-          item.hidden = value.hidden ?? item.hidden
-          item.name = value.name ?? item.name
-          item.steps = value.steps ?? item.steps
-          item.options = mergeDeep(item.options, value.options ?? {})
-          item.permission = Permission.merge(item.permission, Permission.fromConfig(value.permission ?? {}))
-        }
-
-        // Ensure Truncate.GLOB is allowed unless explicitly configured
-        for (const name in agents) {
-          const agent = agents[name]
-          const explicit = agent.permission.some((r) => {
-            if (r.permission !== "external_directory") return false
-            if (r.action !== "deny") return false
-            return r.pattern === Truncate.GLOB
-          })
-          if (explicit) continue
-
-          agents[name].permission = Permission.merge(
-            agents[name].permission,
-            Permission.fromConfig({ external_directory: { [Truncate.GLOB]: "allow" } }),
-          )
-        }
-
-        const get = Effect.fnUntraced(function* (agent: string) {
-          return agents[agent]
-        })
-
-        const list = Effect.fnUntraced(function* () {
-          const cfg = yield* config.get()
-          return pipe(
-            agents,
-            values(),
-            sortBy(
-              [(x) => (cfg.default_agent ? x.name === cfg.default_agent : x.name === "build"), "desc"],
-              [(x) => x.name, "asc"],
-            ),
-          )
-        })
-
-        const defaultAgent = Effect.fnUntraced(function* () {
-          const c = yield* config.get()
-          if (c.default_agent) {
-            const agent = agents[c.default_agent]
-            if (!agent) throw new Error(`default agent "${c.default_agent}" not found`)
-            if (agent.mode === "subagent") throw new Error(`default agent "${c.default_agent}" is a subagent`)
-            if (agent.hidden === true) throw new Error(`default agent "${c.default_agent}" is hidden`)
-            return agent.name
-          }
-          const visible = Object.values(agents).find((a) => a.mode !== "subagent" && a.hidden !== true)
-          if (!visible) throw new Error("no primary visible agent found")
-          return visible.name
-        })
-
-        return {
-          get,
-          list,
-          defaultAgent,
-        } satisfies State
-      }),
-    )
-
-    return Service.of({
-      get: Effect.fn("Agent.get")(function* (agent: string) {
-        return yield* InstanceState.useEffect(state, (s) => s.get(agent))
-      }),
-      list: Effect.fn("Agent.list")(function* () {
-        return yield* InstanceState.useEffect(state, (s) => s.list())
-      }),
-      defaultAgent: Effect.fn("Agent.defaultAgent")(function* () {
-        return yield* InstanceState.useEffect(state, (s) => s.defaultAgent())
-      }),
-      generate: Effect.fn("Agent.generate")(function* (input: {
-        description: string
-        model?: { providerID: ProviderID; modelID: ModelID }
-       }) {
-         const cfg = yield* config.get()
-         let model = input.model
-         if (!model) {
-           const m = yield* Effect.promise(() => Provider.defaultModel())
-           model = { providerID: ProviderID.make(m.providerID), modelID: ModelID.make(m.modelID) }
-         }
-         const resolved = yield* Effect.promise(() => Provider.getModel(model.providerID, model.modelID))
-         const language = yield* Effect.promise(() => Provider.getLanguage(resolved))
-        const tracer = cfg.experimental?.openTelemetry
-          ? Option.getOrUndefined(yield* Effect.serviceOption(OtelTracer.OtelTracer))
-          : undefined
-
-        const system = [PROMPT_GENERATE]
-        yield* plugin.trigger("experimental.chat.system.transform", { model: resolved }, { system })
-        const existing = yield* InstanceState.useEffect(state, (s) => s.list())
-
-        // TODO: clean this up so provider specific logic doesnt bleed over
-        const authInfo = yield* auth.get(model.providerID).pipe(Effect.orDie)
-        const isOpenaiOauth = model.providerID === "openai" && authInfo?.type === "oauth"
-
-        const params = {
-          experimental_telemetry: {
-            isEnabled: cfg.experimental?.openTelemetry,
-            tracer,
-            metadata: {
-              userId: cfg.username ?? "unknown",
-            },
-          },
-          temperature: 0.3,
-          messages: [
-            ...(isOpenaiOauth
-              ? []
-              : system.map(
-                  (item): ModelMessage => ({
-                    role: "system",
-                    content: item,
-                  }),
-                )),
-            {
-              role: "user",
-              content: `Create an agent configuration based on this request: "${input.description}".\n\nIMPORTANT: The following identifiers already exist and must NOT be used: ${existing.map((i) => i.name).join(", ")}\n  Return ONLY the JSON object, no other text, do not wrap in backticks`,
-            },
-          ],
-          model: language,
-          schema: z.object({
-            identifier: z.string(),
-            whenToUse: z.string(),
-            systemPrompt: z.string(),
+## Examples
+- Bad: Task A → Task B → Task C → Task D (sequential chain, no parallelism)
+- Good: Task A (research) + Task B (file setup) → Task C + Task D (parallel implementations)
+- Bad: "Write tests" depends_on: "Implement feature" (tests come first in TDD)
+- Good: "Implement feature" depends_on: "Research API design" (needs the design doc)`,
+      },
+      "developer-pipeline": {
+        name: "developer-pipeline",
+        description: "Developer agent working as part of an autonomous pipeline.",
+        mode: "subagent",
+        native: true,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            task: "deny",
+            taskctl: "deny",
           }),
-        } satisfies Parameters<typeof generateObject>[0]
+          user,
+        ),
+        options: {},
+        prompt: PROMPT_DEVELOPER_PIPELINE,
+      },
+      "adversarial-pipeline": {
+        name: "adversarial-pipeline",
+        description: "Adversarial code reviewer in an autonomous pipeline.",
+        mode: "subagent",
+        native: true,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig({
+            "*": "deny",
+            bash: "allow",
+            taskctl: "allow",
+          }),
+          user,
+        ),
+        options: {},
+        prompt: PROMPT_ADVERSARIAL_PIPELINE,
+      },
+      steering: {
+        name: "steering",
+        description: "Steering agent in an autonomous development pipeline.",
+        mode: "subagent",
+        native: true,
+        hidden: true,
+        permission: PermissionNext.merge(
+          defaults,
+          PermissionNext.fromConfig(READONLY_TOOLS),
+          user,
+        ),
+        options: {},
+        // Uses cheapest available model — configure via agent config if needed
+        prompt: `You are a steering agent in an autonomous development pipeline. Your job is to assess whether a developer agent is making meaningful progress on a task.
 
-        if (isOpenaiOauth) {
-          return yield* Effect.promise(async () => {
-            const result = streamObject({
-              ...params,
-              providerOptions: ProviderTransform.providerOptions(resolved, {
-                instructions: system.join("\n"),
-                store: false,
-              }),
-              onError: () => {},
-            })
-            for await (const part of result.fullStream) {
-              if (part.type === "error") throw part.error
-            }
-            return result.object
-          })
+You will receive:
+- The task title, description, and acceptance criteria
+- A summary of recent developer activity (last session turns)
+
+Respond with EXACTLY one of these JSON objects and nothing else:
+
+{ "action": "continue", "message": null }
+— Use when the developer is making steady progress: writing code, running tests, moving forward
+
+{ "action": "steer", "message": "specific actionable guidance here" }
+— Use when the developer seems confused, going in circles, or heading the wrong direction
+— The message must be specific and actionable (e.g. "Focus on fixing the null check at src/api.ts:42, not rewriting the whole module")
+
+{ "action": "replace", "message": "reason for replacement" }
+— Use ONLY when the developer has made zero meaningful progress for the entire session or is clearly broken (e.g. repeating the same failed command)
+
+## Tools available (use if present, skip gracefully if not available)
+- **vipune search** — review prior session work: \`vipune search "topic"\`
+- **colgrep** — understand codebase patterns: \`colgrep "pattern"\`
+Keep tool use lightweight — steering assessment should complete in under 1 minute.
+
+Be conservative: prefer "continue" when in doubt. Only "replace" when truly stuck.`,
+      },
+    }
+
+    for (const [key, value] of Object.entries(cfg.agent ?? {})) {
+      if (value.disable) {
+        delete result[key]
+        continue
+      }
+      let item = result[key]
+      if (!item)
+        item = result[key] = {
+          name: key,
+          mode: "all",
+          permission: PermissionNext.merge(defaults, user),
+          options: {},
+          native: false,
         }
+      if (value.model) item.model = Provider.parseModel(value.model)
+      item.variant = value.variant ?? item.variant
+      item.prompt = value.prompt ?? item.prompt
+      item.description = value.description ?? item.description
+      item.temperature = value.temperature ?? item.temperature
+      item.topP = value.top_p ?? item.topP
+      item.mode = value.mode ?? item.mode
+      item.color = value.color ?? item.color
+      item.hidden = value.hidden ?? item.hidden
+      item.name = value.name ?? item.name
+      item.steps = value.steps ?? item.steps
+      item.options = mergeDeep(item.options, value.options ?? {})
+      item.permission = PermissionNext.merge(item.permission, PermissionNext.fromConfig(value.permission ?? {}))
+    }
 
-        return yield* Effect.promise(() => generateObject(params).then((r) => r.object))
+    // Ensure Truncate.GLOB is allowed unless explicitly configured
+    for (const name in result) {
+      const agent = result[name]
+      const explicit = agent.permission.some((r) => {
+        if (r.permission !== "external_directory") return false
+        if (r.action !== "deny") return false
+        return r.pattern === Truncate.GLOB
+      })
+      if (explicit) continue
+
+      result[name].permission = PermissionNext.merge(
+        result[name].permission,
+        PermissionNext.fromConfig({ external_directory: { [Truncate.GLOB]: "allow" } }),
+      )
+    }
+
+    return result
+  })
+
+  export async function get(agent: string) {
+    return state().then((x) => x[agent])
+  }
+
+  export async function list() {
+    const cfg = await Config.get()
+    return pipe(
+      await state(),
+      values(),
+      sortBy([(x) => (cfg.default_agent ? x.name === cfg.default_agent : x.name === "build"), "desc"]),
+    )
+  }
+
+  export async function defaultAgent() {
+    const cfg = await Config.get()
+    const agents = await state()
+
+    if (cfg.default_agent) {
+      const agent = agents[cfg.default_agent]
+      if (!agent) throw new Error(`default agent "${cfg.default_agent}" not found`)
+      if (agent.mode === "subagent") throw new Error(`default agent "${cfg.default_agent}" is a subagent`)
+      if (agent.hidden === true) throw new Error(`default agent "${cfg.default_agent}" is hidden`)
+      return agent.name
+    }
+
+    const primaryVisible = Object.values(agents).find((a) => a.mode !== "subagent" && a.hidden !== true)
+    if (!primaryVisible) throw new Error("no primary visible agent found")
+    return primaryVisible.name
+  }
+
+  export async function generate(input: { description: string; model?: { providerID: string; modelID: string } }) {
+    const cfg = await Config.get()
+    const defaultModel = input.model ?? (await Provider.defaultModel())
+    const model = await Provider.getModel(defaultModel.providerID, defaultModel.modelID)
+    const language = await Provider.getLanguage(model)
+
+    const system = [PROMPT_GENERATE]
+    await Plugin.trigger("experimental.chat.system.transform", { model }, { system })
+    const existing = await list()
+
+    const params = {
+      experimental_telemetry: {
+        isEnabled: cfg.experimental?.openTelemetry,
+        metadata: {
+          userId: cfg.username ?? "unknown",
+        },
+      },
+      temperature: 0.3,
+      messages: [
+        ...system.map(
+          (item): ModelMessage => ({
+            role: "system",
+            content: item,
+          }),
+        ),
+        {
+          role: "user",
+          content: `Create an agent configuration based on this request: \"${input.description}\".\n\nIMPORTANT: The following identifiers already exist and must NOT be used: ${existing.map((i) => i.name).join(", ")}\n  Return ONLY the JSON object, no other text, do not wrap in backticks`,
+        },
+      ],
+      model: language,
+      schema: z.object({
+        identifier: z.string(),
+        whenToUse: z.string(),
+        systemPrompt: z.string(),
       }),
-    })
-  }),
-)
+    } satisfies Parameters<typeof generateObject>[0]
 
-export const defaultLayer = layer.pipe(
-  Layer.provide(Plugin.defaultLayer),
-  Layer.provide(Auth.defaultLayer),
-  Layer.provide(Config.defaultLayer),
-  Layer.provide(Skill.defaultLayer),
-)
+    if (defaultModel.providerID === "openai" && (await Auth.get(defaultModel.providerID))?.type === "oauth") {
+      const result = streamObject({
+        ...params,
+        providerOptions: ProviderTransform.providerOptions(model, {
+          instructions: SystemPrompt.instructions(),
+          store: false,
+        }),
+        onError: () => {},
+      })
+      try {
+        for await (const part of result.fullStream) {
+          if (part.type === "error") throw part.error
+        }
+      } catch (e) {
+        if (typeof e === "object" && e !== null && "name" in e && e.name === "AbortError") {
+          throw e
+        }
+        if (e instanceof DOMException && e.name === "AbortError") {
+          throw e
+        }
+        throw e
+      }
+      return result.object
+    }
 
-export * as Agent from "./agent"
+    const result = await generateObject(params)
+    return result.object
+  }
+}

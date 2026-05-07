@@ -62,8 +62,8 @@
       "light": "macText"
     },
     "textMuted": {
-      "dark": "macOverlay2",
-      "light": "macOverlay2"
+      "dark": "macSubtext1",
+      "light": "macSubtext1"
     },
     "background": {
       "dark": "macBase",
@@ -125,7 +125,10 @@
       "dark": "macMantle",
       "light": "macMantle"
     },
-    "diffLineNumber": "textMuted",
+    "diffLineNumber": {
+      "dark": "macSurface1",
+      "light": "macSurface1"
+    },
     "diffAddedLineNumberBg": {
       "dark": "#223025",
       "light": "#223025"

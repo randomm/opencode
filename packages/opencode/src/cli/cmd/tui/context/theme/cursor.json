@@ -142,8 +142,8 @@
       "light": "lightPanel"
     },
     "diffLineNumber": {
-      "dark": "#eeeeee87",
-      "light": "textMuted"
+      "dark": "#e4e4e442",
+      "light": "#1414147a"
     },
     "diffAddedLineNumberBg": {
       "dark": "#3fa26633",

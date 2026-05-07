@@ -1,4 +1,8 @@
-import { type LanguageModelV3CallOptions, type SharedV3Warning, UnsupportedFunctionalityError } from "@ai-sdk/provider"
+import {
+  type LanguageModelV2CallOptions,
+  type LanguageModelV2CallWarning,
+  UnsupportedFunctionalityError,
+} from "@ai-sdk/provider"
 import { codeInterpreterArgsSchema } from "./tool/code-interpreter"
 import { fileSearchArgsSchema } from "./tool/file-search"
 import { webSearchArgsSchema } from "./tool/web-search"
@@ -11,8 +15,8 @@ export function prepareResponsesTools({
   toolChoice,
   strictJsonSchema,
 }: {
-  tools: LanguageModelV3CallOptions["tools"]
-  toolChoice?: LanguageModelV3CallOptions["toolChoice"]
+  tools: LanguageModelV2CallOptions["tools"]
+  toolChoice?: LanguageModelV2CallOptions["toolChoice"]
   strictJsonSchema: boolean
 }): {
   tools?: Array<OpenAIResponsesTool>
@@ -26,12 +30,12 @@ export function prepareResponsesTools({
     | { type: "function"; name: string }
     | { type: "code_interpreter" }
     | { type: "image_generation" }
-  toolWarnings: SharedV3Warning[]
+  toolWarnings: LanguageModelV2CallWarning[]
 } {
   // when the tools array is empty, change it to undefined to prevent errors:
   tools = tools?.length ? tools : undefined
 
-  const toolWarnings: SharedV3Warning[] = []
+  const toolWarnings: LanguageModelV2CallWarning[] = []
 
   if (tools == null) {
     return { tools: undefined, toolChoice: undefined, toolWarnings }
@@ -50,7 +54,7 @@ export function prepareResponsesTools({
           strict: strictJsonSchema,
         })
         break
-      case "provider": {
+      case "provider-defined": {
         switch (tool.id) {
           case "openai.file_search": {
             const args = fileSearchArgsSchema.parse(tool.args)
@@ -134,7 +138,7 @@ export function prepareResponsesTools({
         break
       }
       default:
-        toolWarnings.push({ type: "unsupported", feature: "tool type" })
+        toolWarnings.push({ type: "unsupported-tool", tool })
         break
     }
   }

@@ -11,8 +11,6 @@ export function DialogHelp() {
 
   useKeyboard((evt) => {
     if (evt.name === "return" || evt.name === "escape") {
-      evt.preventDefault()
-      evt.stopPropagation()
       dialog.clear()
     }
   })

@@ -4,12 +4,12 @@ import { useTheme } from "@tui/context/theme"
 import { MouseButton, Renderable, RGBA } from "@opentui/core"
 import { createStore } from "solid-js/store"
 import { useToast } from "./toast"
-import { Flag } from "@opencode-ai/core/flag/flag"
-import * as Selection from "@tui/util/selection"
+import { Flag } from "@/flag/flag"
+import { Selection } from "@tui/util/selection"
 
 export function Dialog(
   props: ParentProps<{
-    size?: "medium" | "large" | "xlarge"
+    size?: "medium" | "large"
     onClose: () => void
   }>,
 ) {
@@ -18,11 +18,6 @@ export function Dialog(
   const renderer = useRenderer()
 
   let dismiss = false
-  const width = () => {
-    if (props.size === "xlarge") return 116
-    if (props.size === "large") return 88
-    return 60
-  }
 
   return (
     <box
@@ -40,7 +35,6 @@ export function Dialog(
       height={dimensions().height}
       alignItems="center"
       position="absolute"
-      zIndex={3000}
       paddingTop={dimensions().height / 4}
       left={0}
       top={0}
@@ -51,7 +45,7 @@ export function Dialog(
           dismiss = false
           e.stopPropagation()
         }}
-        width={width()}
+        width={props.size === "large" ? 80 : 60}
         maxWidth={dimensions().width - 2}
         backgroundColor={theme.backgroundPanel}
         paddingTop={1}
@@ -68,7 +62,7 @@ function init() {
       element: JSX.Element
       onClose?: () => void
     }[],
-    size: "medium" as "medium" | "large" | "xlarge",
+    size: "medium" as "medium" | "large",
   })
 
   const renderer = useRenderer()
@@ -76,11 +70,8 @@ function init() {
   useKeyboard((evt) => {
     if (store.stack.length === 0) return
     if (evt.defaultPrevented) return
-    if ((evt.name === "escape" || (evt.ctrl && evt.name === "c")) && renderer.getSelection()?.getSelectedText()) return
+    if ((evt.name === "escape" || (evt.ctrl && evt.name === "c")) && renderer.getSelection()) return
     if (evt.name === "escape" || (evt.ctrl && evt.name === "c")) {
-      if (renderer.getSelection()) {
-        renderer.clearSelection()
-      }
       const current = store.stack.at(-1)!
       current.onClose?.()
       setStore("stack", store.stack.slice(0, -1))
@@ -141,7 +132,7 @@ function init() {
     get size() {
       return store.size
     },
-    setSize(size: "medium" | "large" | "xlarge") {
+    setSize(size: "medium" | "large") {
       setStore("size", size)
     },
   }
@@ -160,7 +151,6 @@ export function DialogProvider(props: ParentProps) {
       {props.children}
       <box
         position="absolute"
-        zIndex={3000}
         onMouseDown={(evt) => {
           if (!Flag.OPENCODE_EXPERIMENTAL_DISABLE_COPY_ON_SELECT) return
           if (evt.button !== MouseButton.RIGHT) return

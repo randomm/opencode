@@ -78,7 +78,7 @@ export function DialogMcp() {
       title="MCPs"
       options={options()}
       keybind={keybinds()}
-      onSelect={(_option) => {
+      onSelect={(option) => {
         // Don't close on select, only on escape
       }}
     />
