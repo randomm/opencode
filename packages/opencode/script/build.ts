@@ -4,7 +4,7 @@ import { $ } from "bun"
 import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
-import { createSolidTransformPlugin } from "@opentui/solid/bun-plugin"
+import solidTransformPlugin from "@opentui/solid/bun-plugin"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -51,7 +51,7 @@ const singleFlag = process.argv.includes("--single")
 const baselineFlag = process.argv.includes("--baseline")
 const skipInstall = process.argv.includes("--skip-install")
 const sourcemapsFlag = process.argv.includes("--sourcemaps")
-const plugin = createSolidTransformPlugin()
+const plugin = solidTransformPlugin
 const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
 
 const createEmbeddedWebUIBundle = async () => {
