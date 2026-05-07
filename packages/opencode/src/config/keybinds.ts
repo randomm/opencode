@@ -122,6 +122,25 @@ export type Keybinds = Schema.Schema.Type<typeof KeybindsSchema>
 // Consumers access `Keybinds.shape` and `Keybinds.shape.X.parse(undefined)`,
 // which requires the runtime type to be a ZodObject, not just ZodType.  Every
 // field is `string().optional().default(...)` at runtime, so widen to that.
-export const Keybinds = zod(KeybindsSchema) as unknown as z.ZodObject<
+// Use a lazy getter to defer zod() evaluation until first use, for Effect beta.57 compatibility.
+let _keybindsZod:
+  | z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>>
+  | undefined
+
+const getKeybindsZod = (): z.ZodObject<
   Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>
->
+> => {
+  _keybindsZod ??= zod(KeybindsSchema) as unknown as z.ZodObject<
+    Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>
+  >
+  return _keybindsZod
+}
+
+export const Keybinds = new Proxy(
+  {} as z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>>,
+  {
+    get(_, prop) {
+      return (getKeybindsZod() as any)[prop]
+    },
+  }
+) as z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>>
