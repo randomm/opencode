@@ -67,8 +67,18 @@ export type DeepMutable<T> = T extends string | number | boolean | bigint | symb
  */
 export const withStatics =
   <S extends object, M extends Record<string, unknown>>(methods: (schema: S) => M) =>
-  (schema: S): S & M =>
-    Object.assign(schema, methods(schema))
+  (schema: S): S & M => {
+    const statics = methods(schema)
+    for (const key in statics) {
+      const descriptor = Object.getOwnPropertyDescriptor(statics, key)
+      if (descriptor) {
+        Object.defineProperty(schema, key, descriptor)
+      } else {
+        ;(schema as any)[key] = statics[key]
+      }
+    }
+    return schema as S & M
+  }
 
 /**
  * Nominal wrapper for scalar types. The class itself is a valid schema —
