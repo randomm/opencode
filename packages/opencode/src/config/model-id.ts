@@ -9,6 +9,6 @@ import { withStatics } from "@/util/schema"
 // from AST metadata. Preserve the exact original Zod via ZodOverride.
 export const ConfigModelID = Schema.String.annotate({
   [ZodOverride]: z.string().meta({ $ref: "https://models.dev/model-schema.json#/$defs/Model" }),
-}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+}).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export type ConfigModelID = Schema.Schema.Type<typeof ConfigModelID>

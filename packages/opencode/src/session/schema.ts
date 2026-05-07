@@ -8,7 +8,7 @@ export const SessionID = Schema.String.annotate({ [ZodOverride]: Identifier.sche
   Schema.brand("SessionID"),
   withStatics((s) => ({
     descending: (id?: string) => s.make(Identifier.descending("session", id)),
-    get zod() { return zod(s) },
+    zod: zod(s),
   })),
 )
 
@@ -18,7 +18,7 @@ export const MessageID = Schema.String.annotate({ [ZodOverride]: Identifier.sche
   Schema.brand("MessageID"),
   withStatics((s) => ({
     ascending: (id?: string) => s.make(Identifier.ascending("message", id)),
-    get zod() { return zod(s) },
+    zod: zod(s),
   })),
 )
 
@@ -28,7 +28,7 @@ export const PartID = Schema.String.annotate({ [ZodOverride]: Identifier.schema(
   Schema.brand("PartID"),
   withStatics((s) => ({
     ascending: (id?: string) => s.make(Identifier.ascending("part", id)),
-    get zod() { return zod(s) },
+    zod: zod(s),
   })),
 )
 

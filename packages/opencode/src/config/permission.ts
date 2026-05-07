@@ -5,17 +5,17 @@ import { withStatics } from "@/util/schema"
 
 export const Action = Schema.Literals(["ask", "allow", "deny"])
   .annotate({ identifier: "PermissionActionConfig" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Action = Schema.Schema.Type<typeof Action>
 
 export const Object = Schema.Record(Schema.String, Action)
   .annotate({ identifier: "PermissionObjectConfig" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Object = Schema.Schema.Type<typeof Object>
 
 export const Rule = Schema.Union([Action, Object])
   .annotate({ identifier: "PermissionRuleConfig" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Rule = Schema.Schema.Type<typeof Rule>
 
 // Known permission keys get explicit types in the Effect schema for generated
@@ -64,7 +64,7 @@ export const Info = InputSchema.pipe(
   .pipe(
     // Walker already emits the decodeTo transform into the derived zod (see
     // `encoded()` in effect-zod.ts), so just expose that directly.
-    withStatics((s) => ({ get zod() { return zod(s) } })),
+    withStatics((s) => ({ zod: zod(s) })),
   )
 type _Info = Schema.Schema.Type<typeof InputObject>
 export type Info = { -readonly [K in keyof _Info]: _Info[K] }

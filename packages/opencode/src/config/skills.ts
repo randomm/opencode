@@ -9,7 +9,7 @@ export const Info = Schema.Struct({
   urls: Schema.optional(Schema.Array(Schema.String)).annotate({
     description: "URLs to fetch skills from (e.g., https://example.com/.well-known/skills/)",
   }),
-}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+}).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export type Info = Schema.Schema.Type<typeof Info>
 

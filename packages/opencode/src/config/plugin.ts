@@ -6,13 +6,13 @@ import { zod } from "@/util/effect-zod"
 import { withStatics } from "@/util/schema"
 import path from "path"
 
-export const Options = Schema.Record(Schema.String, Schema.Unknown).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+export const Options = Schema.Record(Schema.String, Schema.Unknown).pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Options = Schema.Schema.Type<typeof Options>
 
 // Spec is the user-config value: either just a plugin identifier, or the identifier plus inline options.
 // It answers "what should we load?" but says nothing about where that value came from.
 export const Spec = Schema.Union([Schema.String, Schema.mutable(Schema.Tuple([Schema.String, Options]))]).pipe(
-  withStatics((s) => ({ get zod() { return zod(s) } })),
+  withStatics((s) => ({ zod: zod(s) })),
 )
 export type Spec = Schema.Schema.Type<typeof Spec>
 

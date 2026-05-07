@@ -32,7 +32,7 @@ export const Range = Schema.Struct({
   end: Position,
 })
   .annotate({ identifier: "Range" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Range = typeof Range.Type
 
 export const Symbol = Schema.Struct({
@@ -44,7 +44,7 @@ export const Symbol = Schema.Struct({
   }),
 })
   .annotate({ identifier: "Symbol" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Symbol = typeof Symbol.Type
 
 export const DocumentSymbol = Schema.Struct({
@@ -55,7 +55,7 @@ export const DocumentSymbol = Schema.Struct({
   selectionRange: Range,
 })
   .annotate({ identifier: "DocumentSymbol" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type DocumentSymbol = typeof DocumentSymbol.Type
 
 export const Status = Schema.Struct({
@@ -67,7 +67,7 @@ export const Status = Schema.Struct({
   }),
 })
   .annotate({ identifier: "LSPStatus" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Status = typeof Status.Type
 
 enum SymbolKind {

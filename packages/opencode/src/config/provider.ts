@@ -66,7 +66,7 @@ export const Model = Schema.Struct({
       ),
     ).annotate({ description: "Variant-specific configuration" }),
   ),
-}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+}).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export const Info = Schema.Struct({
   api: Schema.optional(Schema.String),
@@ -107,7 +107,7 @@ export const Info = Schema.Struct({
   models: Schema.optional(Schema.Record(Schema.String, Model)),
 })
   .annotate({ identifier: "ProviderConfig" })
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 export type Info = Schema.Schema.Type<typeof Info>
 
 export * as ConfigProvider from "./provider"

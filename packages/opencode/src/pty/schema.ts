@@ -11,6 +11,6 @@ export type PtyID = typeof ptyIdSchema.Type
 export const PtyID = ptyIdSchema.pipe(
   withStatics((schema: typeof ptyIdSchema) => ({
     ascending: (id?: string) => schema.make(Identifier.ascending("pty", id)),
-    get zod() { return zod(schema) },
+    zod: zod(schema),
   })),
 )

@@ -8,6 +8,6 @@ export const EventID = Schema.String.annotate({ [ZodOverride]: Identifier.schema
   Schema.brand("EventID"),
   withStatics((s) => ({
     ascending: (id?: string) => s.make(Identifier.ascending("event", id)),
-    get zod() { return zod(s) },
+    zod: zod(s),
   })),
 )

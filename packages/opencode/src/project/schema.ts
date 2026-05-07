@@ -10,6 +10,6 @@ export type ProjectID = typeof projectIdSchema.Type
 export const ProjectID = projectIdSchema.pipe(
   withStatics((schema: typeof projectIdSchema) => ({
     global: schema.make("global"),
-    get zod() { return zod(schema) },
+    zod: zod(schema),
   })),
 )

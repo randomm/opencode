@@ -119,15 +119,9 @@ const KeybindsSchema = Schema.Struct({
 
 export type Keybinds = Schema.Schema.Type<typeof KeybindsSchema>
 
-// Lazy singleton: defer zod() call until first access to avoid module-load-time effect initialization
-let _keybindsZod: z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>> | undefined
-
 // Consumers access `Keybinds.shape` and `Keybinds.shape.X.parse(undefined)`,
 // which requires the runtime type to be a ZodObject, not just ZodType.  Every
 // field is `string().optional().default(...)` at runtime, so widen to that.
-export const Keybinds = new Proxy({} as z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>>, {
-  get(target, prop) {
-    const schema = (_keybindsZod ??= zod(KeybindsSchema) as unknown as z.ZodObject<Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>>)
-    return schema[prop as keyof typeof schema]
-  },
-})
+export const Keybinds = zod(KeybindsSchema) as unknown as z.ZodObject<
+  Record<keyof Keybinds, z.ZodDefault<z.ZodOptional<z.ZodString>>>
+>

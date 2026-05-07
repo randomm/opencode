@@ -9,7 +9,7 @@ export type ProviderID = typeof providerIdSchema.Type
 
 export const ProviderID = providerIdSchema.pipe(
   withStatics((schema: typeof providerIdSchema) => ({
-    get zod() { return zod(schema) },
+    zod: zod(schema),
     // Well-known providers
     opencode: schema.make("opencode"),
     anthropic: schema.make("anthropic"),
@@ -31,6 +31,6 @@ export type ModelID = typeof modelIdSchema.Type
 
 export const ModelID = modelIdSchema.pipe(
   withStatics((schema: typeof modelIdSchema) => ({
-    get zod() { return zod(schema) },
+    zod: zod(schema),
   })),
 )

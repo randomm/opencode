@@ -7,7 +7,7 @@ import * as LSPServer from "../lsp/server"
 
 export const Disabled = Schema.Struct({
   disabled: Schema.Literal(true),
-}).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+}).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export const Entry = Schema.Union([
   Disabled,
@@ -18,7 +18,7 @@ export const Entry = Schema.Union([
     env: Schema.optional(Schema.Record(Schema.String, Schema.String)),
     initialization: Schema.optional(Schema.Record(Schema.String, Schema.Unknown)),
   }),
-]).pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+]).pipe(withStatics((s) => ({ zod: zod(s) })))
 
 /**
  * For custom (non-builtin) LSP server entries, `extensions` is required so the
@@ -40,6 +40,6 @@ export const requiresExtensionsForCustomServers = Schema.makeFilter<
 
 export const Info = Schema.Union([Schema.Boolean, Schema.Record(Schema.String, Entry)])
   .check(requiresExtensionsForCustomServers)
-  .pipe(withStatics((s) => ({ get zod() { return zod(s) } })))
+  .pipe(withStatics((s) => ({ zod: zod(s) })))
 
 export type Info = Schema.Schema.Type<typeof Info>

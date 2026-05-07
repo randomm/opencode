@@ -21,9 +21,7 @@ export const optionalOmitUndefined = <S extends Schema.Top>(schema: S) =>
       decode: SchemaGetter.passthrough({ strict: false }),
       encode: SchemaGetter.transformOptional(Option.filter((value) => value !== undefined)),
     }),
-    // NOTE: Do NOT add a ZodOverride annotation here. The schema transform is sufficient,
-    // and eagerly calling zod(schema) causes a crash in Effect 4.0.0-beta.59 where AST nodes
-    // aren't fully initialized until schema construction completes.
+    Schema.annotate({ [ZodOverride]: zod(schema).optional() }),
   )
 
 /**
@@ -67,18 +65,8 @@ export type DeepMutable<T> = T extends string | number | boolean | bigint | symb
  */
 export const withStatics =
   <S extends object, M extends Record<string, unknown>>(methods: (schema: S) => M) =>
-  (schema: S): S & M => {
-    const statics = methods(schema)
-    for (const key in statics) {
-      const descriptor = Object.getOwnPropertyDescriptor(statics, key)
-      if (descriptor) {
-        Object.defineProperty(schema, key, descriptor)
-      } else {
-        ;(schema as any)[key] = statics[key]
-      }
-    }
-    return schema as S & M
-  }
+  (schema: S): S & M =>
+    Object.assign(schema, methods(schema))
 
 /**
  * Nominal wrapper for scalar types. The class itself is a valid schema —
