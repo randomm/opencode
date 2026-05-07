@@ -21,7 +21,9 @@ export const optionalOmitUndefined = <S extends Schema.Top>(schema: S) =>
       decode: SchemaGetter.passthrough({ strict: false }),
       encode: SchemaGetter.transformOptional(Option.filter((value) => value !== undefined)),
     }),
-    Schema.annotate({ [ZodOverride]: zod(schema).optional() }),
+    // NOTE: Do NOT add a ZodOverride annotation here. The schema transform is sufficient,
+    // and eagerly calling zod(schema) causes a crash in Effect 4.0.0-beta.57 where AST nodes
+    // aren't fully initialized until schema construction completes.
   )
 
 /**
