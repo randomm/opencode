@@ -102,7 +102,10 @@ function bodyWithChecks(ast: SchemaAST.AST): z.ZodTypeAny {
 // nest the encoding via `Link.to` so walking it recursively threads all
 // prior transforms — typical encoding.length is 1.
 function encoded(ast: SchemaAST.AST): z.ZodTypeAny {
-  const encoding = ast.encoding!
+  const encoding = ast.encoding
+  if (!encoding || !Array.isArray(encoding) || encoding.length === 0) {
+    return fail(ast)
+  }
   return encoding.reduce<z.ZodTypeAny>(
     (acc, link) => acc.transform((v) => decode(link.transformation, v)),
     walk(encoding[0].to),
