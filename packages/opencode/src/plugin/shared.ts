@@ -1,42 +1,10 @@
 import path from "path"
 import { fileURLToPath, pathToFileURL } from "url"
+import npa from "npm-package-arg"
 import semver from "semver"
-import { Npm } from "@/npm"
 import { Filesystem } from "@/util/filesystem"
 import { isRecord } from "@/util/record"
-
-// Simple npm package arg parser - inline implementation
-function parseNpa(spec: string) {
-  let name = spec
-  let rawSpec = ""
-  
-  const atIndex = spec.indexOf("@")
-  if (atIndex > 0) {
-    name = spec.slice(0, atIndex)
-    rawSpec = spec.slice(atIndex + 1)
-  } else if (spec.startsWith("@")) {
-    // Scoped package
-    const slashIndex = spec.indexOf("/")
-    if (slashIndex > 0) {
-      name = spec.slice(0, slashIndex)
-      rawSpec = spec.slice(slashIndex + 1)
-    }
-  }
-  
-  const version = rawSpec || "latest"
-  const type = rawSpec.includes("/") ? "git" : "tag"
-  
-  return {
-    name,
-    raw: spec,
-    rawSpec: version,
-    type,
-    fetchSpec: version,
-    gitCommittish: undefined,
-    gitRange: undefined,
-    hosted: undefined,
-  }
-}
+import { Npm } from "@opencode-ai/core/npm"
 
 // Old npm package names for plugins that are now built-in
 export const DEPRECATED_PLUGIN_PACKAGES = ["opencode-openai-codex-auth", "opencode-copilot-auth"]
@@ -47,14 +15,14 @@ export function isDeprecatedPlugin(spec: string) {
 
 function parse(spec: string) {
   try {
-    return parseNpa(spec)
+    return npa(spec)
   } catch {}
 }
 
 export function parsePluginSpecifier(spec: string) {
   const hit = parse(spec)
   if (hit?.type === "alias" && !hit.name) {
-    const sub = (hit as { subSpec?: { name?: string; rawSpec?: string } }).subSpec
+    const sub = (hit as npa.AliasResult).subSpec
     if (sub?.name) {
       const version = !sub.rawSpec || sub.rawSpec === "*" ? "latest" : sub.rawSpec
       return { pkg: sub.name, version }

@@ -2,6 +2,7 @@
 /* tslint:disable */
 /* eslint-disable */
 /* deno-fmt-ignore-file */
+/* biome-ignore-all lint: auto-generated */
 
 declare module "sst" {
   export interface Resource {
@@ -48,6 +49,10 @@ declare module "sst" {
     "Console": {
       "type": "sst.cloudflare.SolidStart"
       "url": string
+    }
+    "DISCORD_INCIDENT_WEBHOOK_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "DISCORD_SUPPORT_BOT_TOKEN": {
       "type": "sst.sst.Secret"
@@ -109,6 +114,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "INCIDENT_WEBHOOK_SIGNING_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "LogProcessor": {
       "type": "sst.cloudflare.Worker"
     }
@@ -117,6 +126,18 @@ declare module "sst" {
       "value": string
     }
     "R2SecretKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SALESFORCE_CLIENT_ID": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SALESFORCE_CLIENT_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SALESFORCE_INSTANCE_URL": {
       "type": "sst.sst.Secret"
       "value": string
     }
@@ -144,15 +165,26 @@ declare module "sst" {
       "type": "sst.cloudflare.StaticSite"
       "url": string
     }
-    "ZEN_BLACK_LIMITS": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "ZEN_BLACK_PRICE": {
       "plan100": string
       "plan20": string
       "plan200": string
       "product": string
+      "type": "sst.sst.Linkable"
+    }
+    "ZEN_LIMITS": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "ZEN_LITE_PRICE": {
+      "firstMonth100Coupon": string
+      "firstMonth50Coupon": string
+      "price": string
+      "priceInr": number
+      "product": string
+      "sixMonths100Coupon": string
+      "threeMonths100Coupon": string
+      "twelveMonths100Coupon": string
       "type": "sst.sst.Linkable"
     }
     "ZEN_MODELS1": {
