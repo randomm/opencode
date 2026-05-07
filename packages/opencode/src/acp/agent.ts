@@ -33,8 +33,12 @@ import { pathToFileURL } from "bun"
 import { ACPSessionManager } from "./session"
 import type { ACPConfig } from "./types"
 import { Provider } from "../provider/provider"
+import { ProviderID, ModelID } from "@/provider/schema"
+import { SessionID, MessageID } from "@/session/schema"
+import { ConfigMCP } from "@/config/mcp"
 import { Agent as AgentModule } from "../agent/agent"
-import { Installation } from "@/installation"
+import { Installation, Installation as InstallationModule } from "@/installation"
+import { InstallationVersion } from "@opencode-ai/core/installation/version"
 import { MessageV2 } from "@/session/message-v2"
 import { Config } from "@/config/config"
 import { Todo } from "@/session/todo"
@@ -356,22 +360,22 @@ export namespace ACP {
                 }
 
                 if (part.tool === "todowrite") {
-                  const parsedTodos = z.array(Todo.Info).safeParse(JSON.parse(part.state.output))
-                  if (parsedTodos.success) {
-                    await this.connection
-                      .sessionUpdate({
-                        sessionId,
-                        update: {
-                          sessionUpdate: "plan",
-                          entries: parsedTodos.data.map((todo) => {
-                            const status: PlanEntry["status"] =
-                              todo.status === "cancelled" ? "completed" : (todo.status as PlanEntry["status"])
-                            return {
-                              priority: "medium",
-                              status,
-                              content: todo.content,
-                            }
-                          }),
+                   const parsedTodos = z.array(Todo.Info.zod).safeParse(JSON.parse(part.state.output))
+                   if (parsedTodos.success) {
+                     await this.connection
+                       .sessionUpdate({
+                         sessionId,
+                         update: {
+                           sessionUpdate: "plan",
+                           entries: parsedTodos.data.map((todo) => {
+                             const status: PlanEntry["status"] =
+                               todo.status === "cancelled" ? "completed" : (todo.status as PlanEntry["status"])
+                             return {
+                               priority: "medium",
+                               status,
+                               content: todo.content,
+                             }
+                           }),
                         },
                       })
                       .catch((error) => {
@@ -544,7 +548,7 @@ export namespace ACP {
         authMethods: [authMethod],
         agentInfo: {
           name: "OpenCode",
-          version: Installation.VERSION,
+          version: InstallationVersion,
         },
       }
     }
@@ -554,12 +558,13 @@ export namespace ACP {
     }
 
     async newSession(params: NewSessionRequest) {
-      const directory = params.cwd
-      try {
-        const model = await defaultModel(this.config, directory)
+       const directory = params.cwd
+       try {
+         const m = await defaultModel(this.config, directory)
+         const model = { providerID: ProviderID.make(m.providerID), modelID: ModelID.make(m.modelID) } as const
 
-        // Store ACP session state
-        const state = await this.sessionManager.create(params.cwd, params.mcpServers, model)
+         // Store ACP session state
+         const state = await this.sessionManager.create(params.cwd, params.mcpServers, model)
         const sessionId = state.id
 
         log.info("creating_session", { sessionId, mcpServers: params.mcpServers.length })
@@ -576,171 +581,27 @@ export namespace ACP {
           modes: load.modes,
           _meta: load._meta,
         }
-      } catch (e) {
-        const error = MessageV2.fromError(e, {
-          providerID: this.config.defaultModel?.providerID ?? "unknown",
-        })
-        if (LoadAPIKeyError.isInstance(error)) {
-          throw RequestError.authRequired()
+       } catch (e) {
+         const defaultProviderId = this.config.defaultModel?.providerID
+         const error = MessageV2.fromError(e, {
+           providerID: defaultProviderId ? ProviderID.make(defaultProviderId) : ProviderID.make("unknown"),
+         })
+         if (LoadAPIKeyError.isInstance(error)) {
+           throw RequestError.authRequired()
+         }
+         throw e
         }
-        throw e
       }
-    }
 
-    async loadSession(params: LoadSessionRequest) {
-      const directory = params.cwd
-      const sessionId = params.sessionId
+      async unstable_forkSession(params: ForkSessionRequest): Promise<ForkSessionResponse> {
+        const directory = params.cwd
+        const mcpServers = params.mcpServers ?? []
 
-      try {
-        const model = await defaultModel(this.config, directory)
+        try {
+          const m = await defaultModel(this.config, directory)
+          const model = { providerID: ProviderID.make(m.providerID), modelID: ModelID.make(m.modelID) } as const
 
-        // Check if session is not already registered in sessionManager (e.g., it's a child session)
-        let loadSessionId = sessionId
-        let shouldLoadAsChild = false
-
-        const existingSession = this.sessionManager.tryGet(sessionId)
-        if (!existingSession) {
-          // Session not in ACP manager - check if it's a child session via SDK lookup
-          const sessionInfo = await this.sdk.session
-            .get(
-              {
-                sessionID: sessionId,
-                directory,
-              },
-              { throwOnError: false },
-            )
-            .then((response) => response.data)
-            .catch((error) => {
-              log.debug("session_not_found_in_sdk", { sessionId })
-              return undefined
-            })
-
-          if (sessionInfo) {
-            // This is a child session - load parent instead for permission context
-            log!.info("child_session_loading_parent", {
-              childSessionId: sessionId,
-              parentSessionId: sessionInfo.parentID,
-            })
-            loadSessionId = sessionInfo.parentID!
-            shouldLoadAsChild = true
-          }
-        }
-
-        // Store ACP session state
-        await this.sessionManager.load(loadSessionId, params.cwd, params.mcpServers, model)
-
-        log!.info("load_session", {
-          sessionId: loadSessionId,
-          mcpServers: params.mcpServers!.length,
-          loadAsChild: shouldLoadAsChild,
-        })
-
-        const result = await this.loadSessionMode({
-          cwd: directory,
-          sessionId: loadSessionId,
-          mcpServers: params.mcpServers!,
-        })
-
-        // Replay session history
-        const messages = await this.sdk.session
-          .messages(
-            {
-              sessionID: sessionId,
-              directory,
-            },
-            { throwOnError: true },
-          )
-          .then((response) => response.data)
-          .catch((error) => {
-            log!.error("unexpected_error_fetching_message", { error })
-            return undefined
-          })
-
-        const lastUser = messages?.findLast((msg) => msg.info.role === "user")?.info
-        if (lastUser?.role === "user") {
-          result!.models!.currentModelId = `${lastUser!.model!.providerID}/${lastUser!.model!.modelID}`
-          this!.sessionManager!.setModel!(sessionId!, {
-            providerID: lastUser!.model!.providerID!,
-            modelID: lastUser!.model!.modelID!,
-          })
-          if (result!.modes!.availableModes.some((mode) => mode.id === lastUser!.agent!)) {
-            result!.modes!.currentModeId = lastUser!.agent!
-            this!.sessionManager!.setMode!(sessionId!, lastUser!.agent!)
-          }
-        }
-
-        for (const msg of messages ?? []) {
-          log!.debug("replay", { message: msg })
-          await this.processMessage(msg)
-        }
-
-        await sendUsageUpdate(this!.connection!, this!.sdk!, sessionId!, directory!)
-
-        return result!
-      } catch (error) {
-        const typedError = MessageV2.fromError(error!, {
-          providerID: this!.config!.defaultModel!.providerID!,
-        })
-        if (LoadAPIKeyError!.isInstance!(typedError)) {
-          throw RequestError.authRequired()!
-        }
-        throw error!
-      }
-    }
-
-    async unstable_listSessions(params: ListSessionsRequest): Promise<ListSessionsResponse> {
-      try {
-        const cursor = params.cursor ? Number(params.cursor) : undefined
-        const limit = 100
-
-        const sessions = await this.sdk.session
-          .list(
-            {
-              directory: params.cwd ?? undefined,
-              roots: true,
-            },
-            { throwOnError: true },
-          )
-          .then((x) => x.data ?? [])
-
-        const sorted = sessions.toSorted((a, b) => b.time.updated - a.time.updated)
-        const filtered = cursor ? sorted.filter((s) => s.time.updated < cursor) : sorted
-        const page = filtered.slice(0, limit)
-
-        const entries: SessionInfo[] = page.map((session) => ({
-          sessionId: session.id,
-          cwd: session.directory,
-          title: session.title,
-          updatedAt: new Date(session.time.updated).toISOString(),
-        }))
-
-        const last = page[page.length - 1]
-        const next = filtered.length > limit && last ? String(last.time.updated) : undefined
-
-        const response: ListSessionsResponse = {
-          sessions: entries,
-        }
-        if (next) response.nextCursor = next
-        return response
-      } catch (e) {
-        const error = MessageV2.fromError(e, {
-          providerID: this.config.defaultModel?.providerID ?? "unknown",
-        })
-        if (LoadAPIKeyError.isInstance(error)) {
-          throw RequestError.authRequired()
-        }
-        throw e
-      }
-    }
-
-    async unstable_forkSession(params: ForkSessionRequest): Promise<ForkSessionResponse> {
-      const directory = params.cwd
-      const mcpServers = params.mcpServers ?? []
-
-      try {
-        const model = await defaultModel(this.config, directory)
-
-        const forked = await this.sdk.session
+          const forked = await this.sdk.session
           .fork(
             {
               sessionID: params.sessionId,
@@ -787,24 +648,25 @@ export namespace ACP {
         await sendUsageUpdate(this.connection, this.sdk, sessionId, directory)
 
         return mode
-      } catch (e) {
-        const error = MessageV2.fromError(e, {
-          providerID: this.config.defaultModel?.providerID ?? "unknown",
-        })
-        if (LoadAPIKeyError.isInstance(error)) {
-          throw RequestError.authRequired()
-        }
-        throw e
-      }
-    }
+       } catch (e) {
+         const error = MessageV2.fromError(e, {
+           providerID: this.config.defaultModel?.providerID ?? ProviderID.make("unknown"),
+         })
+         if (LoadAPIKeyError.isInstance(error)) {
+           throw RequestError.authRequired()
+         }
+         throw e
+       }
+     }
 
-    async unstable_resumeSession(params: ResumeSessionRequest): Promise<ResumeSessionResponse> {
-      const directory = params.cwd
-      const sessionId = params.sessionId
-      const mcpServers = params.mcpServers ?? []
+     async unstable_resumeSession(params: ResumeSessionRequest): Promise<ResumeSessionResponse> {
+       const directory = params.cwd
+       const sessionId = params.sessionId
+       const mcpServers = params.mcpServers ?? []
 
-      try {
-        const model = await defaultModel(this.config, directory)
+       try {
+         const m = await defaultModel(this.config, directory)
+         const model = { providerID: ProviderID.make(m.providerID), modelID: ModelID.make(m.modelID) }
         await this.sessionManager.load(sessionId, directory, mcpServers, model)
 
         log.info("resume_session", { sessionId, mcpServers: mcpServers.length })
@@ -820,7 +682,7 @@ export namespace ACP {
         return result
       } catch (e) {
         const error = MessageV2.fromError(e, {
-          providerID: this.config.defaultModel?.providerID ?? "unknown",
+          providerID: ProviderID.make(this.config.defaultModel?.providerID ?? "unknown"),
         })
         if (LoadAPIKeyError.isInstance(error)) {
           throw RequestError.authRequired()
@@ -904,7 +766,7 @@ export namespace ACP {
               }
 
               if (part.tool === "todowrite") {
-                const parsedTodos = z.array(Todo.Info).safeParse(JSON.parse(part.state.output))
+                 const parsedTodos = z.array(Todo.Info.zod).safeParse(JSON.parse(part.state.output))
                 if (parsedTodos.success) {
                   await this.connection
                     .sessionUpdate({
@@ -1123,16 +985,14 @@ export namespace ACP {
       sessionId: string,
     ): Promise<{ availableModes: ModeOption[]; currentModeId?: string }> {
       const availableModes = await this.loadAvailableModes(directory)
-      const currentModeId =
-        this.sessionManager.get(sessionId).modeId ||
-        (await (async () => {
-          if (!availableModes.length) return undefined
-          const defaultAgentName = await AgentModule.defaultAgent()
-          const resolvedModeId =
-            availableModes.find((mode) => mode.name === defaultAgentName)?.id ?? availableModes[0].id
-          this.sessionManager.setMode(sessionId, resolvedModeId)
-          return resolvedModeId
-        })())
+       const currentModeId =
+         this.sessionManager.get(sessionId).modeId ||
+         (await (async () => {
+           if (!availableModes.length) return undefined
+           const resolvedModeId = availableModes[0].id
+           this.sessionManager.setMode(sessionId, resolvedModeId)
+           return resolvedModeId
+         })())
 
       return { availableModes, currentModeId }
     }
@@ -1179,7 +1039,7 @@ export namespace ACP {
           description: "compact the session",
         })
 
-      const mcpServers: Record<string, Config.Mcp> = {}
+       const mcpServers: Record<string, ConfigMCP.Info> = {}
       for (const server of params.mcpServers) {
         if ("type" in server) {
           mcpServers[server.name] = {
@@ -1250,9 +1110,9 @@ export namespace ACP {
         .providers({ directory: session.cwd }, { throwOnError: true })
         .then((x) => x.data!.providers)
 
-      const selection = parseModelSelection(params.modelId, providers)
-      this.sessionManager.setModel(session.id, selection.model)
-      this.sessionManager.setVariant(session.id, selection.variant)
+       const selection = parseModelSelection(params.modelId, providers)
+       this.sessionManager.setModel(session.id, { providerID: ProviderID.make(selection.model.providerID), modelID: ModelID.make(selection.model.modelID) })
+       this.sessionManager.setVariant(session.id, selection.variant)
 
       const entries = sortProvidersByName(providers)
       const availableVariants = modelVariantsFromProviders(entries, selection.model)
@@ -1280,12 +1140,14 @@ export namespace ACP {
       const session = this.sessionManager.get(sessionID)
       const directory = session.cwd
 
-      const current = session.model
-      const model = current ?? (await defaultModel(this.config, directory))
-      if (!current) {
-        this.sessionManager.setModel(session.id, model)
-      }
-      const agent = session.modeId ?? (await AgentModule.defaultAgent())
+       const current = session.model
+       let model = current
+       if (!model) {
+         const m = await defaultModel(this.config, directory)
+         model = { providerID: ProviderID.make(m.providerID), modelID: ModelID.make(m.modelID) } as const
+         this.sessionManager.setModel(session.id, model)
+       }
+       const agent = session.modeId ?? "build"
 
       const parts: Array<
         | { type: "text"; text: string; synthetic?: boolean; ignored?: boolean }

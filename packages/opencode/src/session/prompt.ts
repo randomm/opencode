@@ -45,7 +45,7 @@ import { SessionStatus } from "./status"
 import { LLM } from "./llm"
 import { iife } from "@/util/iife"
 import { Shell } from "@/shell/shell"
-import { Truncate } from "@/tool/truncation"
+import { Truncate } from "@/tool/truncate"
 
 ;(globalThis as unknown as { AI_SDK_LOG_WARNINGS: boolean }).AI_SDK_LOG_WARNINGS = false
 

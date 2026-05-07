@@ -30,7 +30,6 @@ const it = testEffect(
     CrossSpawnSpawner.defaultLayer,
     Session.defaultLayer,
     Truncate.defaultLayer,
-    ToolRegistry.defaultLayer,
   ),
 )
 
@@ -117,14 +116,13 @@ describe("tool.task", () => {
   it.instance(
     "description sorts subagents by name and is stable across calls",
     () =>
-      Effect.gen(function* () {
-        const agent = yield* Agent.Service
-        const build = yield* agent.get("build")
-        const registry = yield* ToolRegistry.Service
-        const get = Effect.fnUntraced(function* () {
-          const tools = yield* registry.tools({ ...ref, agent: build })
-          return tools.find((tool) => tool.id === TaskTool.id)?.description ?? ""
-        })
+       Effect.gen(function* () {
+         const agent = yield* Agent.Service
+         const build = yield* agent.get("build")
+         const get = Effect.fnUntraced(function* () {
+           const tools = yield* Effect.promise(() => ToolRegistry.tools(ref, build))
+           return tools.find((tool) => tool.id === TaskTool.id)?.description ?? ""
+         })
         const first = yield* get()
         const second = yield* get()
 
@@ -159,12 +157,11 @@ describe("tool.task", () => {
   it.instance(
     "description hides denied subagents for the caller",
     () =>
-      Effect.gen(function* () {
-        const agent = yield* Agent.Service
-        const build = yield* agent.get("build")
-        const registry = yield* ToolRegistry.Service
-        const description =
-          (yield* registry.tools({ ...ref, agent: build })).find((tool) => tool.id === TaskTool.id)?.description ?? ""
+       Effect.gen(function* () {
+         const agent = yield* Agent.Service
+         const build = yield* agent.get("build")
+         const description =
+           (yield* Effect.promise(() => ToolRegistry.tools(ref, build))).find((tool) => tool.id === TaskTool.id)?.description ?? ""
 
         expect(description).toContain("- alpha: Alpha agent")
         expect(description).not.toContain("- zebra: Zebra agent")
