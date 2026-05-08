@@ -37,7 +37,7 @@ import type { Provider } from "@/provider/provider"
 import { Permission } from "@/permission"
 import { Global } from "@opencode-ai/core/global"
 import { Effect, Layer, Option, Context, Schema, Types } from "effect"
-import { zod } from "@/util/effect-zod"
+import { zod, ZodOverride } from "@/util/effect-zod"
 import { NonNegativeInt, optionalOmitUndefined, withStatics } from "@/util/schema"
 
 const log = Log.create({ service: "session" })
@@ -142,10 +142,10 @@ function sessionPath(worktree: string, cwd: string) {
 }
 
 const Summary = Schema.Struct({
-  additions: NonNegativeInt,
-  deletions: NonNegativeInt,
-  files: NonNegativeInt,
-  diffs: optionalOmitUndefined(Schema.Array(Snapshot.FileDiff)),
+   additions: NonNegativeInt,
+   deletions: NonNegativeInt,
+   files: NonNegativeInt,
+   diffs: optionalOmitUndefined(Schema.Array(Schema.Any.annotate({ [ZodOverride]: Snapshot.FileDiff }))),
 })
 
 const Share = Schema.Struct({
@@ -326,12 +326,12 @@ export const Event = {
     schema: CreatedEventSchema,
   }),
   Diff: BusEvent.define(
-    "session.diff",
-    Schema.Struct({
-      sessionID: SessionID,
-      diff: Schema.Array(Snapshot.FileDiff),
-    }),
-  ),
+     "session.diff",
+     Schema.Struct({
+       sessionID: SessionID,
+       diff: Schema.Array(Schema.Any.annotate({ [ZodOverride]: Snapshot.FileDiff })),
+     }),
+   ),
   Error: BusEvent.define(
     "session.error",
     Schema.Struct({

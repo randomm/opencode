@@ -16,6 +16,7 @@ import { Authorization } from "../middleware/authorization"
 import { InstanceContextMiddleware } from "../middleware/instance-context"
 import { WorkspaceRoutingMiddleware } from "../middleware/workspace-routing"
 import { ApiNotFoundError } from "../errors"
+import { ZodOverride } from "@/util/effect-zod"
 import { described } from "./metadata"
 
 const root = "/session"
@@ -155,10 +156,10 @@ export const SessionApi = HttpApi.make("session")
           }),
         ),
         HttpApiEndpoint.get("diff", SessionPaths.diff, {
-          params: { sessionID: SessionID },
-          query: DiffQuery,
-          success: described(Schema.Array(Snapshot.FileDiff), "Successfully retrieved diff"),
-        }).annotateMerge(
+           params: { sessionID: SessionID },
+           query: DiffQuery,
+           success: described(Schema.Array(Schema.Any.annotate({ [ZodOverride]: Snapshot.FileDiff })), "Successfully retrieved diff"),
+         }).annotateMerge(
           OpenApi.annotations({
             identifier: "session.diff",
             summary: "Get message diff",

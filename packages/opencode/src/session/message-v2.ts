@@ -378,19 +378,19 @@ const messageBase = {
 }
 
 export const User = Schema.Struct({
-  ...messageBase,
-  role: Schema.Literal("user"),
-  time: Schema.Struct({
-    created: NonNegativeInt,
-  }),
-  format: Schema.optional(_Format),
-  summary: Schema.optional(
-    Schema.Struct({
-      title: Schema.optional(Schema.String),
-      body: Schema.optional(Schema.String),
-      diffs: Schema.Array(Snapshot.FileDiff),
-    }),
-  ),
+   ...messageBase,
+   role: Schema.Literal("user"),
+   time: Schema.Struct({
+     created: NonNegativeInt,
+   }),
+   format: Schema.optional(_Format),
+   summary: Schema.optional(
+     Schema.Struct({
+       title: Schema.optional(Schema.String),
+       body: Schema.optional(Schema.String),
+       diffs: Schema.Array(Schema.Any.annotate({ [ZodOverride]: Snapshot.FileDiff })),
+     }),
+   ),
   agent: Schema.String,
   model: Schema.Struct({
     providerID: ProviderID,
