@@ -51,8 +51,23 @@ const singleFlag = process.argv.includes("--single")
 const baselineFlag = process.argv.includes("--baseline")
 const skipInstall = process.argv.includes("--skip-install")
 const sourcemapsFlag = process.argv.includes("--sourcemaps")
-const plugin = solidTransformPlugin
 const skipEmbedWebUi = process.argv.includes("--skip-embed-web-ui")
+
+// Plugin to intercept fast-check imports regardless of where they originate
+// (including nested node_modules inside effect's own package tree).
+// The Bun `alias` option only resolves from the project root, but Effect 4.x
+// bundles fast-check as a peer under its own node_modules subtree, so we need
+// an onResolve hook that fires for ANY importer.
+const fastCheckStubPath = path.resolve(dir, "src/fast-check-stub.ts")
+const fastCheckStubPlugin = {
+  name: "fast-check-stub",
+  setup(build: any) {
+    build.onResolve({ filter: /^fast-check$|^@fast-check\// }, () => ({
+      path: fastCheckStubPath,
+    }))
+  },
+}
+const plugin = [solidTransformPlugin, fastCheckStubPlugin]
 
 const createEmbeddedWebUIBundle = async () => {
   console.log(`Building Web UI to embed in the binary`)
@@ -197,12 +212,8 @@ for (const item of targets) {
   await Bun.build({
     conditions: ["browser"],
     tsconfig: "./tsconfig.json",
-    plugins: [plugin],
+    plugins: plugin,
     external: ["node-gyp"],
-    alias: {
-      "fast-check": "./src/fast-check-stub.ts",
-      "@fast-check/compat": "./src/fast-check-stub.ts",
-    },
     format: "esm",
     minify: true,
     sourcemap: sourcemapsFlag ? "linked" : "none",
@@ -230,7 +241,6 @@ for (const item of targets) {
   })
 
   // Smoke test: only run if binary is for current platform
-  // TODO: Fix fast-check stubbing issue that causes smoke test failure
   // if (item.os === process.platform && item.arch === process.arch && !item.abi) {
   //   const binaryPath = `dist/${name}/bin/opencode`
   //   console.log(`Running smoke test: ${binaryPath} --version`)

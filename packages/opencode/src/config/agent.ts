@@ -15,8 +15,15 @@ import { ConfigPermission } from "./permission"
 
 const log = Log.create({ service: "config" })
 
+// NOTE: Using Schema.filter instead of Schema.isPattern to avoid toArbitraryConstraint
+// annotation that triggers fast-check at module initialization (Effect beta.57 issue)
+const hexColorPattern = /^#[0-9a-fA-F]{6}$/
 const Color = Schema.Union([
-  Schema.String.check(Schema.isPattern(/^#[0-9a-fA-F]{6}$/)),
+  Schema.String.pipe(
+    Schema.filter((s): s is string => hexColorPattern.test(s), {
+      message: () => "must be a valid hex color (e.g. #FF5733)",
+    }),
+  ),
   Schema.Literals(["primary", "secondary", "accent", "success", "warning", "error", "info"]),
 ])
 
