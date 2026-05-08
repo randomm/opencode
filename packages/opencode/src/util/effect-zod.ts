@@ -242,37 +242,45 @@ function issueMessage(issue: any): string | undefined {
 }
 
 function body(ast: SchemaAST.AST): z.ZodTypeAny {
-  if (SchemaAST.isOptional(ast)) return opt(ast)
+  // In Effect 4, Schema.optionalKey(X) produces an AST node where _tag matches
+  // X's _tag (e.g. "String") but isOptional is true. Only delegate to opt() when
+  // the AST is actually a Union — opt() expects a Union and fails otherwise.
+  if (SchemaAST.isOptional(ast) && ast._tag === "Union") return opt(ast)
 
-  switch (ast._tag) {
-    case "String":
-      return z.string()
-    case "Number":
-      return z.number()
-    case "Boolean":
-      return z.boolean()
-    case "Null":
-      return z.null()
-    case "Undefined":
-      return z.undefined()
-    case "Any":
-    case "Unknown":
-      return z.unknown()
-    case "Never":
-      return z.never()
-    case "Literal":
-      return z.literal(ast.literal)
-    case "Union":
-      return union(ast)
-    case "Objects":
-      return object(ast)
-    case "Arrays":
-      return array(ast)
-    case "Declaration":
-      return decl(ast)
-    default:
-      return fail(ast)
-  }
+  const base: z.ZodTypeAny = (() => {
+    switch (ast._tag) {
+      case "String":
+        return z.string()
+      case "Number":
+        return z.number()
+      case "Boolean":
+        return z.boolean()
+      case "Null":
+        return z.null()
+      case "Undefined":
+        return z.undefined()
+      case "Any":
+      case "Unknown":
+        return z.unknown()
+      case "Never":
+        return z.never()
+      case "Literal":
+        return z.literal(ast.literal)
+      case "Union":
+        return union(ast)
+      case "Objects":
+        return object(ast)
+      case "Arrays":
+        return array(ast)
+      case "Declaration":
+        return decl(ast)
+      default:
+        return fail(ast)
+    }
+  })()
+  // Wrap with .optional() when the AST carries isOptional=true but is NOT a Union
+  // (e.g. Schema.optionalKey(String) in Effect 4 gives _tag="String" with isOptional=true).
+  return SchemaAST.isOptional(ast) ? base.optional() : base
 }
 
 function opt(ast: SchemaAST.AST): z.ZodTypeAny {

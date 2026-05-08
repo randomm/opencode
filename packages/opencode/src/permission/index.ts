@@ -1,14 +1,35 @@
 import { BusEvent } from "@/bus/bus-event"
 import { Bus } from "@/bus"
 import z from "zod"
+import { Schema } from "effect"
+import { ZodOverride } from "@/util/effect-zod"
+import { withStatics } from "@/util/schema"
 import { Log } from "../util/log"
 import { Identifier } from "../id/id"
-import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { Wildcard } from "../util/wildcard"
+import { PermissionNext } from "./next"
 
 export namespace Permission {
   const log = Log.create({ service: "permission" })
+
+  // Effect Schema definitions for use in session/route schemas.
+  // These mirror PermissionNext.Action/Rule/Ruleset (the canonical Zod types)
+  // but live here as Effect Schemas so they can be used with optionalOmitUndefined,
+  // Schema.optional, Schema.NullOr, etc.
+  const _Action = Schema.Literals(["allow", "deny", "ask"]).annotate({ identifier: "PermissionAction" })
+  const _Rule = Schema.Struct({
+    permission: Schema.String,
+    pattern: Schema.String,
+    action: _Action,
+  }).annotate({ identifier: "PermissionRule" })
+  // ZodOverride short-circuits the effect-zod AST walker so it uses
+  // PermissionNext.Ruleset directly. This avoids "unsupported effect schema: String"
+  // crashes caused by Schema.mutable adding identity encodings in Effect beta.57.
+  export const Ruleset = Schema.mutable(Schema.Array(_Rule))
+    .annotate({ identifier: "PermissionRuleset", [ZodOverride]: PermissionNext.Ruleset })
+    .pipe(withStatics((_s) => ({ zod: PermissionNext.Ruleset })))
+  export type Ruleset = Schema.Schema.Type<typeof Ruleset>
 
   function toKeys(pattern: Info["pattern"], type: string): string[] {
     return pattern === undefined ? [type] : Array.isArray(pattern) ? pattern : [pattern]
@@ -130,6 +151,9 @@ export namespace Permission {
       },
     }
 
+    // Lazy import to avoid circular dependency:
+    // permission/index.ts → @/plugin → server.ts → routes → session.ts → permission/index.ts
+    const { Plugin } = await import("../plugin")
     switch (
       await Plugin.trigger("permission.ask", info, {
         status: "ask",
