@@ -80,6 +80,13 @@ function walkUncached(ast: SchemaAST.AST): z.ZodTypeAny {
 }
 
 function bodyWithChecks(ast: SchemaAST.AST): z.ZodTypeAny {
+  // If a ZodOverride is present, use it directly as the base without further processing.
+  // This short-circuits encoding/transform logic for hand-crafted schemas.
+  const override = (ast.annotations as any)?.[ZodOverride] as z.ZodTypeAny | undefined
+  if (override) {
+    return ast.checks?.length ? applyChecks(override, ast.checks, ast) : override
+  }
+
   // Schema.Class wraps its fields in a Declaration AST plus an encoding that
   // constructs the class instance. For the Zod derivation we want the plain
   // field shape (the decoded/consumer view), not the class instance — so
@@ -102,6 +109,10 @@ function bodyWithChecks(ast: SchemaAST.AST): z.ZodTypeAny {
 // nest the encoding via `Link.to` so walking it recursively threads all
 // prior transforms — typical encoding.length is 1.
 function encoded(ast: SchemaAST.AST): z.ZodTypeAny {
+  // If a ZodOverride is present, return it directly instead of processing encoding.
+  const override = (ast.annotations as any)?.[ZodOverride] as z.ZodTypeAny | undefined
+  if (override) return override
+
   const encoding = ast.encoding
   if (!encoding || !Array.isArray(encoding) || encoding.length === 0) {
     return fail(ast)
