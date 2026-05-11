@@ -11,6 +11,14 @@ export namespace ZenData {
   const FormatSchema = z.enum(["anthropic", "google", "openai", "oa-compat"])
   export type Format = z.infer<typeof FormatSchema>
 
+  const RateLimitSchema = z.object({
+    value: z.number(),
+    checkHeader: z.string().optional(),
+    fallbackValue: z.number().optional(),
+    period: z.enum(["day", "hour"]),
+  })
+  export type RateLimit = z.infer<typeof RateLimitSchema>
+
   const ModelCostSchema = z.object({
     input: z.number(),
     output: z.number(),
