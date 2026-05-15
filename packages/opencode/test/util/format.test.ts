@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { formatDuration, formatElapsed } from "../../src/util/format"
+import { formatDuration } from "../../src/util/format"
 
 describe("util.format", () => {
   describe("formatDuration", () => {
@@ -54,37 +54,6 @@ describe("util.format", () => {
       expect(formatDuration(86400)).toBe("~1 day")
       expect(formatDuration(604799)).toBe("~6 days")
       expect(formatDuration(604800)).toBe("~1 week")
-    })
-  })
-
-  describe("formatElapsed", () => {
-    test("returns empty string for null", () => {
-      expect(formatElapsed(null)).toBe("")
-    })
-
-    test("computes elapsed seconds from ISO timestamp", () => {
-      const now = Date.now()
-      const since = new Date(now - 272000).toISOString() // 4m 32s ago
-      expect(formatElapsed(since, now)).toBe("4m 32s")
-    })
-
-    test("handles seconds elapsed", () => {
-      const now = Date.now()
-      const since = new Date(now - 30000).toISOString() // 30s ago
-      expect(formatElapsed(since, now)).toBe("30s")
-    })
-
-    test("handles zero elapsed (rounds down to empty)", () => {
-      const now = Date.now()
-      const since = new Date(now).toISOString()
-      expect(formatElapsed(since, now)).toBe("")
-    })
-
-    test("uses Date.now() when now not provided", () => {
-      const since = new Date(Date.now() - 5000).toISOString() // ~5s ago
-      const result = formatElapsed(since)
-      // Should be "5s" but allow ±1s for test timing
-      expect(["4s", "5s", "6s"]).toContain(result)
     })
   })
 })

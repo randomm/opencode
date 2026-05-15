@@ -208,20 +208,22 @@ export namespace Storage {
     })
   }
 
-  const glob = new Bun.Glob("**/*")
-  export async function list(prefix: string[]) {
-    const dir = await state().then((x) => x.dir)
-    try {
-      const result = await Array.fromAsync(
-        glob.scan({
-          cwd: path.join(dir, ...prefix),
-          onlyFiles: true,
-        }),
-      ).then((results) => results.map((x) => [...prefix, ...x.slice(0, -5).split(path.sep)]))
-      result.sort()
-      return result
-    } catch {
-      return []
-    }
-  }
+   const glob = new Bun.Glob("**/*")
+   export async function list(prefix: string[]) {
+     const dir = await state().then((x) => x.dir)
+     try {
+       const result = await Array.fromAsync(
+         glob.scan({
+           cwd: path.join(dir, ...prefix),
+           onlyFiles: true,
+         }),
+       ).then((results) => results.map((x) => [...prefix, ...x.slice(0, -5).split(path.sep)]))
+       result.sort()
+       return result
+     } catch {
+       return []
+     }
+   }
 }
+
+export const { NotFoundError } = Storage

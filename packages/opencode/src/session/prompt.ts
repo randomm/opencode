@@ -105,12 +105,12 @@ export namespace SessionPrompt {
       .describe(
         "@deprecated tools and permissions have been merged, you can set permissions on the session itself now",
       ),
-    format: MessageV2.Format.optional(),
+    format: MessageV2.Format.zod.optional(),
     system: z.string().optional(),
     variant: z.string().optional(),
     parts: z.array(
       z.discriminatedUnion("type", [
-        MessageV2.TextPart.omit({
+        MessageV2.TextPart.zod.omit({
           messageID: true,
           sessionID: true,
         })
@@ -120,7 +120,7 @@ export namespace SessionPrompt {
           .meta({
             ref: "TextPartInput",
           }),
-        MessageV2.FilePart.omit({
+        MessageV2.FilePart.zod.omit({
           messageID: true,
           sessionID: true,
         })
@@ -130,7 +130,7 @@ export namespace SessionPrompt {
           .meta({
             ref: "FilePartInput",
           }),
-        MessageV2.AgentPart.omit({
+        MessageV2.AgentPart.zod.omit({
           messageID: true,
           sessionID: true,
         })
@@ -140,7 +140,7 @@ export namespace SessionPrompt {
           .meta({
             ref: "AgentPartInput",
           }),
-        MessageV2.SubtaskPart.omit({
+        MessageV2.SubtaskPart.zod.omit({
           messageID: true,
           sessionID: true,
         })
@@ -1760,7 +1760,7 @@ NOTE: At any point in time through this workflow you should feel free to ask the
     parts: z
       .array(
         z.discriminatedUnion("type", [
-          MessageV2.FilePart.omit({
+          MessageV2.FilePart.zod.omit({
             messageID: true,
             sessionID: true,
           }).partial({

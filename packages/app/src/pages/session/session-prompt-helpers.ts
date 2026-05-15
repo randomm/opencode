@@ -1,4 +1,5 @@
 export const questionSubtitle = (count: number, t: (key: string) => string) => {
   if (count === 0) return ""
-  return `${count} ${t(count > 1 ? "ui.common.question.other" : "ui.common.question.one")}`
+  if (count === 1) return "1 question"
+  return `${count} questions`
 }

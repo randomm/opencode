@@ -79,6 +79,23 @@ export const TodoTable = sqliteTable(
   ],
 )
 
+export const SessionMessageTable = sqliteTable(
+  "session_message",
+  {
+    id: text().primaryKey(),
+    session_id: text()
+      .notNull()
+      .references(() => SessionTable.id, { onDelete: "cascade" }),
+    type: text().notNull(),
+    time_created: integer().notNull(),
+    data: text({ mode: "json" }).notNull(),
+  },
+  (table) => [
+    index("session_message_session_idx").on(table.session_id),
+    index("session_message_type_idx").on(table.type),
+  ],
+)
+
 export const PermissionTable = sqliteTable("permission", {
   project_id: text()
     .primaryKey()

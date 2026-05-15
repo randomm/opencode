@@ -205,7 +205,7 @@ export namespace Session {
       "session.error",
       z.object({
         sessionID: z.string().optional(),
-        error: MessageV2.Assistant.shape.error,
+        error: MessageV2.Assistant.zod.shape.error,
       }),
     ),
   }

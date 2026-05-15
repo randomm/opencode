@@ -7,7 +7,7 @@ import { useLanguage } from "@/context/language"
 type PermissionAction = "allow" | "ask" | "deny"
 
 type PermissionObject = Record<string, PermissionAction>
-type PermissionValue = PermissionAction | PermissionObject | string[] | undefined
+type PermissionValue = PermissionAction | PermissionObject | undefined
 type PermissionMap = Record<string, PermissionValue>
 
 type PermissionItem = {
@@ -159,8 +159,8 @@ export const SettingsPermissions: Component = () => {
 
   const setPermission = async (id: string, action: PermissionAction) => {
     const before = globalSync.data.config.permission
-    const map = toMap(before)
-    const existing = map[id]
+    const current = permission()
+    const existing = current[id]
 
     const nextValue =
       existing && typeof existing === "object" && !Array.isArray(existing) ? { ...existing, "*": action } : action
@@ -171,7 +171,7 @@ export const SettingsPermissions: Component = () => {
       showToast({ title: language.t("settings.permissions.toast.updateFailed.title"), description: message })
     }
 
-    globalSync.set("config", "permission", { ...map, [id]: nextValue })
+    globalSync.set("config", "permission", { ...current, [id]: nextValue })
     globalSync.updateConfig({ permission: { [id]: nextValue } }).catch(rollback)
   }
 

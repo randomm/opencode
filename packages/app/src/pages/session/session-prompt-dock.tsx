@@ -35,7 +35,7 @@ export function SessionPromptDock(props: {
       >
         <Show when={props.questionRequest()} keyed>
           {(req) => {
-            const subtitle = questionSubtitle(req.questions.length, (key) => props.t(key))
+            const subtitle = questionSubtitle(req.questions.length, (key: string) => props.t(key))
             return (
               <div data-component="tool-part-wrapper" data-question="true" class="mb-3">
                 <BasicTool

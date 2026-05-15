@@ -28,32 +28,33 @@
         "packages/opencode/src/session/processor.ts",
         "packages/opencode/src/tool/registry.ts"
       ],
-      "criticalCode": [
-        "backgroundTaskResults",
-        "trackBackgroundTask",
-        "formatCompletedTasksForInjection",
-        "TaskTool",
-        "CheckTaskTool",
-        "ListTasksTool",
-        "list_tasks",
-        "listBackgroundTasks",
-        "CancelTaskTool",
-        "tryCancel",
-        "parent_session_id",
-        "reserveTaskSlot",
-        "getSessionTaskCount",
-        "MAX_STORED_TASK_RESULTS",
-        "stallDetected",
-        "lastToolCalls",
-        "lastActivity",
-        "isSessionStalled",
-        "markSessionStalled",
-        "clearSessionStalled",
-        "lastTokenTime",
-        "OPENCODE_STALL_TIMEOUT_MS",
-        "getStallTimeout",
-        "LLM stream stalled"
-      ],
+       "criticalCode": [
+         "backgroundTaskResults",
+         "trackBackgroundTask",
+         "formatCompletedTasksForInjection",
+         "TaskTool",
+         "CheckTaskTool",
+         "ListTasksTool",
+         "list_tasks",
+         "listBackgroundTasks",
+         "CancelTaskTool",
+         "tryCancel",
+         "parent_session_id",
+         "reserveTaskSlot",
+         "getSessionTaskCount",
+         "MAX_STORED_TASK_RESULTS",
+         "stallDetected",
+         "lastToolCalls",
+         "lastActivity",
+         "isSessionStalled",
+         "markSessionStalled",
+         "clearSessionStalled",
+         "lastTokenTime",
+         "OPENCODE_STALL_TIMEOUT_MS",
+         "getStallTimeout",
+         "LLM stream stalled",
+         "MessageV2.Assistant.zod.shape.error"
+       ],
       "tests": [
         "packages/opencode/test/tool/check_task.test.ts",
         "packages/opencode/test/tool/list_tasks.test.ts",
@@ -265,20 +266,25 @@
       "issue": "https://github.com/randomm/opencode/issues/362",
       "newFiles": [],
       "deletedFiles": [],
-      "modifiedFiles": [
-        "packages/opencode/src/session/prompt.ts",
-        "packages/opencode/src/session/message-v2.ts"
-      ],
-      "criticalCode": [
-        "needsFullRefresh",
-        "MessageV2.streamAfter",
-        "streamAfter",
-        "gt(MessageTable.id, afterID)",
-        "msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))",
-        "const newMsgs = await MessageV2.streamAfter(sessionID",
-        "msgsForLLM",
-        "msgs.map((m) => ({ ...m, parts: [...m.parts] }))"
-      ],
+       "modifiedFiles": [
+         "packages/opencode/src/session/prompt.ts",
+         "packages/opencode/src/session/message-v2.ts"
+       ],
+       "criticalCode": [
+         "needsFullRefresh",
+         "MessageV2.streamAfter",
+         "streamAfter",
+         "gt(MessageTable.id, afterID)",
+         "msgs = await MessageV2.filterCompacted(MessageV2.stream(sessionID))",
+         "const newMsgs = await MessageV2.streamAfter(sessionID",
+         "msgsForLLM",
+         "msgs.map((m) => ({ ...m, parts: [...m.parts] }))",
+         "MessageV2.Format.zod.optional()",
+         "MessageV2.TextPart.zod.omit",
+         "MessageV2.FilePart.zod.omit",
+         "MessageV2.AgentPart.zod.omit",
+         "MessageV2.SubtaskPart.zod.omit"
+       ],
       "tests": [
         "packages/opencode/test/session/message-v2.test.ts",
         "packages/opencode/test/session/compaction.test.ts"
@@ -539,25 +545,90 @@
       "deletedFiles": [],
       "modifiedFiles": ["packages/opencode/src/plugin/index.ts"],
       "criticalCode": [
-        "Plugin.init",
-        "PluginLoader.loadExternal",
-        "INTERNAL_PLUGINS",
-        "applyPlugin",
-        "createOpencodeClient",
-        "Server.App().fetch",
-        "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+         "export namespace Plugin",
+         "async function init()",
+         "PluginLoader.loadExternal",
+         "INTERNAL_PLUGINS",
+         "applyPlugin",
+         "createOpencodeClient",
+         "Server.App().fetch",
+         "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+       ],
+       "tests": ["packages/opencode/test/plugin/plugin-loading.test.ts"],
+       "upstreamTracking": {
+         "relatedPRs": ["anomalyco/opencode#7206"],
+         "relatedIssues": ["anomalyco/opencode#5887"],
+         "absorptionSignals": [
+           "Plugin.init.*loadExternal",
+           "createOpencodeClient.*Server.App",
+           "imperative plugin loading",
+           "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+         ]
+       }
+     },
+    "effect-zod-beta-compat": {
+      "status": "active",
+      "description": "Compatibility fixes for Effect 4.0.0-beta.57 schema walker. (1) In effect-zod.ts: added ZodOverride early-exit in bodyWithChecks() and encoded() before accessing ast.encoding, preventing crashes when walker encounters ZodOverride-annotated Effect Schema nodes. (2) Fixed opt() guard in body() to only fire for Union AST nodes (_tag === 'Union'), wrapping non-Union optional schemas with .optional() instead. Required because upstream Effect beta changed how optionalKey() represents optionality in the AST.",
+      "issue": "https://github.com/randomm/opencode/issues/411",
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": ["packages/opencode/src/util/effect-zod.ts"],
+      "criticalCode": [
+        "const override = (ast.annotations as any)?.[ZodOverride] as z.ZodTypeAny | undefined",
+        "if (override) {",
+        "if (override) return override",
+        "if (SchemaAST.isOptional(ast) && ast._tag === \"Union\") return opt(ast)"
       ],
-      "tests": ["packages/opencode/test/plugin/plugin-loading.test.ts"],
+      "tests": [],
       "upstreamTracking": {
-        "relatedPRs": ["anomalyco/opencode#7206"],
-        "relatedIssues": ["anomalyco/opencode#5887"],
         "absorptionSignals": [
-          "Plugin.init.*loadExternal",
-          "createOpencodeClient.*Server.App",
-          "imperative plugin loading",
-          "OPENCODE_DISABLE_DEFAULT_PLUGINS"
+          "optionalKey.*Union",
+          "ast._tag.*Union.*optional",
+          "ZodOverride.*bodyWithChecks",
+          "if (override) return override",
+          "effect-zod.*beta.*compat"
+        ]
+      }
+    },
+    "fast-check-build-exclusion": {
+      "status": "active", 
+      "description": "Excludes fast-check property testing library from the production binary. Effect 4.0.0-beta.57's Schema module statically references fast-check for arbitrary() support, causing it to be bundled even though our code never calls .arbitrary(). Fixed by adding a Bun build onResolve plugin that redirects all fast-check imports to a no-op stub, preventing the library from initializing at startup and crashing with ast traversal errors.",
+      "issue": "https://github.com/randomm/opencode/issues/411",
+      "newFiles": ["packages/opencode/src/fast-check-stub.ts"],
+      "deletedFiles": [],
+      "modifiedFiles": ["packages/opencode/script/build.ts"],
+      "criticalCode": [
+        "fast-check-stub",
+        "build.onResolve({ filter: /^fast-check$|^@fast-check\\// }",
+        "const fastCheckStubPlugin = {"
+      ],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "fast-check.*external",
+          "fast-check.*stub",
+          "onResolve.*fast-check"
+        ]
+      }
+    },
+    "permission-ruleset-zod-override": {
+      "status": "active",
+      "description": "Adds ZodOverride annotation to Permission.Ruleset in permission/index.ts so the effect-zod walker short-circuits and uses the canonical Zod schema directly when encountered in Effect Schema contexts. Without this, the walker tries to traverse the mutable array encoding of Ruleset (which is a Zod schema) and crashes.",
+      "issue": "https://github.com/randomm/opencode/issues/411",
+      "newFiles": [],
+      "deletedFiles": [],
+      "modifiedFiles": ["packages/opencode/src/permission/index.ts"],
+      "criticalCode": [
+        ".annotate({ identifier: \"PermissionRuleset\", [ZodOverride]: PermissionNext.Ruleset })"
+      ],
+      "tests": [],
+      "upstreamTracking": {
+        "absorptionSignals": [
+          "Permission.Ruleset.*ZodOverride",
+          "ZodOverride.*Ruleset",
+          "permission.*zod.*override"
         ]
       }
     }
-  }
+   }
 }
